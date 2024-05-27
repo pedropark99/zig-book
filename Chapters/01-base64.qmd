@@ -1,0 +1,37 @@
+
+# Building a base64 encoder/decoder
+
+As our first small project, I want to implement with you a base64 encoder/decoder in Zig.
+Base64 is an encoding system which translates binary data to text.
+A big chunk of the web uses base64 to deliver binary data to systems
+that can only read text data.
+
+The biggest example of modern use case is email systems,
+like GMail, Outlook, etc. Because email systems normally use
+the Simple Mail Transfer Protocol (SMTP), which is a web protocol
+that supports only text data. So, if you need, for any reason, to
+send a binary file (like for example, a PDF, or an Excel file) as
+an attachment in your email, these binary files are normally
+converted to base64 before they be included in the SMTP message.
+
+
+
+
+## How strings work in Zig?
+
+In order to build this Base64 decoder/encoder, we need to understand better how strings work in Zig.
+In Zig, a string literal (or a string object if you prefer) is a pointer to a null-terminated array
+of bytes. Each byte in this array is represented by an `u8` value, which is an unsigned 8 bit integer,
+which is equivalent to the C data type `unsigned char`.
+
+Zig always assumes that this sequence of bytes is UTF-8 encoded. This might not be true for every sequence of bytes you have it, but is not really Zig’s job to fix the encoding of your string (you can use iconv for that). Today, most of text data in our modern world should be UTF-8 encoded. So if your string literal is not UTF-8 encoded, then, you will probably have problems in Zig.
+
+Let’s take for example the word “Hello”. In UTF-8, this sequence of characters (H, e, l, l, o) is represented by the sequence of decimal numbers 72, 101, 108, 108, 111. In xecadecimal, this is the sequence 0x48, 0x65, 0x6C, 0x6C, 0x6F. So if I take this sequence of hexadecimal values, and ask Zig to print this sequence of bytes as a sequence of characters (i.e. a string), then, the text “Hello” will be printed into the terminal:
+
+# The base64 encoding system
+
+In essence, the base64 encoding system is based on a numeral system
+that have 64 items (hence the name). So, in order to convert some binary data, to
+the base64 encoding, we need to convert each binary number
+to the corresponding item in this "64 scale".
+
