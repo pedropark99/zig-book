@@ -1,5 +1,6 @@
 install.packages(
   "readr",
   "knitr",
-  "rmarkdown"
+  "rmarkdown",
+  "stringr"
 )

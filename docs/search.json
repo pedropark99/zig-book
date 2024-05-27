@@ -8,5 +8,35 @@
     "crumbs": [
       "Preface"
     ]
+  },
+  {
+    "objectID": "Chapters/01-base64.html",
+    "href": "Chapters/01-base64.html",
+    "title": "1  Building a base64 encoder/decoder",
+    "section": "",
+    "text": "1.1 How strings work in Zig?\nIn order to build this Base64 decoder/encoder, we need to understand better how strings work in Zig. In Zig, a string literal (or a string object if you prefer) is a pointer to a null-terminated array of bytes. Each byte in this array is represented by an u8 value, which is an unsigned 8 bit integer, so, it is equivalent to the C data type unsigned char.\nZig always assumes that this sequence of bytes is UTF-8 encoded. This might not be true for every sequence of bytes you have it, but is not really Zig’s job to fix the encoding of your string (you can use iconv1 for that). Today, most of the text in our modern world, specially on the web, should be UTF-8 encoded. So if your string literal is not UTF-8 encoded, then, you will likely have problems in Zig.\nLet’s take for example the word “Hello”. In UTF-8, this sequence of characters (H, e, l, l, o) is represented by the sequence of decimal numbers 72, 101, 108, 108, 111. In xecadecimal, this is the sequence 0x48, 0x65, 0x6C, 0x6C, 0x6F. So if I take this sequence of hexadecimal values, and ask Zig to print this sequence of bytes as a sequence of characters (i.e. a string), then, the text “Hello” will be printed into the terminal:\nconst std = @import(\"std\");\nconst stdout = std.io.getStdOut().writer();\npub fn main() !void {\n    const bytes = [_]u8{0x48, 0x65, 0x6C, 0x6C, 0x6F};\n    try stdout.print(\"{s}\\n\", .{bytes});\n}\n\nHello\nIf you want to see the actual bytes that represents a string in Zig, you can use a for loop to iterate trough each byte in the string, and ask Zig to print each byte as an hexadecimal value to the terminal. You do that by using a print() statement with the X formatting specifier, like you would normally do with the printf() function2 in C.\nconst std = @import(\"std\");\nconst stdout = std.io.getStdOut().writer();\npub fn main() !void {\n    const string_literal = \"This is an example of string literal in Zig\";\n    try stdout.print(\"Bytes that represents the string object: \", .{});\n    for (string_literal) |byte| {\n        try stdout.print(\"{X} \", .{byte});\n    }\n    try stdout.print(\"\\n\", .{});\n}\n\nBytes that represents the string object: 54 68 69 73 20 69 73 20 61 6E 20 65 78 61 6D 70 6C 65 20 6F 66 20 73 74 72 69 6E 67 20 6C 69 74 65 72 61 6C 20 69 6E 20 5A 69 67",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>Building a base64 encoder/decoder</span>"
+    ]
+  },
+  {
+    "objectID": "Chapters/01-base64.html#the-base64-encoding-system",
+    "href": "Chapters/01-base64.html#the-base64-encoding-system",
+    "title": "1  Building a base64 encoder/decoder",
+    "section": "1.2 The base64 encoding system",
+    "text": "1.2 The base64 encoding system\nIn essence, the base64 encoding system is based on a numeral system that have 64 items (hence the name). So, in order to convert some binary data, to the base64 encoding, we need to convert each binary number to the corresponding item in this “64 scale”.",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>Building a base64 encoder/decoder</span>"
+    ]
+  },
+  {
+    "objectID": "Chapters/01-base64.html#footnotes",
+    "href": "Chapters/01-base64.html#footnotes",
+    "title": "1  Building a base64 encoder/decoder",
+    "section": "",
+    "text": "https://www.gnu.org/software/libiconv/↩︎\nhttps://cplusplus.com/reference/cstdio/printf/↩︎",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>Building a base64 encoder/decoder</span>"
+    ]
   }
 ]
