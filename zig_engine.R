@@ -14,7 +14,8 @@ find_zig_ <- function() {
   return(p)
 }
 
-str_split_lines <- function(text, n) {
+str_split_lines <- function(text, options) {
+  output_width <- getOption("width")
   if (length(text) == 0) {
     return(text)
   }
@@ -23,22 +24,26 @@ str_split_lines <- function(text, n) {
   }
   
   n_chars <- str_length(text)
-  if (n_chars <= n) {
+  if (n_chars <= output_width) {
     return(text)
   }
+
+  if (!is.null(options$truncate) && options$truncate == TRUE) {
+    return(str_trunc(text, output_width))
+  }
   
-  n_breaks <- as.integer(floor(n_chars / n))
+  n_breaks <- as.integer(floor(n_chars / output_width))
   lines <- vector("character", n_breaks + 1L)
   idx <- 1L
   last_str_index <- 1L
   while (TRUE) {
-    if (idx * n >= n_chars) {
+    if (idx * output_width >= n_chars) {
       lines[idx] <- str_sub(text, last_str_index, n_chars)
       break
     }
-    substr <- str_sub(text, last_str_index, idx * n)
-    lines[idx] <- paste0(substr, "\n")
-    last_str_index <- as.integer(idx * n)
+    substr <- str_sub(text, last_str_index, idx * output_width)
+    lines[idx] <- paste0(substr, "\n  ")
+    last_str_index <- as.integer(idx * output_width)
     idx <- idx + 1L
   }
   
@@ -62,8 +67,7 @@ knitr::knit_engines$set(zig = function(options) {
     stdout = TRUE
   )
   
-  output_width <- getOption("width")
-  out <- str_split_lines(out, output_width)
+  out <- str_split_lines(out, options)
   knitr::engine_output(options, code, out)
 })
 
