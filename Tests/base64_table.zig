@@ -1,21 +1,23 @@
 const std = @import("std");
 const stdout = std.io.getStdOut().writer();
+const Base64 = struct {
+    table: *const [64]u8,
 
-fn build_table(alph: []const u8) []const u8 {
-    var table: [256]u8 = undefined;
-    const INVALID_CHAR = 0x00;
-    for (alph, 0..) |char, idx| {
-        table[idx] = char;
-    }
-    for (65..256) |idx| {
-        table[idx] = INVALID_CHAR;
+    pub fn init() Base64 {
+        const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const lower = "abcdefghijklmnopqrstuvwxyz";
+        const numbers = "0123456789+/";
+        return Base64{
+            .table = upper ++ lower ++ numbers,
+        };
     }
 
-    return table;
-}
+    pub fn char_at(self: Base64, index: u8) u8 {
+        return self.table[index];
+    }
+};
 
 pub fn main() !void {
-    const base64_alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    const base64_table = build_table(base64_alphabet);
-    _ = base64_table;
+    const base64 = Base64.init();
+    try stdout.print("Character at 28 index: {c}\n", .{base64.char_at(28)});
 }

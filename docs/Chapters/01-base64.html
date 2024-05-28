@@ -174,7 +174,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#a-better-look-at-the-object-type" id="toc-a-better-look-at-the-object-type" class="nav-link" data-scroll-target="#a-better-look-at-the-object-type"><span class="header-section-number">1.1.2</span> A better look at the object type</a></li>
   <li><a href="#byte-vs-unicode-points" id="toc-byte-vs-unicode-points" class="nav-link" data-scroll-target="#byte-vs-unicode-points"><span class="header-section-number">1.1.3</span> Byte vs unicode points</a></li>
   </ul></li>
-  <li><a href="#the-base64-scale" id="toc-the-base64-scale" class="nav-link" data-scroll-target="#the-base64-scale"><span class="header-section-number">1.2</span> The base64 scale</a></li>
+  <li><a href="#the-base64-scale" id="toc-the-base64-scale" class="nav-link" data-scroll-target="#the-base64-scale"><span class="header-section-number">1.2</span> The base64 scale</a>
+  <ul class="collapse">
+  <li><a href="#creating-the-scale-as-a-lookup-table" id="toc-creating-the-scale-as-a-lookup-table" class="nav-link" data-scroll-target="#creating-the-scale-as-a-lookup-table"><span class="header-section-number">1.2.1</span> Creating the scale as a lookup table</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -351,8 +354,46 @@ got codepoint E382AB</code></pre>
 <li>index 62 is represented by the character <code>+</code>;</li>
 <li>index 63 is represented by the character <code>/</code>;</li>
 </ul>
+<section id="creating-the-scale-as-a-lookup-table" class="level3" data-number="1.2.1">
+<h3 data-number="1.2.1" class="anchored" data-anchor-id="creating-the-scale-as-a-lookup-table"><span class="header-section-number">1.2.1</span> Creating the scale as a lookup table</h3>
+<p>The best way to represent this scale in code, is to represent it as a <em>lookup table</em>. Lookup tables are a classic strategy in computer science to speed calculations. The basic idea is to replace a runtime calculation (which can take a long computing time be done) by a basic array indexing operation.</p>
+<p>Instead of calculating the results everytime you need them, you calculate them once, and them, store the results in an array (which behaves lake a “table”), and then, any time that you need to use this result, instead of using many resources to calculate this result, you simply retrieve this result from the array where you stored all the possible results. So we retrieve the result we need directly from memory.</p>
+<p>We can start building a Zig struct to store our base64 decoder/encoder logic. We start with the <code>Base64</code> struct below. You can see that, for now, we only have an <code>init()</code> function, to create a new instance of a <code>Base64</code> object, and, a <code>char_at()</code> function, which is a “get chat at index …” type of function.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Base64 = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    table: *<span class="kw">const</span> [<span class="dv">64</span>]<span class="dt">u8</span>,</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init() Base64 <span class="op">{</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> upper = <span class="st">"ABCDEFGHIJKLMNOPQRSTUVWXYZ"</span>;</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> lower = <span class="st">"abcdefghijklmnopqrstuvwxyz"</span>;</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> numbers = <span class="st">"0123456789+/"</span>;</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> Base64<span class="op">{</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>            .table = upper ++ lower ++ numbers,</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> char_at(self: Base64, index: <span class="dt">u8</span>) <span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> self.table[index];</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In other words, the <code>char_at()</code> function is responsible for getting the character in the lookup table (i.e.&nbsp;the <code>table</code>) that corresponds to a particular index in the “base64 scale”. So, in the example below, we know that the character that corresponds to the index 27 in the “base64 scale” is the character “c”.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> base64 = Base64.init();</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Character at 28 index: {c}</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>        .<span class="op">{</span>base64.char_at(<span class="dv">28</span>)<span class="op">}</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Character at 28 index: c</code></pre>
 
 
+</section>
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>

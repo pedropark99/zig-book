@@ -308,11 +308,53 @@ using many resources to calculate this result, you simply retrieve this result
 from the array where you stored all the possible results. So we retrieve the result we need
 directly from memory.
 
+We can start building a Zig struct to store our base64 decoder/encoder logic.
+We start with the `Base64` struct below. You can see that, for now, we only have an `init()` function,
+to create a new instance of a `Base64` object, and, a `char_at()` function, which is a
+"get chat at index ..." type of function.
 
 
 ```{zig}
-const base64_alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-fn build_base64_table(const []u8) {
+#| eval: false
+const Base64 = struct {
+    table: *const [64]u8,
 
+    pub fn init() Base64 {
+        const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const lower = "abcdefghijklmnopqrstuvwxyz";
+        const numbers = "0123456789+/";
+        return Base64{
+            .table = upper ++ lower ++ numbers,
+        };
+    }
+
+    pub fn char_at(self: Base64, index: u8) u8 {
+        return self.table[index];
+    }
+};
+```
+
+
+In other words, the `char_at()` function is responsible for getting the character in the lookup table (i.e. the `table`) that
+corresponds to a particular index in the "base64 scale". So, in the example below, we know that
+the character that corresponds to the index 27 in the "base64 scale" is the character "c".
+
+
+```{zig}
+#| eval: false
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+
+pub fn main() !void {
+    const base64 = Base64.init();
+    try stdout.print(
+        "Character at 28 index: {c}\n",
+        .{base64.char_at(28)}
+    );
 }
 ```
+
+```
+Character at 28 index: c
+```
+
