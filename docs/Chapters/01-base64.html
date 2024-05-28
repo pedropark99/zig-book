@@ -273,7 +273,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Now, we can inspect better the type of objects that Zig create. To check the type of any object in Zig, you can use the <code>@TypeOf()</code> function. If we look at the type of the <code>simple_array</code> object below, you will find that this object is a array of 4 elements. Each element is a signed integer of 32 bits which corresponds to the data type <code>i32</code> in Zig. That is what an object of type <code>[4]i32</code> is.</p>
 <p>But if we look closely at the type of the <code>string_literal</code> object below, you will find that this object is a constant pointer (hence the <code>*const</code> annotation) to an array of 43 elements (or 43 bytes). Each element is a single byte (more precisely, an unsigned 8 bit integer - <code>u8</code>), that is why we have the <code>[43:0]u8</code> portion of the type below. In other words, the string stored inside the <code>string_literal</code> object is 43 bytes long. That is why you have the type <code>*const [43:0]u8</code> below.</p>
 <p>In the case of <code>string_literal</code>, it is a constant pointer (<code>*const</code>) because the object <code>string_literal</code> is declared as constant in the source code (in the line <code>const string_literal = ...</code>). So, if we changed that for some reason, if we declare <code>string_literal</code> as a variable object (i.e.&nbsp;<code>var string_literal = ...</code>), then, <code>string_literal</code> would be just a normal pointer to an array of unsigned 8-bit integers (i.e.&nbsp;<code>* [43:0]u8</code>).</p>
-<p>Now, if we create an pointer to the array object, then, we get a constant pointer to an array of 4 elements (*const [4]i32), which is very similar to the type of the string_literal object. This demonstrates that a string object (or a string literal) in Zig is already a pointer to an array.</p>
+<p>Now, if we create an pointer to the <code>simple_array</code> object, then, we get a constant pointer to an array of 4 elements (<code>*const [4]i32</code>), which is very similar to the type of the <code>string_literal</code> object. This demonstrates that a string object (or a string literal) in Zig is already a pointer to an array.</p>
 <p>Just remember that a “pointer to an array” is different than an “array”. So a string object in Zig is a pointer to an array of bytes, and not simply an array of bytes.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
@@ -281,16 +281,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> string_literal = <span class="st">"This is an example of string literal in Zig"</span>;</span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> simple_array = [_]<span class="dt">i32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span><span class="op">}</span>;</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Type of array object: {}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(simple_array)<span class="op">}</span>);</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Type of string object: {}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(string_literal)<span class="op">}</span>);</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Type of a pointer that points to the array object: {}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(&amp;simple_array)<span class="op">}</span>);</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Type of array object: [4]i32Type of string object:
-  : *const [43:0]u8Type of a pointer that points to t
-  the array object: *const [4]i32</code></pre>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Type of array object: {}"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(simple_array)<span class="op">}</span>);</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Type of string object: {}"</span>,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span><span class="bu">@TypeOf</span>(string_literal)<span class="op">}</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Type of a pointer that points to the array object: {}"</span>,</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span><span class="bu">@TypeOf</span>(&amp;simple_array)<span class="op">}</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-</div>
+<pre><code>Type of array object: [4]i32
+Type of string object: *const [43:0]u8
+Type of a pointer that points to the array object: *const [4]i32</code></pre>
 </section>
 </section>
 <section id="the-base64-encoding-system" class="level2" data-number="1.2">

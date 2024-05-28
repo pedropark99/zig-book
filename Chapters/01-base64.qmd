@@ -150,22 +150,37 @@ as constant in the source code (in the line `const string_literal = ...`). So, i
 we declare `string_literal` as a variable object (i.e. `var string_literal = ...`), then, `string_literal` would be
 just a normal pointer to an array of unsigned 8-bit integers (i.e. `* [43:0]u8`).
 
-Now, if we create an pointer to the array object, then, we get a constant pointer to an array of 4 elements (*const [4]i32), which is very similar to the type of the string_literal object. This demonstrates that a string object (or a string literal) in Zig is already a pointer to an array.
+Now, if we create an pointer to the `simple_array` object, then, we get a constant pointer to an array of 4 elements (`*const [4]i32`),
+which is very similar to the type of the `string_literal` object. This demonstrates that a string object (or a string literal)
+in Zig is already a pointer to an array.
 
 Just remember that a "pointer to an array" is different than an "array". So a string object in Zig is a pointer to an array
 of bytes, and not simply an array of bytes.
 
 
 ```{zig}
+#| eval: false
 const std = @import("std");
 const stdout = std.io.getStdOut().writer();
 pub fn main() !void {
     const string_literal = "This is an example of string literal in Zig";
     const simple_array = [_]i32{1, 2, 3, 4};
-    try stdout.print("Type of array object: {}\n", .{@TypeOf(simple_array)});
-    try stdout.print("Type of string object: {}\n", .{@TypeOf(string_literal)});
-    try stdout.print("Type of a pointer that points to the array object: {}\n", .{@TypeOf(&simple_array)});
+    try stdout.print("Type of array object: {}", .{@TypeOf(simple_array)});
+    try stdout.print(
+        "Type of string object: {}",
+    .{@TypeOf(string_literal)}
+    );
+    try stdout.print(
+        "Type of a pointer that points to the array object: {}",
+    .{@TypeOf(&simple_array)}
+    );
 }
+```
+
+```
+Type of array object: [4]i32
+Type of string object: *const [43:0]u8
+Type of a pointer that points to the array object: *const [4]i32
 ```
 
 

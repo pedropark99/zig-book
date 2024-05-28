@@ -55,7 +55,7 @@ str_split_lines <- function(text, options) {
 knitr::knit_engines$set(zig = function(options) {
   code <- paste(options$code, collapse = "\n")
   if (!options$eval) {
-    return(NULL)
+    return(knitr::engine_output(options, code, NULL))
   }
 
   temp_file <- tempfile(fileext = ".zig")
