@@ -30,13 +30,13 @@ converted to base64 before they be included in the SMTP message.
 
 ## How strings work in Zig?
 
-In order to build this Base64 decoder/encoder, we need to understand better how strings work in Zig.
+In order for us to build this Base64 decoder/encoder, we need to get a better understanding on how strings work in Zig.
 In Zig, a string literal (or a string object if you prefer) is a pointer to a null-terminated array
 of bytes. Each byte in this array is represented by an `u8` value, which is an unsigned 8 bit integer,
 so, it is equivalent to the C data type `unsigned char`.
 
 Zig always assumes that this sequence of bytes is UTF-8 encoded. This might not be true for every
-sequence of bytes you have it, but is not really Zig’s job to fix the encoding of your string
+sequence of bytes you have it, but is not really Zig's job to fix the encoding of your strings
 (you can use [`iconv`](https://www.gnu.org/software/libiconv/)[^libiconv] for that).
 Today, most of the text in our modern world, specially on the web, should be UTF-8 encoded.
 So if your string literal is not UTF-8 encoded, then, you will likely
@@ -44,11 +44,11 @@ have problems in Zig.
 
 [^libiconv]: <https://www.gnu.org/software/libiconv/>
 
-Let’s take for example the word “Hello”. In UTF-8, this sequence of characters (H, e, l, l, o)
+Let’s take for example the word "Hello". In UTF-8, this sequence of characters (H, e, l, l, o)
 is represented by the sequence of decimal numbers 72, 101, 108, 108, 111. In xecadecimal, this
-is the sequence 0x48, 0x65, 0x6C, 0x6C, 0x6F. So if I take this sequence of hexadecimal values,
+sequence is `0x48`, `0x65`, `0x6C`, `0x6C`, `0x6F`. So if I take this sequence of hexadecimal values,
 and ask Zig to print this sequence of bytes as a sequence of characters (i.e. a string), then,
-the text “Hello” will be printed into the terminal:
+the text "Hello" will be printed into the terminal:
 
 ```{zig}
 const std = @import("std");
@@ -87,16 +87,17 @@ in C are also treated internally as an array of bytes, and this array is also nu
 
 But one key difference between a Zig string and a C string, is that Zig also stores the length of
 the array inside the string object. This small detail makes your code safer, because is much
-easier for the Zig compiler to check if you are trying to access an element out of bounds, or if
+easier for the Zig compiler to check if you are trying to access an element that is "out of bounds", i.e. if
 your trying to access memory that does not belong to you.
 
-To achieve this same kind of safety in C, you have to do a lot of work, that kind of seems pointless.
+To achieve this same kind of safety in C, you have to do a lot of work that kind of seems pointless.
 So getting this kind of safety is not automatic and much harder to do in C. For example, if you want
 to track the length of your string troughout your program in C, then, you first need to loop through
 the array of bytes that represents this string, and find the null element (`'\0'`) position to discover
 where exactly the array ends, or, in other words, to find how much elements the array of bytes contain.
 
-To do that, you would need something like this in C. In this example, the C string is 25 bytes long:
+To do that, you would need something like this in C. In this example, the C string stored in
+the object `array` is 25 bytes long:
 
 ```c
 #include <stdio.h>
@@ -105,8 +106,8 @@ int main() {
     int index = 0;
     while (1) {
         if (array[index] == '\0') {
-        break;
-    }
+            break;
+        }
         index++;
     }
     printf("Number of elements in the array: %d\n", index);
@@ -122,12 +123,17 @@ field which stores the length information of the array. As an example, the `stri
 
 
 ```{zig}
+#| eval: false
 const std = @import("std");
 const stdout = std.io.getStdOut().writer();
 pub fn main() !void {
     const string_literal = "This is an example of string literal in Zig";
     try stdout.print("{d}\n", .{string_literal.len});
 }
+```
+
+```
+43
 ```
 
 
@@ -168,11 +174,11 @@ pub fn main() !void {
     try stdout.print("Type of array object: {}", .{@TypeOf(simple_array)});
     try stdout.print(
         "Type of string object: {}",
-    .{@TypeOf(string_literal)}
+        .{@TypeOf(string_literal)}
     );
     try stdout.print(
         "Type of a pointer that points to the array object: {}",
-    .{@TypeOf(&simple_array)}
+        .{@TypeOf(&simple_array)}
     );
 }
 ```
@@ -184,6 +190,87 @@ Type of a pointer that points to the array object: *const [4]i32
 ```
 
 
+### Byte vs unicode points
+
+Is important to point out that each byte in the array is not necessarily a single character.
+This fact arises from the difference between a single byte and a single unicode point.
+
+The encoding UTF-8 works by assigning a number (which is called a unicode point) to each character in
+the string. For example, the character "H" is stored in UTF-8 as the decimal number 72. This means that
+the number 72 is the unicode point for the character "H". Each possible character that can appear in a
+UTF-8 encoded string have its own unicode point.
+
+For example, the Latin Capital Letter A With Stroke (Ⱥ) is represented by the number (or the unicode point)
+570. However, this decimal number (570) is higher than the maximum number stored inside a single byte, which
+is 255. In other words, the maximum decimal number that can be represented with a single byte is 255. That is why,
+the unicode point 570 is actually stored inside the computer’s memory as the bytes `C8 BA`.
+
+```{zig}
+#| eval: false
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+pub fn main() !void {
+    const string_literal = "Ⱥ";
+    try stdout.print("Bytes that represents the string object: ", .{});
+    for (string_literal) |char| {
+        try stdout.print("{X} ", .{char});
+    }
+}
+```
+
+```
+Bytes that represents the string object: C8 BA
+```
+
+This means that to store the character Ⱥ in an UTF-8 encoded string, we need to use two bytes together
+to represent the number 570. That is why the relationship between bytes and unicode points is not always
+1 to 1. Each unicode point is a single character in the string, but not always a single byte corresponds
+to a single unicode point.
+
+All of this means that if you loop trough the elements of a string in Zig, you will be looping through the
+bytes that represents that string, and not through the characters of that string. In the Ⱥ example above,
+the for loop needed two iterations (instead of a single iteration) to print the two bytes that represents this Ⱥ letter.
+
+Now, all english letters (or ASCII letters if you prefer) can be represented by a single byte in UTF-8. As a
+consequence, if your UTF-8 string contains only english letters (or ASCII letters), then, you are lucky. Because
+the number of bytes will be equal to the number of characters in that string. In other words, in this specific
+situation, the relationship between bytes and unicode points is 1 to 1.
+
+But on the other side, if your string contains other types of letters… for example, you might be working with
+text data that contains, chinese, japanese or latin letters, then, the number of bytes necessary to represent
+your UTF-8 string will likely be much higher than the number of characters in that string.
+
+If you need to iterate through the characters of a string, instead of its bytes, then, you can use the
+`std.unicode.Utf8View` struct to create an iterator that iterates through the unicode points of your string.
+
+In the example below, we loop through the japanese characters “アメリカ”. Each of the four characters in
+this string is represented by three bytes. But the for loop iterates four times, one iteration for each
+character/unicode point in this string:
+
+```{zig}
+#| eval: false
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+pub fn main() !void {
+    var utf8 = (
+        (try std.unicode.Utf8View.init("アメリカ"))
+            .iterator()
+    );
+    while (utf8.nextCodepointSlice()) |codepoint| {
+        try stdout.print(
+            "got codepoint {}\n",
+            .{std.fmt.fmtSliceHexUpper(codepoint)}
+        );
+    }
+}
+```
+
+```
+got codepoint E382A2
+got codepoint E383A1
+got codepoint E383AA
+got codepoint E382AB
+```
 
 
 ## The base64 encoding system
