@@ -273,6 +273,35 @@ got codepoint E382AB
 ```
 
 
+## How the base64 algorithm work?
+
+Now, how exactly the algorithm behind the base64 encoding works? Let me show you.
+The base64 algorithm usually works on a window of 3 bytes. Because each byte have
+8 bits, so, it forms a set of $8 \times 3 = 24$ bits. This is desirable because
+24 bits is divisble by 6, which can form a set of 4 groups of 6 bits each.
+
+So the base64 algorithm work by converting 3 bytes at a time
+into 4 characters in the base64 scale. It keeps iterating through the input string,
+3 bytes at a time, and converting them into the base64 scale, producing 4 characters
+per iteration.
+
+Now you may think, what if I have a particular string that have a number of bytes
+that is not divisible by 3? What happens? For example, if I have a string
+that contains only two characters/bytes, such as "Hi". How the
+algorithm behaves in such situation? You find the answer at @fig-base64-algo1.
+
+You can see at @fig-base64-algo1 that the string "Hi" when converted to base64
+becomes the string "SGk". Actually, if you use a real base64 encoder you will likely
+get the string "SGk=" as output. I will tell you later about what this
+final equal character (`=`). For now, let's ignore it.
+
+![The logic of the base64 encoding](./../Figures/base64-flow.png){#fig-base64-algo1}
+
+In the example of the string "Hi" we have 16 bits. So, we lack a full byte (8 bits)
+to complete the full window of 24 bits that the algorithm work on. In essence,
+everytime that the algorithm does not meet this requirement, it simply add extra zeros
+until it fills the space it needs.
+
 
 ## The base64 scale
 

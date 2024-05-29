@@ -103,6 +103,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -174,9 +203,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#a-better-look-at-the-object-type" id="toc-a-better-look-at-the-object-type" class="nav-link" data-scroll-target="#a-better-look-at-the-object-type"><span class="header-section-number">1.1.2</span> A better look at the object type</a></li>
   <li><a href="#byte-vs-unicode-points" id="toc-byte-vs-unicode-points" class="nav-link" data-scroll-target="#byte-vs-unicode-points"><span class="header-section-number">1.1.3</span> Byte vs unicode points</a></li>
   </ul></li>
-  <li><a href="#the-base64-scale" id="toc-the-base64-scale" class="nav-link" data-scroll-target="#the-base64-scale"><span class="header-section-number">1.2</span> The base64 scale</a>
+  <li><a href="#how-the-base64-algorithm-work" id="toc-how-the-base64-algorithm-work" class="nav-link" data-scroll-target="#how-the-base64-algorithm-work"><span class="header-section-number">1.2</span> How the base64 algorithm work?</a></li>
+  <li><a href="#the-base64-scale" id="toc-the-base64-scale" class="nav-link" data-scroll-target="#the-base64-scale"><span class="header-section-number">1.3</span> The base64 scale</a>
   <ul class="collapse">
-  <li><a href="#creating-the-scale-as-a-lookup-table" id="toc-creating-the-scale-as-a-lookup-table" class="nav-link" data-scroll-target="#creating-the-scale-as-a-lookup-table"><span class="header-section-number">1.2.1</span> Creating the scale as a lookup table</a></li>
+  <li><a href="#creating-the-scale-as-a-lookup-table" id="toc-creating-the-scale-as-a-lookup-table" class="nav-link" data-scroll-target="#creating-the-scale-as-a-lookup-table"><span class="header-section-number">1.3.1</span> Creating the scale as a lookup table</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -343,8 +373,25 @@ got codepoint E383AA
 got codepoint E382AB</code></pre>
 </section>
 </section>
-<section id="the-base64-scale" class="level2" data-number="1.2">
-<h2 data-number="1.2" class="anchored" data-anchor-id="the-base64-scale"><span class="header-section-number">1.2</span> The base64 scale</h2>
+<section id="how-the-base64-algorithm-work" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="how-the-base64-algorithm-work"><span class="header-section-number">1.2</span> How the base64 algorithm work?</h2>
+<p>Now, how exactly the algorithm behind the base64 encoding works? Let me show you. The base64 algorithm usually works on a window of 3 bytes. Because each byte have 8 bits, so, it forms a set of <span class="math inline">\(8 \times 3 = 24\)</span> bits. This is desirable because 24 bits is divisble by 6, which can form a set of 4 groups of 6 bits each.</p>
+<p>So the base64 algorithm work by converting 3 bytes at a time into 4 characters in the base64 scale. It keeps iterating through the input string, 3 bytes at a time, and converting them into the base64 scale, producing 4 characters per iteration.</p>
+<p>Now you may think, what if I have a particular string that have a number of bytes that is not divisible by 3? What happens? For example, if I have a string that contains only two characters/bytes, such as “Hi”. How the algorithm behaves in such situation? You find the answer at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>1.1</span></a>.</p>
+<p>You can see at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>1.1</span></a> that the string “Hi” when converted to base64 becomes the string “SGk”. Actually, if you use a real base64 encoder you will likely get the string “SGk=” as output. I will tell you later about what this final equal character (<code>=</code>). For now, let’s ignore it.</p>
+<div id="fig-base64-algo1" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-base64-algo1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="./../Figures/base64-flow.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-base64-algo1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1.1: The logic of the base64 encoding
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="the-base64-scale" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="the-base64-scale"><span class="header-section-number">1.3</span> The base64 scale</h2>
 <p>In essence, the base64 encoding system is based on a scale that goes from 0 to 64 (hence the name). Each index in this scale is represented by a character (it is a scale of 64 characters). So, in order to convert some binary data, to the base64 encoding, we need to convert each binary number to the corresponding characters in this “scale of 64 characters”.</p>
 <p>The base64 scale starts with all ASCII uppercase letters (A to Z) which represents the first 25 indexes in this scale (0 to 25). After that, we have all ASCII lowercase letters (a to z), which represents the range 26 to 51 in the scale. After that, we have the one digit numbers (0 to 9), which represents the indexes from 52 to 61 in the scale. Then, the last two indexes in the scale (62 and 63) are represented by the characters <code>+</code> and <code>/</code>, respectively. The bulletpoints below summarises this scale:</p>
 <ul>
@@ -354,8 +401,8 @@ got codepoint E382AB</code></pre>
 <li>index 62 is represented by the character <code>+</code>;</li>
 <li>index 63 is represented by the character <code>/</code>;</li>
 </ul>
-<section id="creating-the-scale-as-a-lookup-table" class="level3" data-number="1.2.1">
-<h3 data-number="1.2.1" class="anchored" data-anchor-id="creating-the-scale-as-a-lookup-table"><span class="header-section-number">1.2.1</span> Creating the scale as a lookup table</h3>
+<section id="creating-the-scale-as-a-lookup-table" class="level3" data-number="1.3.1">
+<h3 data-number="1.3.1" class="anchored" data-anchor-id="creating-the-scale-as-a-lookup-table"><span class="header-section-number">1.3.1</span> Creating the scale as a lookup table</h3>
 <p>The best way to represent this scale in code, is to represent it as a <em>lookup table</em>. Lookup tables are a classic strategy in computer science to speed calculations. The basic idea is to replace a runtime calculation (which can take a long computing time be done) by a basic array indexing operation.</p>
 <p>Instead of calculating the results everytime you need them, you calculate them once, and them, store the results in an array (which behaves lake a “table”), and then, any time that you need to use this result, instead of using many resources to calculate this result, you simply retrieve this result from the array where you stored all the possible results. So we retrieve the result we need directly from memory.</p>
 <p>We can start building a Zig struct to store our base64 decoder/encoder logic. We start with the <code>Base64</code> struct below. You can see that, for now, we only have an <code>init()</code> function, to create a new instance of a <code>Base64</code> object, and, a <code>char_at()</code> function, which is a “get chat at index …” type of function.</p>
