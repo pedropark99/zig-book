@@ -1,5 +1,10 @@
 const std = @import("std");
 const stdout = std.io.getStdOut().writer();
+
+fn print(input: []const u8) !void {
+    try stdout.print("{s}\n", .{input});
+}
+
 const Base64 = struct {
     table: *const [64]u8,
 
@@ -17,7 +22,33 @@ const Base64 = struct {
     }
 };
 
+fn calc_output_length(input_length: usize) u8 {
+    const as_float: f64 = @floatFromInt(input_length);
+    const d = as_float / 3.0;
+    return @intFromFloat(@ceil(d));
+}
+
+fn decode(input: []const u8, allocator: std.mem.Allocator) !void {
+    try stdout.print("Start decoding of {s}\n", .{input});
+    // var output = [_]u8{ 0, 0, 0, 0 };
+    // _ = output;
+    if (input.len == 0) return;
+    const n_windows = calc_output_length(input.len);
+    var bytes_to_convert = try allocator.alloc(u8, n_windows * 3);
+    for (bytes_to_convert, 0..) |_, i| {
+        bytes_to_convert[i] = 0;
+    }
+    for (input, 0..) |_, i| {
+        bytes_to_convert[i] = input[i];
+    }
+    try print(bytes_to_convert);
+}
+
 pub fn main() !void {
-    const base64 = Base64.init();
-    try stdout.print("Character at 28 index: {c}\n", .{base64.char_at(28)});
+    const text = "Hi";
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    try decode(text, allocator);
 }
