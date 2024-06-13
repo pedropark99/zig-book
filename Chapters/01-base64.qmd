@@ -17,373 +17,227 @@ Base64 is an encoding system which translates binary data to text.
 A big chunk of the web uses base64 to deliver binary data to systems
 that can only read text data.
 
-The biggest example of modern use case is email systems,
+The biggest example of a modern use case for base64 is essentially any email system,
 like GMail, Outlook, etc. Because email systems normally use
 the Simple Mail Transfer Protocol (SMTP), which is a web protocol
 that supports only text data. So, if you need, for any reason, to
 send a binary file (like for example, a PDF, or an Excel file) as
 an attachment in your email, these binary files are normally
-converted to base64 before they be included in the SMTP message.
+converted to base64, before they are included in the SMTP message.
+So, the base64 encoding is largelly used in these email systems to include
+binary data into the SMTP message.
 
 
 
 
-## How strings work in Zig?
-
-In order for us to build this Base64 decoder/encoder, we need to get a better understanding on how strings work in Zig.
-In Zig, a string literal (or a string object if you prefer) is a pointer to a null-terminated array
-of bytes. Each byte in this array is represented by an `u8` value, which is an unsigned 8 bit integer,
-so, it is equivalent to the C data type `unsigned char`.
-
-Zig always assumes that this sequence of bytes is UTF-8 encoded. This might not be true for every
-sequence of bytes you have it, but is not really Zig's job to fix the encoding of your strings
-(you can use [`iconv`](https://www.gnu.org/software/libiconv/)[^libiconv] for that).
-Today, most of the text in our modern world, specially on the web, should be UTF-8 encoded.
-So if your string literal is not UTF-8 encoded, then, you will likely
-have problems in Zig.
-
-[^libiconv]: <https://www.gnu.org/software/libiconv/>
-
-Let’s take for example the word "Hello". In UTF-8, this sequence of characters (H, e, l, l, o)
-is represented by the sequence of decimal numbers 72, 101, 108, 108, 111. In xecadecimal, this
-sequence is `0x48`, `0x65`, `0x6C`, `0x6C`, `0x6F`. So if I take this sequence of hexadecimal values,
-and ask Zig to print this sequence of bytes as a sequence of characters (i.e. a string), then,
-the text "Hello" will be printed into the terminal:
-
-```{zig}
-const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-pub fn main() !void {
-    const bytes = [_]u8{0x48, 0x65, 0x6C, 0x6C, 0x6F};
-    try stdout.print("{s}\n", .{bytes});
-}
-```
 
 
-If you want to see the actual bytes that represents a string in Zig, you can use
-a `for` loop to iterate trough each byte in the string, and ask Zig to print each byte as an hexadecimal
-value to the terminal. You do that by using a `print()` statement with the `X` formatting specifier,
-like you would normally do with the [`printf()` function](https://cplusplus.com/reference/cstdio/printf/)[^printfs] in C.
+## How the base64 algorithm work? 
 
-[^printfs]: <https://cplusplus.com/reference/cstdio/printf/>
+Now, how exactly the algorithm behind the base64 encoding works? Let's discuss that. First, I will
+explain the base64 scale, which is the scale of 64 characters that represents the base64 encoding system.
 
-```{zig}
-const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-pub fn main() !void {
-    const string_literal = "This is an example of string literal in Zig";
-    try stdout.print("Bytes that represents the string object: ", .{});
-    for (string_literal) |byte| {
-        try stdout.print("{X} ", .{byte});
-    }
-    try stdout.print("\n", .{});
-}
-```
+After that, I explain the algorithm behind a base64 encoder, which is the part of the algorithm that is responsible for encoding messages
+into the base64 encoding system. Then, after that, I explain the algorithm behind a base64 decoder, which is
+the part of the algorithm that is responsible for translating base64 messages back into their original meaning.
 
-### Strings in C
-
-At first glance, this looks very similar to how C treats strings as well. That is, string values
-in C are also treated internally as an array of bytes, and this array is also null-terminated.
-
-But one key difference between a Zig string and a C string, is that Zig also stores the length of
-the array inside the string object. This small detail makes your code safer, because is much
-easier for the Zig compiler to check if you are trying to access an element that is "out of bounds", i.e. if
-your trying to access memory that does not belong to you.
-
-To achieve this same kind of safety in C, you have to do a lot of work that kind of seems pointless.
-So getting this kind of safety is not automatic and much harder to do in C. For example, if you want
-to track the length of your string troughout your program in C, then, you first need to loop through
-the array of bytes that represents this string, and find the null element (`'\0'`) position to discover
-where exactly the array ends, or, in other words, to find how much elements the array of bytes contain.
-
-To do that, you would need something like this in C. In this example, the C string stored in
-the object `array` is 25 bytes long:
-
-```c
-#include <stdio.h>
-int main() {
-    char* array = "An example of string in C";
-    int index = 0;
-    while (1) {
-        if (array[index] == '\0') {
-            break;
-        }
-        index++;
-    }
-    printf("Number of elements in the array: %d\n", index);
-}
-```
-
-```
-Number of elements in the array: 25
-```
-
-But in Zig, you do not have to do this, because the object already contains a `len`
-field which stores the length information of the array. As an example, the `string_literal` object below is 43 bytes long:
+If you are unsure about the differences between an "encoder" and a "decoder",
+take a look at @sec-encode-vs-decode.
 
 
-```{zig}
-#| eval: false
-const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-pub fn main() !void {
-    const string_literal = "This is an example of string literal in Zig";
-    try stdout.print("{d}\n", .{string_literal.len});
-}
-```
-
-```
-43
-```
-
-
-
-### A better look at the object type
-
-Now, we can inspect better the type of objects that Zig create. To check the type of any object in Zig, you can use the
-`@TypeOf()` function. If we look at the type of the `simple_array` object below, you will find that this object
-is a array of 4 elements. Each element is a signed integer of 32 bits which corresponds to the data type `i32` in Zig.
-That is what an object of type `[4]i32` is.
-
-But if we look closely at the type of the `string_literal` object below, you will find that this object is a
-constant pointer (hence the `*const` annotation) to an array of 43 elements (or 43 bytes). Each element is a
-single byte (more precisely, an unsigned 8 bit integer - `u8`), that is why we have the `[43:0]u8` portion of the type below.
-In other words, the string stored inside the `string_literal` object is 43 bytes long.
-That is why you have the type `*const [43:0]u8` below.
-
-In the case of `string_literal`, it is a constant pointer (`*const`) because the object `string_literal` is declared
-as constant in the source code (in the line `const string_literal = ...`). So, if we changed that for some reason, if
-we declare `string_literal` as a variable object (i.e. `var string_literal = ...`), then, `string_literal` would be
-just a normal pointer to an array of unsigned 8-bit integers (i.e. `* [43:0]u8`).
-
-Now, if we create an pointer to the `simple_array` object, then, we get a constant pointer to an array of 4 elements (`*const [4]i32`),
-which is very similar to the type of the `string_literal` object. This demonstrates that a string object (or a string literal)
-in Zig is already a pointer to an array.
-
-Just remember that a "pointer to an array" is different than an "array". So a string object in Zig is a pointer to an array
-of bytes, and not simply an array of bytes.
-
-
-```{zig}
-#| eval: false
-const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-pub fn main() !void {
-    const string_literal = "This is an example of string literal in Zig";
-    const simple_array = [_]i32{1, 2, 3, 4};
-    try stdout.print("Type of array object: {}", .{@TypeOf(simple_array)});
-    try stdout.print(
-        "Type of string object: {}",
-        .{@TypeOf(string_literal)}
-    );
-    try stdout.print(
-        "Type of a pointer that points to the array object: {}",
-        .{@TypeOf(&simple_array)}
-    );
-}
-```
-
-```
-Type of array object: [4]i32
-Type of string object: *const [43:0]u8
-Type of a pointer that points to the array object: *const [4]i32
-```
-
-
-### Byte vs unicode points
-
-Is important to point out that each byte in the array is not necessarily a single character.
-This fact arises from the difference between a single byte and a single unicode point.
-
-The encoding UTF-8 works by assigning a number (which is called a unicode point) to each character in
-the string. For example, the character "H" is stored in UTF-8 as the decimal number 72. This means that
-the number 72 is the unicode point for the character "H". Each possible character that can appear in a
-UTF-8 encoded string have its own unicode point.
-
-For example, the Latin Capital Letter A With Stroke (Ⱥ) is represented by the number (or the unicode point)
-570. However, this decimal number (570) is higher than the maximum number stored inside a single byte, which
-is 255. In other words, the maximum decimal number that can be represented with a single byte is 255. That is why,
-the unicode point 570 is actually stored inside the computer’s memory as the bytes `C8 BA`.
-
-```{zig}
-#| eval: false
-const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-pub fn main() !void {
-    const string_literal = "Ⱥ";
-    try stdout.print("Bytes that represents the string object: ", .{});
-    for (string_literal) |char| {
-        try stdout.print("{X} ", .{char});
-    }
-}
-```
-
-```
-Bytes that represents the string object: C8 BA
-```
-
-This means that to store the character Ⱥ in an UTF-8 encoded string, we need to use two bytes together
-to represent the number 570. That is why the relationship between bytes and unicode points is not always
-1 to 1. Each unicode point is a single character in the string, but not always a single byte corresponds
-to a single unicode point.
-
-All of this means that if you loop trough the elements of a string in Zig, you will be looping through the
-bytes that represents that string, and not through the characters of that string. In the Ⱥ example above,
-the for loop needed two iterations (instead of a single iteration) to print the two bytes that represents this Ⱥ letter.
-
-Now, all english letters (or ASCII letters if you prefer) can be represented by a single byte in UTF-8. As a
-consequence, if your UTF-8 string contains only english letters (or ASCII letters), then, you are lucky. Because
-the number of bytes will be equal to the number of characters in that string. In other words, in this specific
-situation, the relationship between bytes and unicode points is 1 to 1.
-
-But on the other side, if your string contains other types of letters… for example, you might be working with
-text data that contains, chinese, japanese or latin letters, then, the number of bytes necessary to represent
-your UTF-8 string will likely be much higher than the number of characters in that string.
-
-If you need to iterate through the characters of a string, instead of its bytes, then, you can use the
-`std.unicode.Utf8View` struct to create an iterator that iterates through the unicode points of your string.
-
-In the example below, we loop through the japanese characters “アメリカ”. Each of the four characters in
-this string is represented by three bytes. But the for loop iterates four times, one iteration for each
-character/unicode point in this string:
-
-```{zig}
-#| eval: false
-const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-pub fn main() !void {
-    var utf8 = (
-        (try std.unicode.Utf8View.init("アメリカ"))
-            .iterator()
-    );
-    while (utf8.nextCodepointSlice()) |codepoint| {
-        try stdout.print(
-            "got codepoint {}\n",
-            .{std.fmt.fmtSliceHexUpper(codepoint)}
-        );
-    }
-}
-```
-
-```
-got codepoint E382A2
-got codepoint E383A1
-got codepoint E383AA
-got codepoint E382AB
-```
-
-
-## How the base64 algorithm work?
-
-Now, how exactly the algorithm behind the base64 encoding works? Let me show you.
-The base64 algorithm usually works on a window of 3 bytes. Because each byte have
-8 bits, so, it forms a set of $8 \times 3 = 24$ bits. This is desirable because
-24 bits is divisble by 6, which can form a set of 4 groups of 6 bits each.
-
-So the base64 algorithm work by converting 3 bytes at a time
-into 4 characters in the base64 scale. It keeps iterating through the input string,
-3 bytes at a time, and converting them into the base64 scale, producing 4 characters
-per iteration.
-
-Now you may think, what if I have a particular string that have a number of bytes
-that is not divisible by 3? What happens? For example, if I have a string
-that contains only two characters/bytes, such as "Hi". How the
-algorithm behaves in such situation? You find the answer at @fig-base64-algo1.
-
-You can see at @fig-base64-algo1 that the string "Hi" when converted to base64
-becomes the string "SGk". Actually, if you use a real base64 encoder you will likely
-get the string "SGk=" as output. I will tell you later about what this
-final equal character (`=`). For now, let's ignore it.
-
-![The logic of the base64 encoding](./../Figures/base64-flow.png){#fig-base64-algo1}
-
-In the example of the string "Hi" we have 16 bits. So, we lack a full byte (8 bits)
-to complete the full window of 24 bits that the algorithm work on. In essence,
-everytime that the algorithm does not meet this requirement, it simply add extra zeros
-until it fills the space it needs.
-
-
-## The base64 scale
+### The base64 scale
 
 In essence, the base64 encoding system is based on a scale that goes from 0 to 64 (hence the name).
 Each index in this scale is represented by a character (it is a scale of 64 characters).
 So, in order to convert some binary data, to the base64 encoding, we need to convert each binary number to the corresponding
-characters in this "scale of 64 characters".
+character in this "scale of 64 characters".
 
 The base64 scale starts with all ASCII uppercase letters (A to Z) which represents
 the first 25 indexes in this scale (0 to 25). After that, we have all ASCII lowercase letters
 (a to z), which represents the range 26 to 51 in the scale. After that, we
 have the one digit numbers (0 to 9), which represents the indexes from 52 to 61 in the scale.
-Then, the last two indexes in the scale (62 and 63) are represented by the characters `+` and `/`,
-respectively. The bulletpoints below summarises this scale:
+Finally, the last two indexes in the scale (62 and 63) are represented by the characters `+` and `/`,
+respectively.
+
+These are the 64 characters that compose the base64 scale. The equal sign character (`=`) is not part of the scale itself,
+but it is a special character in the base64 encoding system. This character is used solely as a suffix, to mark the end of the character sequence,
+or, to mark the end of meaningful characters in the sequence.
+
+The bulletpoints below summarises the base64 scale:
 
 - range 0 to 25 is represented by: ASCII uppercase letters `-> [A-Z]`;
 - range 26 to 51 is represented by: ASCII lowercase letters `-> [a-z]`;
 - range 52 to 61 is represented by: one digit numbers `-> [0-9]`;
-- index 62 is represented by the character `+`;
-- index 63 is represented by the character `/`;
+- index 62 and 63 are represented by the characters `+` and `/`, respectively;
+- the character `=` represents the end of meaningful characters in the sequence;
+
+
+
+Everytime that the base64 algorithm needs to fill some gap (which always occur at the end of
+the input string) with a group of 6 bits filled with only zeros (`000000`), this group is automatically
+mapped to the character `=`. Because this group of 6 bits is meaningless, they represent nothing,
+they are just filling the gap. As a result, the base64 algorithm maps this meaningless group
+to the character `=`, which represents the end of meaningful characters in the sequence.
+This characteristic is explained in more details at @sec-base64-encoder-algo.
+
 
 
 ### Creating the scale as a lookup table
 
 The best way to represent this scale in code, is to represent it as a *lookup table*.
 Lookup tables are a classic strategy in computer science to speed calculations. The basic idea
-is to replace a runtime calculation (which can take a long computing time be done) by a basic array indexing
+is to replace a runtime calculation (which can take a long time to be done) by a basic array indexing
 operation.
 
-Instead of calculating the results everytime you need them, you calculate them once, and them, store the results in an array
-(which behaves lake a "table"), and then, any time that you need to use this result, instead of
-using many resources to calculate this result, you simply retrieve this result
-from the array where you stored all the possible results. So we retrieve the result we need
+Instead of calculating the results everytime you need them, you calculate all possible results at once, and then, you store them in an array
+(which behaves lake a "table"). Then, every time that you need to use one of the characters in the base64 scale, instead of
+using many resources to calculate the exact character to be used, you simply retrieve this character
+from the array where you stored all the possible characters in the base64 scale. So we retrieve the character that we need
 directly from memory.
 
 We can start building a Zig struct to store our base64 decoder/encoder logic.
 We start with the `Base64` struct below. You can see that, for now, we only have an `init()` function,
-to create a new instance of a `Base64` object, and, a `char_at()` function, which is a
+to create a new instance of a `Base64` object, and, a `_char_at()` function, which is a
 "get chat at index ..." type of function.
 
 
 ```{zig}
 #| eval: false
 const Base64 = struct {
-    table: *const [64]u8,
+    _table: *const [64]u8,
 
     pub fn init() Base64 {
         const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const lower = "abcdefghijklmnopqrstuvwxyz";
-        const numbers = "0123456789+/";
+        const numbers_symb = "0123456789+/";
         return Base64{
-            .table = upper ++ lower ++ numbers,
+            ._table = upper ++ lower ++ numbers_symb,
         };
     }
 
-    pub fn char_at(self: Base64, index: u8) u8 {
-        return self.table[index];
+    pub fn _char_at(self: Base64, index: u8) u8 {
+        return self._table[index];
     }
 };
 ```
 
 
-In other words, the `char_at()` function is responsible for getting the character in the lookup table (i.e. the `table`) that
+In other words, the `_char_at()` function is responsible for getting the character in the lookup table (i.e. the `_table` variable) that
 corresponds to a particular index in the "base64 scale". So, in the example below, we know that
-the character that corresponds to the index 27 in the "base64 scale" is the character "c".
+the character that corresponds to the index 28 in the "base64 scale" is the character "c".
 
 
 ```{zig}
 #| eval: false
-const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-
-pub fn main() !void {
-    const base64 = Base64.init();
-    try stdout.print(
-        "Character at 28 index: {c}\n",
-        .{base64.char_at(28)}
-    );
-}
+const base64 = Base64.init();
+try stdout.print(
+    "Character at 28 index: {c}\n",
+    .{base64._char_at(28)}
+);
 ```
 
 ```
 Character at 28 index: c
 ```
 
+
+
+### A base64 encoder {#sec-base64-encoder-algo}
+
+The algorithm behind a base64 encoder usually works on a window of 3 bytes. Because each byte have
+8 bits, so, 3 bytes forms a set of $8 \times 3 = 24$ bits. This is desirable for the base64 algorithm, because
+24 bits is divisble by 6, which form a set of 4 groups of 6 bits each.
+
+So the base64 algorithm work by converting 3 bytes at a time
+into 4 characters in the base64 scale. It keeps iterating through the input string,
+3 bytes at a time, and converting them into the base64 scale, producing 4 characters
+per iteration. It keeps iterating, and producing these "new characters"
+until it hits the end of the input string.
+
+Now you may think, what if you have a particular string that have a number of bytes
+that is not divisible by 3? What happens? For example, if you have a string
+that contains only two characters/bytes, such as "Hi". How the
+algorithm behaves in such situation? You find the answer at @fig-base64-algo1.
+You can see at @fig-base64-algo1 that the string "Hi", when converted to base64,
+becomes the string "SGk=":
+
+![The logic behind a base64 encoder](./../Figures/base64-encoder-flow.png){#fig-base64-algo1}
+
+In the example of the string "Hi" we have 2 bytes, or, 16 bits in total. So, we lack a full byte (8 bits)
+to complete the window of 24 bits that the base64 algorithm likes to work on. In essence,
+everytime that the algorithm does not meet this requirement, it simply add extra zeros
+until it fills the space that it needs.
+
+That is why at @fig-base64-algo1, on the third group after the 6-bit transformation,
+2 extra zeros were added to fill the gap in this group, and also, the fourth group (which is the last 6-bit group)
+after the 6-bit transformation is entirely made by zeros that were added by the algorithm.
+
+So every time that the base64 algorithm can't produce a full group of 6 bits, it
+simply fills the gap in this group with zeros, until it get's the 6 bits that it needs.
+
+Is worth mentioning that, everytime that the algorithm produces a group of 6 bits that
+is entirely composed by zeros, this group of 6 bits is automatically mapped to
+the character `=` (equal sign). In other works, the group `000000` is translated into the
+character `=`. Because it represents the end of meaningful characters in the sequence.
+
+
+### A base64 decoder {#sec-base64-decoder-algo}
+
+The algorithm behind a base64 decoder is essentially the inverse process of a base64 encoder.
+A base64 decoder needs to be able to translate base64 messages back into their original meaning,
+i.e. into the original sequence of binary data.
+
+A base64 decoder usually works on a window of 4 bytes. Because it wants to convert these 4 bytes
+back into the original sequence of 3 bytes, that was converted into 4 groups of 6 bits by the
+base64 encoder. Remember, in a base64 decoder we are essentially reverting the process made
+by the base64 encoder.
+
+Each byte in the input string (the base64 encoded string) normally contributes to re-create two different bytes in the output (the original binary data).
+In other words, each byte that comes out of a base64 decoder is created by transforming merging two different
+bytes in the input together. You can see this fact at @fig-base64-algo2:
+
+![The logic behind a base64 decoder](./../Figures/base64-decoder-flow.png){#fig-base64-algo2}
+
+The exact transformations, or, the exact steps applied to each byte from the input to transform them
+into the bytes in the output, are a bit tricky to visualize in a figure like this. Because of that, I
+summarized these transformations as "Some bit shifting and additions ...". These transformations
+will be described in depth later.
+
+Besides that, if you look again at @fig-base64-algo2, you will notice that the character `=` was completly
+ignored in the algorithm. Remember, this is just a special character that marks the end of meaninful characters
+in the base64 sequence. So, every `=` character in a base64 encoded sequence should be ignored.
+
+
+## Difference between encode and decode {#sec-encode-vs-decode}
+
+If you don't have any previous experience with base64, you might be confused about
+what is the differente between "encode" and "decode". Essentially, the terms "encode" and "decode" here
+have the exact same meaning as they have in the field of encryption (i.e. they mean the same thing as "encode" and "decode" in hashing
+algorithms, like the MD5 algorithm).
+
+So, "encode" means that we want to encode, or, in other words, we want to translate some message into
+the base64 encoding system. We want to produce the sequence of base64 characters that represent this
+original message in the base64 encoding system.
+
+In contrast, "decode" represents the inverse process.
+We want to decode, or, in other words, translate a base64 message back to it's original content.
+So, in this process we get a sequence of base64 characters as input, and produce as output,
+the binary data that is represented by this sequence of base64 characters.
+
+So, any base64 library is normally composed by these two parts: 1) the encoder, which is a function that encodes
+(i.e. it converts) any sequence of binary data into a sequence of base64 characters; 2) the decoder, which is a function
+that converts a sequence of base64 characters back into the original sequence of binary data.
+
+
+
+## Calculating the size of the output
+
+One task that we need to do is to calculate how much space we need to reserve for the
+output of the encoder.
+
+```{zig}
+#| eval: false
+const Base64 = struct {
+    _table: *const [64]u8,
+}
+```
