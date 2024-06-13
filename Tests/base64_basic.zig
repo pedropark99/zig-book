@@ -87,7 +87,6 @@ const Base64 = struct {
         var output_index: u64 = 0;
 
         for (output, 0..) |_, i| {
-            // Initialize all fields to zero;
             output[i] = 0;
         }
 
@@ -110,28 +109,28 @@ const Base64 = struct {
 
         return output;
     }
-
-    fn _calc_encode_length(input: []const u8) u64 {
-        const len_as_float: f64 = @floatFromInt(input.len);
-        if (input.len < 3) {
-            const n_output: u64 = 4;
-            return n_output;
-        }
-
-        const n_output: u64 = @intFromFloat(@ceil(len_as_float / 3.0) * 4.0);
-        return n_output;
-    }
-
-    fn _calc_decode_length(input: []const u8) u64 {
-        const len_as_float: f64 = @floatFromInt(input.len);
-        if (input.len < 4) {
-            const n_output: u64 = 3;
-            return n_output;
-        }
-        const n_output: u64 = @intFromFloat(@floor(len_as_float / 4.0) * 3.0);
-        return n_output;
-    }
 };
+
+fn _calc_encode_length(input: []const u8) u64 {
+    const len_as_float: f64 = @floatFromInt(input.len);
+    if (input.len < 3) {
+        const n_output: u64 = 4;
+        return n_output;
+    }
+
+    const n_output: u64 = @intFromFloat(@ceil(len_as_float / 3.0) * 4.0);
+    return n_output;
+}
+
+fn _calc_decode_length(input: []const u8) u64 {
+    const len_as_float: f64 = @floatFromInt(input.len);
+    if (input.len < 4) {
+        const n_output: u64 = 3;
+        return n_output;
+    }
+    const n_output: u64 = @intFromFloat(@floor(len_as_float / 4.0) * 3.0);
+    return n_output;
+}
 
 pub fn main() !void {
     var memory_buffer: [1000]u8 = undefined;

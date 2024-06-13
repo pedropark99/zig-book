@@ -206,7 +206,7 @@ window.Quarto = {
   <li><a href="#how-the-base64-algorithm-work" id="toc-how-the-base64-algorithm-work" class="nav-link active" data-scroll-target="#how-the-base64-algorithm-work"><span class="header-section-number">2.1</span> How the base64 algorithm work?</a>
   <ul class="collapse">
   <li><a href="#the-base64-scale" id="toc-the-base64-scale" class="nav-link" data-scroll-target="#the-base64-scale"><span class="header-section-number">2.1.1</span> The base64 scale</a></li>
-  <li><a href="#creating-the-scale-as-a-lookup-table" id="toc-creating-the-scale-as-a-lookup-table" class="nav-link" data-scroll-target="#creating-the-scale-as-a-lookup-table"><span class="header-section-number">2.1.2</span> Creating the scale as a lookup table</a></li>
+  <li><a href="#sec-base64-table" id="toc-sec-base64-table" class="nav-link" data-scroll-target="#sec-base64-table"><span class="header-section-number">2.1.2</span> Creating the scale as a lookup table</a></li>
   <li><a href="#sec-base64-encoder-algo" id="toc-sec-base64-encoder-algo" class="nav-link" data-scroll-target="#sec-base64-encoder-algo"><span class="header-section-number">2.1.3</span> A base64 encoder</a></li>
   <li><a href="#sec-base64-decoder-algo" id="toc-sec-base64-decoder-algo" class="nav-link" data-scroll-target="#sec-base64-decoder-algo"><span class="header-section-number">2.1.4</span> A base64 decoder</a></li>
   </ul></li>
@@ -259,8 +259,8 @@ window.Quarto = {
 </ul>
 <p>Everytime that the base64 algorithm needs to fill some gap (which always occur at the end of the input string) with a group of 6 bits filled with only zeros (<code>000000</code>), this group is automatically mapped to the character <code>=</code>. Because this group of 6 bits is meaningless, they represent nothing, they are just filling the gap. As a result, the base64 algorithm maps this meaningless group to the character <code>=</code>, which represents the end of meaningful characters in the sequence. This characteristic is explained in more details at <a href="#sec-base64-encoder-algo" class="quarto-xref"><span>Section 2.1.3</span></a>.</p>
 </section>
-<section id="creating-the-scale-as-a-lookup-table" class="level3" data-number="2.1.2">
-<h3 data-number="2.1.2" class="anchored" data-anchor-id="creating-the-scale-as-a-lookup-table"><span class="header-section-number">2.1.2</span> Creating the scale as a lookup table</h3>
+<section id="sec-base64-table" class="level3" data-number="2.1.2">
+<h3 data-number="2.1.2" class="anchored" data-anchor-id="sec-base64-table"><span class="header-section-number">2.1.2</span> Creating the scale as a lookup table</h3>
 <p>The best way to represent this scale in code, is to represent it as a <em>lookup table</em>. Lookup tables are a classic strategy in computer science to speed calculations. The basic idea is to replace a runtime calculation (which can take a long time to be done) by a basic array indexing operation.</p>
 <p>Instead of calculating the results everytime you need them, you calculate all possible results at once, and then, you store them in an array (which behaves lake a “table”). Then, every time that you need to use one of the characters in the base64 scale, instead of using many resources to calculate the exact character to be used, you simply retrieve this character from the array where you stored all the possible characters in the base64 scale. So we retrieve the character that we need directly from memory.</p>
 <p>We can start building a Zig struct to store our base64 decoder/encoder logic. We start with the <code>Base64</code> struct below. You can see that, for now, we only have an <code>init()</code> function, to create a new instance of a <code>Base64</code> object, and, a <code>_char_at()</code> function, which is a “get chat at index …” type of function.</p>
@@ -340,7 +340,35 @@ Figure&nbsp;2.2: The logic behind a base64 decoder
 </section>
 <section id="calculating-the-size-of-the-output" class="level2" data-number="2.3">
 <h2 data-number="2.3" class="anchored" data-anchor-id="calculating-the-size-of-the-output"><span class="header-section-number">2.3</span> Calculating the size of the output</h2>
-<p>One task that we need to do is to calculate how much space we need to reserve for the output of the encoder.</p>
+<p>One task that we need to do is to calculate how much space we need to reserve for the output, both of the encoder and decoder. This is simple math, and can be done easily in Zig because every array have it’s length (it’s number of bytes) easily accesible by consulting the <code>.len</code> property of the array.</p>
+<p>For the encoder, the logic is the following: for each 3 bytes that we find in the input, 4 new bytes are created in the output. So, we take the number of bytes in the input, divide it by 3, use a ceiling function, then, we multiply the result by 4. That way, we get the total number of bytes that will be produced by the encoder in it’s output.</p>
+<p>The <code>_calc_encode_length()</code> function below encapsulates this logic. Notice that we convert the <code>.len</code> property of the array, which is always a integer (more precisely, an <code>usize</code> value), into a floating point number of 64 bits (<code>f64</code>). We do this, because the ceiling function (<code>@ceil()</code>) works only with floating point numbers. So, we convert it so that the division with the number <code>3.0</code> results in a floating point number. Then, after the ceiling process, we can convert the result back into an integer value (with the <code>@intFromFloat()</code> function).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> _calc_encode_length(input: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">u64</span> <span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len &lt; <span class="dv">3</span>) <span class="op">{</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n_output: <span class="dt">u64</span> = <span class="dv">4</span>;</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> n_output;</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> len_as_float: <span class="dt">f64</span> = <span class="bu">@floatFromInt</span>(input.len);</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n_output: <span class="dt">u64</span> = <span class="bu">@intFromFloat</span>(<span class="bu">@ceil</span>(len_as_float / <span class="fl">3.0</span>) * <span class="fl">4.0</span>);</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> n_output;</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Is important to notice that, when I am using the built-in functions from Zig to convert data types (<code>@floatFromInt()</code> and <code>intFromFloat()</code>), I’m always annotating explicitly the type of the variable that stores the result of these functions. I do that, because these functions need this information. <code>@floatFromInt()</code> needs to know which type of floating point number I want to use in it’s output. Is it <code>f16</code>? <code>f32</code>? <code>f64</code>? etc. The same goes to <code>@intFromFloat()</code>.</p>
+<p>Also, you might have notice that, if the input length is less than 3 bytes, then, the output length of the encoder will be always 4 bytes. This is because the algorithm will always fill the gap in the input with zeroes, until it fits the window of 24 bits that the algorithm likes to work on, as I described at <a href="#sec-base64-encoder-algo" class="quarto-xref"><span>Section 2.1.3</span></a>. So the output of the algorithm will always be 4 bytes in this specific case.</p>
+<p>Now, for the decoder, we just need to apply the inverse logic: for each 4 bytes in the input, 3 bytes will be produced in the output of the decoder. I mean, this is roughly true, because we need to account for the <code>=</code> character, which is ignored by the decoder, as we described at <a href="#sec-base64-decoder-algo" class="quarto-xref"><span>Section 2.1.4</span></a>, and, at <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>2.2</span></a>.</p>
+<p>So, the function <code>_calc_decode_length()</code> summarizes this logic that we described. It is very similar to the function <code>_calc_encode_length()</code>, only the division part is twisted, and also, in the special case where we have less than 4 bytes in the input to work on.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> _calc_decode_length(input: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">u64</span> <span class="op">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len &lt; <span class="dv">4</span>) <span class="op">{</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n_output: <span class="dt">u64</span> = <span class="dv">3</span>;</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> n_output;</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> len_as_float: <span class="dt">f64</span> = <span class="bu">@floatFromInt</span>(input.len);</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n_output: <span class="dt">u64</span> = <span class="bu">@intFromFloat</span>(<span class="bu">@floor</span>(len_as_float / <span class="fl">4.0</span>) * <span class="fl">3.0</span>);</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> n_output;</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 
 
 </section>

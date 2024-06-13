@@ -82,7 +82,7 @@ This characteristic is explained in more details at @sec-base64-encoder-algo.
 
 
 
-### Creating the scale as a lookup table
+### Creating the scale as a lookup table {#sec-base64-table}
 
 The best way to represent this scale in code, is to represent it as a *lookup table*.
 Lookup tables are a classic strategy in computer science to speed calculations. The basic idea
@@ -233,11 +233,68 @@ that converts a sequence of base64 characters back into the original sequence of
 ## Calculating the size of the output
 
 One task that we need to do is to calculate how much space we need to reserve for the
-output of the encoder.
+output, both of the encoder and decoder. This is simple math, and can be done easily in Zig
+because every array have it's length (it's number of bytes) easily accesible by consulting
+the `.len` property of the array.
+
+For the encoder, the logic is the following: for each 3 bytes that we find in the input,
+4 new bytes are created in the output. So, we take the number of bytes in the input, divide it
+by 3, use a ceiling function, then, we multiply the result by 4. That way, we get the total
+number of bytes that will be produced by the encoder in it's output.
+
+The `_calc_encode_length()` function below encapsulates this logic. Notice that we convert
+the `.len` property of the array, which is always a integer (more precisely, an `usize` value),
+into a floating point number of 64 bits (`f64`). We do this, because the ceiling function (`@ceil()`) works
+only with floating point numbers. So, we convert it so that the division with the number `3.0` results in
+a floating point number. Then, after the ceiling process, we can convert the result back into an
+integer value (with the `@intFromFloat()` function).
 
 ```{zig}
 #| eval: false
-const Base64 = struct {
-    _table: *const [64]u8,
+fn _calc_encode_length(input: []const u8) u64 {
+    if (input.len < 3) {
+        const n_output: u64 = 4;
+        return n_output;
+    }
+    const len_as_float: f64 = @floatFromInt(input.len);
+    const n_output: u64 = @intFromFloat(@ceil(len_as_float / 3.0) * 4.0);
+    return n_output;
 }
 ```
+
+Is important to notice that, when I am using the built-in functions from Zig to convert data types (`@floatFromInt()` and `intFromFloat()`),
+I'm always annotating explicitly the type of the variable that stores the result of these functions.
+I do that, because these functions need this information. `@floatFromInt()` needs to know
+which type of floating point number I want to use in it's output. Is it `f16`? `f32`? `f64`? etc.
+The same goes to `@intFromFloat()`.
+
+Also, you might have notice that, if the input length is less than 3 bytes, then, the output length of the encoder will
+be always 4 bytes. This is because the algorithm will always fill the gap in the input with zeroes, until it fits
+the window of 24 bits that the algorithm likes to work on, as I described at @sec-base64-encoder-algo. So the output
+of the algorithm will always be 4 bytes in this specific case.
+
+
+Now, for the decoder, we just need to apply the inverse logic: for each 4 bytes in the input, 3 bytes
+will be produced in the output of the decoder. I mean, this is roughly true, because we need to account
+for the `=` character, which is ignored by the decoder, as we described at @sec-base64-decoder-algo, and,
+at @fig-base64-algo2.
+
+So, the function `_calc_decode_length()` summarizes this logic that we described. It is very similar
+to the function `_calc_encode_length()`, only the division part is twisted, and also, in the special
+case where we have less than 4 bytes in the input to work on.
+
+
+```{zig}
+#| eval: false
+fn _calc_decode_length(input: []const u8) u64 {
+    if (input.len < 4) {
+        const n_output: u64 = 3;
+        return n_output;
+    }
+    const len_as_float: f64 = @floatFromInt(input.len);
+    const n_output: u64 = @intFromFloat(@floor(len_as_float / 4.0) * 3.0);
+    return n_output;
+}
+```
+
+
