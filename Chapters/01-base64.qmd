@@ -298,3 +298,115 @@ fn _calc_decode_length(input: []const u8) u64 {
 ```
 
 
+## Building the encoder logic
+
+In this section, we can start building the logic behind the `encode()` function, which
+will be responsible for encoding messages into the base64 encoding system.
+
+### Quick & dirty approach for the two bytes case
+
+To get a better understanding of what we need to do, let's implement just the bare
+minimum necessary to convert the string "Hi" into the base64 encoding system.
+It doesn't need to be preety or good quality code. It just needs to work.
+
+Remember that the string "Hi" is not the perfect case for the base64 algorithm.
+Because it is two bytes long, and the algorithm likes to work on a sequence
+of 3 bytes. But we can still use this case as our starting point. After that, we go up on the ladder,
+until we reach the ideal scenario.
+
+#### The 6-bit transformation
+
+The core part of the algorithm is the 6-bit transformation that was presented at @fig-base64-algo1.
+By understanding how this transformation is made in code, the rest of the algorithm becomes much simpler
+to comprehend.
+
+In essence, this 6-bit transformation is made with the help of bitwise operators.
+Bitwise operators are essential to any type of low-level operation that is done at the bit-level. For the specific case of the base64 algorithm,
+the operators *bif shift to the left* (`<<`) and *bit shift to the right* (`>>`) are used. They
+are the core solution for the 6-bit transformation.
+
+> Quick recap: the first byte of the input string ("H") is, in binary, the sequence `01001000`, while the second byte ("i"), is  the sequence `01101001`. Just have these sequences in mind.
+
+Let's begin by building the first byte in the ouput. Because it is the easiest of all to build, since we only need to extract the first 6-bits
+from the first byte of the input (`01001000`). To collect these first 6-bits, we can use the *bit shift to the right* (`>>`) operator.
+We simply move the bits of the first byte two places to the right (`input[0] >> 2`).
+
+With this operation, we get the first byte of the ouput, which corresponds to the index in the base64 scale for the first character
+in the base64 scale.
+
+We begin by creating the variable `text`, which contains the string that we want
+to convert/encode ("Hi"). We also set a buffer variable called `output`, which will
+contain the output of the encoding process at the end. Since the string "Hi" is only
+two bytes long, as I described in the previous section, we need an array of 4 bytes
+to hold the output of the encoding process.
+
+
+```{zig}
+pub fn main() !void {
+    const input = "Hi";
+    var output = [4]u8{0,0,0,0};
+    output[0] = input[0] >> 2;
+}
+```
+
+
+
+
+### Encapsulating this logic into a function
+
+```{zig}
+#| eval: false
+fn encode(self: Base64,
+          input: []const u8,
+          allocator: std.mem.Allocator) ![]u8 {
+
+    if (input.len == 0)
+    return "";
+
+    const n_out = _calc_encode_length(input);
+    var out = try allocator.alloc(u8, n_out);
+    var buf = [3]u8{ 0, 0, 0 };
+    var count: u8 = 0;
+    var iout: u64 = 0;
+
+    for (input, 0..) |_, i| {
+        buf[count] = input[i];
+        count += 1;
+        if (count == 3) {
+            out[iout] = self._char_at(buf[0] >> 2);
+            out[iout + 1] = self._char_at(
+                ((buf[0] & 0x03) << 4) + (buf[1] >> 4)
+            );
+            out[iout + 2] = self._char_at(
+                ((buf[1] & 0x0f) << 2) + (buf[2] >> 6)
+            );
+            out[iout + 3] = self._char_at(buf[2] & 0x3f);
+            iout += 4;
+            count = 0;
+        }
+    }
+
+    if (count == 1) {
+        out[iout] = self._char_at(buf[0] >> 2);
+        out[iout + 1] = self._char_at(
+            (buf[0] & 0x03) << 4
+        );
+        out[iout + 2] = '=';
+        out[iout + 3] = '=';
+    }
+
+    if (count == 2) {
+        out[iout] = self._char_at(buf[0] >> 2);
+        out[iout + 1] = self._char_at(
+            ((buf[0] & 0x03) << 4) + (buf[1] >> 4)
+        );
+        out[iout + 2] = self._char_at(
+            (buf[1] & 0x0f) << 2
+        );
+        out[iout + 3] = '=';
+        iout += 4;
+    }
+
+    return out;
+}
+```

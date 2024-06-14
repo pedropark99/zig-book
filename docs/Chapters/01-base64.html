@@ -212,6 +212,11 @@ window.Quarto = {
   </ul></li>
   <li><a href="#sec-encode-vs-decode" id="toc-sec-encode-vs-decode" class="nav-link" data-scroll-target="#sec-encode-vs-decode"><span class="header-section-number">2.2</span> Difference between encode and decode</a></li>
   <li><a href="#calculating-the-size-of-the-output" id="toc-calculating-the-size-of-the-output" class="nav-link" data-scroll-target="#calculating-the-size-of-the-output"><span class="header-section-number">2.3</span> Calculating the size of the output</a></li>
+  <li><a href="#building-the-encoder-logic" id="toc-building-the-encoder-logic" class="nav-link" data-scroll-target="#building-the-encoder-logic"><span class="header-section-number">2.4</span> Building the encoder logic</a>
+  <ul class="collapse">
+  <li><a href="#quick-dirty-approach-for-the-two-bytes-case" id="toc-quick-dirty-approach-for-the-two-bytes-case" class="nav-link" data-scroll-target="#quick-dirty-approach-for-the-two-bytes-case"><span class="header-section-number">2.4.1</span> Quick &amp; dirty approach for the two bytes case</a></li>
+  <li><a href="#encapsulating-this-logic-into-a-function" id="toc-encapsulating-this-logic-into-a-function" class="nav-link" data-scroll-target="#encapsulating-this-logic-into-a-function"><span class="header-section-number">2.4.2</span> Encapsulating this logic into a function</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -356,7 +361,7 @@ Figure&nbsp;2.2: The logic behind a base64 decoder
 </div>
 <p>Is important to notice that, when I am using the built-in functions from Zig to convert data types (<code>@floatFromInt()</code> and <code>intFromFloat()</code>), I’m always annotating explicitly the type of the variable that stores the result of these functions. I do that, because these functions need this information. <code>@floatFromInt()</code> needs to know which type of floating point number I want to use in it’s output. Is it <code>f16</code>? <code>f32</code>? <code>f64</code>? etc. The same goes to <code>@intFromFloat()</code>.</p>
 <p>Also, you might have notice that, if the input length is less than 3 bytes, then, the output length of the encoder will be always 4 bytes. This is because the algorithm will always fill the gap in the input with zeroes, until it fits the window of 24 bits that the algorithm likes to work on, as I described at <a href="#sec-base64-encoder-algo" class="quarto-xref"><span>Section 2.1.3</span></a>. So the output of the algorithm will always be 4 bytes in this specific case.</p>
-<p>Now, for the decoder, we just need to apply the inverse logic: for each 4 bytes in the input, 3 bytes will be produced in the output of the decoder. I mean, this is roughly true, because we need to account for the <code>=</code> character, which is ignored by the decoder, as we described at <a href="#sec-base64-decoder-algo" class="quarto-xref"><span>Section 2.1.4</span></a>, and, at <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>2.2</span></a>.</p>
+<p>Now, for the decoder, we just need to apply the inverse logic: for each 4 bytes in the input, 3 bytes will be produced in the output of the decoder. I mean, this is roughly true, because we also need to take the <code>=</code> character into account, which is always ignored by the decoder, as we described at <a href="#sec-base64-decoder-algo" class="quarto-xref"><span>Section 2.1.4</span></a>, and, at <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>2.2</span></a>. But we can ignore this fact for now, to make things simpler.</p>
 <p>So, the function <code>_calc_decode_length()</code> summarizes this logic that we described. It is very similar to the function <code>_calc_encode_length()</code>, only the division part is twisted, and also, in the special case where we have less than 4 bytes in the input to work on.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> _calc_decode_length(input: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">u64</span> <span class="op">{</span></span>
@@ -369,8 +374,93 @@ Figure&nbsp;2.2: The logic behind a base64 decoder
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> n_output;</span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
+<section id="building-the-encoder-logic" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="building-the-encoder-logic"><span class="header-section-number">2.4</span> Building the encoder logic</h2>
+<p>In this section, we can start building the logic behind the <code>encode()</code> function, which will be responsible for encoding messages into the base64 encoding system.</p>
+<section id="quick-dirty-approach-for-the-two-bytes-case" class="level3" data-number="2.4.1">
+<h3 data-number="2.4.1" class="anchored" data-anchor-id="quick-dirty-approach-for-the-two-bytes-case"><span class="header-section-number">2.4.1</span> Quick &amp; dirty approach for the two bytes case</h3>
+<p>To get a better understanding of what we need to do, let’s implement just the bare minimum necessary to convert the string “Hi” into the base64 encoding system. It doesn’t need to be preety or good quality code. It just needs to work.</p>
+<p>Remember that the string “Hi” is not the perfect case for the base64 algorithm. Because it is two bytes long, and the algorithm likes to work on a sequence of 3 bytes. But we can still use this case as our starting point. After that, we go up on the ladder, until we reach the ideal scenario.</p>
+<section id="the-6-bit-transformation" class="level4" data-number="2.4.1.1">
+<h4 data-number="2.4.1.1" class="anchored" data-anchor-id="the-6-bit-transformation"><span class="header-section-number">2.4.1.1</span> The 6-bit transformation</h4>
+<p>The core part of the algorithm is the 6-bit transformation that was presented at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>2.1</span></a>. By understanding how this transformation is made in code, the rest of the algorithm becomes much simpler to comprehend.</p>
+<p>In essence, this 6-bit transformation is made with the help of bitwise operators. Bitwise operators are essential to any type of low-level operation that is done at the bit-level. For the specific case of the base64 algorithm, the operators <em>bif shift to left</em> (<code>&lt;&lt;</code>) and <em>bit shift to the right</em> (<code>&gt;&gt;</code>) are used. They are the core solution for the 6-bit transformation.</p>
+<blockquote class="blockquote">
+<p>Quick recap: the first byte of the input string (“H”) is, in binary, the sequence <code>01001000</code>, while the second byte (“i”), is the sequence <code>01101001</code>. Just have these sequences in mind.</p>
+</blockquote>
+<p>Let’s begin by building the first byte in the ouput. Because it is the easiest of all to build, since we only need to extract the first 6-bits from the first byte of the input (<code>01001000</code>). To that we can use bit shifting.</p>
+<p>We begin by creating the variable <code>text</code>, which contains the string that we want to convert/encode (“Hi”). We also set a buffer variable called <code>output</code>, which will contain the output of the encoding process at the end. Since the string “Hi” is only two bytes long, as I described in the previous section, we need an array of 4 bytes to hold the output of the encoding process.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> text = <span class="st">"Hi"</span>;</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    _ = text;</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> output = [<span class="dv">4</span>]<span class="dt">u8</span><span class="op">{</span><span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span><span class="op">}</span>;</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    _ = output;</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="encapsulating-this-logic-into-a-function" class="level3" data-number="2.4.2">
+<h3 data-number="2.4.2" class="anchored" data-anchor-id="encapsulating-this-logic-into-a-function"><span class="header-section-number">2.4.2</span> Encapsulating this logic into a function</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> encode(self: Base64,</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>          input: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>          allocator: std.mem.Allocator) ![]<span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len == <span class="dv">0</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="st">""</span>;</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n_out = _calc_encode_length(input);</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> out = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, n_out);</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buf = [<span class="dv">3</span>]<span class="dt">u8</span><span class="op">{</span> <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span> <span class="op">}</span>;</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> count: <span class="dt">u8</span> = <span class="dv">0</span>;</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> iout: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (input, <span class="dv">0</span>..) |_, i| <span class="op">{</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        buf[count] = input[i];</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        count += <span class="dv">1</span>;</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (count == <span class="dv">3</span>) <span class="op">{</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>            out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">1</span>] = self._char_at(</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>                ((buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span>) + (buf[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>)</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>            );</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">2</span>] = self._char_at(</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>                ((buf[<span class="dv">1</span>] &amp; <span class="bn">0x0f</span>) &lt;&lt; <span class="dv">2</span>) + (buf[<span class="dv">2</span>] &gt;&gt; <span class="dv">6</span>)</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>            );</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">3</span>] = self._char_at(buf[<span class="dv">2</span>] &amp; <span class="bn">0x3f</span>);</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>            iout += <span class="dv">4</span>;</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>            count = <span class="dv">0</span>;</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (count == <span class="dv">1</span>) <span class="op">{</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>        out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">1</span>] = self._char_at(</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>            (buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">2</span>] = <span class="ch">'='</span>;</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">3</span>] = <span class="ch">'='</span>;</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (count == <span class="dv">2</span>) <span class="op">{</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>        out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">1</span>] = self._char_at(</span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>            ((buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span>) + (buf[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>)</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">2</span>] = self._char_at(</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>            (buf[<span class="dv">1</span>] &amp; <span class="bn">0x0f</span>) &lt;&lt; <span class="dv">2</span></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">3</span>] = <span class="ch">'='</span>;</span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>        iout += <span class="dv">4</span>;</span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> out;</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
