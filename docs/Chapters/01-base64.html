@@ -211,10 +211,10 @@ window.Quarto = {
   <li><a href="#sec-base64-decoder-algo" id="toc-sec-base64-decoder-algo" class="nav-link" data-scroll-target="#sec-base64-decoder-algo"><span class="header-section-number">2.1.4</span> A base64 decoder</a></li>
   </ul></li>
   <li><a href="#sec-encode-vs-decode" id="toc-sec-encode-vs-decode" class="nav-link" data-scroll-target="#sec-encode-vs-decode"><span class="header-section-number">2.2</span> Difference between encode and decode</a></li>
-  <li><a href="#calculating-the-size-of-the-output" id="toc-calculating-the-size-of-the-output" class="nav-link" data-scroll-target="#calculating-the-size-of-the-output"><span class="header-section-number">2.3</span> Calculating the size of the output</a></li>
+  <li><a href="#sec-base64-length-out" id="toc-sec-base64-length-out" class="nav-link" data-scroll-target="#sec-base64-length-out"><span class="header-section-number">2.3</span> Calculating the size of the output</a></li>
   <li><a href="#building-the-encoder-logic" id="toc-building-the-encoder-logic" class="nav-link" data-scroll-target="#building-the-encoder-logic"><span class="header-section-number">2.4</span> Building the encoder logic</a>
   <ul class="collapse">
-  <li><a href="#quick-dirty-approach-for-the-two-bytes-case" id="toc-quick-dirty-approach-for-the-two-bytes-case" class="nav-link" data-scroll-target="#quick-dirty-approach-for-the-two-bytes-case"><span class="header-section-number">2.4.1</span> Quick &amp; dirty approach for the two bytes case</a></li>
+  <li><a href="#quick-dirty-approach" id="toc-quick-dirty-approach" class="nav-link" data-scroll-target="#quick-dirty-approach"><span class="header-section-number">2.4.1</span> Quick &amp; dirty approach</a></li>
   <li><a href="#encapsulating-this-logic-into-a-function" id="toc-encapsulating-this-logic-into-a-function" class="nav-link" data-scroll-target="#encapsulating-this-logic-into-a-function"><span class="header-section-number">2.4.2</span> Encapsulating this logic into a function</a></li>
   </ul></li>
   </ul>
@@ -343,8 +343,8 @@ Figure&nbsp;2.2: The logic behind a base64 decoder
 <p>In contrast, “decode” represents the inverse process. We want to decode, or, in other words, translate a base64 message back to it’s original content. So, in this process we get a sequence of base64 characters as input, and produce as output, the binary data that is represented by this sequence of base64 characters.</p>
 <p>So, any base64 library is normally composed by these two parts: 1) the encoder, which is a function that encodes (i.e.&nbsp;it converts) any sequence of binary data into a sequence of base64 characters; 2) the decoder, which is a function that converts a sequence of base64 characters back into the original sequence of binary data.</p>
 </section>
-<section id="calculating-the-size-of-the-output" class="level2" data-number="2.3">
-<h2 data-number="2.3" class="anchored" data-anchor-id="calculating-the-size-of-the-output"><span class="header-section-number">2.3</span> Calculating the size of the output</h2>
+<section id="sec-base64-length-out" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="sec-base64-length-out"><span class="header-section-number">2.3</span> Calculating the size of the output</h2>
 <p>One task that we need to do is to calculate how much space we need to reserve for the output, both of the encoder and decoder. This is simple math, and can be done easily in Zig because every array have it’s length (it’s number of bytes) easily accesible by consulting the <code>.len</code> property of the array.</p>
 <p>For the encoder, the logic is the following: for each 3 bytes that we find in the input, 4 new bytes are created in the output. So, we take the number of bytes in the input, divide it by 3, use a ceiling function, then, we multiply the result by 4. That way, we get the total number of bytes that will be produced by the encoder in it’s output.</p>
 <p>The <code>_calc_encode_length()</code> function below encapsulates this logic. Notice that we convert the <code>.len</code> property of the array, which is always a integer (more precisely, an <code>usize</code> value), into a floating point number of 64 bits (<code>f64</code>). We do this, because the ceiling function (<code>@ceil()</code>) works only with floating point numbers. So, we convert it so that the division with the number <code>3.0</code> results in a floating point number. Then, after the ceiling process, we can convert the result back into an integer value (with the <code>@intFromFloat()</code> function).</p>
@@ -378,26 +378,23 @@ Figure&nbsp;2.2: The logic behind a base64 decoder
 <section id="building-the-encoder-logic" class="level2" data-number="2.4">
 <h2 data-number="2.4" class="anchored" data-anchor-id="building-the-encoder-logic"><span class="header-section-number">2.4</span> Building the encoder logic</h2>
 <p>In this section, we can start building the logic behind the <code>encode()</code> function, which will be responsible for encoding messages into the base64 encoding system.</p>
-<section id="quick-dirty-approach-for-the-two-bytes-case" class="level3" data-number="2.4.1">
-<h3 data-number="2.4.1" class="anchored" data-anchor-id="quick-dirty-approach-for-the-two-bytes-case"><span class="header-section-number">2.4.1</span> Quick &amp; dirty approach for the two bytes case</h3>
-<p>To get a better understanding of what we need to do, let’s implement just the bare minimum necessary to convert the string “Hi” into the base64 encoding system. It doesn’t need to be preety or good quality code. It just needs to work.</p>
-<p>Remember that the string “Hi” is not the perfect case for the base64 algorithm. Because it is two bytes long, and the algorithm likes to work on a sequence of 3 bytes. But we can still use this case as our starting point. After that, we go up on the ladder, until we reach the ideal scenario.</p>
-<section id="the-6-bit-transformation" class="level4" data-number="2.4.1.1">
-<h4 data-number="2.4.1.1" class="anchored" data-anchor-id="the-6-bit-transformation"><span class="header-section-number">2.4.1.1</span> The 6-bit transformation</h4>
+<section id="quick-dirty-approach" class="level3" data-number="2.4.1">
+<h3 data-number="2.4.1" class="anchored" data-anchor-id="quick-dirty-approach"><span class="header-section-number">2.4.1</span> Quick &amp; dirty approach</h3>
+<p>To get a better understanding of what we need to do, let’s implement just the bare minimum of code to convert some input into the base64 encoding system. This will be a “quick and dirty” approach. It doesn’t need to be preety or good quality code. It just needs to work.</p>
+<p>We begin with the not ideal cases for the base64 algorithm (only 1 or 2 bytes to work with) as our starting point. Then, we go up on the ladder, until we reach the ideal case, i.e.&nbsp;the window of 3 bytes.</p>
+<section id="encoding-a-single-byte" class="level4" data-number="2.4.1.1">
+<h4 data-number="2.4.1.1" class="anchored" data-anchor-id="encoding-a-single-byte"><span class="header-section-number">2.4.1.1</span> Encoding a single byte</h4>
+<p>How to encode a single byte into base64? Let’s use as an example the letter “H” (which is, in binary, the sequence <code>01001000</code>). Remember that, even though the input have only a single byte, the output of the encoder will always be 4 bytes for cases such as this, where we have less than or equal to 3 bytes <a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> to work on.</p>
 <p>The core part of the algorithm is the 6-bit transformation that was presented at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>2.1</span></a>. By understanding how this transformation is made in code, the rest of the algorithm becomes much simpler to comprehend.</p>
-<p>In essence, this 6-bit transformation is made with the help of bitwise operators. Bitwise operators are essential to any type of low-level operation that is done at the bit-level. For the specific case of the base64 algorithm, the operators <em>bif shift to left</em> (<code>&lt;&lt;</code>) and <em>bit shift to the right</em> (<code>&gt;&gt;</code>) are used. They are the core solution for the 6-bit transformation.</p>
-<blockquote class="blockquote">
-<p>Quick recap: the first byte of the input string (“H”) is, in binary, the sequence <code>01001000</code>, while the second byte (“i”), is the sequence <code>01101001</code>. Just have these sequences in mind.</p>
-</blockquote>
-<p>Let’s begin by building the first byte in the ouput. Because it is the easiest of all to build, since we only need to extract the first 6-bits from the first byte of the input (<code>01001000</code>). To that we can use bit shifting.</p>
-<p>We begin by creating the variable <code>text</code>, which contains the string that we want to convert/encode (“Hi”). We also set a buffer variable called <code>output</code>, which will contain the output of the encoding process at the end. Since the string “Hi” is only two bytes long, as I described in the previous section, we need an array of 4 bytes to hold the output of the encoding process.</p>
+<p>In essence, this 6-bit transformation is made with the help of bitwise operators. Bitwise operators are essential to any type of low-level operation that is done at the bit-level. For the specific case of the base64 algorithm, the operators <em>bif shift to the left</em> (<code>&lt;&lt;</code>) and <em>bit shift to the right</em> (<code>&gt;&gt;</code>) are used. They are the core solution for the 6-bit transformation.</p>
+<p>Let’s begin by building the first byte in the ouput of the encoder. This is the easiest byte of the 4 bytes in the output to build, since we only need to extract the first 6-bits from the first and only byte of the input (<code>01001000</code>). To collect these first 6-bits, we can use the <em>bit shift to the right</em> (<code>&gt;&gt;</code>) operator. We simply move the bits of the first byte two places to the right (<code>input[0] &gt;&gt; 2</code>).</p>
+<p>With this operation, we get the first byte of the ouput, which corresponds to the index in the base64 scale for the first character in the base64 scale.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> text = <span class="st">"Hi"</span>;</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    _ = text;</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> output = [<span class="dv">4</span>]<span class="dt">u8</span><span class="op">{</span><span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span><span class="op">}</span>;</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    _ = output;</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> input = <span class="st">"Hi"</span>;</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> output = [<span class="dv">4</span>]<span class="dt">u8</span><span class="op">{</span><span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span><span class="op">}</span>;</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    output[<span class="dv">0</span>] = input[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>;</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>
@@ -461,6 +458,12 @@ Figure&nbsp;2.2: The logic behind a base64 decoder
 
 
 </section>
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p>As we described at <a href="#sec-base64-length-out" class="quarto-xref"><span>Section 2.3</span></a>, if length of input is less than or equal to 3 bytes, then, the length of output is 4 bytes<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
 </section>
 
 </main> <!-- /main -->

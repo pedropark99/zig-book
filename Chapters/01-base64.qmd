@@ -230,7 +230,7 @@ that converts a sequence of base64 characters back into the original sequence of
 
 
 
-## Calculating the size of the output
+## Calculating the size of the output {#sec-base64-length-out}
 
 One task that we need to do is to calculate how much space we need to reserve for the
 output, both of the encoder and decoder. This is simple math, and can be done easily in Zig
@@ -303,42 +303,47 @@ fn _calc_decode_length(input: []const u8) u64 {
 In this section, we can start building the logic behind the `encode()` function, which
 will be responsible for encoding messages into the base64 encoding system.
 
-### Quick & dirty approach for the two bytes case
+### Quick & dirty approach
 
-To get a better understanding of what we need to do, let's implement just the bare
-minimum necessary to convert the string "Hi" into the base64 encoding system.
+To get a better understanding of what we need to do, let's implement just the bare minimum of code
+to convert some input into the base64 encoding system. This will be a "quick and dirty" approach.
 It doesn't need to be preety or good quality code. It just needs to work.
 
-Remember that the string "Hi" is not the perfect case for the base64 algorithm.
-Because it is two bytes long, and the algorithm likes to work on a sequence
-of 3 bytes. But we can still use this case as our starting point. After that, we go up on the ladder,
-until we reach the ideal scenario.
 
-#### The 6-bit transformation
+<!--
+Just as a quick reminder, even though the input have only a single byte, the output
+of the encoder is always 4 bytes for cases such as this, where we have less than or equal to 3 bytes
+^[As we described at @sec-base64-length-out, if length of input is less than or equal to 3 bytes, then, the length of output is 4 bytes] to work on.
+-->
 
-The core part of the algorithm is the 6-bit transformation that was presented at @fig-base64-algo1.
+The core part of the base64 encoder algorithm is the 6-bit transformation that was presented at @fig-base64-algo1.
 By understanding how this transformation is made in code, the rest of the algorithm becomes much simpler
 to comprehend.
 
 In essence, this 6-bit transformation is made with the help of bitwise operators.
 Bitwise operators are essential to any type of low-level operation that is done at the bit-level. For the specific case of the base64 algorithm,
-the operators *bif shift to the left* (`<<`) and *bit shift to the right* (`>>`) are used. They
+the operators *bif shift to the left* (`<<`), *bit shift to the right* (`>>`), and the *bitwise and* (`&`) are used. They
 are the core solution for the 6-bit transformation.
 
-> Quick recap: the first byte of the input string ("H") is, in binary, the sequence `01001000`, while the second byte ("i"), is  the sequence `01101001`. Just have these sequences in mind.
+If you have the perfect window of 3 bytes to work on, how the 6-bit transformation
+is made in these bytes to produce the 4 bytes of output? The bulletpoints below
+summarizes the process. I use the variable `output` to refer to the bytes in the output,
+and the variable `input` to refer to the bytes in the input of the encoder.
 
-Let's begin by building the first byte in the ouput. Because it is the easiest of all to build, since we only need to extract the first 6-bits
-from the first byte of the input (`01001000`). To collect these first 6-bits, we can use the *bit shift to the right* (`>>`) operator.
+- the `output[0]` is produced by moving the bits in the first byte in the input two positions to the right.
+- the `output[1]` is produced by moving the bits in the byte `input[0]` four positions to the left.
+
+Let's begin by building the first byte in the ouput of the encoder. This is the easiest byte of the 4 bytes in the output
+to build, since we only need to extract the first 6-bits from the first and only byte of the input (`01001000`).
+To collect these first 6-bits, we can use the *bit shift to the right* (`>>`) operator.
 We simply move the bits of the first byte two places to the right (`input[0] >> 2`).
+
+By moving the bits two places to the right, we get the sequence `00010010` as output. As a result, the first 6 bits
+of the first byte in the input were moved to the end of the byte.
 
 With this operation, we get the first byte of the ouput, which corresponds to the index in the base64 scale for the first character
 in the base64 scale.
 
-We begin by creating the variable `text`, which contains the string that we want
-to convert/encode ("Hi"). We also set a buffer variable called `output`, which will
-contain the output of the encoding process at the end. Since the string "Hi" is only
-two bytes long, as I described in the previous section, we need an array of 4 bytes
-to hold the output of the encoding process.
 
 
 ```{zig}
