@@ -81,7 +81,7 @@ split_functions_from_var <- function(code) {
   if (length(group_name) != length(delim_lines)) {
     stop("Problem when generating auto main! Length of grouping names is different than the length of grouping indexes.")
   }
-  
+
   last_index <- length(lines)
   for (i in rev(seq_along(group_name))) {
     type <- group_name[i]
@@ -98,7 +98,7 @@ split_functions_from_var <- function(code) {
       results$vars <- str_c(lines_to_separate, collapse = "\n")
     }
   }
-  
+
   return(results)
 }
 
@@ -124,7 +124,7 @@ generate_main <- function(code_without_main) {
     code_without_main$structs,
     code_without_main$funs
   )
-  #cat(code_with_main, file = stderr())
+  # cat(code_with_main, file = stderr())
   return(code_with_main)
 }
 
@@ -139,12 +139,24 @@ remove_delim_lines <- function(code) {
 }
 
 
+get_auto_main <- function(options) {
+  if (length(options$auto_main) == 0L) {
+    return(FALSE)
+  }
+
+  return(options$auto_main)
+}
+
+
+
+
 knitr::knit_engines$set(zig = function(options) {
   code <- paste(options$code, collapse = "\n")
   if (!options$eval) {
     return(knitr::engine_output(options, code, NULL))
   }
-  if (options$auto_main) {
+  auto_main <- get_auto_main(options)
+  if (auto_main) {
     code_to_execute <- generate_main(code)
   } else {
     code_to_execute <- code
