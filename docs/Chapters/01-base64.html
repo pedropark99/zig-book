@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>An Introduction to Zig - 2&nbsp; Building a base64 encoder/decoder</title>
+<title>An Introduction to Zig - 3&nbsp; Building a base64 encoder/decoder</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -65,7 +65,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
 <link href="../references.html" rel="next">
-<link href="../Chapters/01-zig-weird.html" rel="prev">
+<link href="../Chapters/01-memory.html" rel="prev">
 <script src="../site_libs/quarto-html/quarto.js"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -144,7 +144,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/01-base64.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Building a base64 encoder/decoder</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/01-base64.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Building a base64 encoder/decoder</span></a></li></ol></nav>
         <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
@@ -183,8 +183,14 @@ window.Quarto = {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-memory.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Introduction</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../Chapters/01-base64.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Building a base64 encoder/decoder</span></span></a>
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Building a base64 encoder/decoder</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -203,19 +209,19 @@ window.Quarto = {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#how-the-base64-algorithm-work" id="toc-how-the-base64-algorithm-work" class="nav-link active" data-scroll-target="#how-the-base64-algorithm-work"><span class="header-section-number">2.1</span> How the base64 algorithm work?</a>
+  <li><a href="#how-the-base64-algorithm-work" id="toc-how-the-base64-algorithm-work" class="nav-link active" data-scroll-target="#how-the-base64-algorithm-work"><span class="header-section-number">3.1</span> How the base64 algorithm work?</a>
   <ul class="collapse">
-  <li><a href="#the-base64-scale" id="toc-the-base64-scale" class="nav-link" data-scroll-target="#the-base64-scale"><span class="header-section-number">2.1.1</span> The base64 scale</a></li>
-  <li><a href="#sec-base64-table" id="toc-sec-base64-table" class="nav-link" data-scroll-target="#sec-base64-table"><span class="header-section-number">2.1.2</span> Creating the scale as a lookup table</a></li>
-  <li><a href="#sec-base64-encoder-algo" id="toc-sec-base64-encoder-algo" class="nav-link" data-scroll-target="#sec-base64-encoder-algo"><span class="header-section-number">2.1.3</span> A base64 encoder</a></li>
-  <li><a href="#sec-base64-decoder-algo" id="toc-sec-base64-decoder-algo" class="nav-link" data-scroll-target="#sec-base64-decoder-algo"><span class="header-section-number">2.1.4</span> A base64 decoder</a></li>
+  <li><a href="#the-base64-scale" id="toc-the-base64-scale" class="nav-link" data-scroll-target="#the-base64-scale"><span class="header-section-number">3.1.1</span> The base64 scale</a></li>
+  <li><a href="#sec-base64-table" id="toc-sec-base64-table" class="nav-link" data-scroll-target="#sec-base64-table"><span class="header-section-number">3.1.2</span> Creating the scale as a lookup table</a></li>
+  <li><a href="#sec-base64-encoder-algo" id="toc-sec-base64-encoder-algo" class="nav-link" data-scroll-target="#sec-base64-encoder-algo"><span class="header-section-number">3.1.3</span> A base64 encoder</a></li>
+  <li><a href="#sec-base64-decoder-algo" id="toc-sec-base64-decoder-algo" class="nav-link" data-scroll-target="#sec-base64-decoder-algo"><span class="header-section-number">3.1.4</span> A base64 decoder</a></li>
   </ul></li>
-  <li><a href="#sec-encode-vs-decode" id="toc-sec-encode-vs-decode" class="nav-link" data-scroll-target="#sec-encode-vs-decode"><span class="header-section-number">2.2</span> Difference between encode and decode</a></li>
-  <li><a href="#sec-base64-length-out" id="toc-sec-base64-length-out" class="nav-link" data-scroll-target="#sec-base64-length-out"><span class="header-section-number">2.3</span> Calculating the size of the output</a></li>
-  <li><a href="#building-the-encoder-logic" id="toc-building-the-encoder-logic" class="nav-link" data-scroll-target="#building-the-encoder-logic"><span class="header-section-number">2.4</span> Building the encoder logic</a>
+  <li><a href="#sec-encode-vs-decode" id="toc-sec-encode-vs-decode" class="nav-link" data-scroll-target="#sec-encode-vs-decode"><span class="header-section-number">3.2</span> Difference between encode and decode</a></li>
+  <li><a href="#sec-base64-length-out" id="toc-sec-base64-length-out" class="nav-link" data-scroll-target="#sec-base64-length-out"><span class="header-section-number">3.3</span> Calculating the size of the output</a></li>
+  <li><a href="#building-the-encoder-logic" id="toc-building-the-encoder-logic" class="nav-link" data-scroll-target="#building-the-encoder-logic"><span class="header-section-number">3.4</span> Building the encoder logic</a>
   <ul class="collapse">
-  <li><a href="#quick-dirty-approach" id="toc-quick-dirty-approach" class="nav-link" data-scroll-target="#quick-dirty-approach"><span class="header-section-number">2.4.1</span> Quick &amp; dirty approach</a></li>
-  <li><a href="#encapsulating-this-logic-into-a-function" id="toc-encapsulating-this-logic-into-a-function" class="nav-link" data-scroll-target="#encapsulating-this-logic-into-a-function"><span class="header-section-number">2.4.2</span> Encapsulating this logic into a function</a></li>
+  <li><a href="#quick-dirty-approach" id="toc-quick-dirty-approach" class="nav-link" data-scroll-target="#quick-dirty-approach"><span class="header-section-number">3.4.1</span> Quick &amp; dirty approach</a></li>
+  <li><a href="#encapsulating-this-logic-into-a-function" id="toc-encapsulating-this-logic-into-a-function" class="nav-link" data-scroll-target="#encapsulating-this-logic-into-a-function"><span class="header-section-number">3.4.2</span> Encapsulating this logic into a function</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -225,7 +231,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Building a base64 encoder/decoder</span></h1>
+<h1 class="title"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Building a base64 encoder/decoder</span></h1>
 </div>
 
 
@@ -244,13 +250,13 @@ window.Quarto = {
 
 <p>As our first small project, I want to implement with you a base64 encoder/decoder in Zig. Base64 is an encoding system which translates binary data to text. A big chunk of the web uses base64 to deliver binary data to systems that can only read text data.</p>
 <p>The biggest example of a modern use case for base64 is essentially any email system, like GMail, Outlook, etc. Because email systems normally use the Simple Mail Transfer Protocol (SMTP), which is a web protocol that supports only text data. So, if you need, for any reason, to send a binary file (like for example, a PDF, or an Excel file) as an attachment in your email, these binary files are normally converted to base64, before they are included in the SMTP message. So, the base64 encoding is largelly used in these email systems to include binary data into the SMTP message.</p>
-<section id="how-the-base64-algorithm-work" class="level2" data-number="2.1">
-<h2 data-number="2.1" class="anchored" data-anchor-id="how-the-base64-algorithm-work"><span class="header-section-number">2.1</span> How the base64 algorithm work?</h2>
+<section id="how-the-base64-algorithm-work" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="how-the-base64-algorithm-work"><span class="header-section-number">3.1</span> How the base64 algorithm work?</h2>
 <p>Now, how exactly the algorithm behind the base64 encoding works? Let’s discuss that. First, I will explain the base64 scale, which is the scale of 64 characters that represents the base64 encoding system.</p>
 <p>After that, I explain the algorithm behind a base64 encoder, which is the part of the algorithm that is responsible for encoding messages into the base64 encoding system. Then, after that, I explain the algorithm behind a base64 decoder, which is the part of the algorithm that is responsible for translating base64 messages back into their original meaning.</p>
-<p>If you are unsure about the differences between an “encoder” and a “decoder”, take a look at <a href="#sec-encode-vs-decode" class="quarto-xref"><span>Section 2.2</span></a>.</p>
-<section id="the-base64-scale" class="level3" data-number="2.1.1">
-<h3 data-number="2.1.1" class="anchored" data-anchor-id="the-base64-scale"><span class="header-section-number">2.1.1</span> The base64 scale</h3>
+<p>If you are unsure about the differences between an “encoder” and a “decoder”, take a look at <a href="#sec-encode-vs-decode" class="quarto-xref"><span>Section 3.2</span></a>.</p>
+<section id="the-base64-scale" class="level3" data-number="3.1.1">
+<h3 data-number="3.1.1" class="anchored" data-anchor-id="the-base64-scale"><span class="header-section-number">3.1.1</span> The base64 scale</h3>
 <p>In essence, the base64 encoding system is based on a scale that goes from 0 to 64 (hence the name). Each index in this scale is represented by a character (it is a scale of 64 characters). So, in order to convert some binary data, to the base64 encoding, we need to convert each binary number to the corresponding character in this “scale of 64 characters”.</p>
 <p>The base64 scale starts with all ASCII uppercase letters (A to Z) which represents the first 25 indexes in this scale (0 to 25). After that, we have all ASCII lowercase letters (a to z), which represents the range 26 to 51 in the scale. After that, we have the one digit numbers (0 to 9), which represents the indexes from 52 to 61 in the scale. Finally, the last two indexes in the scale (62 and 63) are represented by the characters <code>+</code> and <code>/</code>, respectively.</p>
 <p>These are the 64 characters that compose the base64 scale. The equal sign character (<code>=</code>) is not part of the scale itself, but it is a special character in the base64 encoding system. This character is used solely as a suffix, to mark the end of the character sequence, or, to mark the end of meaningful characters in the sequence.</p>
@@ -262,10 +268,10 @@ window.Quarto = {
 <li>index 62 and 63 are represented by the characters <code>+</code> and <code>/</code>, respectively;</li>
 <li>the character <code>=</code> represents the end of meaningful characters in the sequence;</li>
 </ul>
-<p>Everytime that the base64 algorithm needs to fill some gap (which always occur at the end of the input string) with a group of 6 bits filled with only zeros (<code>000000</code>), this group is automatically mapped to the character <code>=</code>. Because this group of 6 bits is meaningless, they represent nothing, they are just filling the gap. As a result, the base64 algorithm maps this meaningless group to the character <code>=</code>, which represents the end of meaningful characters in the sequence. This characteristic is explained in more details at <a href="#sec-base64-encoder-algo" class="quarto-xref"><span>Section 2.1.3</span></a>.</p>
+<p>Everytime that the base64 algorithm needs to fill some gap (which always occur at the end of the input string) with a group of 6 bits filled with only zeros (<code>000000</code>), this group is automatically mapped to the character <code>=</code>. Because this group of 6 bits is meaningless, they represent nothing, they are just filling the gap. As a result, the base64 algorithm maps this meaningless group to the character <code>=</code>, which represents the end of meaningful characters in the sequence. This characteristic is explained in more details at <a href="#sec-base64-encoder-algo" class="quarto-xref"><span>Section 3.1.3</span></a>.</p>
 </section>
-<section id="sec-base64-table" class="level3" data-number="2.1.2">
-<h3 data-number="2.1.2" class="anchored" data-anchor-id="sec-base64-table"><span class="header-section-number">2.1.2</span> Creating the scale as a lookup table</h3>
+<section id="sec-base64-table" class="level3" data-number="3.1.2">
+<h3 data-number="3.1.2" class="anchored" data-anchor-id="sec-base64-table"><span class="header-section-number">3.1.2</span> Creating the scale as a lookup table</h3>
 <p>The best way to represent this scale in code, is to represent it as a <em>lookup table</em>. Lookup tables are a classic strategy in computer science to speed calculations. The basic idea is to replace a runtime calculation (which can take a long time to be done) by a basic array indexing operation.</p>
 <p>Instead of calculating the results everytime you need them, you calculate all possible results at once, and then, you store them in an array (which behaves lake a “table”). Then, every time that you need to use one of the characters in the base64 scale, instead of using many resources to calculate the exact character to be used, you simply retrieve this character from the array where you stored all the possible characters in the base64 scale. So we retrieve the character that we need directly from memory.</p>
 <p>We can start building a Zig struct to store our base64 decoder/encoder logic. We start with the <code>Base64</code> struct below. You can see that, for now, we only have an <code>init()</code> function, to create a new instance of a <code>Base64</code> object, and, a <code>_char_at()</code> function, which is a “get chat at index …” type of function.</p>
@@ -297,54 +303,54 @@ window.Quarto = {
 </div>
 <pre><code>Character at 28 index: c</code></pre>
 </section>
-<section id="sec-base64-encoder-algo" class="level3" data-number="2.1.3">
-<h3 data-number="2.1.3" class="anchored" data-anchor-id="sec-base64-encoder-algo"><span class="header-section-number">2.1.3</span> A base64 encoder</h3>
+<section id="sec-base64-encoder-algo" class="level3" data-number="3.1.3">
+<h3 data-number="3.1.3" class="anchored" data-anchor-id="sec-base64-encoder-algo"><span class="header-section-number">3.1.3</span> A base64 encoder</h3>
 <p>The algorithm behind a base64 encoder usually works on a window of 3 bytes. Because each byte have 8 bits, so, 3 bytes forms a set of <span class="math inline">\(8 \times 3 = 24\)</span> bits. This is desirable for the base64 algorithm, because 24 bits is divisble by 6, which form a set of 4 groups of 6 bits each.</p>
 <p>So the base64 algorithm work by converting 3 bytes at a time into 4 characters in the base64 scale. It keeps iterating through the input string, 3 bytes at a time, and converting them into the base64 scale, producing 4 characters per iteration. It keeps iterating, and producing these “new characters” until it hits the end of the input string.</p>
-<p>Now you may think, what if you have a particular string that have a number of bytes that is not divisible by 3? What happens? For example, if you have a string that contains only two characters/bytes, such as “Hi”. How the algorithm behaves in such situation? You find the answer at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>2.1</span></a>. You can see at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>2.1</span></a> that the string “Hi”, when converted to base64, becomes the string “SGk=”:</p>
+<p>Now you may think, what if you have a particular string that have a number of bytes that is not divisible by 3? What happens? For example, if you have a string that contains only two characters/bytes, such as “Hi”. How the algorithm behaves in such situation? You find the answer at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a>. You can see at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a> that the string “Hi”, when converted to base64, becomes the string “SGk=”:</p>
 <div id="fig-base64-algo1" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-base64-algo1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="./../Figures/base64-encoder-flow.png" class="img-fluid figure-img">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-base64-algo1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure&nbsp;2.1: The logic behind a base64 encoder
+Figure&nbsp;3.1: The logic behind a base64 encoder
 </figcaption>
 </figure>
 </div>
 <p>In the example of the string “Hi” we have 2 bytes, or, 16 bits in total. So, we lack a full byte (8 bits) to complete the window of 24 bits that the base64 algorithm likes to work on. In essence, everytime that the algorithm does not meet this requirement, it simply add extra zeros until it fills the space that it needs.</p>
-<p>That is why at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>2.1</span></a>, on the third group after the 6-bit transformation, 2 extra zeros were added to fill the gap in this group, and also, the fourth group (which is the last 6-bit group) after the 6-bit transformation is entirely made by zeros that were added by the algorithm.</p>
+<p>That is why at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a>, on the third group after the 6-bit transformation, 2 extra zeros were added to fill the gap in this group, and also, the fourth group (which is the last 6-bit group) after the 6-bit transformation is entirely made by zeros that were added by the algorithm.</p>
 <p>So every time that the base64 algorithm can’t produce a full group of 6 bits, it simply fills the gap in this group with zeros, until it get’s the 6 bits that it needs.</p>
 <p>Is worth mentioning that, everytime that the algorithm produces a group of 6 bits that is entirely composed by zeros, this group of 6 bits is automatically mapped to the character <code>=</code> (equal sign). In other works, the group <code>000000</code> is translated into the character <code>=</code>. Because it represents the end of meaningful characters in the sequence.</p>
 </section>
-<section id="sec-base64-decoder-algo" class="level3" data-number="2.1.4">
-<h3 data-number="2.1.4" class="anchored" data-anchor-id="sec-base64-decoder-algo"><span class="header-section-number">2.1.4</span> A base64 decoder</h3>
+<section id="sec-base64-decoder-algo" class="level3" data-number="3.1.4">
+<h3 data-number="3.1.4" class="anchored" data-anchor-id="sec-base64-decoder-algo"><span class="header-section-number">3.1.4</span> A base64 decoder</h3>
 <p>The algorithm behind a base64 decoder is essentially the inverse process of a base64 encoder. A base64 decoder needs to be able to translate base64 messages back into their original meaning, i.e.&nbsp;into the original sequence of binary data.</p>
 <p>A base64 decoder usually works on a window of 4 bytes. Because it wants to convert these 4 bytes back into the original sequence of 3 bytes, that was converted into 4 groups of 6 bits by the base64 encoder. Remember, in a base64 decoder we are essentially reverting the process made by the base64 encoder.</p>
-<p>Each byte in the input string (the base64 encoded string) normally contributes to re-create two different bytes in the output (the original binary data). In other words, each byte that comes out of a base64 decoder is created by transforming merging two different bytes in the input together. You can see this fact at <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>2.2</span></a>:</p>
+<p>Each byte in the input string (the base64 encoded string) normally contributes to re-create two different bytes in the output (the original binary data). In other words, each byte that comes out of a base64 decoder is created by transforming merging two different bytes in the input together. You can see this fact at <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>3.2</span></a>:</p>
 <div id="fig-base64-algo2" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-base64-algo2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="./../Figures/base64-decoder-flow.png" class="img-fluid figure-img">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-base64-algo2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure&nbsp;2.2: The logic behind a base64 decoder
+Figure&nbsp;3.2: The logic behind a base64 decoder
 </figcaption>
 </figure>
 </div>
 <p>The exact transformations, or, the exact steps applied to each byte from the input to transform them into the bytes in the output, are a bit tricky to visualize in a figure like this. Because of that, I summarized these transformations as “Some bit shifting and additions …”. These transformations will be described in depth later.</p>
-<p>Besides that, if you look again at <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>2.2</span></a>, you will notice that the character <code>=</code> was completly ignored in the algorithm. Remember, this is just a special character that marks the end of meaninful characters in the base64 sequence. So, every <code>=</code> character in a base64 encoded sequence should be ignored.</p>
+<p>Besides that, if you look again at <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>3.2</span></a>, you will notice that the character <code>=</code> was completly ignored in the algorithm. Remember, this is just a special character that marks the end of meaninful characters in the base64 sequence. So, every <code>=</code> character in a base64 encoded sequence should be ignored.</p>
 </section>
 </section>
-<section id="sec-encode-vs-decode" class="level2" data-number="2.2">
-<h2 data-number="2.2" class="anchored" data-anchor-id="sec-encode-vs-decode"><span class="header-section-number">2.2</span> Difference between encode and decode</h2>
+<section id="sec-encode-vs-decode" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="sec-encode-vs-decode"><span class="header-section-number">3.2</span> Difference between encode and decode</h2>
 <p>If you don’t have any previous experience with base64, you might be confused about what is the differente between “encode” and “decode”. Essentially, the terms “encode” and “decode” here have the exact same meaning as they have in the field of encryption (i.e.&nbsp;they mean the same thing as “encode” and “decode” in hashing algorithms, like the MD5 algorithm).</p>
 <p>So, “encode” means that we want to encode, or, in other words, we want to translate some message into the base64 encoding system. We want to produce the sequence of base64 characters that represent this original message in the base64 encoding system.</p>
 <p>In contrast, “decode” represents the inverse process. We want to decode, or, in other words, translate a base64 message back to it’s original content. So, in this process we get a sequence of base64 characters as input, and produce as output, the binary data that is represented by this sequence of base64 characters.</p>
 <p>So, any base64 library is normally composed by these two parts: 1) the encoder, which is a function that encodes (i.e.&nbsp;it converts) any sequence of binary data into a sequence of base64 characters; 2) the decoder, which is a function that converts a sequence of base64 characters back into the original sequence of binary data.</p>
 </section>
-<section id="sec-base64-length-out" class="level2" data-number="2.3">
-<h2 data-number="2.3" class="anchored" data-anchor-id="sec-base64-length-out"><span class="header-section-number">2.3</span> Calculating the size of the output</h2>
+<section id="sec-base64-length-out" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="sec-base64-length-out"><span class="header-section-number">3.3</span> Calculating the size of the output</h2>
 <p>One task that we need to do is to calculate how much space we need to reserve for the output, both of the encoder and decoder. This is simple math, and can be done easily in Zig because every array have it’s length (it’s number of bytes) easily accesible by consulting the <code>.len</code> property of the array.</p>
 <p>For the encoder, the logic is the following: for each 3 bytes that we find in the input, 4 new bytes are created in the output. So, we take the number of bytes in the input, divide it by 3, use a ceiling function, then, we multiply the result by 4. That way, we get the total number of bytes that will be produced by the encoder in it’s output.</p>
 <p>The <code>_calc_encode_length()</code> function below encapsulates this logic. Notice that we convert the <code>.len</code> property of the array, which is always a integer (more precisely, an <code>usize</code> value), into a floating point number of 64 bits (<code>f64</code>). We do this, because the ceiling function (<code>@ceil()</code>) works only with floating point numbers. So, we convert it so that the division with the number <code>3.0</code> results in a floating point number. Then, after the ceiling process, we can convert the result back into an integer value (with the <code>@intFromFloat()</code> function).</p>
@@ -360,8 +366,8 @@ Figure&nbsp;2.2: The logic behind a base64 decoder
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Is important to notice that, when I am using the built-in functions from Zig to convert data types (<code>@floatFromInt()</code> and <code>intFromFloat()</code>), I’m always annotating explicitly the type of the variable that stores the result of these functions. I do that, because these functions need this information. <code>@floatFromInt()</code> needs to know which type of floating point number I want to use in it’s output. Is it <code>f16</code>? <code>f32</code>? <code>f64</code>? etc. The same goes to <code>@intFromFloat()</code>.</p>
-<p>Also, you might have notice that, if the input length is less than 3 bytes, then, the output length of the encoder will be always 4 bytes. This is because the algorithm will always fill the gap in the input with zeroes, until it fits the window of 24 bits that the algorithm likes to work on, as I described at <a href="#sec-base64-encoder-algo" class="quarto-xref"><span>Section 2.1.3</span></a>. So the output of the algorithm will always be 4 bytes in this specific case.</p>
-<p>Now, for the decoder, we just need to apply the inverse logic: for each 4 bytes in the input, 3 bytes will be produced in the output of the decoder. I mean, this is roughly true, because we also need to take the <code>=</code> character into account, which is always ignored by the decoder, as we described at <a href="#sec-base64-decoder-algo" class="quarto-xref"><span>Section 2.1.4</span></a>, and, at <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>2.2</span></a>. But we can ignore this fact for now, to make things simpler.</p>
+<p>Also, you might have notice that, if the input length is less than 3 bytes, then, the output length of the encoder will be always 4 bytes. This is because the algorithm will always fill the gap in the input with zeroes, until it fits the window of 24 bits that the algorithm likes to work on, as I described at <a href="#sec-base64-encoder-algo" class="quarto-xref"><span>Section 3.1.3</span></a>. So the output of the algorithm will always be 4 bytes in this specific case.</p>
+<p>Now, for the decoder, we just need to apply the inverse logic: for each 4 bytes in the input, 3 bytes will be produced in the output of the decoder. I mean, this is roughly true, because we also need to take the <code>=</code> character into account, which is always ignored by the decoder, as we described at <a href="#sec-base64-decoder-algo" class="quarto-xref"><span>Section 3.1.4</span></a>, and, at <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>3.2</span></a>. But we can ignore this fact for now, to make things simpler.</p>
 <p>So, the function <code>_calc_decode_length()</code> summarizes this logic that we described. It is very similar to the function <code>_calc_encode_length()</code>, only the division part is twisted, and also, in the special case where we have less than 4 bytes in the input to work on.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> _calc_decode_length(input: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">u64</span> <span class="op">{</span></span>
@@ -375,19 +381,26 @@ Figure&nbsp;2.2: The logic behind a base64 decoder
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="building-the-encoder-logic" class="level2" data-number="2.4">
-<h2 data-number="2.4" class="anchored" data-anchor-id="building-the-encoder-logic"><span class="header-section-number">2.4</span> Building the encoder logic</h2>
+<section id="building-the-encoder-logic" class="level2" data-number="3.4">
+<h2 data-number="3.4" class="anchored" data-anchor-id="building-the-encoder-logic"><span class="header-section-number">3.4</span> Building the encoder logic</h2>
 <p>In this section, we can start building the logic behind the <code>encode()</code> function, which will be responsible for encoding messages into the base64 encoding system.</p>
-<section id="quick-dirty-approach" class="level3" data-number="2.4.1">
-<h3 data-number="2.4.1" class="anchored" data-anchor-id="quick-dirty-approach"><span class="header-section-number">2.4.1</span> Quick &amp; dirty approach</h3>
+<section id="quick-dirty-approach" class="level3" data-number="3.4.1">
+<h3 data-number="3.4.1" class="anchored" data-anchor-id="quick-dirty-approach"><span class="header-section-number">3.4.1</span> Quick &amp; dirty approach</h3>
 <p>To get a better understanding of what we need to do, let’s implement just the bare minimum of code to convert some input into the base64 encoding system. This will be a “quick and dirty” approach. It doesn’t need to be preety or good quality code. It just needs to work.</p>
-<p>We begin with the not ideal cases for the base64 algorithm (only 1 or 2 bytes to work with) as our starting point. Then, we go up on the ladder, until we reach the ideal case, i.e.&nbsp;the window of 3 bytes.</p>
-<section id="encoding-a-single-byte" class="level4" data-number="2.4.1.1">
-<h4 data-number="2.4.1.1" class="anchored" data-anchor-id="encoding-a-single-byte"><span class="header-section-number">2.4.1.1</span> Encoding a single byte</h4>
-<p>How to encode a single byte into base64? Let’s use as an example the letter “H” (which is, in binary, the sequence <code>01001000</code>). Remember that, even though the input have only a single byte, the output of the encoder will always be 4 bytes for cases such as this, where we have less than or equal to 3 bytes <a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> to work on.</p>
-<p>The core part of the algorithm is the 6-bit transformation that was presented at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>2.1</span></a>. By understanding how this transformation is made in code, the rest of the algorithm becomes much simpler to comprehend.</p>
-<p>In essence, this 6-bit transformation is made with the help of bitwise operators. Bitwise operators are essential to any type of low-level operation that is done at the bit-level. For the specific case of the base64 algorithm, the operators <em>bif shift to the left</em> (<code>&lt;&lt;</code>) and <em>bit shift to the right</em> (<code>&gt;&gt;</code>) are used. They are the core solution for the 6-bit transformation.</p>
+<!--
+Just as a quick reminder, even though the input have only a single byte, the output
+of the encoder is always 4 bytes for cases such as this, where we have less than or equal to 3 bytes
+^[As we described at @sec-base64-length-out, if length of input is less than or equal to 3 bytes, then, the length of output is 4 bytes] to work on.
+-->
+<p>The core part of the base64 encoder algorithm is the 6-bit transformation that was presented at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a>. By understanding how this transformation is made in code, the rest of the algorithm becomes much simpler to comprehend.</p>
+<p>In essence, this 6-bit transformation is made with the help of bitwise operators. Bitwise operators are essential to any type of low-level operation that is done at the bit-level. For the specific case of the base64 algorithm, the operators <em>bif shift to the left</em> (<code>&lt;&lt;</code>), <em>bit shift to the right</em> (<code>&gt;&gt;</code>), and the <em>bitwise and</em> (<code>&amp;</code>) are used. They are the core solution for the 6-bit transformation.</p>
+<p>If you have the perfect window of 3 bytes to work on, how the 6-bit transformation is made in these bytes to produce the 4 bytes of output? The bulletpoints below summarizes the process. I use the variable <code>output</code> to refer to the bytes in the output, and the variable <code>input</code> to refer to the bytes in the input of the encoder.</p>
+<ul>
+<li>the <code>output[0]</code> is produced by moving the bits in the first byte in the input two positions to the right.</li>
+<li>the <code>output[1]</code> is produced by moving the bits in the byte <code>input[0]</code> four positions to the left.</li>
+</ul>
 <p>Let’s begin by building the first byte in the ouput of the encoder. This is the easiest byte of the 4 bytes in the output to build, since we only need to extract the first 6-bits from the first and only byte of the input (<code>01001000</code>). To collect these first 6-bits, we can use the <em>bit shift to the right</em> (<code>&gt;&gt;</code>) operator. We simply move the bits of the first byte two places to the right (<code>input[0] &gt;&gt; 2</code>).</p>
+<p>By moving the bits two places to the right, we get the sequence <code>00010010</code> as output. As a result, the first 6 bits of the first byte in the input were moved to the end of the byte.</p>
 <p>With this operation, we get the first byte of the ouput, which corresponds to the index in the base64 scale for the first character in the base64 scale.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
@@ -397,9 +410,8 @@ Figure&nbsp;2.2: The logic behind a base64 decoder
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-</section>
-<section id="encapsulating-this-logic-into-a-function" class="level3" data-number="2.4.2">
-<h3 data-number="2.4.2" class="anchored" data-anchor-id="encapsulating-this-logic-into-a-function"><span class="header-section-number">2.4.2</span> Encapsulating this logic into a function</h3>
+<section id="encapsulating-this-logic-into-a-function" class="level3" data-number="3.4.2">
+<h3 data-number="3.4.2" class="anchored" data-anchor-id="encapsulating-this-logic-into-a-function"><span class="header-section-number">3.4.2</span> Encapsulating this logic into a function</h3>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> encode(self: Base64,</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>          input: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
@@ -458,12 +470,6 @@ Figure&nbsp;2.2: The logic behind a base64 decoder
 
 
 </section>
-</section>
-<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
-<hr>
-<ol>
-<li id="fn1"><p>As we described at <a href="#sec-base64-length-out" class="quarto-xref"><span>Section 2.3</span></a>, if length of input is less than or equal to 3 bytes, then, the length of output is 4 bytes<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-</ol>
 </section>
 
 </main> <!-- /main -->
@@ -856,8 +862,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../Chapters/01-zig-weird.html" class="pagination-link  aria-label=" &lt;span="" specific="" attributes&lt;="" span&gt;"="">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Zig specific attributes</span></span>
+      <a href="../Chapters/01-memory.html" class="pagination-link  aria-label=" &lt;span="">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Introduction</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">

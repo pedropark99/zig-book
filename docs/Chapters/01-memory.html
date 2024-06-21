@@ -6,10 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Pedro Duarte Faria">
-<meta name="dcterms.date" content="2024-06-21">
 
-<title>An Introduction to Zig</title>
+<title>An Introduction to Zig - 2&nbsp; Memory and Allocators in Zig</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -56,26 +54,47 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<link href="./Chapters/01-zig-weird.html" rel="next">
-<script src="site_libs/quarto-html/quarto.js"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../Chapters/01-base64.html" rel="next">
+<link href="../Chapters/01-zig-weird.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -116,7 +135,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Preface</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/01-memory.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Memory and Allocators in Zig</span></a></li></ol></nav>
         <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
@@ -131,7 +150,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
     <div class="pt-lg-2 mt-2 text-left sidebar-header">
     <div class="sidebar-title mb-0 py-0">
-      <a href="./">An Introduction to Zig</a> 
+      <a href="../">An Introduction to Zig</a> 
     </div>
       </div>
         <div class="mt-2 flex-shrink-0 align-items-center">
@@ -143,31 +162,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link active">
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Preface</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/01-zig-weird.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/01-zig-weird.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Zig specific attributes</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/01-memory.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Introduction</span></span></a>
+  <a href="../Chapters/01-memory.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Memory and Allocators in Zig</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/01-base64.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/01-base64.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Building a base64 encoder/decoder</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./references.html" class="sidebar-item-text sidebar-link">
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">References</span></a>
   </div>
 </li>
@@ -181,9 +200,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#preface" id="toc-preface" class="nav-link active" data-scroll-target="#preface">Preface</a>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction"><span class="header-section-number">2.1</span> Introduction</a></li>
+  <li><a href="#memory-spaces" id="toc-memory-spaces" class="nav-link" data-scroll-target="#memory-spaces"><span class="header-section-number">2.2</span> Memory spaces</a>
   <ul class="collapse">
-  <li><a href="#book-metadata" id="toc-book-metadata" class="nav-link" data-scroll-target="#book-metadata">Book metadata</a></li>
+  <li><a href="#compile-time-known-versus-runtime-known" id="toc-compile-time-known-versus-runtime-known" class="nav-link" data-scroll-target="#compile-time-known-versus-runtime-known"><span class="header-section-number">2.2.1</span> Compile-time known versus runtime known</a></li>
+  <li><a href="#global-data-register" id="toc-global-data-register" class="nav-link" data-scroll-target="#global-data-register"><span class="header-section-number">2.2.2</span> Global data register</a></li>
+  <li><a href="#stack-vs-heap" id="toc-stack-vs-heap" class="nav-link" data-scroll-target="#stack-vs-heap"><span class="header-section-number">2.2.3</span> Stack vs Heap</a></li>
+  <li><a href="#stack" id="toc-stack" class="nav-link" data-scroll-target="#stack"><span class="header-section-number">2.2.4</span> Stack</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -193,26 +216,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">An Introduction to Zig</h1>
+<h1 class="title"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Memory and Allocators in Zig</span></h1>
 </div>
 
 
 
 <div class="quarto-title-meta">
 
-    <div>
-    <div class="quarto-title-meta-heading">Author</div>
-    <div class="quarto-title-meta-contents">
-             <p>Pedro Duarte Faria </p>
-          </div>
-  </div>
     
-    <div>
-    <div class="quarto-title-meta-heading">Published</div>
-    <div class="quarto-title-meta-contents">
-      <p class="date">June 21, 2024</p>
-    </div>
-  </div>
   
     
   </div>
@@ -222,31 +233,94 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="preface" class="level1 unnumbered">
-<h1 class="unnumbered">Preface</h1>
-<p>Intro to zig:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Hello, {s}!</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="st">"world"</span><span class="op">}</span>);</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Hello, world!</code></pre>
-</div>
-</div>
-<section id="book-metadata" class="level2">
-<h2 class="anchored" data-anchor-id="book-metadata">Book metadata</h2>
-<p>This book was compiled using the following versions of <a href="https://ziglang.org">Zig</a> and <a href="https://quarto.org">Quarto</a>:</p>
-<ul>
-<li><p>System version: Linux, 6.5.0-35-generic, 22.04.1-Ubuntu, x86_64.</p></li>
-<li><p>Zig version: 0.13.0-dev.266+0b0625ccf.</p></li>
-<li><p>Quarto version: 1.4.549.</p></li>
-</ul>
-
-
+<section id="introduction" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="introduction"><span class="header-section-number">2.1</span> Introduction</h2>
+<p>In this chapter, we will talk about memory. How does Zig controls memory? What commom tools are used? Are there any important aspect that makes memory different/special in Zig? You will find the answers here.</p>
+<p>Every computer needs memory. Is by having memory that computers can temporarily store the values/results of your calculations. Without memory, programming languages would never have concepts such as “variables”, or “objects”, to store the values that you generate.</p>
 </section>
+<section id="memory-spaces" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="memory-spaces"><span class="header-section-number">2.2</span> Memory spaces</h2>
+<p>Every variable that you create in your Zig source code needs to be stored somewhere, in your computer’s memory. Depending on where or how you define this variable, Zig will store the value of this variable in a different “memory space”, or a different type of memory.</p>
+<p>Each type of memory normally serves for different purposes, and they live in different “memory spaces”. In Zig, there are 3 types of memory (or 3 different memory spaces) that we care about. They are:</p>
+<ul>
+<li>Global data register (or the “global constant data”);</li>
+<li>Stack;</li>
+<li>Heap;</li>
+</ul>
+<section id="compile-time-known-versus-runtime-known" class="level3" data-number="2.2.1">
+<h3 data-number="2.2.1" class="anchored" data-anchor-id="compile-time-known-versus-runtime-known"><span class="header-section-number">2.2.1</span> Compile-time known versus runtime known</h3>
+<p>One way that Zig decides where exactly to store each variable that you declare, is by looking at the value of this particular variable. More specifically, by investigating if this value is known at “compile-time” or “runtime”.</p>
+<p>When you write a program in Zig, some values that you write in your program are <em>known at compile time</em>. Meaning that, when you compile your Zig source code, during the compilation process, the <code>zig</code> compiler can figure it out what is the exact value of a particular variable (or object) that exists in your source code.</p>
+<p>For example, in the source code below, we have two constant variables (<code>name</code> and <code>array</code>) declared. Because the values of these particular variables are written down, in the source code itself (<code>"Pedro"</code> and the number sequence from 1 to 4), the <code>zig</code> compiler can easily discover the values of these constant variables (<code>name</code> and <code>array</code>) during the compilation process.</p>
+<p>This is what “known at compile time” means. It refers to any variable that you have in your Zig source code whose value can be identified at compile time.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> name = <span class="st">"Pedro"</span>;</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> array = [_]<span class="dt">u8</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span><span class="op">}</span>;</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>_ = name; _ = array;</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> input_length(input: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">usize</span> <span class="op">{</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> input.len;</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The other side of the spectrum are variables whose values are not known at compile time. Function arguments are a classic example of this. Because the value of each function argument depends on the value that you assign to this particular argument, when you call the function.</p>
+<p>For example, the function <code>input_length()</code> contains an argument named <code>input</code>, which is an array of <code>u8</code> integers (<code>[]const u8</code>). Is impossible to know at compile time the value of this particular argument. We know that it will be an array of <code>u8</code> integers. But we can’t know which exact array of <code>u8</code> integers this argument will store, before we execute this function. It is only <em>known at runtime</em>, which is the period of time when you program is executed.</p>
+<p>So depending on which input your apply this <code>input_length()</code> function over, the <code>input</code> argument will probably have a different value in each case. Because of this intrinsic characteristic of any function, the value of the argument <code>input</code> is not “compile-time known”. It is known only at runtime.</p>
+</section>
+<section id="global-data-register" class="level3" data-number="2.2.2">
+<h3 data-number="2.2.2" class="anchored" data-anchor-id="global-data-register"><span class="header-section-number">2.2.2</span> Global data register</h3>
+<p>The global data register is a specific section of the executable of your Zig program, that is responsible for storing any value that is known at compile time.</p>
+<p>Every constant variable whose value is known at compile time that you declare in your source code, is stored in the global data register. Also, every literal value that you write in your source code, such as the string <code>"this is a string"</code>, or the integer <code>10</code>, or a boolean value such as <code>true</code>, is also stored in the global data register.</p>
+<p>Honestly, you don’t need to care much about this memory space. Because you can’t control it, you can’t deliberately access it or use it for your own purposes. Also, this memory space does not affect the logic of your program. It simply exists in your program.</p>
+</section>
+<section id="stack-vs-heap" class="level3" data-number="2.2.3">
+<h3 data-number="2.2.3" class="anchored" data-anchor-id="stack-vs-heap"><span class="header-section-number">2.2.3</span> Stack vs Heap</h3>
+<p>If you are familiar with system’s programming, or just low-level programming in general, you probably have heard of the “duel” between Stack vs Heap. These are two different types of memory, or different memory spaces, which are both available in Zig.</p>
+<p>These two types of memory don’t actually duel with each other. This is a commom mistake that beginners have, when seeing “x vs y” styles of tabloid headlines. These two types of memory are actually complementary to each other. So, in almost every Zig program that you might ever write, you will likely use a combination of both. I will describe each memory space in detail over the next sections. But for now, I just want to stablish the main difference between these two types of memory.</p>
+<p>In essence, the stack memory is normally used to store values whose length is fixed and known at compile time. In contrast, the heap memory is a much more <em>dinamic</em> type of memory space, meaning that, it is used to store values whose length might grow during the execution (runtime) of your program <span class="citation" data-cites="jenny2022">(<a href="../references.html#ref-jenny2022" role="doc-biblioref">Chen and Guo 2022</a>)</span>. Lengths that grow during runtime are intrinsically “runtime known” type of values. In other words, if you have a variable whose length might grow during runtime, then, the length of this variable becomes not known at compile time. These types of variables are usually stored in the heap memory space.</p>
+</section>
+<section id="stack" class="level3" data-number="2.2.4">
+<h3 data-number="2.2.4" class="anchored" data-anchor-id="stack"><span class="header-section-number">2.2.4</span> Stack</h3>
+<p>The stack memory is a memory space that work by using the power of the <em>stack data structure</em>, hence the name. A “stack” is a type of <em>data structure</em> that uses a “last in, first out” (LIFO) mechanism to store the values you give it to. I imagine you are familiar with this data structure, since it is such an iconic and popular data structure in computer science. But, if you are not, the <a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)">Wikipedia page</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> , or, the <a href="https://www.geeksforgeeks.org/stack-data-structure/">Geeks For Geeks page</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> are both excellent and easy resources to fully understand how this data structure works.</p>
+<p>So, the stack memory space is a type of memory that stores values using a stack data structure. It adds and removes values from the memory by following a “last in, first out” (LIFO) principle.</p>
+<p>In general, the local variables that you declare inside any function scope in your Zig source code are normally stored in the stack memory space.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Person = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    name: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    age: <span class="dt">u32</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    age_group: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(name: []<span class="kw">const</span> <span class="dt">u8</span>, age: <span class="dt">u32</span>) Person <span class="op">{</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">var</span> age_group = <span class="st">"Children"</span>;</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (age &gt;= <span class="dv">18</span> <span class="kw">and</span> age &lt; <span class="dv">60</span>) <span class="op">{</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>            age_group = <span class="st">"Adult"</span>;</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (age &gt;= <span class="dv">60</span>) <span class="op">{</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>            age_group = <span class="st">"Third age"</span>;</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> Person <span class="op">{</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>            .name = name,</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>            .age = age,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>            .age_group = age_group</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-jenny2022" class="csl-entry" role="listitem">
+Chen, Jenny, and Ruohao Guo. 2022. <span>“Stack and Heap Memory.”</span> <em>Introduction to Data Structures and Algorithms with C++</em>. <a href="https://courses.engr.illinois.edu/cs225/fa2022/resources/stack-heap/">https://courses.engr.illinois.edu/cs225/fa2022/resources/stack-heap/</a>.
+</div>
+</div>
+</section>
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p><a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)" class="uri">https://en.wikipedia.org/wiki/Stack_(abstract_data_type)</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p><a href="https://www.geeksforgeeks.org/stack-data-structure/" class="uri">https://www.geeksforgeeks.org/stack-data-structure/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
 </section>
 
 </main> <!-- /main -->
@@ -639,10 +713,13 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
+      <a href="../Chapters/01-zig-weird.html" class="pagination-link  aria-label=" &lt;span="" specific="" attributes&lt;="" span&gt;"="">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Zig specific attributes</span></span>
+      </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./Chapters/01-zig-weird.html" class="pagination-link" aria-label="<span class='chapter-number'>1</span>&nbsp; <span class='chapter-title'>Zig specific attributes</span>">
-        <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Zig specific attributes</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../Chapters/01-base64.html" class="pagination-link" aria-label="<span class='chapter-number'>3</span>&nbsp; <span class='chapter-title'>Building a base64 encoder/decoder</span>">
+        <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Building a base64 encoder/decoder</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

@@ -1,0 +1,175 @@
+---
+engine: knitr
+knitr: true
+syntax-definition: "../Assets/zig.xml"
+---
+
+```{r}
+#| include: false
+source("../zig_engine.R")
+knitr::opts_chunk$set(
+    auto_main=TRUE
+)
+```
+
+# Memory and Allocators in Zig
+
+## Introduction
+
+In this chapter, we will talk about memory. How does Zig controls memory? What
+commom tools are used? Are there any important aspect that makes memory
+different/special in Zig? You will find the answers here.
+
+Every computer needs memory. Is by having memory that computers can temporarily store
+the values/results of your calculations. Without memory, programming languages would never have
+concepts such as "variables", or "objects", to store the values that you generate.
+
+
+## Memory spaces
+
+Every variable that you create in your Zig source code needs to be stored somewhere,
+in your computer's memory. Depending on where or how you define this variable, Zig
+will store the value of this variable in a different "memory space", or a different
+type of memory.
+
+Each type of memory normally serves for different purposes, and they live in different "memory spaces".
+In Zig, there are 3 types of memory (or 3 different memory spaces) that we care about. They are:
+
+- Global data register (or the "global constant data");
+- Stack;
+- Heap;
+
+### Compile-time known versus runtime known
+
+One way that Zig decides where exactly to store each variable that you declare, is by looking
+at the value of this particular variable. More specifically, by investigating if this value is
+known at "compile-time" or "runtime".
+
+When you write a program in Zig, some values that you write in your program are *known
+at compile time*. Meaning that, when you compile your Zig source code, during the compilation process,
+the `zig` compiler can figure it out what is the exact value of a particular variable (or object)
+that exists in your source code.
+
+For example, in the source code below, we have two constant variables (`name` and `array`) declared.
+Because the values of these particular variables are written down, in the source code itself (`"Pedro"`
+and the number sequence from 1 to 4), the `zig` compiler can easily discover the values of these constant
+variables (`name` and `array`) during the compilation process.
+
+
+This is what "known at compile time" means. It refers to any variable that you have in your Zig source code
+whose value can be identified at compile time.
+
+```{zig}
+// ======== Variables
+const name = "Pedro";
+const array = [_]u8{1, 2, 3, 4};
+_ = name; _ = array;
+// ========= Function
+fn input_length(input: []const u8) usize {
+    return input.len;
+}
+```
+
+The other side of the spectrum are variables whose values are not known at compile time.
+Function arguments are a classic example of this. Because the value of each function
+argument depends on the value that you assign to this particular argument,
+when you call the function.
+
+For example, the function `input_length()` contains an argument named `input`, which is an array of `u8` integers (`[]const u8`).
+Is impossible to know at compile time the value of this particular argument. We know that it will be an array of `u8` integers.
+But we can't know which exact array of `u8` integers this argument will store, before we execute this function.
+It is only *known at runtime*, which is the period of time when you program is executed.
+
+So depending on which input your apply this `input_length()` function over, the `input` argument
+will probably have a different value in each case.
+Because of this intrinsic characteristic of any function, the value of the argument `input` is not "compile-time known".
+It is known only at runtime.
+
+
+
+### Global data register
+
+The global data register is a specific section of the executable of your Zig program, that is responsible
+for storing any value that is known at compile time.
+
+Every constant variable whose value is known at compile time that you declare in your source code,
+is stored in the global data register. Also, every literal value that you write in your source code,
+such as the string `"this is a string"`, or the integer `10`, or a boolean value such as `true`,
+is also stored in the global data register.
+
+Honestly, you don't need to care much about this memory space. Because you can't control it,
+you can't deliberately access it or use it for your own purposes.
+Also, this memory space does not affect the logic of your program.
+It simply exists in your program.
+
+
+### Stack vs Heap
+
+If you are familiar with system's programming, or just low-level programming in general, you
+probably have heard of the "duel" between Stack vs Heap. These are two different types of memory,
+or different memory spaces, which are both available in Zig.
+
+These two types of memory don't actually duel with
+each other. This is a commom mistake that beginners have, when seeing "x vs y" styles of
+tabloid headlines. These two types of memory are actually complementary to each other.
+So, in almost every Zig program that you might ever write, you will likely use a combination of both.
+I will describe each memory space in detail over the next sections. But for now, I just want to
+stablish the main difference between these two types of memory.
+
+In essence, the stack memory is normally used to store values whose length is fixed and known
+at compile time. In contrast, the heap memory is a much more *dinamic* type of memory space, meaning that, it is
+used to store values whose length might grow during the execution (runtime) of your program [@jenny2022].
+Lengths that grow during runtime are intrinsically "runtime known" type of values.
+In other words, if you have a variable whose length might grow during runtime, then, the length
+of this variable becomes not known at compile time. These types of variables are usually stored
+in the heap memory space.
+
+
+
+### Stack
+
+The stack memory is a memory space that work by using the power of the *stack data structure*, hence the name. 
+A "stack" is a type of *data structure* that uses a "last in, first out" (LIFO) mechanism to store the values
+you give it to. I imagine you are familiar with this data structure,
+since it is such an iconic and popular data structure in computer science.
+But, if you are not, the [Wikipedia page](https://en.wikipedia.org/wiki/Stack_(abstract_data_type))[^wiki-stack]
+, or, the [Geeks For Geeks page](https://www.geeksforgeeks.org/stack-data-structure/)[^geek-stack] are both
+excellent and easy resources to fully understand how this data structure works.
+
+[^wiki-stack]: <https://en.wikipedia.org/wiki/Stack_(abstract_data_type)>
+[^geek-stack]: <https://www.geeksforgeeks.org/stack-data-structure/>
+
+
+So, the stack memory space is a type of memory that stores values using a stack data structure.
+It adds and removes values from the memory by following a "last in, first out" (LIFO) principle.
+
+In general, the local variables that you declare inside any function scope in your
+Zig source code are normally stored in the stack memory space. 
+
+```{zig}
+// ======== Struct
+const Person = struct {
+    name: []const u8,
+    age: u32,
+    age_group: []const u8,
+
+    pub fn init(name: []const u8, age: u32) Person {
+        var age_group = "Children";
+        if (age >= 18 and age < 60) {
+            age_group = "Adult";
+        }
+        if (age >= 60) {
+            age_group = "Third age";
+        }
+
+        return Person {
+            .name = name,
+            .age = age,
+            .age_group = age_group
+        };
+    }
+};
+```
+
+
+
