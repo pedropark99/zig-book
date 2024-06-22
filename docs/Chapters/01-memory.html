@@ -207,6 +207,8 @@ div.csl-indent {
   <li><a href="#global-data-register" id="toc-global-data-register" class="nav-link" data-scroll-target="#global-data-register"><span class="header-section-number">2.2.2</span> Global data register</a></li>
   <li><a href="#stack-vs-heap" id="toc-stack-vs-heap" class="nav-link" data-scroll-target="#stack-vs-heap"><span class="header-section-number">2.2.3</span> Stack vs Heap</a></li>
   <li><a href="#stack" id="toc-stack" class="nav-link" data-scroll-target="#stack"><span class="header-section-number">2.2.4</span> Stack</a></li>
+  <li><a href="#heap" id="toc-heap" class="nav-link" data-scroll-target="#heap"><span class="header-section-number">2.2.5</span> Heap</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary"><span class="header-section-number">2.2.6</span> Summary</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -240,16 +242,16 @@ div.csl-indent {
 </section>
 <section id="memory-spaces" class="level2" data-number="2.2">
 <h2 data-number="2.2" class="anchored" data-anchor-id="memory-spaces"><span class="header-section-number">2.2</span> Memory spaces</h2>
-<p>Every variable that you create in your Zig source code needs to be stored somewhere, in your computer’s memory. Depending on where or how you define this variable, Zig will store the value of this variable in a different “memory space”, or a different type of memory.</p>
-<p>Each type of memory normally serves for different purposes, and they live in different “memory spaces”. In Zig, there are 3 types of memory (or 3 different memory spaces) that we care about. They are:</p>
+<p>Every variable that you create in your Zig source code needs to be stored somewhere, in your computer’s memory. Depending on where and how you define your variable, Zig will use a different “memory space”, or a different type of memory to store this variable.</p>
+<p>Each type of memory normally serves for different purposes. In Zig, there are 3 types of memory (or 3 different memory spaces) that we care about. They are:</p>
 <ul>
-<li>Global data register (or the “global constant data”);</li>
+<li>Global data register (or the “global data section”);</li>
 <li>Stack;</li>
 <li>Heap;</li>
 </ul>
 <section id="compile-time-known-versus-runtime-known" class="level3" data-number="2.2.1">
 <h3 data-number="2.2.1" class="anchored" data-anchor-id="compile-time-known-versus-runtime-known"><span class="header-section-number">2.2.1</span> Compile-time known versus runtime known</h3>
-<p>One way that Zig decides where exactly to store each variable that you declare, is by looking at the value of this particular variable. More specifically, by investigating if this value is known at “compile-time” or “runtime”.</p>
+<p>One strategy that Zig uses to decide where it will store each variable that you declare, is by looking at the value of this particular variable. More specifically, by investigating if this value is known at “compile-time” or at “runtime”.</p>
 <p>When you write a program in Zig, some values that you write in your program are <em>known at compile time</em>. Meaning that, when you compile your Zig source code, during the compilation process, the <code>zig</code> compiler can figure it out what is the exact value of a particular variable (or object) that exists in your source code.</p>
 <p>For example, in the source code below, we have two constant variables (<code>name</code> and <code>array</code>) declared. Because the values of these particular variables are written down, in the source code itself (<code>"Pedro"</code> and the number sequence from 1 to 4), the <code>zig</code> compiler can easily discover the values of these constant variables (<code>name</code> and <code>array</code>) during the compilation process.</p>
 <p>This is what “known at compile time” means. It refers to any variable that you have in your Zig source code whose value can be identified at compile time.</p>
@@ -280,37 +282,95 @@ div.csl-indent {
 </section>
 <section id="stack" class="level3" data-number="2.2.4">
 <h3 data-number="2.2.4" class="anchored" data-anchor-id="stack"><span class="header-section-number">2.2.4</span> Stack</h3>
-<p>The stack memory is a memory space that work by using the power of the <em>stack data structure</em>, hence the name. A “stack” is a type of <em>data structure</em> that uses a “last in, first out” (LIFO) mechanism to store the values you give it to. I imagine you are familiar with this data structure, since it is such an iconic and popular data structure in computer science. But, if you are not, the <a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)">Wikipedia page</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> , or, the <a href="https://www.geeksforgeeks.org/stack-data-structure/">Geeks For Geeks page</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> are both excellent and easy resources to fully understand how this data structure works.</p>
+<p>The stack is a type of memory that uses the power of the <em>stack data structure</em>, hence the name. A “stack” is a type of <em>data structure</em> that uses a “last in, first out” (LIFO) mechanism to store the values you give it to. I imagine you are familiar with this data structure. But, if you are not, the <a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)">Wikipedia page</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> , or, the <a href="https://www.geeksforgeeks.org/stack-data-structure/">Geeks For Geeks page</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> are both excellent and easy resources to fully understand how this data structure works.</p>
 <p>So, the stack memory space is a type of memory that stores values using a stack data structure. It adds and removes values from the memory by following a “last in, first out” (LIFO) principle.</p>
-<p>In general, the local variables that you declare inside any function scope in your Zig source code are normally stored in the stack memory space.</p>
+<p>In general, every function call that you make in Zig will always allocate some space in the stack <span class="citation" data-cites="jenny2022 zigdocs">(<a href="../references.html#ref-jenny2022" role="doc-biblioref">Chen and Guo 2022</a>; <a href="../references.html#ref-zigdocs" role="doc-biblioref">Zig Foundation 2024</a>)</span>. The value of each function argument given to the function in this function call is stored in this stack space. Also, every local variable that you declare inside the function scope are normally stored in this same stack space.</p>
+<p>Looking at the example below, the variable <code>result</code> is a local variable declared inside the scope of the <code>add()</code> function. Because of that, this variable is stored inside the stack space reserved for the <code>add()</code> function.</p>
+<p>Also, the <code>r</code> variable (which is declared outside of the <code>add()</code> function scope) is also stored in the stack, specially because it does not contain a value that is <em>compile-time known</em>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Person = <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    name: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    age: <span class="dt">u32</span>,</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    age_group: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(name: []<span class="kw">const</span> <span class="dt">u8</span>, age: <span class="dt">u32</span>) Person <span class="op">{</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">var</span> age_group = <span class="st">"Children"</span>;</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (age &gt;= <span class="dv">18</span> <span class="kw">and</span> age &lt; <span class="dv">60</span>) <span class="op">{</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>            age_group = <span class="st">"Adult"</span>;</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (age &gt;= <span class="dv">60</span>) <span class="op">{</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>            age_group = <span class="st">"Third age"</span>;</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> Person <span class="op">{</span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>            .name = name,</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>            .age = age,</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>            .age_group = age_group</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> r = add(<span class="dv">5</span>, <span class="dv">27</span>);</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>_ = r;</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add(x: <span class="dt">u8</span>, y: <span class="dt">u8</span>) <span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> result = x + y;</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> result;</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>So, any variable that you declare inside the scope of a function is always stored inside the space that was reserved for that particular function in the stack memory. This also counts for any variable declared inside the scope of your <code>main()</code> function. As you would expect, in this case, they are stored inside the stack space reserved for the <code>main()</code> function.</p>
+<p>One very important detail about the stack memory is that <strong>it frees itself automatically</strong>. This is very important, remember that. When variables are stored in the stack memory, you don’t have the work (or the responsibility) of freeing/destroying these objects. Because they will be automatically destroyed once the stack space is freed at the end of the function scope.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Variables that are stored in the stack are automatically freed/destroyed at the end of the function scope.</p>
+</div>
+</div>
+<p>As I sad earlier, every time you make a function call in Zig, an amount of space in the stack memory is reserved for this particular function call. But once the function call returns (or ends, if you prefer to call it this way) the space that was reserved in the stack is destroyed, and all of the variables that were in this space goes away with it. This mechanism exists because this space, and the variables within it, are not necessary anymore, since the function “finished it’s business”. Using the <code>add()</code> function that we exposed above as an example, it means that the variable <code>result</code> is automatically destroyed once the function returns.</p>
+<p>One important consequence of this mechanism is that, once the function returns, you can no longer access any memory address that was inside the space in the stack reserved for this particular function. Because this space was destroyed. This means that you can not make a function <strong>return a pointer to one of it’s local variables</strong>.</p>
+<p>Think about that for a second. If all local variables are destroyed at the end of the function scope, why would you even consider returning a pointer to one of these variables? This pointer is at best, invalid, or, more likely, “undefined”. So, yes, you should never write a function that returns a pointer to one of it’s local variables.</p>
+<p>So, using again the <code>add()</code> function as an example, if you rewrite this function so that it returns a pointer to the local variable <code>result</code>, the <code>zig</code> compiler will actually compile you program, with no warnings or erros. At first glance, it looks that this is good code that works as expected. But this is a lie!</p>
+<p>If you try to take a look at the value inside of the <code>r</code> variable, or, if you try to use this <code>r</code> variable in another expression or function call, then, you would have undefined behaviour, and major bugs in your program <span class="citation" data-cites="zigdocs">(<a href="../references.html#ref-zigdocs" role="doc-biblioref">Zig Foundation 2024</a>, see “Lifetime and Ownership”<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> and “Undefined Behaviour”<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> sections)</span>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">// This code compiles succesfully. But it has</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">// undefined behaviour. Never do this!!!</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">// The `r` variable is undefined!</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> r = add(<span class="dv">5</span>, <span class="dv">27</span>);</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>_ = r;</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add(x: <span class="dt">u8</span>, y: <span class="dt">u8</span>) *<span class="kw">const</span> <span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> result = x + y;</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> &amp;result;</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This “invalid pointer to stack variable” problem is very known across many programming language communities. If you try to do the same thing, for example, in a C or C++ program (i.e.&nbsp;returning an address to a local variable stored in the stack), you would also get undefined behaviour in the program.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If a local variable in your function is stored in the stack, you should never return a pointer to this local variable from the function. Because this pointer will always become undefined after the function returns, since the stack space of the function is destroyed at the end of it’s scope.</p>
+</div>
+</div>
+<p>But what if you really need to use this local variable in some way after your function returns? How can you do this? The answer is: “in the same you would do if this was a C or C++ program. By returning an address to a variable stored in the heap”. The heap memory have a much more flexible lifecycle, and allows you to get a valid pointer to a local variable of a function that already returned from it’s scope.</p>
+</section>
+<section id="heap" class="level3" data-number="2.2.5">
+<h3 data-number="2.2.5" class="anchored" data-anchor-id="heap"><span class="header-section-number">2.2.5</span> Heap</h3>
+<p>While the stack accepts only variables whose length is known at compile-time, the heap is much more dinamic (and flexible) type of memory. It is the perfect type of memory to use on variables whose size/length might grow during the execution of your program. Virtually any application that behaves as a server is a classic use case of the heap. A HTTP server, a SSH server, a DNS server, a LSP server, … any type of server.</p>
+<p>In summary, a server is a type of application that runs for long periods of time, and that serves (or “deals with”) any incoming request that reaches this particular server. The heap is a good choice for this type of system, mainly because the server does not know upfront how many requests it will receive from users, while it is active. It could be one single request, or, 5 thousand requests, or, it could also be zero requests. The server needs to have the ability to allocate and manage it’s memory according to how many requests it receives.</p>
+<p>Another key difference between the stack and the heap, is that the heap is a type of memory that you, the programmer, have complete control over. This makes the heap a more flexible type of memory, but it also makes harder to work with it. Because you, the programmer, is responsible for managing everything related to it. Including where the memory is allocated, how much memory is allocated, and where this memory is freed.</p>
+<blockquote class="blockquote">
+<p>Unlike stack memory, heap memory is allocated explicitly by programmers and it won’t be deallocated until it is explicitly freed <span class="citation" data-cites="jenny2022">(<a href="../references.html#ref-jenny2022" role="doc-biblioref">Chen and Guo 2022</a>)</span>.</p>
+</blockquote>
+</section>
+<section id="summary" class="level3" data-number="2.2.6">
+<h3 data-number="2.2.6" class="anchored" data-anchor-id="summary"><span class="header-section-number">2.2.6</span> Summary</h3>
+<p>After discussing all of these boring details, we can quickly recap what we learned. In summary, the Zig compiler will use the following rules to decide where each variable you declare is stored:</p>
+<ol type="1">
+<li><p>every literal value (such as <code>"this is string"</code>, <code>10</code>, or <code>true</code>) is stored in the global data section.</p></li>
+<li><p>every constant variable (<code>const</code>) whose value <strong>is known at compile-time</strong> is also stored in the global data section.</p></li>
+<li><p>every variable (constant or not) whose value <strong>is not known at compile time</strong> is stored in the stack of the current scope.</p></li>
+<li><p>if a variable is created with the method <code>alloc()</code> or <code>create()</code> of an allocator object, this variable is stored in the memory space used by this particular allocator object. Most of allocators available in Zig use the heap memory, so, this variable is likely stored in the heap (<code>FixedBufferAllocator()</code> is an exception to that).</p></li>
+</ol>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
 <div id="ref-jenny2022" class="csl-entry" role="listitem">
 Chen, Jenny, and Ruohao Guo. 2022. <span>“Stack and Heap Memory.”</span> <em>Introduction to Data Structures and Algorithms with C++</em>. <a href="https://courses.engr.illinois.edu/cs225/fa2022/resources/stack-heap/">https://courses.engr.illinois.edu/cs225/fa2022/resources/stack-heap/</a>.
+</div>
+<div id="ref-zigdocs" class="csl-entry" role="listitem">
+Zig Foundation. 2024. <span>“Language Reference.”</span> <a href="https://ziglang.org/documentation/master/">https://ziglang.org/documentation/master/</a>.
 </div>
 </div>
 </section>
@@ -320,6 +380,8 @@ Chen, Jenny, and Ruohao Guo. 2022. <span>“Stack and Heap Memory.”</span> <em
 <ol>
 <li id="fn1"><p><a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)" class="uri">https://en.wikipedia.org/wiki/Stack_(abstract_data_type)</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn2"><p><a href="https://www.geeksforgeeks.org/stack-data-structure/" class="uri">https://www.geeksforgeeks.org/stack-data-structure/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p><a href="https://ziglang.org/documentation/master/#Lifetime-and-Ownership" class="uri" role="doc-biblioref">https://ziglang.org/documentation/master/#Lifetime-and-Ownership</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p><a href="https://ziglang.org/documentation/master/#Undefined-Behavior" class="uri" role="doc-biblioref">https://ziglang.org/documentation/master/#Undefined-Behavior</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 

@@ -129,10 +129,9 @@ in the heap memory space.
 
 ### Stack
 
-The stack memory is a memory space that work by using the power of the *stack data structure*, hence the name. 
+The stack is a type of memory that uses the power of the *stack data structure*, hence the name. 
 A "stack" is a type of *data structure* that uses a "last in, first out" (LIFO) mechanism to store the values
-you give it to. I imagine you are familiar with this data structure,
-since it is such an iconic and popular data structure in computer science.
+you give it to. I imagine you are familiar with this data structure.
 But, if you are not, the [Wikipedia page](https://en.wikipedia.org/wiki/Stack_(abstract_data_type))[^wiki-stack]
 , or, the [Geeks For Geeks page](https://www.geeksforgeeks.org/stack-data-structure/)[^geek-stack] are both
 excellent and easy resources to fully understand how this data structure works.
@@ -140,37 +139,151 @@ excellent and easy resources to fully understand how this data structure works.
 [^wiki-stack]: <https://en.wikipedia.org/wiki/Stack_(abstract_data_type)>
 [^geek-stack]: <https://www.geeksforgeeks.org/stack-data-structure/>
 
-
 So, the stack memory space is a type of memory that stores values using a stack data structure.
 It adds and removes values from the memory by following a "last in, first out" (LIFO) principle.
 
-In general, the local variables that you declare inside any function scope in your
-Zig source code are normally stored in the stack memory space. 
+In general, every function call that you make in Zig will always allocate some space in the stack [@jenny2022; @zigdocs].
+The value of each function argument given to the function in this function call is stored in this
+stack space. Also, every local variable that you declare inside the function scope are
+normally stored in this same stack space.
+
+Looking at the example below, the variable `result` is a local variable declared inside the scope of the `add()`
+function. Because of that, this variable is stored inside the stack space reserved for the `add()` function.
+
+Also, the `r` variable (which is declared outside of the `add()` function scope) is also stored in the stack,
+specially because it does not contain a value that is *compile-time known*.
 
 ```{zig}
-// ======== Struct
-const Person = struct {
-    name: []const u8,
-    age: u32,
-    age_group: []const u8,
-
-    pub fn init(name: []const u8, age: u32) Person {
-        var age_group = "Children";
-        if (age >= 18 and age < 60) {
-            age_group = "Adult";
-        }
-        if (age >= 60) {
-            age_group = "Third age";
-        }
-
-        return Person {
-            .name = name,
-            .age = age,
-            .age_group = age_group
-        };
-    }
-};
+// ==== Variable
+const r = add(5, 27);
+_ = r;
+// ====== Function
+fn add(x: u8, y: u8) u8 {
+    const result = x + y;
+    return result;
+}
 ```
+
+So, any variable that you declare inside the scope of a function is always stored inside
+the space that was reserved for that particular function in the stack memory. This
+also counts for any variable declared inside the scope of your `main()` function. As you would expect, in this case, they
+are stored inside the stack space reserved for the `main()` function.
+
+One very important detail about the stack memory is that **it frees itself automatically**.
+This is very important, remember that. When variables are stored in the stack memory,
+you don't have the work (or the responsibility) of freeing/destroying these objects.
+Because they will be automatically destroyed once the stack space is freed at the end of the function scope.
+
+::: {.callout-important}
+Variables that are stored in the stack are automatically
+freed/destroyed at the end of the function scope.
+:::
+
+
+As I sad earlier, every time you make a function call in Zig, an amount of space in the stack memory is
+reserved for this particular function call. But once the function call returns (or ends, if you prefer to call it this way)
+the space that was reserved in the stack is destroyed, and all of the variables that were in this space goes away with it.
+This mechanism exists because this space, and the variables within it, are not necessary anymore,
+since the function "finished it's business". Using the `add()` function that we exposed above as an example, it means that the variable `result` is automatically
+destroyed once the function returns.
+
+One important consequence of this mechanism is that, once the function returns, you can no longer access any memory
+address that was inside the space in the stack reserved for this particular function. Because this space was
+destroyed. This means that you can not make a function **return a pointer to one of it's local variables**.
+
+Think about that for a second. If all local variables are destroyed at the end of the function scope, why
+would you even consider returning a pointer to one of these variables? This pointer is at best,
+invalid, or, more likely, "undefined". So, yes, you should never write a function that returns a pointer to one
+of it's local variables.
+
+So, using again the `add()` function as an example, if you rewrite this function so that it
+returns a pointer to the local variable `result`, the `zig` compiler will actually compile
+you program, with no warnings or erros. At first glance, it looks that this is good code
+that works as expected. But this is a lie!
+
+If you try to take a look at the value inside of the `r` variable,
+or, if you try to use this `r` variable in another expression
+or function call, then, you would have undefined behaviour, and major
+bugs in your program [@zigdocs, see "Lifetime and Ownership"[^life] and "Undefined Behaviour"[^undef] sections].
+
+[^life]: <https://ziglang.org/documentation/master/#Lifetime-and-Ownership>
+[^undef]: <https://ziglang.org/documentation/master/#Undefined-Behavior>
+
+
+```{zig}
+// This code compiles succesfully. But it has
+// undefined behaviour. Never do this!!!
+// ==== Variable
+// The `r` variable is undefined!
+const r = add(5, 27);
+_ = r;
+// ====== Function
+fn add(x: u8, y: u8) *const u8 {
+    const result = x + y;
+    return &result;
+}
+```
+
+This "invalid pointer to stack variable" problem is very known across many programming language communities.
+If you try to do the same thing, for example, in a C or C++ program (i.e. returning an address to
+a local variable stored in the stack), you would also get undefined behaviour
+in the program.
+
+::: {.callout-important}
+If a local variable in your function is stored in the stack, you should never
+return a pointer to this local variable from the function. Because
+this pointer will always become undefined after the function returns, since the stack space of the function
+is destroyed at the end of it's scope.
+:::
+
+But what if you really need to use this local variable in some way after your function returns?
+How can you do this? The answer is: "in the same you would do if this was a C or C++ program. By returning
+an address to a variable stored in the heap". The heap memory have a much more flexible lifecycle,
+and allows you to get a valid pointer to a local variable of a function that already returned
+from it's scope.
+
+
+### Heap
+
+While the stack accepts only variables whose length is known at compile-time, the heap is much more dinamic
+(and flexible) type of memory. It is the perfect type of memory to use
+on variables whose size/length might grow during the execution of your program.
+Virtually any application that behaves as a server is a classic use case of the heap.
+A HTTP server, a SSH server, a DNS server, a LSP server, ... any type of server.
+
+In summary, a server is a type of application that runs for long periods of time,
+and that serves (or "deals with") any incoming request that reaches this particular server.
+The heap is a good choice for this type of system, mainly because the server does not know upfront
+how many requests it will receive from users, while it is active. It could be one single request,
+or, 5 thousand requests, or, it could also be zero requests.
+The server needs to have the ability to allocate and manage it's memory according to how many requests it receives.
+
+Another key difference between the stack and the heap, is that the heap is a type
+of memory that you, the programmer, have complete control over. This makes the heap a
+more flexible type of memory, but it also makes harder to work with it. Because you,
+the programmer, is responsible for managing everything related to it. Including where the memory is allocated,
+how much memory is allocated, and where this memory is freed.
+
+> Unlike stack memory, heap memory is allocated explicitly by programmers and it won’t be deallocated until it is explicitly freed [@jenny2022].
+
+To store a variable in the heap, you, the programmer, needs to explicitly tells Zig to do so,
+by using an allocator to allocate some space in the heap.
+
+
+### Summary
+
+After discussing all of these boring details, we can quickly recap what we learned.
+In summary, the Zig compiler will use the following rules to decide where each
+variable you declare is stored:
+
+1. every literal value (such as `"this is string"`, `10`, or `true`) is stored in the global data section.
+
+1. every constant variable (`const`) whose value **is known at compile-time** is also stored in the global data section.
+
+1. every variable (constant or not) whose value **is not known at compile time** is stored in the stack of the current scope.
+
+1. if a variable is created with the method `alloc()` or `create()` of an allocator object, this variable is stored in the memory space used by this particular allocator object. Most of allocators available in Zig use the heap memory, so, this variable is likely stored in the heap (`FixedBufferAllocator()` is an exception to that).
+
 
 
 
