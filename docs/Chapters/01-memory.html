@@ -214,6 +214,9 @@ div.csl-indent {
   <ul class="collapse">
   <li><a href="#what-are-allocators" id="toc-what-are-allocators" class="nav-link" data-scroll-target="#what-are-allocators"><span class="header-section-number">2.3.1</span> What are allocators?</a></li>
   <li><a href="#why-you-or-someone-need-an-allocator" id="toc-why-you-or-someone-need-an-allocator" class="nav-link" data-scroll-target="#why-you-or-someone-need-an-allocator"><span class="header-section-number">2.3.2</span> Why you (or someone) need an allocator?</a></li>
+  <li><a href="#the-different-types-of-allocators" id="toc-the-different-types-of-allocators" class="nav-link" data-scroll-target="#the-different-types-of-allocators"><span class="header-section-number">2.3.3</span> The different types of allocators</a></li>
+  <li><a href="#the-alloc-and-free-methods" id="toc-the-alloc-and-free-methods" class="nav-link" data-scroll-target="#the-alloc-and-free-methods"><span class="header-section-number">2.3.4</span> The <code>alloc()</code> and <code>free()</code> methods</a></li>
+  <li><a href="#the-create-and-destroy-methods" id="toc-the-create-and-destroy-methods" class="nav-link" data-scroll-target="#the-create-and-destroy-methods"><span class="header-section-number">2.3.5</span> The <code>create()</code> and <code>destroy()</code> methods</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -382,7 +385,7 @@ Important
 <section id="what-are-allocators" class="level3" data-number="2.3.1">
 <h3 data-number="2.3.1" class="anchored" data-anchor-id="what-are-allocators"><span class="header-section-number">2.3.1</span> What are allocators?</h3>
 <p>Allocators in Zig are objects that you can use to allocate memory for your program. They work similar to the memory allocating functions in C, like <code>malloc()</code> and <code>calloc()</code>. So, if you need to use more memory than you initially have, during the execution of your program, you can simply ask for more memory using an allocator.</p>
-<p>Zig offers different types of allocators, and they are usually available through the <code>std.heap.mem</code> module of the standard library. So, just import the Zig standard library into your Zig module (with <code>@import("std")</code>), and you can start using these allocators in your code.</p>
+<p>Zig offers different types of allocators, and they are usually available through the <code>std.heap</code> module of the standard library. So, just import the Zig standard library into your Zig module (with <code>@import("std")</code>), and you can start using these allocators in your code.</p>
 </section>
 <section id="why-you-or-someone-need-an-allocator" class="level3" data-number="2.3.2">
 <h3 data-number="2.3.2" class="anchored" data-anchor-id="why-you-or-someone-need-an-allocator"><span class="header-section-number">2.3.2</span> Why you (or someone) need an allocator?</h3>
@@ -393,8 +396,50 @@ Important
 <li><p>sometimes, it is impossible to know upfront how many inputs you will receive during the function call, or how big this input will be.</p></li>
 </ol>
 <p>These are two commom situations where the stack is not good for. That is why you need a different memory management strategy to store these variables inside your function. You need to use a memory type that can grow together with your variables. The heap fit this description.</p>
-<p>This is commonly known as dynamic memory management. As the objects you create grow in size during the execution of your program, you grow the amount of memory you have by allocating more memory to store these objects.</p>
-<p>You allocate more memory in Zig by using an allocator object.</p>
+<p>This is commonly known as dynamic memory management. As the variables you create grow in size during the execution of your program, you grow the amount of memory you have by allocating more memory in the heap to store these variables. In Zig, you allocate more memory in the heap by using an allocator object.</p>
+</section>
+<section id="the-different-types-of-allocators" class="level3" data-number="2.3.3">
+<h3 data-number="2.3.3" class="anchored" data-anchor-id="the-different-types-of-allocators"><span class="header-section-number">2.3.3</span> The different types of allocators</h3>
+<p>At the moment of the writing of this book, in Zig, we have 6 different allocators available in the standard library:</p>
+<ul>
+<li><code>GeneralPurposeAllocator()</code>.</li>
+<li><code>page_allocator()</code>.</li>
+<li><code>FixedBufferAllocator()</code> and <code>ThreadSafeFixedBufferAllocator()</code>.</li>
+<li><code>ArenaAllocator()</code>.</li>
+<li><code>c_allocator()</code> (requires you to link to libc).</li>
+</ul>
+</section>
+<section id="the-alloc-and-free-methods" class="level3" data-number="2.3.4">
+<h3 data-number="2.3.4" class="anchored" data-anchor-id="the-alloc-and-free-methods"><span class="header-section-number">2.3.4</span> The <code>alloc()</code> and <code>free()</code> methods</h3>
+<p>Look at the example below. We are accessing the <code>stdin</code>, which is the standard input channel to receive an input from the user. Then, we use the method <code>alloc()</code> of an allocator to allocate an array capable of storing 50 <code>u8</code> values.</p>
+<p>Notice that this <code>alloc()</code> method receives two inputs. The first one, is a type. This defines what type of values the allocated array will store. In the example below, we are allocating an array of unsigned 8-bit integers (<code>u8</code>). But you can create an array to store any type of value you want. Next, we define the size of the allocated array, by specifying how much elements this array will contain. In the case below, we are allocating an array of 50 elements.</p>
+<p>So, in essence, the expression <code>var input: [50]u8 = undefined</code> would create an array for 50 <code>u8</code> values in the stack of the current scope. But, you can allocate the same array in heap by using the expression <code>var input = try allocator.alloc(u8, 50)</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdin = std.io.getStdIn();</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> input = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">50</span>);</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.free(input);</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..input.len) |i| <span class="op">{</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        input[i] = <span class="dv">0</span>; <span class="co">// initialize all fields to zero.</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">// read user input</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> input_reader = stdin.reader();</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> input_reader.readUntilDelimiterOrEof(</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>        input,</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>        <span class="ch">'\n'</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>input<span class="op">}</span>);</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Also, notice that in this example, we use the keyword <code>defer</code> to run small piece of code at the end of the current scope, which is the expression <code>allocator.free(input)</code>. When you execute this expression, the allocator will free the memory that it allocated for the <code>input</code> variable.</p>
+<p>We have talked about this at <a href="#sec-heap" class="quarto-xref"><span>Section 2.2.5</span></a>. You should always explicitly free any memory that you allocate using an allocator. You do that by using the <code>free()</code> method of the same allocator object you used to allocate this memory. The <code>defer</code> keyword helps you to make sure that this free operation is executed at the end of the current scope.</p>
+</section>
+<section id="the-create-and-destroy-methods" class="level3" data-number="2.3.5">
+<h3 data-number="2.3.5" class="anchored" data-anchor-id="the-create-and-destroy-methods"><span class="header-section-number">2.3.5</span> The <code>create()</code> and <code>destroy()</code> methods</h3>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">

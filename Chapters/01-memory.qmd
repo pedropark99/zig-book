@@ -327,7 +327,7 @@ for more memory using an allocator.
 
 
 
-Zig offers different types of allocators, and they are usually available through the `std.heap.mem` module of
+Zig offers different types of allocators, and they are usually available through the `std.heap` module of
 the standard library. So, just import the Zig standard library into your Zig module (with `@import("std")`), and you can start
 using these allocators in your code.
 
@@ -356,12 +356,84 @@ during the execution of your program, you grow the amount of memory
 you have by allocating more memory in the heap to store these variables. 
 In Zig, you allocate more memory in the heap by using an allocator object.
 
-Take the source code below as an example.
+
+### The different types of allocators
+
+
+At the moment of the writing of this book, in Zig, we have 6 different
+allocators available in the standard library:
+
+- `GeneralPurposeAllocator()`.
+- `page_allocator()`.
+- `FixedBufferAllocator()` and `ThreadSafeFixedBufferAllocator()`.
+- `ArenaAllocator()`.
+- `c_allocator()` (requires you to link to libc).
+
+
+
+### The `alloc()` and `free()` methods
+
+Look at the example below. We are accessing the `stdin`, which is
+the standard input channel to receive an input from the
+user. Then, we use the method `alloc()` of an allocator to allocate an
+array capable of storing 50 `u8` values.
+
+Notice that this `alloc()` method receives two inputs. The first one, is a type.
+This defines what type of values the allocated array will store. In the example
+below, we are allocating an array of unsigned 8-bit integers (`u8`). But
+you can create an array to store any type of value you want. Next, we
+define the size of the allocated array, by specifying how much elements
+this array will contain. In the case below, we are allocating an array of 50 elements.
+
+So, in essence, the expression `var input: [50]u8 = undefined` would create
+an array for 50 `u8` values in the stack of the current scope. But, you
+can allocate the same array in heap by using the expression `var input = try allocator.alloc(u8, 50)`.
 
 ```{zig}
+#| auto_main: false
+const std = @import("std");
+const stdin = std.io.getStdIn();
 
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    var input = try allocator.alloc(u8, 50);
+    defer allocator.free(input);
+    for (0..input.len) |i| {
+        input[i] = 0; // initialize all fields to zero.
+    }
+    // read user input
+    const input_reader = stdin.reader();
+    _ = try input_reader.readUntilDelimiterOrEof(
+        input,
+        '\n'
+    );
+    std.debug.print("{s}\n", .{input});
+}
 ```
 
+Also, notice that in this example, we use the keyword `defer` to run small
+piece of code at the end of the current scope, which is the expression `allocator.free(input)`.
+When you execute this expression, the allocator will free the memory that it allocated
+for the `input` variable.
+
+We have talked about this at @sec-heap. You should always explicitly free any memory that you allocate
+using an allocator. You do that by using the `free()` method of the same allocator object you
+used to allocate this memory. The `defer` keyword helps you to make sure that
+this free operation is executed at the end of the current scope.
 
 
+### The `create()` and `destroy()` methods
+
+With the `alloc()` and `free()` methods, you can allocate memory to store multiple elements
+at once. But what if you need enough space to store just a single item? Should you
+allocate an array of a single element through `alloc()`?
+
+For this type of situation, every allocator offers the `create()` and `destroy()` methods,
+which are used to allocate memory for a single item, and to free this memory for a single
+item, respectively.
+
+So, in essence, if you want to allocate memory to store an array of elements, you
+should use `alloc()` and `free()`. But if you need to store just a single item,
+then, the `create()` and `destroy()` methods are ideal for you.
 
