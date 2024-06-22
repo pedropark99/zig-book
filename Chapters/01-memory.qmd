@@ -127,7 +127,7 @@ in the heap memory space.
 
 
 
-### Stack
+### Stack {#sec-stack}
 
 The stack is a type of memory that uses the power of the *stack data structure*, hence the name. 
 A "stack" is a type of *data structure* that uses a "last in, first out" (LIFO) mechanism to store the values
@@ -243,7 +243,7 @@ and allows you to get a valid pointer to a local variable of a function that alr
 from it's scope.
 
 
-### Heap
+### Heap {#sec-heap}
 
 While the stack accepts only variables whose length is known at compile-time, the heap is much more dinamic
 (and flexible) type of memory. It is the perfect type of memory to use
@@ -267,7 +267,17 @@ how much memory is allocated, and where this memory is freed.
 > Unlike stack memory, heap memory is allocated explicitly by programmers and it won’t be deallocated until it is explicitly freed [@jenny2022].
 
 To store a variable in the heap, you, the programmer, needs to explicitly tells Zig to do so,
-by using an allocator to allocate some space in the heap.
+by using an allocator to allocate some space in the heap. 
+
+Most allocators in Zig allocate memory on the heap. But some exceptions to this rule are
+`ArenaAllocator()` and `FixedBufferAllocator()`. The `ArenaAllocator()` is a special
+type of allocator that works in conjunction with a second type of allocator.
+On the other side, the `FixedBufferAllocator()` is an allocator that works based on
+buffer object created on the stack. This means that the `FixedBufferAllocator()` makes
+allocations only on the stack.
+
+At @sec-allocators, I will present how you can use allocators to allocate memory
+in Zig.
 
 
 ### Summary
@@ -283,6 +293,74 @@ variable you declare is stored:
 1. every variable (constant or not) whose value **is not known at compile time** is stored in the stack of the current scope.
 
 1. if a variable is created with the method `alloc()` or `create()` of an allocator object, this variable is stored in the memory space used by this particular allocator object. Most of allocators available in Zig use the heap memory, so, this variable is likely stored in the heap (`FixedBufferAllocator()` is an exception to that).
+
+
+
+## Allocators {#sec-allocators}
+
+One key aspect about Zig, is that there are "no hidden-memory allocations" in Zig.
+What that really means, is that "no allocations happen behind your back in the standard library" [@zigguide].
+
+This is a known problem specially in C++. Because in C++, there are some operators that allocates
+memory behind the scene, and there is no way for you to known that, until you actually read the
+source code of these operators, and find the memory allocation calls.
+Many programmers find this behaviour annoying and hard to keep track of.
+
+But, in Zig, if a function, an operator, or anything from the standard library
+needs to allocate some memory during it's execution, then, this function/operator needs to receive (as input) an allocator
+provided by the user, to actually be able to allocate the memory it needs.
+This creates a clear distinction between functions that "do not" from those that "actually do"
+allocate memory.
+
+So, if a function, or operator, have an allocator object as one of it's inputs/arguments, then, you know for
+sure that this function/operator will allocate some memory during it's execution. You get a lot of control
+over where and how much memory this function can allocate. Because it is you,
+the user/programmer, that provides the allocator for the function to use. This gives
+you total control over memory management in Zig.
+
+### What are allocators?
+
+Allocators in Zig are objects that you can use to allocate memory for your program.
+They work similar to the memory allocating functions in C, like `malloc()` and `calloc()`.
+So, if you need to use more memory than you initially have, during the execution of your program, you can simply ask
+for more memory using an allocator.
+
+
+
+Zig offers different types of allocators, and they are usually available through the `std.heap.mem` module of
+the standard library. So, just import the Zig standard library into your Zig module (with `@import("std")`), and you can start
+using these allocators in your code.
+
+
+### Why you (or someone) need an allocator?
+
+As we described at @sec-stack, everytime you make a function call in Zig,
+a space in the stack is reserved for this function call. But the stack
+have a key limitation which is: every variable stored in the stack have a
+known fixed length.
+
+But in reality, there are two very commom instances where this "fixed length limitation" of the stack is a deal braker:
+
+1. the variables that you create inside your function might grow in size during the execution of the function.
+
+2. sometimes, it is impossible to know upfront how many inputs you will receive during the function call, or how big this input will be.
+
+These are two commom situations where the stack is not good for.
+That is why you need a different memory management strategy to
+store these variables inside your function. You need to use
+a memory type that can grow together with your variables.
+The heap fit this description.
+
+This is commonly known as dynamic memory management. As the variables you create grow in size
+during the execution of your program, you grow the amount of memory
+you have by allocating more memory in the heap to store these variables. 
+In Zig, you allocate more memory in the heap by using an allocator object.
+
+Take the source code below as an example.
+
+```{zig}
+
+```
 
 
 

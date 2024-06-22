@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.549">
+<meta name="generator" content="quarto-1.4.554">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -206,9 +206,14 @@ div.csl-indent {
   <li><a href="#compile-time-known-versus-runtime-known" id="toc-compile-time-known-versus-runtime-known" class="nav-link" data-scroll-target="#compile-time-known-versus-runtime-known"><span class="header-section-number">2.2.1</span> Compile-time known versus runtime known</a></li>
   <li><a href="#global-data-register" id="toc-global-data-register" class="nav-link" data-scroll-target="#global-data-register"><span class="header-section-number">2.2.2</span> Global data register</a></li>
   <li><a href="#stack-vs-heap" id="toc-stack-vs-heap" class="nav-link" data-scroll-target="#stack-vs-heap"><span class="header-section-number">2.2.3</span> Stack vs Heap</a></li>
-  <li><a href="#stack" id="toc-stack" class="nav-link" data-scroll-target="#stack"><span class="header-section-number">2.2.4</span> Stack</a></li>
-  <li><a href="#heap" id="toc-heap" class="nav-link" data-scroll-target="#heap"><span class="header-section-number">2.2.5</span> Heap</a></li>
+  <li><a href="#sec-stack" id="toc-sec-stack" class="nav-link" data-scroll-target="#sec-stack"><span class="header-section-number">2.2.4</span> Stack</a></li>
+  <li><a href="#sec-heap" id="toc-sec-heap" class="nav-link" data-scroll-target="#sec-heap"><span class="header-section-number">2.2.5</span> Heap</a></li>
   <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary"><span class="header-section-number">2.2.6</span> Summary</a></li>
+  </ul></li>
+  <li><a href="#sec-allocators" id="toc-sec-allocators" class="nav-link" data-scroll-target="#sec-allocators"><span class="header-section-number">2.3</span> Allocators</a>
+  <ul class="collapse">
+  <li><a href="#what-are-allocators" id="toc-what-are-allocators" class="nav-link" data-scroll-target="#what-are-allocators"><span class="header-section-number">2.3.1</span> What are allocators?</a></li>
+  <li><a href="#why-you-or-someone-need-an-allocator" id="toc-why-you-or-someone-need-an-allocator" class="nav-link" data-scroll-target="#why-you-or-someone-need-an-allocator"><span class="header-section-number">2.3.2</span> Why you (or someone) need an allocator?</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -280,8 +285,8 @@ div.csl-indent {
 <p>These two types of memory don’t actually duel with each other. This is a commom mistake that beginners have, when seeing “x vs y” styles of tabloid headlines. These two types of memory are actually complementary to each other. So, in almost every Zig program that you might ever write, you will likely use a combination of both. I will describe each memory space in detail over the next sections. But for now, I just want to stablish the main difference between these two types of memory.</p>
 <p>In essence, the stack memory is normally used to store values whose length is fixed and known at compile time. In contrast, the heap memory is a much more <em>dinamic</em> type of memory space, meaning that, it is used to store values whose length might grow during the execution (runtime) of your program <span class="citation" data-cites="jenny2022">(<a href="../references.html#ref-jenny2022" role="doc-biblioref">Chen and Guo 2022</a>)</span>. Lengths that grow during runtime are intrinsically “runtime known” type of values. In other words, if you have a variable whose length might grow during runtime, then, the length of this variable becomes not known at compile time. These types of variables are usually stored in the heap memory space.</p>
 </section>
-<section id="stack" class="level3" data-number="2.2.4">
-<h3 data-number="2.2.4" class="anchored" data-anchor-id="stack"><span class="header-section-number">2.2.4</span> Stack</h3>
+<section id="sec-stack" class="level3" data-number="2.2.4">
+<h3 data-number="2.2.4" class="anchored" data-anchor-id="sec-stack"><span class="header-section-number">2.2.4</span> Stack</h3>
 <p>The stack is a type of memory that uses the power of the <em>stack data structure</em>, hence the name. A “stack” is a type of <em>data structure</em> that uses a “last in, first out” (LIFO) mechanism to store the values you give it to. I imagine you are familiar with this data structure. But, if you are not, the <a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)">Wikipedia page</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> , or, the <a href="https://www.geeksforgeeks.org/stack-data-structure/">Geeks For Geeks page</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> are both excellent and easy resources to fully understand how this data structure works.</p>
 <p>So, the stack memory space is a type of memory that stores values using a stack data structure. It adds and removes values from the memory by following a “last in, first out” (LIFO) principle.</p>
 <p>In general, every function call that you make in Zig will always allocate some space in the stack <span class="citation" data-cites="jenny2022 zigdocs">(<a href="../references.html#ref-jenny2022" role="doc-biblioref">Chen and Guo 2022</a>; <a href="../references.html#ref-zigdocs" role="doc-biblioref">Zig Foundation 2024</a>)</span>. The value of each function argument given to the function in this function call is stored in this stack space. Also, every local variable that you declare inside the function scope are normally stored in this same stack space.</p>
@@ -345,14 +350,17 @@ Important
 </div>
 <p>But what if you really need to use this local variable in some way after your function returns? How can you do this? The answer is: “in the same you would do if this was a C or C++ program. By returning an address to a variable stored in the heap”. The heap memory have a much more flexible lifecycle, and allows you to get a valid pointer to a local variable of a function that already returned from it’s scope.</p>
 </section>
-<section id="heap" class="level3" data-number="2.2.5">
-<h3 data-number="2.2.5" class="anchored" data-anchor-id="heap"><span class="header-section-number">2.2.5</span> Heap</h3>
+<section id="sec-heap" class="level3" data-number="2.2.5">
+<h3 data-number="2.2.5" class="anchored" data-anchor-id="sec-heap"><span class="header-section-number">2.2.5</span> Heap</h3>
 <p>While the stack accepts only variables whose length is known at compile-time, the heap is much more dinamic (and flexible) type of memory. It is the perfect type of memory to use on variables whose size/length might grow during the execution of your program. Virtually any application that behaves as a server is a classic use case of the heap. A HTTP server, a SSH server, a DNS server, a LSP server, … any type of server.</p>
 <p>In summary, a server is a type of application that runs for long periods of time, and that serves (or “deals with”) any incoming request that reaches this particular server. The heap is a good choice for this type of system, mainly because the server does not know upfront how many requests it will receive from users, while it is active. It could be one single request, or, 5 thousand requests, or, it could also be zero requests. The server needs to have the ability to allocate and manage it’s memory according to how many requests it receives.</p>
 <p>Another key difference between the stack and the heap, is that the heap is a type of memory that you, the programmer, have complete control over. This makes the heap a more flexible type of memory, but it also makes harder to work with it. Because you, the programmer, is responsible for managing everything related to it. Including where the memory is allocated, how much memory is allocated, and where this memory is freed.</p>
 <blockquote class="blockquote">
 <p>Unlike stack memory, heap memory is allocated explicitly by programmers and it won’t be deallocated until it is explicitly freed <span class="citation" data-cites="jenny2022">(<a href="../references.html#ref-jenny2022" role="doc-biblioref">Chen and Guo 2022</a>)</span>.</p>
 </blockquote>
+<p>To store a variable in the heap, you, the programmer, needs to explicitly tells Zig to do so, by using an allocator to allocate some space in the heap.</p>
+<p>Most allocators in Zig allocate memory on the heap. But some exceptions to this rule are <code>ArenaAllocator()</code> and <code>FixedBufferAllocator()</code>. The <code>ArenaAllocator()</code> is a special type of allocator that works in conjunction with a second type of allocator. On the other side, the <code>FixedBufferAllocator()</code> is an allocator that works based on buffer object created on the stack. This means that the <code>FixedBufferAllocator()</code> makes allocations only on the stack.</p>
+<p>At <a href="#sec-allocators" class="quarto-xref"><span>Section 2.3</span></a>, I will present how you can use allocators to allocate memory in Zig.</p>
 </section>
 <section id="summary" class="level3" data-number="2.2.6">
 <h3 data-number="2.2.6" class="anchored" data-anchor-id="summary"><span class="header-section-number">2.2.6</span> Summary</h3>
@@ -363,11 +371,38 @@ Important
 <li><p>every variable (constant or not) whose value <strong>is not known at compile time</strong> is stored in the stack of the current scope.</p></li>
 <li><p>if a variable is created with the method <code>alloc()</code> or <code>create()</code> of an allocator object, this variable is stored in the memory space used by this particular allocator object. Most of allocators available in Zig use the heap memory, so, this variable is likely stored in the heap (<code>FixedBufferAllocator()</code> is an exception to that).</p></li>
 </ol>
+</section>
+</section>
+<section id="sec-allocators" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="sec-allocators"><span class="header-section-number">2.3</span> Allocators</h2>
+<p>One key aspect about Zig, is that there are “no hidden-memory allocations” in Zig. What that really means, is that “no allocations happen behind your back in the standard library” <span class="citation" data-cites="zigguide">(<a href="../references.html#ref-zigguide" role="doc-biblioref">Sobeston 2024</a>)</span>.</p>
+<p>This is a known problem specially in C++. Because in C++, there are some operators that allocates memory behind the scene, and there is no way for you to known that, until you actually read the source code of these operators, and find the memory allocation calls. Many programmers find this behaviour annoying and hard to keep track of.</p>
+<p>But, in Zig, if a function, an operator, or anything from the standard library needs to allocate some memory during it’s execution, then, this function/operator needs to receive (as input) an allocator provided by the user, to actually be able to allocate the memory it needs. This creates a clear distinction between functions that “do not” from those that “actually do” allocate memory.</p>
+<p>So, if a function, or operator, have an allocator object as one of it’s inputs/arguments, then, you know for sure that this function/operator will allocate some memory during it’s execution. You get a lot of control over where and how much memory this function can allocate. Because it is you, the user/programmer, that provides the allocator for the function to use. This gives you total control over memory management in Zig.</p>
+<section id="what-are-allocators" class="level3" data-number="2.3.1">
+<h3 data-number="2.3.1" class="anchored" data-anchor-id="what-are-allocators"><span class="header-section-number">2.3.1</span> What are allocators?</h3>
+<p>Allocators in Zig are objects that you can use to allocate memory for your program. They work similar to the memory allocating functions in C, like <code>malloc()</code> and <code>calloc()</code>. So, if you need to use more memory than you initially have, during the execution of your program, you can simply ask for more memory using an allocator.</p>
+<p>Zig offers different types of allocators, and they are usually available through the <code>std.heap.mem</code> module of the standard library. So, just import the Zig standard library into your Zig module (with <code>@import("std")</code>), and you can start using these allocators in your code.</p>
+</section>
+<section id="why-you-or-someone-need-an-allocator" class="level3" data-number="2.3.2">
+<h3 data-number="2.3.2" class="anchored" data-anchor-id="why-you-or-someone-need-an-allocator"><span class="header-section-number">2.3.2</span> Why you (or someone) need an allocator?</h3>
+<p>As we described at <a href="#sec-stack" class="quarto-xref"><span>Section 2.2.4</span></a>, everytime you make a function call in Zig, a space in the stack is reserved for this function call. But the stack have a key limitation which is: every variable stored in the stack have a known fixed length.</p>
+<p>But in reality, there are two very commom instances where this “fixed length limitation” of the stack is a deal braker:</p>
+<ol type="1">
+<li><p>the variables that you create inside your function might grow in size during the execution of the function.</p></li>
+<li><p>sometimes, it is impossible to know upfront how many inputs you will receive during the function call, or how big this input will be.</p></li>
+</ol>
+<p>These are two commom situations where the stack is not good for. That is why you need a different memory management strategy to store these variables inside your function. You need to use a memory type that can grow together with your variables. The heap fit this description.</p>
+<p>This is commonly known as dynamic memory management. As the objects you create grow in size during the execution of your program, you grow the amount of memory you have by allocating more memory to store these objects.</p>
+<p>You allocate more memory in Zig by using an allocator object.</p>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
 <div id="ref-jenny2022" class="csl-entry" role="listitem">
 Chen, Jenny, and Ruohao Guo. 2022. <span>“Stack and Heap Memory.”</span> <em>Introduction to Data Structures and Algorithms with C++</em>. <a href="https://courses.engr.illinois.edu/cs225/fa2022/resources/stack-heap/">https://courses.engr.illinois.edu/cs225/fa2022/resources/stack-heap/</a>.
+</div>
+<div id="ref-zigguide" class="csl-entry" role="listitem">
+Sobeston. 2024. <span>“Zig Guide.”</span> <a href="https://zig.guide/">https://zig.guide/</a>.
 </div>
 <div id="ref-zigdocs" class="csl-entry" role="listitem">
 Zig Foundation. 2024. <span>“Language Reference.”</span> <a href="https://ziglang.org/documentation/master/">https://ziglang.org/documentation/master/</a>.
@@ -465,6 +500,24 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     // clear code selection
     e.clearSelection();
   });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
   function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
     const config = {
       allowHTML: true,
@@ -499,7 +552,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
-      return note.innerHTML;
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
     });
   }
   const xrefs = window.document.querySelectorAll('a.quarto-xref');
@@ -775,12 +832,12 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../Chapters/01-zig-weird.html" class="pagination-link  aria-label=" &lt;span="" specific="" attributes&lt;="" span&gt;"="">
+      <a href="../Chapters/01-zig-weird.html" class="pagination-link" aria-label="Zig specific attributes">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Zig specific attributes</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../Chapters/01-base64.html" class="pagination-link" aria-label="<span class='chapter-number'>3</span>&nbsp; <span class='chapter-title'>Building a base64 encoder/decoder</span>">
+      <a href="../Chapters/01-base64.html" class="pagination-link" aria-label="Building a base64 encoder/decoder">
         <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Building a base64 encoder/decoder</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>

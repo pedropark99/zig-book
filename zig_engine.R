@@ -2,7 +2,18 @@ library(knitr)
 library(readr)
 library(stringr)
 
-options(zig_exe_path = "/home/pedro-dev/Documents/_Programs/zig-linux-x86_64-0.11.0/zig")
+
+sys_info <- Sys.info()
+if (sys_info["sysname"] == "Linux" & str_detect(sys_info["release"], "WSL")) {
+  # Running on WSL
+  p <- "/mnt/c/Users/pedro/Documents/_Programs/zig-linux/zig"
+} else if (sys_info["sysname"] == "Linux") {
+  # Running on Ubuntu
+  p <- "/home/pedro-dev/Documents/_Programs/zig-linux/zig"
+}
+
+
+options(zig_exe_path = p)
 options(width = 50)
 
 find_zig_ <- function() {
