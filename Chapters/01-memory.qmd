@@ -113,17 +113,20 @@ or different memory spaces, which are both available in Zig.
 These two types of memory don't actually duel with
 each other. This is a commom mistake that beginners have, when seeing "x vs y" styles of
 tabloid headlines. These two types of memory are actually complementary to each other.
-So, in almost every Zig program that you might ever write, you will likely use a combination of both.
+So, in almost every Zig program that you ever write, you will likely use a combination of both.
 I will describe each memory space in detail over the next sections. But for now, I just want to
 stablish the main difference between these two types of memory.
 
 In essence, the stack memory is normally used to store values whose length is fixed and known
-at compile time. In contrast, the heap memory is a much more *dinamic* type of memory space, meaning that, it is
+at compile time. In contrast, the heap memory is a *dynamic* type of memory space, meaning that, it is
 used to store values whose length might grow during the execution (runtime) of your program [@jenny2022].
-Lengths that grow during runtime are intrinsically "runtime known" type of values.
+
+Lengths that grow during runtime are intrinsically associated to "runtime known" type of values.
 In other words, if you have a variable whose length might grow during runtime, then, the length
-of this variable becomes not known at compile time. These types of variables are usually stored
-in the heap memory space.
+of this variable becomes not known at compile time. If the length is not known at compile-time,
+the value of this variable also becomes not known at compile-time.
+These types of variables are usually stored in the heap memory space, which is
+a dynamic memory, which can grow or shrink to fit the size of your variables.
 
 
 
@@ -142,16 +145,18 @@ excellent and easy resources to fully understand how this data structure works.
 So, the stack memory space is a type of memory that stores values using a stack data structure.
 It adds and removes values from the memory by following a "last in, first out" (LIFO) principle.
 
-In general, every function call that you make in Zig will always allocate some space in the stack [@jenny2022; @zigdocs].
+Every time you make a function call in Zig, an amount of space in the stack is
+reserved for this particular function call [@jenny2022; @zigdocs].
 The value of each function argument given to the function in this function call is stored in this
 stack space. Also, every local variable that you declare inside the function scope are
-normally stored in this same stack space.
+usually stored in this same stack space.
+
 
 Looking at the example below, the variable `result` is a local variable declared inside the scope of the `add()`
 function. Because of that, this variable is stored inside the stack space reserved for the `add()` function.
-
-Also, the `r` variable (which is declared outside of the `add()` function scope) is also stored in the stack,
-specially because it does not contain a value that is *compile-time known*.
+The `r` variable (which is declared outside of the `add()` function scope) is also stored in the stack.
+But since it is declared in the "outer" scope, this variable is stored in the
+stack space that belongs to this outer scope.
 
 ```{zig}
 // ==== Variable
@@ -164,9 +169,11 @@ fn add(x: u8, y: u8) u8 {
 }
 ```
 
+
 So, any variable that you declare inside the scope of a function is always stored inside
 the space that was reserved for that particular function in the stack memory. This
-also counts for any variable declared inside the scope of your `main()` function. As you would expect, in this case, they
+also counts for any variable declared inside the scope of your `main()` function for example.
+As you would expect, in this case, they
 are stored inside the stack space reserved for the `main()` function.
 
 One very important detail about the stack memory is that **it frees itself automatically**.
@@ -174,18 +181,42 @@ This is very important, remember that. When variables are stored in the stack me
 you don't have the work (or the responsibility) of freeing/destroying these objects.
 Because they will be automatically destroyed once the stack space is freed at the end of the function scope.
 
+So, once the function call returns (or ends, if you prefer to call it this way)
+the space that was reserved in the stack is destroyed, and all of the variables that were in this space goes away with it.
+This mechanism exists because this space, and the variables within it, are not necessary anymore,
+since the function "finished it's business".
+Using the `add()` function that we exposed above as an example, it means that the variable `result` is automatically
+destroyed once the function returns.
+
 ::: {.callout-important}
-Variables that are stored in the stack are automatically
+Local variables that are stored in the stack space of a function are automatically
 freed/destroyed at the end of the function scope.
 :::
 
 
-As I sad earlier, every time you make a function call in Zig, an amount of space in the stack memory is
-reserved for this particular function call. But once the function call returns (or ends, if you prefer to call it this way)
-the space that was reserved in the stack is destroyed, and all of the variables that were in this space goes away with it.
-This mechanism exists because this space, and the variables within it, are not necessary anymore,
-since the function "finished it's business". Using the `add()` function that we exposed above as an example, it means that the variable `result` is automatically
-destroyed once the function returns.
+This same logic applies to any other special structure in Zig that have it's own scope by surrounding
+it with curly braces (`{}`).
+For loops, while loops, if else statements, etc. For example, if you declare any local
+variable in the scope of a for loop, this local variable is accessible only within the scope
+of this particular for loop. Because once the scope of this for loop ends, the space in the stack
+reserved for this for loop is freed.
+The example below demonstrates this idea.
+
+```{zig}
+#| eval: false
+// This does not compile!
+const a = [_]u8{0, 1, 2, 3, 4};
+for (0..a.len) |i| {
+    const index = i;
+    _ = index;
+}
+// Trying to use a variable that was
+// declared in the for loop scope,
+// and that does not exist anymore.
+std.debug.print("{d}\n", index);
+```
+
+
 
 One important consequence of this mechanism is that, once the function returns, you can no longer access any memory
 address that was inside the space in the stack reserved for this particular function. Because this space was
@@ -245,7 +276,7 @@ from it's scope.
 
 ### Heap {#sec-heap}
 
-While the stack accepts only variables whose length is known at compile-time, the heap is much more dinamic
+While the stack accepts only variables whose length is known at compile-time, the heap is a much more dynamic
 (and flexible) type of memory. It is the perfect type of memory to use
 on variables whose size/length might grow during the execution of your program.
 Virtually any application that behaves as a server is a classic use case of the heap.
@@ -260,24 +291,24 @@ The server needs to have the ability to allocate and manage it's memory accordin
 
 Another key difference between the stack and the heap, is that the heap is a type
 of memory that you, the programmer, have complete control over. This makes the heap a
-more flexible type of memory, but it also makes harder to work with it. Because you,
+more flexible type of memory, but it also makes it harder to work with it. Because you,
 the programmer, is responsible for managing everything related to it. Including where the memory is allocated,
 how much memory is allocated, and where this memory is freed.
 
 > Unlike stack memory, heap memory is allocated explicitly by programmers and it won’t be deallocated until it is explicitly freed [@jenny2022].
 
 To store a variable in the heap, you, the programmer, needs to explicitly tells Zig to do so,
-by using an allocator to allocate some space in the heap. 
+by using an allocator to allocate some space in the heap. At @sec-allocators, I will present how you can use allocators to allocate memory
+in Zig.
 
-Most allocators in Zig allocate memory on the heap. But some exceptions to this rule are
+The majority of allocators in Zig do allocate memory on the heap. But some exceptions to this rule are
 `ArenaAllocator()` and `FixedBufferAllocator()`. The `ArenaAllocator()` is a special
 type of allocator that works in conjunction with a second type of allocator.
 On the other side, the `FixedBufferAllocator()` is an allocator that works based on
-buffer object created on the stack. This means that the `FixedBufferAllocator()` makes
+buffer objects created on the stack. This means that the `FixedBufferAllocator()` makes
 allocations only on the stack.
 
-At @sec-allocators, I will present how you can use allocators to allocate memory
-in Zig.
+
 
 
 ### Summary
@@ -290,7 +321,7 @@ variable you declare is stored:
 
 1. every constant variable (`const`) whose value **is known at compile-time** is also stored in the global data section.
 
-1. every variable (constant or not) whose value **is not known at compile time** is stored in the stack of the current scope.
+1. every variable (constant or not) whose value **is not known at compile time** is, at first glance, stored in the stack space for the current scope.
 
 1. if a variable is created with the method `alloc()` or `create()` of an allocator object, this variable is stored in the memory space used by this particular allocator object. Most of allocators available in Zig use the heap memory, so, this variable is likely stored in the heap (`FixedBufferAllocator()` is an exception to that).
 
@@ -301,7 +332,7 @@ variable you declare is stored:
 One key aspect about Zig, is that there are "no hidden-memory allocations" in Zig.
 What that really means, is that "no allocations happen behind your back in the standard library" [@zigguide].
 
-This is a known problem specially in C++. Because in C++, there are some operators that allocates
+This is a known problem, specially in C++. Because in C++, there are some operators that do allocate
 memory behind the scene, and there is no way for you to known that, until you actually read the
 source code of these operators, and find the memory allocation calls.
 Many programmers find this behaviour annoying and hard to keep track of.
@@ -309,30 +340,30 @@ Many programmers find this behaviour annoying and hard to keep track of.
 But, in Zig, if a function, an operator, or anything from the standard library
 needs to allocate some memory during it's execution, then, this function/operator needs to receive (as input) an allocator
 provided by the user, to actually be able to allocate the memory it needs.
-This creates a clear distinction between functions that "do not" from those that "actually do"
-allocate memory.
 
-So, if a function, or operator, have an allocator object as one of it's inputs/arguments, then, you know for
-sure that this function/operator will allocate some memory during it's execution. You get a lot of control
+This creates a clear distinction between functions that "do not" from those that "actually do"
+allocate memory. Just look at the arguments of this function.
+If a function, or operator, have an allocator object as one of it's inputs/arguments, then, you know for
+sure that this function/operator will allocate some memory during it's execution.
+
+You get a lot of control
 over where and how much memory this function can allocate. Because it is you,
-the user/programmer, that provides the allocator for the function to use. This gives
-you total control over memory management in Zig.
+the user/programmer, that provides the allocator for the function to use.
+This makes "total control" over memory management easier to achieve in Zig.
 
 ### What are allocators?
 
 Allocators in Zig are objects that you can use to allocate memory for your program.
-They work similar to the memory allocating functions in C, like `malloc()` and `calloc()`.
+They are similar to the memory allocating functions in C, like `malloc()` and `calloc()`.
 So, if you need to use more memory than you initially have, during the execution of your program, you can simply ask
 for more memory using an allocator.
-
-
 
 Zig offers different types of allocators, and they are usually available through the `std.heap` module of
 the standard library. So, just import the Zig standard library into your Zig module (with `@import("std")`), and you can start
 using these allocators in your code.
 
 
-### Why you (or someone) need an allocator?
+### Why you need an allocator?
 
 As we described at @sec-stack, everytime you make a function call in Zig,
 a space in the stack is reserved for this function call. But the stack
@@ -343,12 +374,19 @@ But in reality, there are two very commom instances where this "fixed length lim
 
 1. the variables that you create inside your function might grow in size during the execution of the function.
 
-2. sometimes, it is impossible to know upfront how many inputs you will receive during the function call, or how big this input will be.
+2. sometimes, it is impossible to know upfront how many inputs you will receive, or how big this input will be.
 
-These are two commom situations where the stack is not good for.
+Also, there is another where you might want to use an allocator, which is when you want to write a function that returns a pointer
+to a local variable. As I described at @sec-stack, you cannot do that if this local variable is stored in the
+stack. However, if this variable is stored at the heap, then, you can return a pointer to this variable at the
+end of the function. Because you the programmer control the lyfetime of any heap memory that you allocate. You decide
+when this memory get's destroyed/freed.
+
+These are commom situations where the stack is not good for.
 That is why you need a different memory management strategy to
 store these variables inside your function. You need to use
-a memory type that can grow together with your variables.
+a memory type that can grow together with your variables, or that you
+can control the lyfetime of this memory.
 The heap fit this description.
 
 This is commonly known as dynamic memory management. As the variables you create grow in size
@@ -370,24 +408,58 @@ allocators available in the standard library:
 - `c_allocator()` (requires you to link to libc).
 
 
+Each allocator have it's own perks and limitations. All allocators, except (`FixedBufferAllocator()` and `ArenaAllocator()`),
+are allocators that use the heap memory. So any memory that you allocate with
+these allocators, will be placed in the heap.
+
+The `GeneralPurposeAllocator()`, as the name suggests, is a "general purpose" allocator. You can use it for every type
+of task. While, the `c_allocator()` is a alias to the C standard allocator, which is `malloc()`. So, yes, you can use
+`malloc()` in Zig if you want to. Just use `c_allocator()` from the Zig standard library. However,
+if you do use `c_allocator()`, you must link to libc when you compile your source code with the
+`zig` compiler.
+
+The `page_allocator()` is an allocator that allocates full pages of memory in the heap. In other words,
+every time you allocate memory with `page_allocator()`, a full page of memory in the heap is allocated,
+instead of just a small piece of it. The size of this page depends on the system you are using.
+
+Most systems use a page size of 4KB in the heap, so, that is the amount of memory that is normally
+allocated in each call by `page_allocator()`. That is why, `page_allocator()` is considered a
+fast, but also "wasteful" allocator in Zig. Because it allocates a big amount of memory
+in each call, and you most likely will not need that much memory in your program.
+
+The `FixedBufferAllocator()` and `ThreadSafeFixedBufferAllocator()` are allocator objects that
+work with a fixed size buffer that is stored in the stack. So these two allocators only allocates
+memory in the stack. This also means that, in order to use these allocators, you must first
+create a buffer object, and then, give this buffer as an input to these allocators.
+
 
 ### The `alloc()` and `free()` methods
 
-Look at the example below. We are accessing the `stdin`, which is
-the standard input channel to receive an input from the
-user. Then, we use the method `alloc()` of an allocator to allocate an
-array capable of storing 50 `u8` values.
+In the code example below, we are accessing the `stdin`, which is
+the standard input channel, to receive an input from the
+user. We read the input given by the user with the `readUntilDelimiterOrEof()`
+method.
+
+Now, after reading the input of the user, we need to store this input somewhere in
+our program. That is why I use an allocator in this example. I use it to allocate some
+amount of memory to store this input given by the user. More specifically, the method `alloc()`
+of the allocator object is used to allocate an array capable of storing 50 `u8` values.
 
 Notice that this `alloc()` method receives two inputs. The first one, is a type.
 This defines what type of values the allocated array will store. In the example
 below, we are allocating an array of unsigned 8-bit integers (`u8`). But
-you can create an array to store any type of value you want. Next, we
+you can create an array to store any type of value you want. Next, on the second argument, we
 define the size of the allocated array, by specifying how much elements
 this array will contain. In the case below, we are allocating an array of 50 elements.
 
+At @sec-zig-strings we described that strings in Zig are simply arrays of characters.
+Each character is represented by an `u8` value. So, this means that the array that
+was allocated in the variable `input` is capable of storing a string that is
+50-characters long.
+
 So, in essence, the expression `var input: [50]u8 = undefined` would create
 an array for 50 `u8` values in the stack of the current scope. But, you
-can allocate the same array in heap by using the expression `var input = try allocator.alloc(u8, 50)`.
+can allocate the same array in the heap by using the expression `var input = try allocator.alloc(u8, 50)`.
 
 ```{zig}
 #| auto_main: false
@@ -412,28 +484,58 @@ pub fn main() !void {
 }
 ```
 
-Also, notice that in this example, we use the keyword `defer` to run small
+Also, notice that in this example, we use the keyword `defer` to run a small
 piece of code at the end of the current scope, which is the expression `allocator.free(input)`.
 When you execute this expression, the allocator will free the memory that it allocated
 for the `input` variable.
 
-We have talked about this at @sec-heap. You should always explicitly free any memory that you allocate
-using an allocator. You do that by using the `free()` method of the same allocator object you
-used to allocate this memory. The `defer` keyword helps you to make sure that
-this free operation is executed at the end of the current scope.
+We have talked about this at @sec-heap. You **should always** explicitly free any memory that you allocate
+using an allocator! You do that by using the `free()` method of the same allocator object you
+used to allocate this memory. The `defer` keyword is used in this example only to help us execute
+this free operation at the end of the current scope.
 
 
 ### The `create()` and `destroy()` methods
 
 With the `alloc()` and `free()` methods, you can allocate memory to store multiple elements
-at once. But what if you need enough space to store just a single item? Should you
+at once. In other words, with these methods, we always allocate an array to store multiple elements at once.
+But what if you need enough space to store just a single item? Should you
 allocate an array of a single element through `alloc()`?
 
-For this type of situation, every allocator offers the `create()` and `destroy()` methods,
-which are used to allocate memory for a single item, and to free this memory for a single
-item, respectively.
+The answer is no! In this case,
+you should use the `create()` method of the allocator object.
+Every allocator object offers the `create()` and `destroy()` methods,
+which are used to allocate and free memory for a single item, respectively.
 
 So, in essence, if you want to allocate memory to store an array of elements, you
 should use `alloc()` and `free()`. But if you need to store just a single item,
 then, the `create()` and `destroy()` methods are ideal for you.
+
+In the example below, I'm defining a struct to represent an user of some sort.
+It could be an user for a game, or a software to manage resources, it doesn't mater.
+Notice that I use the `create()` method this time, to store a single `User` object
+in the program. Also notice that I use the `destroy()` method to free the memory
+used by this object at the end of the scope.
+
+```{zig}
+#| auto_main: false
+const std = @import("std");
+const User = struct {
+    id: usize,
+    name: []const u8,
+
+    pub fn init(id: usize, name: []const u8) User {
+        return .{ .id = id, .name = name };
+    }
+};
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    const user = try allocator.create(User);
+    defer allocator.destroy(user);
+
+    user.* = User.init(0, "Pedro");
+}
+```
 
