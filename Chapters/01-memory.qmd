@@ -432,6 +432,40 @@ work with a fixed size buffer that is stored in the stack. So these two allocato
 memory in the stack. This also means that, in order to use these allocators, you must first
 create a buffer object, and then, give this buffer as an input to these allocators.
 
+The `ArenaAllocator()` is an allocator object that takes a child allocator as input. The idea behind the `ArenaAllocator()` in Zig
+is similar to the concept of "arenas" in the programming language Go[^go-arena]. It is an allocator object that allows you
+to allocate more memory many times you want, but, at the same time, you only need to free all the memory you allocated once.
+In other words, if you have, for example, called 5 times the method `alloc()` of an `ArenaAllocator()` object, you can
+free all the memory you allocated over these 5 calls at once, by simply calling the `deinit()` method of the same `ArenaAllocator()` object.
+
+[^go-arena]: <https://go.dev/src/arena/arena.go>
+
+If you give, for example, a `GeneralPurposeAllocator()` object as input to the `ArenaAllocator()` constructor, like in the example below, then, the allocations
+you perform with `alloc()` will actually be made with the underlying object `GeneralPurposeAllocator()` that was passed.
+So, with an arena allocator, any new memory you ask for is allocated by the child allocator. The only thing that an arena allocator
+really do is helping you to free all the memory you allocated multiple times with just a single command. In the example
+below, I called `alloc()` 3 times. So, if I did not used an arena allocator, then, I would need to call
+`free()` 3 times to free all the allocated memory.
+
+```{zig}
+#| eval: false
+#| auto_main: false
+const std = @import("std");
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var aa = std.heap.ArenaAllocator.init(gpa.allocator());
+    defer aa.deinit();
+    const allocator = aa.allocator();
+
+    const in1 = allocator.alloc(u8, 5);
+    const in2 = allocator.alloc(u8, 10);
+    const in3 = allocator.alloc(u8, 15);
+    _ = in1; _ = in2; _ = in3;
+}
+```
+
+
 
 ### The `alloc()` and `free()` methods
 

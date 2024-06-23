@@ -427,6 +427,23 @@ Important
 <p>The <code>page_allocator()</code> is an allocator that allocates full pages of memory in the heap. In other words, every time you allocate memory with <code>page_allocator()</code>, a full page of memory in the heap is allocated, instead of just a small piece of it. The size of this page depends on the system you are using.</p>
 <p>Most systems use a page size of 4KB in the heap, so, that is the amount of memory that is normally allocated in each call by <code>page_allocator()</code>. That is why, <code>page_allocator()</code> is considered a fast, but also “wasteful” allocator in Zig. Because it allocates a big amount of memory in each call, and you most likely will not need that much memory in your program.</p>
 <p>The <code>FixedBufferAllocator()</code> and <code>ThreadSafeFixedBufferAllocator()</code> are allocator objects that work with a fixed size buffer that is stored in the stack. So these two allocators only allocates memory in the stack. This also means that, in order to use these allocators, you must first create a buffer object, and then, give this buffer as an input to these allocators.</p>
+<p>The <code>ArenaAllocator()</code> is an allocator object that takes a child allocator as input. The idea behind the <code>ArenaAllocator()</code> in Zig is similar to the concept of “arenas” in the programming language Go<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a>. It is an allocator object that allows you to allocate more memory many times you want, but, at the same time, you only need to free all the memory you allocated once. In other words, if you have, for example, called 5 times the method <code>alloc()</code> of an <code>ArenaAllocator()</code> object, you can free all the memory you allocated over these 5 calls at once, by simply calling the <code>deinit()</code> method of the same <code>ArenaAllocator()</code> object.</p>
+<p>If you give, for example, a <code>GeneralPurposeAllocator()</code> object as input to the <code>ArenaAllocator()</code> constructor, like in the example below, then, the allocations you perform with <code>alloc()</code> will actually be made with the underlying object <code>GeneralPurposeAllocator()</code> that was passed. So, with an arena allocator, any new memory you ask for is allocated by the child allocator. The only thing that an arena allocator really do is helping you to free all the memory you allocated multiple times with just a single command. In the example below, I called <code>alloc()</code> 3 times. So, if I did not used an arena allocator, then, I would need to call <code>free()</code> 3 times to free all the allocated memory.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> aa = std.heap.ArenaAllocator.init(gpa.allocator());</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> aa.deinit();</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = aa.allocator();</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> in1 = allocator.alloc(<span class="dt">u8</span>, <span class="dv">5</span>);</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> in2 = allocator.alloc(<span class="dt">u8</span>, <span class="dv">10</span>);</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> in3 = allocator.alloc(<span class="dt">u8</span>, <span class="dv">15</span>);</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    _ = in1; _ = in2; _ = in3;</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 </section>
 <section id="the-alloc-and-free-methods" class="level3" data-number="2.3.4">
 <h3 data-number="2.3.4" class="anchored" data-anchor-id="the-alloc-and-free-methods"><span class="header-section-number">2.3.4</span> The <code>alloc()</code> and <code>free()</code> methods</h3>
@@ -436,25 +453,25 @@ Important
 <p>At <a href="01-zig-weird.html#sec-zig-strings" class="quarto-xref"><span>Section 1.2</span></a> we described that strings in Zig are simply arrays of characters. Each character is represented by an <code>u8</code> value. So, this means that the array that was allocated in the variable <code>input</code> is capable of storing a string that is 50-characters long.</p>
 <p>So, in essence, the expression <code>var input: [50]u8 = undefined</code> would create an array for 50 <code>u8</code> values in the stack of the current scope. But, you can allocate the same array in the heap by using the expression <code>var input = try allocator.alloc(u8, 50)</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdin = std.io.getStdIn();</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> input = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">50</span>);</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.free(input);</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..input.len) |i| <span class="op">{</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>        input[i] = <span class="dv">0</span>; <span class="co">// initialize all fields to zero.</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">// read user input</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> input_reader = stdin.reader();</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> input_reader.readUntilDelimiterOrEof(</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        input,</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        <span class="ch">'\n'</span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>input<span class="op">}</span>);</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdin = std.io.getStdIn();</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> input = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">50</span>);</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.free(input);</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..input.len) |i| <span class="op">{</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        input[i] = <span class="dv">0</span>; <span class="co">// initialize all fields to zero.</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">// read user input</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> input_reader = stdin.reader();</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> input_reader.readUntilDelimiterOrEof(</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>        input,</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>        <span class="ch">'\n'</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>input<span class="op">}</span>);</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Also, notice that in this example, we use the keyword <code>defer</code> to run a small piece of code at the end of the current scope, which is the expression <code>allocator.free(input)</code>. When you execute this expression, the allocator will free the memory that it allocated for the <code>input</code> variable.</p>
 <p>We have talked about this at <a href="#sec-heap" class="quarto-xref"><span>Section 2.2.5</span></a>. You <strong>should always</strong> explicitly free any memory that you allocate using an allocator! You do that by using the <code>free()</code> method of the same allocator object you used to allocate this memory. The <code>defer</code> keyword is used in this example only to help us execute this free operation at the end of the current scope.</p>
@@ -466,24 +483,24 @@ Important
 <p>So, in essence, if you want to allocate memory to store an array of elements, you should use <code>alloc()</code> and <code>free()</code>. But if you need to store just a single item, then, the <code>create()</code> and <code>destroy()</code> methods are ideal for you.</p>
 <p>In the example below, I’m defining a struct to represent an user of some sort. It could be an user for a game, or a software to manage resources, it doesn’t mater. Notice that I use the <code>create()</code> method this time, to store a single <code>User</code> object in the program. Also notice that I use the <code>destroy()</code> method to free the memory used by this object at the end of the scope.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> User = <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    id: <span class="dt">usize</span>,</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    name: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(id: <span class="dt">usize</span>, name: []<span class="kw">const</span> <span class="dt">u8</span>) User <span class="op">{</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> .<span class="op">{</span> .id = id, .name = name <span class="op">}</span>;</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> user = <span class="kw">try</span> allocator.create(User);</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.destroy(user);</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    user.* = User.init(<span class="dv">0</span>, <span class="st">"Pedro"</span>);</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> User = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    id: <span class="dt">usize</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    name: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(id: <span class="dt">usize</span>, name: []<span class="kw">const</span> <span class="dt">u8</span>) User <span class="op">{</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> .<span class="op">{</span> .id = id, .name = name <span class="op">}</span>;</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> user = <span class="kw">try</span> allocator.create(User);</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.destroy(user);</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    user.* = User.init(<span class="dv">0</span>, <span class="st">"Pedro"</span>);</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 
@@ -507,6 +524,7 @@ Zig Foundation. 2024. <span>“Language Reference.”</span> <a href="https://zi
 <li id="fn2"><p><a href="https://www.geeksforgeeks.org/stack-data-structure/" class="uri">https://www.geeksforgeeks.org/stack-data-structure/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn3"><p><a href="https://ziglang.org/documentation/master/#Lifetime-and-Ownership" class="uri" role="doc-biblioref">https://ziglang.org/documentation/master/#Lifetime-and-Ownership</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn4"><p><a href="https://ziglang.org/documentation/master/#Undefined-Behavior" class="uri" role="doc-biblioref">https://ziglang.org/documentation/master/#Undefined-Behavior</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p><a href="https://go.dev/src/arena/arena.go" class="uri">https://go.dev/src/arena/arena.go</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
