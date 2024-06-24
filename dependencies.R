@@ -1,6 +1,11 @@
 install.packages(
-  "readr",
-  "knitr",
-  "rmarkdown",
-  "stringr"
+  c(
+    "readr",
+    "knitr",
+    "rmarkdown",
+    "stringr",
+    "gt",
+    "tibble"
+  )
 )
+

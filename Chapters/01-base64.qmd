@@ -170,16 +170,33 @@ until it fills the space that it needs.
 
 That is why at @fig-base64-algo1, on the third group after the 6-bit transformation,
 2 extra zeros were added to fill the gap in this group, and also, the fourth group (which is the last 6-bit group)
-after the 6-bit transformation is entirely made by zeros that were added by the algorithm.
+is entirely made by zeros that were added by the algorithm.
 
 So every time that the base64 algorithm can't produce a full group of 6 bits, it
 simply fills the gap in this group with zeros, until it get's the 6 bits that it needs.
 
 Is worth mentioning that, everytime that the algorithm produces a group of 6 bits that
-is entirely composed by zeros, this group of 6 bits is automatically mapped to
-the character `=` (equal sign). In other works, the group `000000` is translated into the
-character `=`. Because it represents the end of meaningful characters in the sequence.
+is entirely composed by these extra zeros added by the algorithm, then, this group of 6 bits is automatically mapped to
+the character `=` (equal sign). However, notice that a group of 6-bit entirely made by **extra zeros**,
+is different than a group of 6-bit entirely made by **zeros**.
 
+In other words, if the algorithm produces a 6-bit group made by zeros, without
+needing to include extra-zeros to fill any gap, then, this "group of zeros" is interpreted as is. In binary,
+the 6-bit group `000000` simply means zero. So, if we give the index zero to the function `_char_at()`,
+this zero index is mapped to the first character in the base64 scale, which is "A".
+
+So be aware of this important distinction. A group of "extra-zeros" that are "filling the gap"
+is different than a group of actual zeros that were calculated by the 6-bit transformation.
+As an example, if you give the string "0" as input to a base64 encoder, this string is
+translated into the base64 sequence "MA==".
+
+The character "0" is, in binary, the sequence `00110000`[^zero-note]. So, with the 6-bit transformation
+exposed at @fig-base64-algo1, this single character would produce these two 6-bit groups: `001100`, `000000`.
+The other two 6-bit groups are entirely made by extra-zeros, and that is why the last
+two characters in the output sequence (MA==) are `==`.
+
+
+[^zero-note]: Notice that, the character "0" is different than the actual number 0, which is simply zero in binary.
 
 ### A base64 decoder {#sec-base64-decoder-algo}
 
@@ -303,20 +320,11 @@ fn _calc_decode_length(input: []const u8) u64 {
 In this section, we can start building the logic behind the `encode()` function, which
 will be responsible for encoding messages into the base64 encoding system.
 
-### Quick & dirty approach
-
-To get a better understanding of what we need to do, let's implement just the bare minimum of code
-to convert some input into the base64 encoding system. This will be a "quick and dirty" approach.
-It doesn't need to be preety or good quality code. It just needs to work.
 
 
-<!--
-Just as a quick reminder, even though the input have only a single byte, the output
-of the encoder is always 4 bytes for cases such as this, where we have less than or equal to 3 bytes
-^[As we described at @sec-base64-length-out, if length of input is less than or equal to 3 bytes, then, the length of output is 4 bytes] to work on.
--->
+### The 6-bit transformation
 
-The core part of the base64 encoder algorithm is the 6-bit transformation that was presented at @fig-base64-algo1.
+The 6-bit transformation presented at @fig-base64-algo1 is the core part of the base64 encoder algorithm.
 By understanding how this transformation is made in code, the rest of the algorithm becomes much simpler
 to comprehend.
 
@@ -325,35 +333,197 @@ Bitwise operators are essential to any type of low-level operation that is done 
 the operators *bif shift to the left* (`<<`), *bit shift to the right* (`>>`), and the *bitwise and* (`&`) are used. They
 are the core solution for the 6-bit transformation.
 
-If you have the perfect window of 3 bytes to work on, how the 6-bit transformation
-is made in these bytes to produce the 4 bytes of output? The bulletpoints below
-summarizes the process. I use the variable `output` to refer to the bytes in the output,
+We have 3 different scenarios that we need to account for in this transformation. First, is the perfect scenario,
+where we have the perfect window of 3 bytes to work on. Second, we have the scenario where we have a window of only
+two bytes to work with. And last, we have the scenario where we have a window of one single byte.
+
+In each of these 3 scenarios, the 6-bit transformation works a bit different. To make the explanation
+easier, I will use the variable `output` to refer to the bytes in the output of the base64 encoder,
 and the variable `input` to refer to the bytes in the input of the encoder.
 
-- the `output[0]` is produced by moving the bits in the first byte in the input two positions to the right.
-- the `output[1]` is produced by moving the bits in the byte `input[0]` four positions to the left.
 
-Let's begin by building the first byte in the ouput of the encoder. This is the easiest byte of the 4 bytes in the output
-to build, since we only need to extract the first 6-bits from the first and only byte of the input (`01001000`).
-To collect these first 6-bits, we can use the *bit shift to the right* (`>>`) operator.
-We simply move the bits of the first byte two places to the right (`input[0] >> 2`).
+If you have the perfect window of 3 bytes, these are steps for the 6-bit transformation:
+
+1. `output[0]` is produced by moving the bits from `input[0]` two positions to the right.
+1. `output[1]` is produced by summing two components. First, take the last two bits from `input[0]`, then, move them four positions to the left. Second, move the bits from `input[1]` four positions to the right. Sum these two components.
+1. `output[2]` is produced by summing two components. First, take the last four buts from `input[1]`, then, move them two positions to the left. Second, move the buts from `input[2]` six positions to the right.
+1. `output[3]` is produced by taking the last six bits from `input[2]`.
+
+
+If you have a window of 2 bytes, then, the steps 3 and 4, which produces the bytes `output[2]` and `output[3]`, change a little bit,
+and they become:
+
+- `output[2]` is produced by taking the last 4 bits from `input[1]`, then, move them two positions to the left.
+- `output[3]` is the character `'='`.
+
+
+At last, if you have a window of a single byte, then, the steps 2 to 4, which produces the bytes `output[1]`, `output[2]` and `output[3]` change,
+becoming:
+
+- `output[1]` is produced by taking the last two bits from `input[0]`, then, move them four positions to the left.
+- `output[2]` and `output[3]` are the character `=`.
+
+
+If these bulletpoints were a bit confusing for you, you may find the @tbl-transf-6bit more intuitive.
+This table unifies all this logic into a simple table. Notice that
+this table also provides the exact expression in Zig that creates the corresponding
+byte in the output.
+
+
+::: {#tbl-transf-6bit}
+
+```{r}
+#| echo: false
+library(gt)
+library(tibble)
+
+table_data <- tibble(
+  "Number of bytes in the window" = c(3L, 3L, 3L, 3L,
+                                      2L, 2L, 2L, 2L,
+                                      1L, 1L, 1L, 1L),
+  "Byte index in the output" = c(0:3, 0:3, 0:3),
+  "In code" = c(
+    "`input[0] >> 2`",
+    "`((input[0] & 0x03) << 4) +`\n\n`(input[1] >> 4)`",
+    "`((input[1] & 0x0f) << 2) +`\n\n`(input[2] >> 6)`",
+    "`input[2] & 0x3f`",
+
+    "`input[0] >> 2`",
+    "`((input[0] & 0x03) << 4) +`\n\n`(input[1] >> 4)`",
+    "`((input[1] & 0x0f) << 2)`",
+    "`'='`",
+
+    "`input[0] >> 2`",
+    "`((input[0] & 0x03) << 4)`",
+    "`'='`",
+    "`'='`"
+  )
+)
+
+
+table <- table_data |>
+  gt() |> 
+  fmt_markdown(columns = "In code") |>
+  cols_align(align="left") |>
+  # cols_width(
+  #   `Number of bytes in the window` ~ px(150),
+  #   `Byte index in the output` ~ px(150)
+  # ) |> 
+  cols_label(
+    `Number of bytes in the window` = md("**Number of bytes in the window**"),
+    `Byte index in the output` = md("**Byte index in the output**"),
+    `In code` = md("**In code**")
+  )
+
+
+
+
+if (knitr::is_html_output()) {
+  table |> gt::as_raw_html()
+} else {
+  table |> gt::as_latex()
+}
+
+```
+
+How the 6-bit transformation translates into code in different window settings.
+
+:::
+
+
+### Quick & dirty approach
+
+To get a better understanding of what we need to do, let's implement just the bare minimum of code
+to convert some input into the base64 encoding system. This will be a "quick and dirty" approach.
+It doesn't need to be preety or good quality code. It just needs to work.
+
+#### First byte in the output
+
+Let's begin by building the first byte in the output of the encoder. This is the easiest byte of the 4 bytes in the output
+to build. We only need to move the bits from the first byte in the input (`01001000`) two positions to the right,
+with the *bit shift to the right* (`>>`) operator.
 
 By moving the bits two places to the right, we get the sequence `00010010` as output. As a result, the first 6 bits
 of the first byte in the input were moved to the end of the byte.
-
 With this operation, we get the first byte of the ouput, which corresponds to the index in the base64 scale for the first character
 in the base64 scale.
 
 
 
 ```{zig}
-pub fn main() !void {
-    const input = "Hi";
-    var output = [4]u8{0,0,0,0};
-    output[0] = input[0] >> 2;
-}
+#| auto_main: true
+const input = "Hi";
+var output = [4]u8{0,0,0,0};
+output[0] = input[0] >> 2;
 ```
 
+#### Second byte in the output
+
+The second byte in the output is produced by summing two components together. On the first component,
+we need to select the last two bits in the first byte of the input. We do that, by using the "bitwise and" (`&`)
+operator and the hexadecimal value `0x03`, which is, in binary, the sequence `00000011`. Notice
+that only the last two bits in `0x03` are "on" (i.e. setted to one).
+
+With this `&` operator and the `0x03` value, we essentially set all bits that we do not care about (in this case,
+the first 6 bits) to zero. By setting them to zero, we essentially remove these bits from the equation.
+Only the last two bits of the byte maintain their original values.
+After this operation, we just move the resulting bits four positions to the left.
+
+To produce the second component, we simply take second byte in the input, and then, we move it's bits
+four positions to the right. At last, we just sum these two components together to form the second byte in the output.
+
+```{zig}
+#| eval: false
+#| auto_main: true
+const component1 = ((input[0] & 0x03) << 4)
+const component2 = (input[1] >> 4)
+output[1] = component1 + component2;
+```
+
+
+#### Third byte in the output
+
+The third byte in the output is also produced by summing two components together.
+In the first component, we need to take the last 4 bits in the second byte in the input. Then, we move
+these bits two positions to the left. In the second component, we take the third byte in the input,
+and move it's bits six positions to the right.
+
+
+```{zig}
+#| eval: false
+#| auto_main: true
+const component1 = ((input[1] & 0x0f) << 2);
+const component2 = (input[2] >> 6);
+output[2] = component1 + component2;
+```
+
+
+#### Fourth byte in the output
+
+The fourth byte in the output is produced by taking the third byte in the input,
+and selecting the last six bits, with the `&` operator and the hexadecimal
+value `0x3f`.
+
+```{zig}
+#| eval: false
+#| auto_main: true
+output[3] = input[2] & 0x3f;
+```
+
+#### The end result
+
+With this dirty code, we get the end result, which is the string `SGk=`.
+We can print this string at the end of the program to see this end result:
+
+```{zig}
+#| eval: false
+#| auto_main: true
+std.debug.print("Result: {s}\n", .{output});
+```
+
+```
+Result: SGk=
+```
 
 
 
@@ -365,8 +535,9 @@ fn encode(self: Base64,
           input: []const u8,
           allocator: std.mem.Allocator) ![]u8 {
 
-    if (input.len == 0)
-    return "";
+    if (input.len == 0) {
+        return "";
+    }
 
     const n_out = _calc_encode_length(input);
     var out = try allocator.alloc(u8, n_out);

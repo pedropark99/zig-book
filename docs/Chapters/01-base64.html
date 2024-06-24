@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.554">
+<meta name="generator" content="quarto-1.4.549">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -220,8 +220,9 @@ window.Quarto = {
   <li><a href="#sec-base64-length-out" id="toc-sec-base64-length-out" class="nav-link" data-scroll-target="#sec-base64-length-out"><span class="header-section-number">3.3</span> Calculating the size of the output</a></li>
   <li><a href="#building-the-encoder-logic" id="toc-building-the-encoder-logic" class="nav-link" data-scroll-target="#building-the-encoder-logic"><span class="header-section-number">3.4</span> Building the encoder logic</a>
   <ul class="collapse">
-  <li><a href="#quick-dirty-approach" id="toc-quick-dirty-approach" class="nav-link" data-scroll-target="#quick-dirty-approach"><span class="header-section-number">3.4.1</span> Quick &amp; dirty approach</a></li>
-  <li><a href="#encapsulating-this-logic-into-a-function" id="toc-encapsulating-this-logic-into-a-function" class="nav-link" data-scroll-target="#encapsulating-this-logic-into-a-function"><span class="header-section-number">3.4.2</span> Encapsulating this logic into a function</a></li>
+  <li><a href="#the-6-bit-transformation" id="toc-the-6-bit-transformation" class="nav-link" data-scroll-target="#the-6-bit-transformation"><span class="header-section-number">3.4.1</span> The 6-bit transformation</a></li>
+  <li><a href="#quick-dirty-approach" id="toc-quick-dirty-approach" class="nav-link" data-scroll-target="#quick-dirty-approach"><span class="header-section-number">3.4.2</span> Quick &amp; dirty approach</a></li>
+  <li><a href="#encapsulating-this-logic-into-a-function" id="toc-encapsulating-this-logic-into-a-function" class="nav-link" data-scroll-target="#encapsulating-this-logic-into-a-function"><span class="header-section-number">3.4.3</span> Encapsulating this logic into a function</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -319,9 +320,12 @@ Figure&nbsp;3.1: The logic behind a base64 encoder
 </figure>
 </div>
 <p>In the example of the string “Hi” we have 2 bytes, or, 16 bits in total. So, we lack a full byte (8 bits) to complete the window of 24 bits that the base64 algorithm likes to work on. In essence, everytime that the algorithm does not meet this requirement, it simply add extra zeros until it fills the space that it needs.</p>
-<p>That is why at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a>, on the third group after the 6-bit transformation, 2 extra zeros were added to fill the gap in this group, and also, the fourth group (which is the last 6-bit group) after the 6-bit transformation is entirely made by zeros that were added by the algorithm.</p>
+<p>That is why at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a>, on the third group after the 6-bit transformation, 2 extra zeros were added to fill the gap in this group, and also, the fourth group (which is the last 6-bit group) is entirely made by zeros that were added by the algorithm.</p>
 <p>So every time that the base64 algorithm can’t produce a full group of 6 bits, it simply fills the gap in this group with zeros, until it get’s the 6 bits that it needs.</p>
-<p>Is worth mentioning that, everytime that the algorithm produces a group of 6 bits that is entirely composed by zeros, this group of 6 bits is automatically mapped to the character <code>=</code> (equal sign). In other works, the group <code>000000</code> is translated into the character <code>=</code>. Because it represents the end of meaningful characters in the sequence.</p>
+<p>Is worth mentioning that, everytime that the algorithm produces a group of 6 bits that is entirely composed by these extra zeros added by the algorithm, then, this group of 6 bits is automatically mapped to the character <code>=</code> (equal sign). However, notice that a group of 6-bit entirely made by <strong>extra zeros</strong>, is different than a group of 6-bit entirely made by <strong>zeros</strong>.</p>
+<p>In other words, if the algorithm produces a 6-bit group made by zeros, without needing to include extra-zeros to fill any gap, then, this “group of zeros” is interpreted as is. In binary, the 6-bit group <code>000000</code> simply means zero. So, if we give the index zero to the function <code>_char_at()</code>, this zero index is mapped to the first character in the base64 scale, which is “A”.</p>
+<p>So be aware of this important distinction. A group of “extra-zeros” that are “filling the gap” is different than a group of actual zeros that were calculated by the 6-bit transformation. As an example, if you give the string “0” as input to a base64 encoder, this string is translated into the base64 sequence “MA==”.</p>
+<p>The character “0” is, in binary, the sequence <code>00110000</code><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. So, with the 6-bit transformation exposed at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a>, this single character would produce these two 6-bit groups: <code>001100</code>, <code>000000</code>. The other two 6-bit groups are entirely made by extra-zeros, and that is why the last two characters in the output sequence (MA==) are <code>==</code>.</p>
 </section>
 <section id="sec-base64-decoder-algo" class="level3" data-number="3.1.4">
 <h3 data-number="3.1.4" class="anchored" data-anchor-id="sec-base64-decoder-algo"><span class="header-section-number">3.1.4</span> A base64 decoder</h3>
@@ -384,92 +388,244 @@ Figure&nbsp;3.2: The logic behind a base64 decoder
 <section id="building-the-encoder-logic" class="level2" data-number="3.4">
 <h2 data-number="3.4" class="anchored" data-anchor-id="building-the-encoder-logic"><span class="header-section-number">3.4</span> Building the encoder logic</h2>
 <p>In this section, we can start building the logic behind the <code>encode()</code> function, which will be responsible for encoding messages into the base64 encoding system.</p>
-<section id="quick-dirty-approach" class="level3" data-number="3.4.1">
-<h3 data-number="3.4.1" class="anchored" data-anchor-id="quick-dirty-approach"><span class="header-section-number">3.4.1</span> Quick &amp; dirty approach</h3>
-<p>To get a better understanding of what we need to do, let’s implement just the bare minimum of code to convert some input into the base64 encoding system. This will be a “quick and dirty” approach. It doesn’t need to be preety or good quality code. It just needs to work.</p>
-<!--
-Just as a quick reminder, even though the input have only a single byte, the output
-of the encoder is always 4 bytes for cases such as this, where we have less than or equal to 3 bytes
-^[As we described at @sec-base64-length-out, if length of input is less than or equal to 3 bytes, then, the length of output is 4 bytes] to work on.
--->
-<p>The core part of the base64 encoder algorithm is the 6-bit transformation that was presented at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a>. By understanding how this transformation is made in code, the rest of the algorithm becomes much simpler to comprehend.</p>
+<section id="the-6-bit-transformation" class="level3" data-number="3.4.1">
+<h3 data-number="3.4.1" class="anchored" data-anchor-id="the-6-bit-transformation"><span class="header-section-number">3.4.1</span> The 6-bit transformation</h3>
+<p>The 6-bit transformation presented at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a> is the core part of the base64 encoder algorithm. By understanding how this transformation is made in code, the rest of the algorithm becomes much simpler to comprehend.</p>
 <p>In essence, this 6-bit transformation is made with the help of bitwise operators. Bitwise operators are essential to any type of low-level operation that is done at the bit-level. For the specific case of the base64 algorithm, the operators <em>bif shift to the left</em> (<code>&lt;&lt;</code>), <em>bit shift to the right</em> (<code>&gt;&gt;</code>), and the <em>bitwise and</em> (<code>&amp;</code>) are used. They are the core solution for the 6-bit transformation.</p>
-<p>If you have the perfect window of 3 bytes to work on, how the 6-bit transformation is made in these bytes to produce the 4 bytes of output? The bulletpoints below summarizes the process. I use the variable <code>output</code> to refer to the bytes in the output, and the variable <code>input</code> to refer to the bytes in the input of the encoder.</p>
+<p>We have 3 different scenarios that we need to account for in this transformation. First, is the perfect scenario, where we have the perfect window of 3 bytes to work on. Second, we have the scenario where we have a window of only two bytes to work with. And last, we have the scenario where we have a window of one single byte.</p>
+<p>In each of these 3 scenarios, the 6-bit transformation works a bit different. To make the explanation easier, I will use the variable <code>output</code> to refer to the bytes in the output of the base64 encoder, and the variable <code>input</code> to refer to the bytes in the input of the encoder.</p>
+<p>If you have the perfect window of 3 bytes, these are steps for the 6-bit transformation:</p>
+<ol type="1">
+<li><code>output[0]</code> is produced by moving the bits from <code>input[0]</code> two positions to the right.</li>
+<li><code>output[1]</code> is produced by summing two components. First, take the last two bits from <code>input[0]</code>, then, move them four positions to the left. Second, move the bits from <code>input[1]</code> four positions to the right. Sum these two components.</li>
+<li><code>output[2]</code> is produced by summing two components. First, take the last four buts from <code>input[1]</code>, then, move them two positions to the left. Second, move the buts from <code>input[2]</code> six positions to the right.</li>
+<li><code>output[3]</code> is produced by taking the last six bits from <code>input[2]</code>.</li>
+</ol>
+<p>If you have a window of 2 bytes, then, the steps 3 and 4, which produces the bytes <code>output[2]</code> and <code>output[3]</code>, change a little bit, and they become:</p>
 <ul>
-<li>the <code>output[0]</code> is produced by moving the bits in the first byte in the input two positions to the right.</li>
-<li>the <code>output[1]</code> is produced by moving the bits in the byte <code>input[0]</code> four positions to the left.</li>
+<li><code>output[2]</code> is produced by taking the last 4 bits from <code>input[1]</code>, then, move them two positions to the left.</li>
+<li><code>output[3]</code> is the character <code>'='</code>.</li>
 </ul>
-<p>Let’s begin by building the first byte in the ouput of the encoder. This is the easiest byte of the 4 bytes in the output to build, since we only need to extract the first 6-bits from the first and only byte of the input (<code>01001000</code>). To collect these first 6-bits, we can use the <em>bit shift to the right</em> (<code>&gt;&gt;</code>) operator. We simply move the bits of the first byte two places to the right (<code>input[0] &gt;&gt; 2</code>).</p>
-<p>By moving the bits two places to the right, we get the sequence <code>00010010</code> as output. As a result, the first 6 bits of the first byte in the input were moved to the end of the byte.</p>
-<p>With this operation, we get the first byte of the ouput, which corresponds to the index in the base64 scale for the first character in the base64 scale.</p>
+<p>At last, if you have a window of a single byte, then, the steps 2 to 4, which produces the bytes <code>output[1]</code>, <code>output[2]</code> and <code>output[3]</code> change, becoming:</p>
+<ul>
+<li><code>output[1]</code> is produced by taking the last two bits from <code>input[0]</code>, then, move them four positions to the left.</li>
+<li><code>output[2]</code> and <code>output[3]</code> are the character <code>=</code>.</li>
+</ul>
+<p>If these bulletpoints were a bit confusing for you, you may find the <a href="#tbl-transf-6bit" class="quarto-xref">Table&nbsp;<span>3.1</span></a> more intuitive. This table unifies all this logic into a simple table. Notice that this table also provides the exact expression in Zig that creates the corresponding byte in the output.</p>
+<div id="tbl-transf-6bit" class="quarto-float anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-transf-6bit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;3.1: How the 6-bit transformation translates into code in different window settings.
+</figcaption>
+<div aria-describedby="tbl-transf-6bit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> input = <span class="st">"Hi"</span>;</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> output = [<span class="dv">4</span>]<span class="dt">u8</span><span class="op">{</span><span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span><span class="op">}</span>;</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    output[<span class="dv">0</span>] = input[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>;</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="uptoicckyu" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+  
+  
+<table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead style="border-style: none;">
+<tr class="header gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
+<th id="<strong>Number of bytes in the window</strong>" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col" style="text-align: left; border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden;" data-bgcolor="#FFFFFF" data-valign="bottom"><strong>Number of bytes in the window</strong></th>
+<th id="<strong>Byte index in the output</strong>" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col" style="text-align: left; border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden;" data-bgcolor="#FFFFFF" data-valign="bottom"><strong>Byte index in the output</strong></th>
+<th id="<strong>In code</strong>" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col" style="text-align: left; border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden;" data-bgcolor="#FFFFFF" data-valign="bottom"><strong>In code</strong></th>
+</tr>
+</thead>
+<tbody class="gt_table_body" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3;">
+<tr class="odd" style="border-style: none;">
+<td class="gt_row gt_left" headers="Number of bytes in the window" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">3</td>
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">0</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>input[0] &gt;&gt; 2</code></p></td>
+</tr>
+<tr class="even" style="border-style: none;">
+<td class="gt_row gt_left" headers="Number of bytes in the window" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">3</td>
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">1</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>((input[0] &amp; 0x03) &lt;&lt; 4) +</code></p>
+<p><code>(input[1] &gt;&gt; 4)</code></p></td>
+</tr>
+<tr class="odd" style="border-style: none;">
+<td class="gt_row gt_left" headers="Number of bytes in the window" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">3</td>
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">2</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>((input[1] &amp; 0x0f) &lt;&lt; 2) +</code></p>
+<p><code>(input[2] &gt;&gt; 6)</code></p></td>
+</tr>
+<tr class="even" style="border-style: none;">
+<td class="gt_row gt_left" headers="Number of bytes in the window" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">3</td>
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">3</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>input[2] &amp; 0x3f</code></p></td>
+</tr>
+<tr class="odd" style="border-style: none;">
+<td class="gt_row gt_left" headers="Number of bytes in the window" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">2</td>
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">0</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>input[0] &gt;&gt; 2</code></p></td>
+</tr>
+<tr class="even" style="border-style: none;">
+<td class="gt_row gt_left" headers="Number of bytes in the window" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">2</td>
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">1</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>((input[0] &amp; 0x03) &lt;&lt; 4) +</code></p>
+<p><code>(input[1] &gt;&gt; 4)</code></p></td>
+</tr>
+<tr class="odd" style="border-style: none;">
+<td class="gt_row gt_left" headers="Number of bytes in the window" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">2</td>
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">2</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>((input[1] &amp; 0x0f) &lt;&lt; 2)</code></p></td>
+</tr>
+<tr class="even" style="border-style: none;">
+<td class="gt_row gt_left" headers="Number of bytes in the window" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">2</td>
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">3</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>'='</code></p></td>
+</tr>
+<tr class="odd" style="border-style: none;">
+<td class="gt_row gt_left" headers="Number of bytes in the window" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">1</td>
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">0</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>input[0] &gt;&gt; 2</code></p></td>
+</tr>
+<tr class="even" style="border-style: none;">
+<td class="gt_row gt_left" headers="Number of bytes in the window" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">1</td>
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">1</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>((input[0] &amp; 0x03) &lt;&lt; 4)</code></p></td>
+</tr>
+<tr class="odd" style="border-style: none;">
+<td class="gt_row gt_left" headers="Number of bytes in the window" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">1</td>
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">2</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>'='</code></p></td>
+</tr>
+<tr class="even" style="border-style: none;">
+<td class="gt_row gt_left" headers="Number of bytes in the window" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">1</td>
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">3</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>'='</code></p></td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+</div>
+</figure>
 </div>
 </section>
-<section id="encapsulating-this-logic-into-a-function" class="level3" data-number="3.4.2">
-<h3 data-number="3.4.2" class="anchored" data-anchor-id="encapsulating-this-logic-into-a-function"><span class="header-section-number">3.4.2</span> Encapsulating this logic into a function</h3>
+<section id="quick-dirty-approach" class="level3" data-number="3.4.2">
+<h3 data-number="3.4.2" class="anchored" data-anchor-id="quick-dirty-approach"><span class="header-section-number">3.4.2</span> Quick &amp; dirty approach</h3>
+<p>To get a better understanding of what we need to do, let’s implement just the bare minimum of code to convert some input into the base64 encoding system. This will be a “quick and dirty” approach. It doesn’t need to be preety or good quality code. It just needs to work.</p>
+<section id="first-byte-in-the-output" class="level4" data-number="3.4.2.1">
+<h4 data-number="3.4.2.1" class="anchored" data-anchor-id="first-byte-in-the-output"><span class="header-section-number">3.4.2.1</span> First byte in the output</h4>
+<p>Let’s begin by building the first byte in the output of the encoder. This is the easiest byte of the 4 bytes in the output to build. We only need to move the bits from the first byte in the input (<code>01001000</code>) two positions to the right, with the <em>bit shift to the right</em> (<code>&gt;&gt;</code>) operator.</p>
+<p>By moving the bits two places to the right, we get the sequence <code>00010010</code> as output. As a result, the first 6 bits of the first byte in the input were moved to the end of the byte. With this operation, we get the first byte of the ouput, which corresponds to the index in the base64 scale for the first character in the base64 scale.</p>
+<div class="cell" data-auto_main="true">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> input = <span class="st">"Hi"</span>;</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> output = [<span class="dv">4</span>]<span class="dt">u8</span><span class="op">{</span><span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span><span class="op">}</span>;</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>output[<span class="dv">0</span>] = input[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="second-byte-in-the-output" class="level4" data-number="3.4.2.2">
+<h4 data-number="3.4.2.2" class="anchored" data-anchor-id="second-byte-in-the-output"><span class="header-section-number">3.4.2.2</span> Second byte in the output</h4>
+<p>The second byte in the output is produced by summing two components together. On the first component, we need to select the last two bits in the first byte of the input. We do that, by using the “bitwise and” (<code>&amp;</code>) operator and the hexadecimal value <code>0x03</code>, which is, in binary, the sequence <code>00000011</code>. Notice that only the last two bits in <code>0x03</code> are “on” (i.e.&nbsp;setted to one).</p>
+<p>With this <code>&amp;</code> operator and the <code>0x03</code> value, we essentially set all bits that we do not care about (in this case, the first 6 bits) to zero. By setting them to zero, we essentially remove these bits from the equation. Only the last two bits of the byte maintain their original values. After this operation, we just move the resulting bits four positions to the left.</p>
+<p>To produce the second component, we simply take second byte in the input, and then, we move it’s bits four positions to the right. At last, we just sum these two components together to form the second byte in the output.</p>
+<div class="cell" data-auto_main="true">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> component1 = ((input[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> component2 = (input[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>output[<span class="dv">1</span>] = component1 + component2;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="third-byte-in-the-output" class="level4" data-number="3.4.2.3">
+<h4 data-number="3.4.2.3" class="anchored" data-anchor-id="third-byte-in-the-output"><span class="header-section-number">3.4.2.3</span> Third byte in the output</h4>
+<p>The third byte in the output is also produced by summing two components together. In the first component, we need to take the last 4 bits in the second byte in the input. Then, we move these bits two positions to the left. In the second component, we take the third byte in the input, and move it’s bits six positions to the right.</p>
+<div class="cell" data-auto_main="true">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> component1 = ((input[<span class="dv">1</span>] &amp; <span class="bn">0x0f</span>) &lt;&lt; <span class="dv">2</span>);</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> component2 = (input[<span class="dv">2</span>] &gt;&gt; <span class="dv">6</span>);</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>output[<span class="dv">2</span>] = component1 + component2;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="fourth-byte-in-the-output" class="level4" data-number="3.4.2.4">
+<h4 data-number="3.4.2.4" class="anchored" data-anchor-id="fourth-byte-in-the-output"><span class="header-section-number">3.4.2.4</span> Fourth byte in the output</h4>
+<p>The fourth byte in the output is produced by taking the third byte in the input, and selecting the last six bits, with the <code>&amp;</code> operator and the hexadecimal value <code>0x3f</code>.</p>
+<div class="cell" data-auto_main="true">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>output[<span class="dv">3</span>] = input[<span class="dv">2</span>] &amp; <span class="bn">0x3f</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="the-end-result" class="level4" data-number="3.4.2.5">
+<h4 data-number="3.4.2.5" class="anchored" data-anchor-id="the-end-result"><span class="header-section-number">3.4.2.5</span> The end result</h4>
+<p>With this dirty code, we get the end result, which is the string <code>SGk=</code>. We can print this string at the end of the program to see this end result:</p>
+<div class="cell" data-auto_main="true">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Result: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>output<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Result: SGk=</code></pre>
+</section>
+</section>
+<section id="encapsulating-this-logic-into-a-function" class="level3" data-number="3.4.3">
+<h3 data-number="3.4.3" class="anchored" data-anchor-id="encapsulating-this-logic-into-a-function"><span class="header-section-number">3.4.3</span> Encapsulating this logic into a function</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> encode(self: Base64,</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>          input: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>          allocator: std.mem.Allocator) ![]<span class="dt">u8</span> <span class="op">{</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len == <span class="dv">0</span>)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="st">""</span>;</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n_out = _calc_encode_length(input);</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> out = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, n_out);</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buf = [<span class="dv">3</span>]<span class="dt">u8</span><span class="op">{</span> <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span> <span class="op">}</span>;</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> count: <span class="dt">u8</span> = <span class="dv">0</span>;</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> iout: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (input, <span class="dv">0</span>..) |_, i| <span class="op">{</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        buf[count] = input[i];</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        count += <span class="dv">1</span>;</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (count == <span class="dv">3</span>) <span class="op">{</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>            out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">1</span>] = self._char_at(</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>                ((buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span>) + (buf[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>)</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>            );</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">2</span>] = self._char_at(</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>                ((buf[<span class="dv">1</span>] &amp; <span class="bn">0x0f</span>) &lt;&lt; <span class="dv">2</span>) + (buf[<span class="dv">2</span>] &gt;&gt; <span class="dv">6</span>)</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>            );</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">3</span>] = self._char_at(buf[<span class="dv">2</span>] &amp; <span class="bn">0x3f</span>);</span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>            iout += <span class="dv">4</span>;</span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>            count = <span class="dv">0</span>;</span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (count == <span class="dv">1</span>) <span class="op">{</span></span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>        out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">1</span>] = self._char_at(</span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>            (buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span></span>
-<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>        );</span>
-<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">2</span>] = <span class="ch">'='</span>;</span>
-<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">3</span>] = <span class="ch">'='</span>;</span>
-<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (count == <span class="dv">2</span>) <span class="op">{</span></span>
-<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>        out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
-<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">1</span>] = self._char_at(</span>
-<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>            ((buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span>) + (buf[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>)</span>
-<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>        );</span>
-<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">2</span>] = self._char_at(</span>
-<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>            (buf[<span class="dv">1</span>] &amp; <span class="bn">0x0f</span>) &lt;&lt; <span class="dv">2</span></span>
-<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>        );</span>
-<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">3</span>] = <span class="ch">'='</span>;</span>
-<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>        iout += <span class="dv">4</span>;</span>
-<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> out;</span>
-<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> encode(self: Base64,</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>          input: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>          allocator: std.mem.Allocator) ![]<span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len == <span class="dv">0</span>) <span class="op">{</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="st">""</span>;</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n_out = _calc_encode_length(input);</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> out = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, n_out);</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buf = [<span class="dv">3</span>]<span class="dt">u8</span><span class="op">{</span> <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span> <span class="op">}</span>;</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> count: <span class="dt">u8</span> = <span class="dv">0</span>;</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> iout: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (input, <span class="dv">0</span>..) |_, i| <span class="op">{</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>        buf[count] = input[i];</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>        count += <span class="dv">1</span>;</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (count == <span class="dv">3</span>) <span class="op">{</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>            out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">1</span>] = self._char_at(</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>                ((buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span>) + (buf[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>)</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>            );</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">2</span>] = self._char_at(</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>                ((buf[<span class="dv">1</span>] &amp; <span class="bn">0x0f</span>) &lt;&lt; <span class="dv">2</span>) + (buf[<span class="dv">2</span>] &gt;&gt; <span class="dv">6</span>)</span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>            );</span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">3</span>] = self._char_at(buf[<span class="dv">2</span>] &amp; <span class="bn">0x3f</span>);</span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>            iout += <span class="dv">4</span>;</span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>            count = <span class="dv">0</span>;</span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (count == <span class="dv">1</span>) <span class="op">{</span></span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>        out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">1</span>] = self._char_at(</span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>            (buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span></span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">2</span>] = <span class="ch">'='</span>;</span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">3</span>] = <span class="ch">'='</span>;</span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (count == <span class="dv">2</span>) <span class="op">{</span></span>
+<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a>        out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
+<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">1</span>] = self._char_at(</span>
+<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a>            ((buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span>) + (buf[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>)</span>
+<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">2</span>] = self._char_at(</span>
+<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a>            (buf[<span class="dv">1</span>] &amp; <span class="bn">0x0f</span>) &lt;&lt; <span class="dv">2</span></span>
+<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">3</span>] = <span class="ch">'='</span>;</span>
+<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a>        iout += <span class="dv">4</span>;</span>
+<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> out;</span>
+<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 
 </section>
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p>Notice that, the character “0” is different than the actual number 0, which is simply zero in binary.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
 </section>
 
 </main> <!-- /main -->
@@ -552,24 +708,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     // clear code selection
     e.clearSelection();
   });
-    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
-    var mailtoRegex = new RegExp(/^mailto:/);
-      var filterRegex = new RegExp('/' + window.location.host + '/');
-    var isInternal = (href) => {
-        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
-    }
-    // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
-    for (var i=0; i<links.length; i++) {
-      const link = links[i];
-      if (!isInternal(link.href)) {
-        // undo the damage that might have been done by quarto-nav.js in the case of
-        // links that we want to consider external
-        if (link.dataset.originalHref !== undefined) {
-          link.href = link.dataset.originalHref;
-        }
-      }
-    }
   function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
     const config = {
       allowHTML: true,
@@ -604,11 +742,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
-      if (note) {
-        return note.innerHTML;
-      } else {
-        return "";
-      }
+      return note.innerHTML;
     });
   }
   const xrefs = window.document.querySelectorAll('a.quarto-xref');
@@ -884,7 +1018,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../Chapters/01-memory.html" class="pagination-link" aria-label="Memory and Allocators in Zig">
+      <a href="../Chapters/01-memory.html" class="pagination-link  aria-label=" &lt;span="" and="" allocators="" in="" zig&lt;="" span&gt;"="">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Memory and Allocators in Zig</span></span>
       </a>          
   </div>

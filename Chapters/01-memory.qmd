@@ -79,7 +79,8 @@ when you call the function.
 For example, the function `input_length()` contains an argument named `input`, which is an array of `u8` integers (`[]const u8`).
 Is impossible to know at compile time the value of this particular argument. We know that it will be an array of `u8` integers.
 But we can't know which exact array of `u8` integers this argument will store, before we execute this function.
-It is only *known at runtime*, which is the period of time when you program is executed.
+The value of `input` is only *known at runtime*, which is the period of time when you program is executed.
+As a consequence, the value of the expression `input.len` is also only known at runtime.
 
 So depending on which input your apply this `input_length()` function over, the `input` argument
 will probably have a different value in each case.
@@ -301,6 +302,10 @@ To store a variable in the heap, you, the programmer, needs to explicitly tells 
 by using an allocator to allocate some space in the heap. At @sec-allocators, I will present how you can use allocators to allocate memory
 in Zig.
 
+::: {.callout-important}
+Every memory you allocate in the heap needs to be explicitly freed by you, the programmer.
+:::
+
 The majority of allocators in Zig do allocate memory on the heap. But some exceptions to this rule are
 `ArenaAllocator()` and `FixedBufferAllocator()`. The `ArenaAllocator()` is a special
 type of allocator that works in conjunction with a second type of allocator.
@@ -412,11 +417,34 @@ Each allocator have it's own perks and limitations. All allocators, except (`Fix
 are allocators that use the heap memory. So any memory that you allocate with
 these allocators, will be placed in the heap.
 
+#### General-purpose allocators
+
 The `GeneralPurposeAllocator()`, as the name suggests, is a "general purpose" allocator. You can use it for every type
-of task. While, the `c_allocator()` is a alias to the C standard allocator, which is `malloc()`. So, yes, you can use
-`malloc()` in Zig if you want to. Just use `c_allocator()` from the Zig standard library. However,
-if you do use `c_allocator()`, you must link to libc when you compile your source code with the
-`zig` compiler.
+of task. In the example below, I'm allocating enough space to store a single integer in the object `some_number`.
+
+```{zig}
+#| auto_main: false
+const std = @import("std");
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    const some_number = try allocator.create(u32);
+    defer allocator.destroy(some_number);
+
+    some_number.* = @as(u32, 45);
+}
+```
+
+
+While useful, you might want to use the `c_allocator()`, which is a alias to the C standard allocator `malloc()`. So, yes, you can use
+`malloc()` in Zig if you want to. Just use the `c_allocator()` from the Zig standard library. However,
+if you do use `c_allocator()`, you must link to Libc when compiling your source code with the
+`zig` compiler, by including the flag `-lc` in your compilation process.
+If you do not link your source code to Libc, Zig will not be able to find the
+`malloc()` implementation in your system.
+
+#### Page allocator
 
 The `page_allocator()` is an allocator that allocates full pages of memory in the heap. In other words,
 every time you allocate memory with `page_allocator()`, a full page of memory in the heap is allocated,
@@ -427,14 +455,37 @@ allocated in each call by `page_allocator()`. That is why, `page_allocator()` is
 fast, but also "wasteful" allocator in Zig. Because it allocates a big amount of memory
 in each call, and you most likely will not need that much memory in your program.
 
+#### Buffer allocators
+
 The `FixedBufferAllocator()` and `ThreadSafeFixedBufferAllocator()` are allocator objects that
 work with a fixed size buffer that is stored in the stack. So these two allocators only allocates
 memory in the stack. This also means that, in order to use these allocators, you must first
 create a buffer object, and then, give this buffer as an input to these allocators.
 
+In the example below, I am creating a `buffer` object that is 10 elements long.
+Notice that I give this `buffer` object to the `FixedBufferAllocator()` constructor.
+Now, because this `buffer` object is 10 elements long, this means that I am limited to this space.
+I cannot allocate more than 10 elements with this allocator object. If I try to
+allocate more than that, the `alloc()` method will return an `OutOfMemory` error value.
+
+```{zig}
+var buffer: [10]u8 = undefined;
+for (0..buffer.len) |i| {
+    buffer[i] = 0;
+}
+
+var fba = std.heap.FixedBufferAllocator.init(&buffer);
+const allocator = fba.allocator();
+const input = try allocator.alloc(u8, 5);
+defer allocator.free(input);
+```
+
+
+#### Arena allocator
+
 The `ArenaAllocator()` is an allocator object that takes a child allocator as input. The idea behind the `ArenaAllocator()` in Zig
 is similar to the concept of "arenas" in the programming language Go[^go-arena]. It is an allocator object that allows you
-to allocate more memory many times you want, but, at the same time, you only need to free all the memory you allocated once.
+to allocate memory as many times you want, but, at the same time, you only need to free all the memory you allocated once.
 In other words, if you have, for example, called 5 times the method `alloc()` of an `ArenaAllocator()` object, you can
 free all the memory you allocated over these 5 calls at once, by simply calling the `deinit()` method of the same `ArenaAllocator()` object.
 
@@ -449,20 +500,16 @@ below, I called `alloc()` 3 times. So, if I did not used an arena allocator, the
 
 ```{zig}
 #| eval: false
-#| auto_main: false
-const std = @import("std");
+#| auto_main: true
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+var aa = std.heap.ArenaAllocator.init(gpa.allocator());
+defer aa.deinit();
+const allocator = aa.allocator();
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    var aa = std.heap.ArenaAllocator.init(gpa.allocator());
-    defer aa.deinit();
-    const allocator = aa.allocator();
-
-    const in1 = allocator.alloc(u8, 5);
-    const in2 = allocator.alloc(u8, 10);
-    const in3 = allocator.alloc(u8, 15);
-    _ = in1; _ = in2; _ = in3;
-}
+const in1 = allocator.alloc(u8, 5);
+const in2 = allocator.alloc(u8, 10);
+const in3 = allocator.alloc(u8, 15);
+_ = in1; _ = in2; _ = in3;
 ```
 
 
