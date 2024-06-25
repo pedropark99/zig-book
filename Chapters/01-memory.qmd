@@ -351,6 +351,29 @@ allocate memory. Just look at the arguments of this function.
 If a function, or operator, have an allocator object as one of it's inputs/arguments, then, you know for
 sure that this function/operator will allocate some memory during it's execution.
 
+An example is the `allocPrint()` function from the Zig standard library. With this function, you can
+write a new string using format specifiers. So, this function is, for example, very similar to the function `sprintf()` in C.
+In order to write such new string, the `allocPrint()` function needs to allocate some memory to store the
+output string.
+
+That is why, the first argument of this function is an allocator object that you, the user/programmer, gives
+as input to the function. In the example below, I am using the `GeneralPurposeAllocator()` as my allocator
+object. But I could easily use any other type of allocator object from the Zig standard library.
+
+```{zig}
+#| auto_main: true
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
+const name = "Pedro";
+const output = try std.fmt.allocPrint(
+    allocator,
+    "Hello {s}!!!",
+    .{name}
+);
+try stdout.print("{s}\n", .{output});
+```
+
+
 You get a lot of control
 over where and how much memory this function can allocate. Because it is you,
 the user/programmer, that provides the allocator for the function to use.

@@ -238,12 +238,17 @@ window.Quarto = {
   </ul></li>
   <li><a href="#sec-encode-vs-decode" id="toc-sec-encode-vs-decode" class="nav-link" data-scroll-target="#sec-encode-vs-decode"><span class="header-section-number">3.2</span> Difference between encode and decode</a></li>
   <li><a href="#sec-base64-length-out" id="toc-sec-base64-length-out" class="nav-link" data-scroll-target="#sec-base64-length-out"><span class="header-section-number">3.3</span> Calculating the size of the output</a></li>
-  <li><a href="#building-the-encoder-logic" id="toc-building-the-encoder-logic" class="nav-link" data-scroll-target="#building-the-encoder-logic"><span class="header-section-number">3.4</span> Building the encoder logic</a>
+  <li><a href="#sec-encoder-logic" id="toc-sec-encoder-logic" class="nav-link" data-scroll-target="#sec-encoder-logic"><span class="header-section-number">3.4</span> Building the encoder logic</a>
   <ul class="collapse">
   <li><a href="#sec-6bit-transf" id="toc-sec-6bit-transf" class="nav-link" data-scroll-target="#sec-6bit-transf"><span class="header-section-number">3.4.1</span> The 6-bit transformation</a></li>
   <li><a href="#bit-shifting-in-zig" id="toc-bit-shifting-in-zig" class="nav-link" data-scroll-target="#bit-shifting-in-zig"><span class="header-section-number">3.4.2</span> Bit-shifting in Zig</a></li>
   <li><a href="#selecting-specific-bits-with-the-operator" id="toc-selecting-specific-bits-with-the-operator" class="nav-link" data-scroll-target="#selecting-specific-bits-with-the-operator"><span class="header-section-number">3.4.3</span> Selecting specific bits with the <code>&amp;</code> operator</a></li>
-  <li><a href="#encapsulating-this-logic-into-a-function" id="toc-encapsulating-this-logic-into-a-function" class="nav-link" data-scroll-target="#encapsulating-this-logic-into-a-function"><span class="header-section-number">3.4.4</span> Encapsulating this logic into a function</a></li>
+  <li><a href="#writing-the-encode-function" id="toc-writing-the-encode-function" class="nav-link" data-scroll-target="#writing-the-encode-function"><span class="header-section-number">3.4.4</span> Writing the <code>encode()</code> function</a></li>
+  </ul></li>
+  <li><a href="#sec-decoder-logic" id="toc-sec-decoder-logic" class="nav-link" data-scroll-target="#sec-decoder-logic"><span class="header-section-number">3.5</span> Building the decoder logic</a>
+  <ul class="collapse">
+  <li><a href="#the-6-bit-transformation" id="toc-the-6-bit-transformation" class="nav-link" data-scroll-target="#the-6-bit-transformation"><span class="header-section-number">3.5.1</span> The 6-bit transformation</a></li>
+  <li><a href="#writing-the-decode-function" id="toc-writing-the-decode-function" class="nav-link" data-scroll-target="#writing-the-decode-function"><span class="header-section-number">3.5.2</span> Writing the <code>decode()</code> function</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -406,9 +411,10 @@ Figure&nbsp;3.2: The logic behind a base64 decoder
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="building-the-encoder-logic" class="level2" data-number="3.4">
-<h2 data-number="3.4" class="anchored" data-anchor-id="building-the-encoder-logic"><span class="header-section-number">3.4</span> Building the encoder logic</h2>
+<section id="sec-encoder-logic" class="level2" data-number="3.4">
+<h2 data-number="3.4" class="anchored" data-anchor-id="sec-encoder-logic"><span class="header-section-number">3.4</span> Building the encoder logic</h2>
 <p>In this section, we can start building the logic behind the <code>encode()</code> function, which will be responsible for encoding messages into the base64 encoding system.</p>
+<p>If you are an anxious person, and you want to see now the full source code of the implementation for this base64 encoder/decoder, you can find it at the <code>Examples</code> folder in the official repository of this book<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</p>
 <section id="sec-6bit-transf" class="level3" data-number="3.4.1">
 <h3 data-number="3.4.1" class="anchored" data-anchor-id="sec-6bit-transf"><span class="header-section-number">3.4.1</span> The 6-bit transformation</h3>
 <p>The 6-bit transformation presented at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a> is the core part of the base64 encoder algorithm. By understanding how this transformation is made in code, the rest of the algorithm becomes much simpler to comprehend.</p>
@@ -441,7 +447,7 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <div aria-describedby="tbl-transf-6bit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell">
 <div class="cell-output-display">
-<div id="diavjmudkw" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="oytgafvule" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
 <table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
@@ -550,6 +556,8 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <pre><code>18</code></pre>
 </div>
 </div>
+<p>If you recall <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a>, the first byte present in the output should be equivalent to the 6-bit group <code>010010</code>. Although being visually different, the sequences <code>010010</code> and <code>00010010</code> are semantically equal. They mean the same thing. They both represent the number 18 in decimal, and the value <code>0x12</code> in hexadecimal.</p>
+<p>So, don’t take the “6-bit group” factor so seriously. We do not need necessarilly to get a 6-bit sequence as result. As long as the meaning of the 8-bit sequence we get is the same of the 6-bit sequence, we are in the clear.</p>
 </section>
 <section id="selecting-specific-bits-with-the-operator" class="level3" data-number="3.4.3">
 <h3 data-number="3.4.3" class="anchored" data-anchor-id="selecting-specific-bits-with-the-operator"><span class="header-section-number">3.4.3</span> Selecting specific bits with the <code>&amp;</code> operator</h3>
@@ -564,17 +572,24 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> bits = <span class="bn">0b10010111</span>;</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>bits &amp; <span class="bn">0x30</span><span class="op">}</span>);</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>bits &amp; <span class="bn">0b00110000</span><span class="op">}</span>);</span>
 <span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>16</code></pre>
 </div>
 </div>
 </section>
-<section id="encapsulating-this-logic-into-a-function" class="level3" data-number="3.4.4">
-<h3 data-number="3.4.4" class="anchored" data-anchor-id="encapsulating-this-logic-into-a-function"><span class="header-section-number">3.4.4</span> Encapsulating this logic into a function</h3>
+<section id="writing-the-encode-function" class="level3" data-number="3.4.4">
+<h3 data-number="3.4.4" class="anchored" data-anchor-id="writing-the-encode-function"><span class="header-section-number">3.4.4</span> Writing the <code>encode()</code> function</h3>
+<p>Now that we have a basic understanding on how the bitwise operators work, and how exactly they help us to achieve the result we want to achieve. We can now encapsulate all the logic that we described at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a> and <a href="#tbl-transf-6bit" class="quarto-xref">Table&nbsp;<span>3.1</span></a> into a nice function that we can add to our <code>Base64</code> struct definition, that we started at <a href="#sec-base64-table" class="quarto-xref"><span>Section 3.1.2</span></a>.</p>
+<p>You can find the <code>encode()</code> function below. Notice that the first argument of this function, is the <code>Base64</code> struct itself. Therefore, tis argument clearly signals that this function is a method from the <code>Base64</code> struct.</p>
+<p>Because the <code>encode()</code> function itself is fairly long, I intentionally ommitted the <code>Base64</code> struct definition in this source code, just for brevity reasons. So, just remember that this function is a public function (or a public method) from the <code>Base64</code> struct.</p>
+<p>Furthermore, this <code>encode()</code> function have two other arguments: 1) <code>input</code> is the input sequence of characters that you want to encode in base64; 2) <code>allocator</code> is an allocator object to use in the necessary memory allocations. I described everything you need to know about allocator objects at <a href="01-memory.html#sec-allocators" class="quarto-xref"><span>Section 2.3</span></a>. So, if you are not familiar with them, I highly recommend you to comeback to that section, and read it. By looking at the <code>encode()</code> function, you will see that we use this allocator object to allocate enough memory to store the output of encoding process.</p>
+<p>Remember from <a href="01-memory.html#sec-stack" class="quarto-xref"><span>Section 2.2.4</span></a>, that the stack can be used only to store variables that have a compile-time known fixed size. Unfortunately, this is not the case here. The size of the <code>encode()</code> output is tidly related to the size of the input from the user. So, the size of the output is only known at runtime. That is why we use an allocator object, to allocate memory on the heap (which allows objects whose size are runtime-known), and store the output there.</p>
+<p>The main for loop in the function is responsible for iterating the entire input string. In every iteration, we use a <code>count</code> variable to count how many iterations we had at the moment. When <code>count</code> reaches 3, then, we try to encode the 3 characters (or bytes) that we accumulated until this point in the temporary buffer object (<code>buf</code>).</p>
+<p>After encoding these 3 characters and storing the result in the <code>output</code> variable, we reset the <code>count</code> variable to zero, and start to count again on the next iteration of the loop. If the loop hits the end of the string, and, the <code>count</code> variable is less than 3, then, it means that the temporary buffer contains the last 1 or 2 bytes from the input. That is why we have two <code>if</code> statements after the for loop. To deal which each possible case.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> encode(self: Base64,</span>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> encode(self: Base64,</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>          input: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>          allocator: std.mem.Allocator) ![]<span class="dt">u8</span> <span class="op">{</span></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -629,6 +644,105 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <span id="cb10-53"><a href="#cb10-53" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> out;</span>
 <span id="cb10-54"><a href="#cb10-54" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
+</section>
+<section id="sec-decoder-logic" class="level2" data-number="3.5">
+<h2 data-number="3.5" class="anchored" data-anchor-id="sec-decoder-logic"><span class="header-section-number">3.5</span> Building the decoder logic</h2>
+<p>Now, we can focus on writting the base64 decoder logic. Remember from <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>3.2</span></a> that, a base64 decoder do the inverse process of an encoder. So, all we need to do, is to write a <code>decode()</code> function that performs the inverse process that I exposed at <a href="#sec-encoder-logic" class="quarto-xref"><span>Section 3.4</span></a>.</p>
+<section id="the-6-bit-transformation" class="level3" data-number="3.5.1">
+<h3 data-number="3.5.1" class="anchored" data-anchor-id="the-6-bit-transformation"><span class="header-section-number">3.5.1</span> The 6-bit transformation</h3>
+<p>Once again, the core part of the algorithm is the 6-bit transformation. If we understand the necessary steps to perform this transformation, the rest of the algorithm becomes much easier.</p>
+<p>Now, instead of producing 4 bytes (or 4 characters) as output per each window of 3 characters in the input, a base64 decoder produces 3 bytes (or 3 characters) as output per each window of 4 characters in the input. Once again, is the inverse process.</p>
+<p>So, the steps to produce the 3 bytes in the output are:</p>
+<ol type="1">
+<li><code>output[0]</code> is produced by summing two components. First, move the bits from <code>input[0]</code> two positions to the left. Second, move the bits from <code>input[1]</code> 4 positions to the right. Then, sum these two components.</li>
+<li><code>output[1]</code> is produced by summing two components. First, move the bits from <code>input[1]</code> four positions to the left. Second, move the bits from <code>input[2]</code> 2 positions to the right. Then, sum these two components.</li>
+<li><code>output[2]</code> is produced by moving the bits from <code>input[2]</code> six positions to the left, then, you sum the result with <code>input[3]</code>.</li>
+</ol>
+<p>The <a href="#tbl-6bit-decode" class="quarto-xref">Table&nbsp;<span>3.2</span></a> presents how the above steps translate into Zig code:</p>
+<div id="tbl-6bit-decode" class="quarto-float anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-6bit-decode-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;3.2: The necessary steps for the 6-transformation in the decode process.
+</figcaption>
+<div aria-describedby="tbl-6bit-decode-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell">
+<div class="cell-output-display">
+<div id="gbrofgvkaz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+  
+  
+<table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead style="border-style: none;">
+<tr class="header gt_col_headings" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3;">
+<th id="<strong>Byte index in the output</strong>" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col" style="text-align: left; border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden;" data-bgcolor="#FFFFFF" data-valign="bottom"><strong>Byte index in the output</strong></th>
+<th id="<strong>In code</strong>" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col" style="text-align: left; border-style: none; color: #333333; background-color: #FFFFFF; font-size: 100%; font-weight: normal; text-transform: inherit; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: bottom; padding-top: 5px; padding-bottom: 6px; padding-left: 5px; padding-right: 5px; overflow-x: hidden;" data-bgcolor="#FFFFFF" data-valign="bottom"><strong>In code</strong></th>
+</tr>
+</thead>
+<tbody class="gt_table_body" style="border-style: none; border-top-style: solid; border-top-width: 2px; border-top-color: #D3D3D3; border-bottom-style: solid; border-bottom-width: 2px; border-bottom-color: #D3D3D3;">
+<tr class="odd" style="border-style: none;">
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">0</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>(input[0] &lt;&lt; 2) + (input[1] &gt;&gt; 4)</code></p></td>
+</tr>
+<tr class="even" style="border-style: none;">
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">1</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>(input[1] &lt;&lt; 4) + (input[2] &gt;&gt; 2)</code></p></td>
+</tr>
+<tr class="odd" style="border-style: none;">
+<td class="gt_row gt_left" headers="Byte index in the output" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle">2</td>
+<td class="gt_row gt_left" headers="In code" style="text-align: left; border-style: none; padding-top: 8px; padding-bottom: 8px; padding-left: 5px; padding-right: 5px; margin: 10px; border-top-style: solid; border-top-width: 1px; border-top-color: #D3D3D3; border-left-style: none; border-left-width: 1px; border-left-color: #D3D3D3; border-right-style: none; border-right-width: 1px; border-right-color: #D3D3D3; vertical-align: middle; overflow-x: hidden;" data-valign="middle"><p><code>(input[2] &lt;&lt; 6) + input[3]</code></p></td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+</div>
+</figure>
+</div>
+</section>
+<section id="writing-the-decode-function" class="level3" data-number="3.5.2">
+<h3 data-number="3.5.2" class="anchored" data-anchor-id="writing-the-decode-function"><span class="header-section-number">3.5.2</span> Writing the <code>decode()</code> function</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">// ======= Function</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> decode(self: Base64, input: []<span class="kw">const</span> <span class="dt">u8</span>, allocator: std.mem.Allocator) ![]<span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len == <span class="dv">0</span>) <span class="op">{</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="st">""</span>;</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n_output = _calc_decode_length(input);</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> tmp_buffer = [<span class="dv">4</span>]<span class="dt">u8</span><span class="op">{</span> <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span> <span class="op">}</span>;</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> output = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, n_output);</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> count: <span class="dt">u8</span> = <span class="dv">0</span>;</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> output_index: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (output, <span class="dv">0</span>..) |_, i| <span class="op">{</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>        output[i] = <span class="dv">0</span>;</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (input, <span class="dv">0</span>..) |_, i| <span class="op">{</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> index: <span class="dt">u8</span> = <span class="bu">@intCast</span>(i);</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>        tmp_buffer[count] = self._char_index(input[index]);</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>        count += <span class="dv">1</span>;</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (count == <span class="dv">4</span>) <span class="op">{</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>            output[output_index] = (tmp_buffer[<span class="dv">0</span>] &lt;&lt; <span class="dv">2</span>) + (tmp_buffer[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>);</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>            <span class="kw">if</span> (tmp_buffer[<span class="dv">2</span>] != <span class="dv">64</span>) <span class="op">{</span></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>                output[output_index + <span class="dv">1</span>] = (tmp_buffer[<span class="dv">1</span>] &lt;&lt; <span class="dv">4</span>) + (tmp_buffer[<span class="dv">2</span>] &gt;&gt; <span class="dv">2</span>);</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>            <span class="kw">if</span> (tmp_buffer[<span class="dv">3</span>] != <span class="dv">64</span>) <span class="op">{</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>                output[output_index + <span class="dv">2</span>] = (tmp_buffer[<span class="dv">2</span>] &lt;&lt; <span class="dv">6</span>) + tmp_buffer[<span class="dv">3</span>];</span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>            output_index += <span class="dv">3</span>;</span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>            count = <span class="dv">0</span>;</span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> output;</span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
@@ -642,6 +756,7 @@ Microsoft. 2021. <span>“Bitwise AND Operator: &amp;.”</span> <a href="https:
 <hr>
 <ol>
 <li id="fn1"><p>Notice that, the character “0” is different than the actual number 0, which is simply zero in binary.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p><a href="https://github.com/pedropark99/zig-book/blob/main/Examples/base64/base64_basic.zig" class="uri">https://github.com/pedropark99/zig-book/blob/main/Examples/base64/base64_basic.zig</a>.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 

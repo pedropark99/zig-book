@@ -315,10 +315,17 @@ fn _calc_decode_length(input: []const u8) u64 {
 ```
 
 
-## Building the encoder logic
+## Building the encoder logic {#sec-encoder-logic}
 
 In this section, we can start building the logic behind the `encode()` function, which
 will be responsible for encoding messages into the base64 encoding system.
+
+If you
+are an anxious person, and you want to see now the full source code of the implementation
+for this base64 encoder/decoder, you can find it at the `Examples` folder in the official repository of
+this book[^zig-base64-algo].
+
+[^zig-base64-algo]: <https://github.com/pedropark99/zig-book/blob/main/Examples/base64/base64_basic.zig>.
 
 
 
@@ -476,6 +483,15 @@ pub fn main() !void {
 }
 ```
 
+If you recall @fig-base64-algo1, the first byte present in the output should
+be equivalent to the 6-bit group `010010`. Although being visually different, the
+sequences `010010` and `00010010` are semantically equal. They mean the same thing.
+They both represent the number 18 in decimal, and the value `0x12` in hexadecimal.
+
+So, don't take the "6-bit group" factor so seriously. We do not need necessarilly to
+get a 6-bit sequence as result. As long as the meaning of the 8-bit sequence we get is the same
+of the 6-bit sequence, we are in the clear.
+
 
 
 ### Selecting specific bits with the `&` operator
@@ -517,17 +533,60 @@ const std = @import("std");
 const stdout = std.io.getStdOut().writer();
 pub fn main() !void {
     const bits = 0b10010111;
-    try stdout.print("{d}\n", .{bits & 0x30});
+    try stdout.print("{d}\n", .{bits & 0b00110000});
 }
 ```
 
 
 
-### Encapsulating this logic into a function
+### Writing the `encode()` function
+
+Now that we have a basic understanding on how the bitwise operators work, and how
+exactly they help us to achieve the result we want to achieve. We can now encapsulate
+all the logic that we described at @fig-base64-algo1 and @tbl-transf-6bit into a nice
+function that we can add to our `Base64` struct definition, that we started at @sec-base64-table.
+
+You can find the `encode()` function below. Notice that the first argument of this function,
+is the `Base64` struct itself. Therefore, tis argument clearly signals
+that this function is a method from the `Base64` struct.
+
+Because the `encode()` function itself is fairly long,
+I intentionally ommitted the `Base64` struct definition in this source code,
+just for brevity reasons. So, just remember that this function is a public function (or a public method) from the
+`Base64` struct.
+
+Furthermore, this `encode()` function have two other arguments:
+1) `input` is the input sequence of characters that you want to encode in base64;
+2) `allocator` is an allocator object to use in the necessary memory allocations.
+I described everything you need to know about allocator objects at @sec-allocators.
+So, if you are not familiar with them, I highly recommend you to comeback to
+that section, and read it.
+By looking at the `encode()` function, you will see that we use this
+allocator object to allocate enough memory to store the output of
+encoding process.
+
+Remember from @sec-stack, that the stack can be used only to store
+variables that have a compile-time known fixed size. Unfortunately,
+this is not the case here. The size of the `encode()` output is tidly related
+to the size of the input from the user. So, the size of the output
+is only known at runtime. That is why we use an allocator object, to allocate memory
+on the heap (which allows objects whose size are runtime-known), and store the output there.
+
+The main for loop in the function is responsible for iterating the entire input string.
+In every iteration, we use a `count` variable to count how many iterations we had at the
+moment. When `count` reaches 3, then, we try to encode the 3 characters (or bytes) that we accumulated
+until this point in the temporary buffer object (`buf`).
+
+After encoding these 3 characters and storing the result in the `output` variable, we reset
+the `count` variable to zero, and start to count again on the next iteration of the loop.
+If the loop hits the end of the string, and, the `count` variable is less than 3, then, it means that
+the temporary buffer contains the last 1 or 2 bytes from the input.
+That is why we have two `if` statements after the for loop. To deal which each possible case.
+
 
 ```{zig}
 #| eval: false
-fn encode(self: Base64,
+pub fn encode(self: Base64,
           input: []const u8,
           allocator: std.mem.Allocator) ![]u8 {
 
@@ -580,5 +639,123 @@ fn encode(self: Base64,
     }
 
     return out;
+}
+```
+
+
+
+## Building the decoder logic {#sec-decoder-logic}
+
+Now, we can focus on writting the base64 decoder logic. Remember from @fig-base64-algo2 that,
+a base64 decoder do the inverse process of an encoder. So, all we need to do, is to
+write a `decode()` function that performs the inverse process that I exposed at @sec-encoder-logic.
+
+### The 6-bit transformation
+
+Once again, the core part of the algorithm is the 6-bit transformation.
+If we understand the necessary steps to perform this transformation, the rest
+of the algorithm becomes much easier.
+
+Now, instead of producing 4 bytes (or 4 characters) as output per each window of 3 characters in the input,
+a base64 decoder produces 3 bytes (or 3 characters) as output per each window of 4 characters in the input.
+Once again, is the inverse process.
+
+So, the steps to produce the 3 bytes in the output are:
+
+1. `output[0]` is produced by summing two components. First, move the bits from `input[0]` two positions to the left. Second, move the bits from `input[1]` 4 positions to the right. Then, sum these two components.
+1. `output[1]` is produced by summing two components. First, move the bits from `input[1]` four positions to the left. Second, move the bits from `input[2]` 2 positions to the right. Then, sum these two components.
+1. `output[2]` is produced by moving the bits from `input[2]` six positions to the left, then, you sum the result with `input[3]`.
+
+
+The @tbl-6bit-decode presents how the above steps translate into Zig code:
+
+::: {#tbl-6bit-decode}
+
+```{r}
+#| echo: false
+library(gt)
+library(tibble)
+
+table_data <- tibble(
+  `Byte index in the output` = c(0:2),
+  `In code` = c(
+    "`(input[0] << 2) + (input[1] >> 4)`",
+    "`(input[1] << 4) + (input[2] >> 2)`",
+    "`(input[2] << 6) + input[3]`"
+  )
+)
+
+
+table <- table_data |>
+  gt() |> 
+  fmt_markdown(columns = "In code") |>
+  cols_align(align="left") |>
+  cols_label(
+    `Byte index in the output` = md("**Byte index in the output**"),
+    `In code` = md("**In code**")
+  )
+
+
+
+
+if (knitr::is_html_output()) {
+  table |> gt::as_raw_html()
+} else {
+  table |> gt::as_latex()
+}
+
+```
+
+The necessary steps for the 6-transformation in the decode process.
+
+:::
+
+
+
+
+
+
+
+### Writing the `decode()` function
+
+
+
+
+
+```{zig}
+#| eval: false
+// ======= Function
+fn decode(self: Base64, input: []const u8, allocator: std.mem.Allocator) ![]u8 {
+    if (input.len == 0) {
+        return "";
+    }
+
+    const n_output = _calc_decode_length(input);
+    var tmp_buffer = [4]u8{ 0, 0, 0, 0 };
+    var output = try allocator.alloc(u8, n_output);
+    var count: u8 = 0;
+    var output_index: u64 = 0;
+    for (output, 0..) |_, i| {
+        output[i] = 0;
+    }
+
+    for (input, 0..) |_, i| {
+        const index: u8 = @intCast(i);
+        tmp_buffer[count] = self._char_index(input[index]);
+        count += 1;
+        if (count == 4) {
+            output[output_index] = (tmp_buffer[0] << 2) + (tmp_buffer[1] >> 4);
+            if (tmp_buffer[2] != 64) {
+                output[output_index + 1] = (tmp_buffer[1] << 4) + (tmp_buffer[2] >> 2);
+            }
+            if (tmp_buffer[3] != 64) {
+                output[output_index + 2] = (tmp_buffer[2] << 6) + tmp_buffer[3];
+            }
+            output_index += 3;
+            count = 0;
+        }
+    }
+
+    return output;
 }
 ```

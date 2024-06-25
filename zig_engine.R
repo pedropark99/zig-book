@@ -122,6 +122,7 @@ generate_main <- function(code_without_main) {
   )
   main_fmt <- c(
     "const std = @import(\"std\");\n",
+    "const stdout = std.io.getStdOut().writer();\n",
     "pub fn main() !void {\n",
     "%s",
     "\n}\n",
@@ -191,6 +192,7 @@ knitr::knit_engines$set(zig = function(options) {
     code_report <- sprintf(code_report, code_to_execute)
     cat(code_report, file = stderr())
   }
+  fs::file_delete(temp_file)
   out <- str_split_lines(out, options)
   code <- remove_delim_lines(code)
   knitr::engine_output(options, code, out)
