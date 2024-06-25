@@ -322,7 +322,7 @@ will be responsible for encoding messages into the base64 encoding system.
 
 
 
-### The 6-bit transformation
+### The 6-bit transformation {#sec-6bit-transf}
 
 The 6-bit transformation presented at @fig-base64-algo1 is the core part of the base64 encoder algorithm.
 By understanding how this transformation is made in code, the rest of the algorithm becomes much simpler
@@ -346,7 +346,7 @@ If you have the perfect window of 3 bytes, these are steps for the 6-bit transfo
 
 1. `output[0]` is produced by moving the bits from `input[0]` two positions to the right.
 1. `output[1]` is produced by summing two components. First, take the last two bits from `input[0]`, then, move them four positions to the left. Second, move the bits from `input[1]` four positions to the right. Sum these two components.
-1. `output[2]` is produced by summing two components. First, take the last four buts from `input[1]`, then, move them two positions to the left. Second, move the buts from `input[2]` six positions to the right.
+1. `output[2]` is produced by summing two components. First, take the last four bits from `input[1]`, then, move them two positions to the left. Second, move the bits from `input[2]` six positions to the right.
 1. `output[3]` is produced by taking the last six bits from `input[2]`.
 
 
@@ -431,98 +431,94 @@ How the 6-bit transformation translates into code in different window settings.
 :::
 
 
-### Quick & dirty approach
 
-To get a better understanding of what we need to do, let's implement just the bare minimum of code
-to convert some input into the base64 encoding system. This will be a "quick and dirty" approach.
-It doesn't need to be preety or good quality code. It just needs to work.
 
-#### First byte in the output
 
-Let's begin by building the first byte in the output of the encoder. This is the easiest byte of the 4 bytes in the output
-to build. We only need to move the bits from the first byte in the input (`01001000`) two positions to the right,
+
+### Bit-shifting in Zig
+
+Bit-shifting in Zig works similarly to bit-shifting in C.
+All bitwise operators that exists in C are available in Zig.
+Here, in the base64 encoder algorithm, they are essential
+to produce the result we want.
+
+For those who are not familiar with these operators, they are
+operators that operates at the bit-level of your values.
+This means that these operators takes the bits that form the value
+you have, and change them in some way. This ultimately also changes
+the value itself, because the binary representation of this value
+changes.
+
+Let's use the first byte in the output of the base64 encoder as an example of what
+bit-shifting means. This is the easiest byte of the 4 bytes in the output
+to build. Because we only need to move the bits from the first byte in the input two positions to the right,
 with the *bit shift to the right* (`>>`) operator.
 
-By moving the bits two places to the right, we get the sequence `00010010` as output. As a result, the first 6 bits
-of the first byte in the input were moved to the end of the byte.
+If we take the string "Hi" that we used at @fig-base64-algo1 as an example, the first byte in
+this string is "H", which is the sequence `01001000` in binary.
+If we move the bits of this byte, two places to the right, we get the sequence `00010010` as result.
+This binary sequence is the value `18` in decimal, and also, the value `0x12` in hexadecimal.
+Notice that the first 6 bits of the first byte in the input were moved to the end of the byte.
 With this operation, we get the first byte of the ouput, which corresponds to the index in the base64 scale for the first character
 in the base64 scale.
 
 
 
 ```{zig}
-#| auto_main: true
-const input = "Hi";
-var output = [4]u8{0,0,0,0};
-output[0] = input[0] >> 2;
+#| auto_main: false
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+pub fn main() !void {
+    const input = "Hi";
+    var output = [4]u8{0,0,0,0};
+    output[0] = input[0] >> 2;
+    try stdout.print("{d}\n", .{output[0]});
+}
 ```
 
-#### Second byte in the output
 
-The second byte in the output is produced by summing two components together. On the first component,
-we need to select the last two bits in the first byte of the input. We do that, by using the "bitwise and" (`&`)
-operator and the hexadecimal value `0x03`, which is, in binary, the sequence `00000011`. Notice
-that only the last two bits in `0x03` are "on" (i.e. setted to one).
 
-With this `&` operator and the `0x03` value, we essentially set all bits that we do not care about (in this case,
-the first 6 bits) to zero. By setting them to zero, we essentially remove these bits from the equation.
-Only the last two bits of the byte maintain their original values.
-After this operation, we just move the resulting bits four positions to the left.
+### Selecting specific bits with the `&` operator
 
-To produce the second component, we simply take second byte in the input, and then, we move it's bits
-four positions to the right. At last, we just sum these two components together to form the second byte in the output.
+If you comeback to @sec-6bit-transf, you will see that to produce
+the second and third bytes in the output, we need to select specific
+bits from the first and second bytes in the input string. But how
+can we do that? The answer relies on the *bitwise and* (`&`) operator.
+
+In summary, the `&` operator performs a logical conjunction operation
+between the bits of it's operands. In more details, the operator `&`
+compares each bit of the first operand to the corresponding bit of the second operand.
+If both bits are 1, the corresponding result bit is set to 1.
+Otherwise, the corresponding result bit is set to 0 [@microsoftbitwiseand].
+
+So, if we apply this operator to the binary sequences `1000100` and `00001101`
+the result of this operation is the binary sequence `00000100`. Because only
+at the sixth position in both binary sequences we had a 1 value. So any
+position where we do not have both binary sequences setted to 1, we get
+a 0 bit in the resulting binary sequence.
+
+We loose information about the original bit values
+from both sequences in this case. Because we no longer know
+if this 0 bit in the resulting binary sequence was produced by
+combining 0 with 0, or 1 with 0, etc.
+
+As an example, suppose you have the binary sequence `10010111`, which is the number 151 in decimal. How
+can we get a new binary sequence which contains only the third and
+fourth bits?
+
+We just need to combine this sequence with the sequence `00110000` (is `0x30` in hexadecimal) using the `&` operator.
+Notice that only the third and fourth positions in this binary sequence is setted to 1. As a consequence, only the
+third and fourth values of both binary sequences are potentially preserved in the output. All the remaining positions
+are setted to zero in the output sequence, which is `00010000` (is the number 16 in decimal).
 
 ```{zig}
-#| eval: false
-#| auto_main: true
-const component1 = ((input[0] & 0x03) << 4)
-const component2 = (input[1] >> 4)
-output[1] = component1 + component2;
-```
-
-
-#### Third byte in the output
-
-The third byte in the output is also produced by summing two components together.
-In the first component, we need to take the last 4 bits in the second byte in the input. Then, we move
-these bits two positions to the left. In the second component, we take the third byte in the input,
-and move it's bits six positions to the right.
-
-
-```{zig}
-#| eval: false
-#| auto_main: true
-const component1 = ((input[1] & 0x0f) << 2);
-const component2 = (input[2] >> 6);
-output[2] = component1 + component2;
-```
-
-
-#### Fourth byte in the output
-
-The fourth byte in the output is produced by taking the third byte in the input,
-and selecting the last six bits, with the `&` operator and the hexadecimal
-value `0x3f`.
-
-```{zig}
-#| eval: false
-#| auto_main: true
-output[3] = input[2] & 0x3f;
-```
-
-#### The end result
-
-With this dirty code, we get the end result, which is the string `SGk=`.
-We can print this string at the end of the program to see this end result:
-
-```{zig}
-#| eval: false
-#| auto_main: true
-std.debug.print("Result: {s}\n", .{output});
-```
-
-```
-Result: SGk=
+#| auto_main: false
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+pub fn main() !void {
+    const bits = 0b10010111;
+    try stdout.print("{d}\n", .{bits & 0x30});
+}
 ```
 
 

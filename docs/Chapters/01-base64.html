@@ -54,7 +54,27 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="../site_libs/quarto-nav/quarto-nav.js"></script>
@@ -220,9 +240,10 @@ window.Quarto = {
   <li><a href="#sec-base64-length-out" id="toc-sec-base64-length-out" class="nav-link" data-scroll-target="#sec-base64-length-out"><span class="header-section-number">3.3</span> Calculating the size of the output</a></li>
   <li><a href="#building-the-encoder-logic" id="toc-building-the-encoder-logic" class="nav-link" data-scroll-target="#building-the-encoder-logic"><span class="header-section-number">3.4</span> Building the encoder logic</a>
   <ul class="collapse">
-  <li><a href="#the-6-bit-transformation" id="toc-the-6-bit-transformation" class="nav-link" data-scroll-target="#the-6-bit-transformation"><span class="header-section-number">3.4.1</span> The 6-bit transformation</a></li>
-  <li><a href="#quick-dirty-approach" id="toc-quick-dirty-approach" class="nav-link" data-scroll-target="#quick-dirty-approach"><span class="header-section-number">3.4.2</span> Quick &amp; dirty approach</a></li>
-  <li><a href="#encapsulating-this-logic-into-a-function" id="toc-encapsulating-this-logic-into-a-function" class="nav-link" data-scroll-target="#encapsulating-this-logic-into-a-function"><span class="header-section-number">3.4.3</span> Encapsulating this logic into a function</a></li>
+  <li><a href="#sec-6bit-transf" id="toc-sec-6bit-transf" class="nav-link" data-scroll-target="#sec-6bit-transf"><span class="header-section-number">3.4.1</span> The 6-bit transformation</a></li>
+  <li><a href="#bit-shifting-in-zig" id="toc-bit-shifting-in-zig" class="nav-link" data-scroll-target="#bit-shifting-in-zig"><span class="header-section-number">3.4.2</span> Bit-shifting in Zig</a></li>
+  <li><a href="#selecting-specific-bits-with-the-operator" id="toc-selecting-specific-bits-with-the-operator" class="nav-link" data-scroll-target="#selecting-specific-bits-with-the-operator"><span class="header-section-number">3.4.3</span> Selecting specific bits with the <code>&amp;</code> operator</a></li>
+  <li><a href="#encapsulating-this-logic-into-a-function" id="toc-encapsulating-this-logic-into-a-function" class="nav-link" data-scroll-target="#encapsulating-this-logic-into-a-function"><span class="header-section-number">3.4.4</span> Encapsulating this logic into a function</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -388,8 +409,8 @@ Figure&nbsp;3.2: The logic behind a base64 decoder
 <section id="building-the-encoder-logic" class="level2" data-number="3.4">
 <h2 data-number="3.4" class="anchored" data-anchor-id="building-the-encoder-logic"><span class="header-section-number">3.4</span> Building the encoder logic</h2>
 <p>In this section, we can start building the logic behind the <code>encode()</code> function, which will be responsible for encoding messages into the base64 encoding system.</p>
-<section id="the-6-bit-transformation" class="level3" data-number="3.4.1">
-<h3 data-number="3.4.1" class="anchored" data-anchor-id="the-6-bit-transformation"><span class="header-section-number">3.4.1</span> The 6-bit transformation</h3>
+<section id="sec-6bit-transf" class="level3" data-number="3.4.1">
+<h3 data-number="3.4.1" class="anchored" data-anchor-id="sec-6bit-transf"><span class="header-section-number">3.4.1</span> The 6-bit transformation</h3>
 <p>The 6-bit transformation presented at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a> is the core part of the base64 encoder algorithm. By understanding how this transformation is made in code, the rest of the algorithm becomes much simpler to comprehend.</p>
 <p>In essence, this 6-bit transformation is made with the help of bitwise operators. Bitwise operators are essential to any type of low-level operation that is done at the bit-level. For the specific case of the base64 algorithm, the operators <em>bif shift to the left</em> (<code>&lt;&lt;</code>), <em>bit shift to the right</em> (<code>&gt;&gt;</code>), and the <em>bitwise and</em> (<code>&amp;</code>) are used. They are the core solution for the 6-bit transformation.</p>
 <p>We have 3 different scenarios that we need to account for in this transformation. First, is the perfect scenario, where we have the perfect window of 3 bytes to work on. Second, we have the scenario where we have a window of only two bytes to work with. And last, we have the scenario where we have a window of one single byte.</p>
@@ -398,7 +419,7 @@ Figure&nbsp;3.2: The logic behind a base64 decoder
 <ol type="1">
 <li><code>output[0]</code> is produced by moving the bits from <code>input[0]</code> two positions to the right.</li>
 <li><code>output[1]</code> is produced by summing two components. First, take the last two bits from <code>input[0]</code>, then, move them four positions to the left. Second, move the bits from <code>input[1]</code> four positions to the right. Sum these two components.</li>
-<li><code>output[2]</code> is produced by summing two components. First, take the last four buts from <code>input[1]</code>, then, move them two positions to the left. Second, move the buts from <code>input[2]</code> six positions to the right.</li>
+<li><code>output[2]</code> is produced by summing two components. First, take the last four bits from <code>input[1]</code>, then, move them two positions to the left. Second, move the bits from <code>input[2]</code> six positions to the right.</li>
 <li><code>output[3]</code> is produced by taking the last six bits from <code>input[2]</code>.</li>
 </ol>
 <p>If you have a window of 2 bytes, then, the steps 3 and 4, which produces the bytes <code>output[2]</code> and <code>output[3]</code>, change a little bit, and they become:</p>
@@ -420,7 +441,7 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <div aria-describedby="tbl-transf-6bit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell">
 <div class="cell-output-display">
-<div id="uptoicckyu" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="diavjmudkw" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
 <table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
@@ -510,115 +531,111 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 </figure>
 </div>
 </section>
-<section id="quick-dirty-approach" class="level3" data-number="3.4.2">
-<h3 data-number="3.4.2" class="anchored" data-anchor-id="quick-dirty-approach"><span class="header-section-number">3.4.2</span> Quick &amp; dirty approach</h3>
-<p>To get a better understanding of what we need to do, let’s implement just the bare minimum of code to convert some input into the base64 encoding system. This will be a “quick and dirty” approach. It doesn’t need to be preety or good quality code. It just needs to work.</p>
-<section id="first-byte-in-the-output" class="level4" data-number="3.4.2.1">
-<h4 data-number="3.4.2.1" class="anchored" data-anchor-id="first-byte-in-the-output"><span class="header-section-number">3.4.2.1</span> First byte in the output</h4>
-<p>Let’s begin by building the first byte in the output of the encoder. This is the easiest byte of the 4 bytes in the output to build. We only need to move the bits from the first byte in the input (<code>01001000</code>) two positions to the right, with the <em>bit shift to the right</em> (<code>&gt;&gt;</code>) operator.</p>
-<p>By moving the bits two places to the right, we get the sequence <code>00010010</code> as output. As a result, the first 6 bits of the first byte in the input were moved to the end of the byte. With this operation, we get the first byte of the ouput, which corresponds to the index in the base64 scale for the first character in the base64 scale.</p>
-<div class="cell" data-auto_main="true">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> input = <span class="st">"Hi"</span>;</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> output = [<span class="dv">4</span>]<span class="dt">u8</span><span class="op">{</span><span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span><span class="op">}</span>;</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>output[<span class="dv">0</span>] = input[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="bit-shifting-in-zig" class="level3" data-number="3.4.2">
+<h3 data-number="3.4.2" class="anchored" data-anchor-id="bit-shifting-in-zig"><span class="header-section-number">3.4.2</span> Bit-shifting in Zig</h3>
+<p>Bit-shifting in Zig works similarly to bit-shifting in C. All bitwise operators that exists in C are available in Zig. Here, in the base64 encoder algorithm, they are essential to produce the result we want.</p>
+<p>For those who are not familiar with these operators, they are operators that operates at the bit-level of your values. This means that these operators takes the bits that form the value you have, and change them in some way. This ultimately also changes the value itself, because the binary representation of this value changes.</p>
+<p>Let’s use the first byte in the output of the base64 encoder as an example of what bit-shifting means. This is the easiest byte of the 4 bytes in the output to build. Because we only need to move the bits from the first byte in the input two positions to the right, with the <em>bit shift to the right</em> (<code>&gt;&gt;</code>) operator.</p>
+<p>If we take the string “Hi” that we used at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a> as an example, the first byte in this string is “H”, which is the sequence <code>01001000</code> in binary. If we move the bits of this byte, two places to the right, we get the sequence <code>00010010</code> as result. This binary sequence is the value <code>18</code> in decimal, and also, the value <code>0x12</code> in hexadecimal. Notice that the first 6 bits of the first byte in the input were moved to the end of the byte. With this operation, we get the first byte of the ouput, which corresponds to the index in the base64 scale for the first character in the base64 scale.</p>
+<div class="cell" data-auto_main="false">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> input = <span class="st">"Hi"</span>;</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> output = [<span class="dv">4</span>]<span class="dt">u8</span><span class="op">{</span><span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span><span class="op">}</span>;</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    output[<span class="dv">0</span>] = input[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>;</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>output[<span class="dv">0</span>]<span class="op">}</span>);</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>18</code></pre>
+</div>
 </div>
 </section>
-<section id="second-byte-in-the-output" class="level4" data-number="3.4.2.2">
-<h4 data-number="3.4.2.2" class="anchored" data-anchor-id="second-byte-in-the-output"><span class="header-section-number">3.4.2.2</span> Second byte in the output</h4>
-<p>The second byte in the output is produced by summing two components together. On the first component, we need to select the last two bits in the first byte of the input. We do that, by using the “bitwise and” (<code>&amp;</code>) operator and the hexadecimal value <code>0x03</code>, which is, in binary, the sequence <code>00000011</code>. Notice that only the last two bits in <code>0x03</code> are “on” (i.e.&nbsp;setted to one).</p>
-<p>With this <code>&amp;</code> operator and the <code>0x03</code> value, we essentially set all bits that we do not care about (in this case, the first 6 bits) to zero. By setting them to zero, we essentially remove these bits from the equation. Only the last two bits of the byte maintain their original values. After this operation, we just move the resulting bits four positions to the left.</p>
-<p>To produce the second component, we simply take second byte in the input, and then, we move it’s bits four positions to the right. At last, we just sum these two components together to form the second byte in the output.</p>
-<div class="cell" data-auto_main="true">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> component1 = ((input[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span>)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> component2 = (input[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>)</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>output[<span class="dv">1</span>] = component1 + component2;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="selecting-specific-bits-with-the-operator" class="level3" data-number="3.4.3">
+<h3 data-number="3.4.3" class="anchored" data-anchor-id="selecting-specific-bits-with-the-operator"><span class="header-section-number">3.4.3</span> Selecting specific bits with the <code>&amp;</code> operator</h3>
+<p>If you comeback to <a href="#sec-6bit-transf" class="quarto-xref"><span>Section 3.4.1</span></a>, you will see that to produce the second and third bytes in the output, we need to select specific bits from the first and second bytes in the input string. But how can we do that? The answer relies on the <em>bitwise and</em> (<code>&amp;</code>) operator.</p>
+<p>In summary, the <code>&amp;</code> operator performs a logical conjunction operation between the bits of it’s operands. In more details, the operator <code>&amp;</code> compares each bit of the first operand to the corresponding bit of the second operand. If both bits are 1, the corresponding result bit is set to 1. Otherwise, the corresponding result bit is set to 0 <span class="citation" data-cites="microsoftbitwiseand">(<a href="../references.html#ref-microsoftbitwiseand" role="doc-biblioref">Microsoft 2021</a>)</span>.</p>
+<p>So, if we apply this operator to the binary sequences <code>1000100</code> and <code>00001101</code> the result of this operation is the binary sequence <code>00000100</code>. Because only at the sixth position in both binary sequences we had a 1 value. So any position where we do not have both binary sequences setted to 1, we get a 0 bit in the resulting binary sequence.</p>
+<p>We loose information about the original bit values from both sequences in this case. Because we no longer know if this 0 bit in the resulting binary sequence was produced by combining 0 with 0, or 1 with 0, etc.</p>
+<p>As an example, suppose you have the binary sequence <code>10010111</code>, which is the number 151 in decimal. How can we get a new binary sequence which contains only the third and fourth bits?</p>
+<p>We just need to combine this sequence with the sequence <code>00110000</code> (is <code>0x30</code> in hexadecimal) using the <code>&amp;</code> operator. Notice that only the third and fourth positions in this binary sequence is setted to 1. As a consequence, only the third and fourth values of both binary sequences are potentially preserved in the output. All the remaining positions are setted to zero in the output sequence, which is <code>00010000</code> (is the number 16 in decimal).</p>
+<div class="cell" data-auto_main="false">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> bits = <span class="bn">0b10010111</span>;</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>bits &amp; <span class="bn">0x30</span><span class="op">}</span>);</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>16</code></pre>
+</div>
 </div>
 </section>
-<section id="third-byte-in-the-output" class="level4" data-number="3.4.2.3">
-<h4 data-number="3.4.2.3" class="anchored" data-anchor-id="third-byte-in-the-output"><span class="header-section-number">3.4.2.3</span> Third byte in the output</h4>
-<p>The third byte in the output is also produced by summing two components together. In the first component, we need to take the last 4 bits in the second byte in the input. Then, we move these bits two positions to the left. In the second component, we take the third byte in the input, and move it’s bits six positions to the right.</p>
-<div class="cell" data-auto_main="true">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> component1 = ((input[<span class="dv">1</span>] &amp; <span class="bn">0x0f</span>) &lt;&lt; <span class="dv">2</span>);</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> component2 = (input[<span class="dv">2</span>] &gt;&gt; <span class="dv">6</span>);</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>output[<span class="dv">2</span>] = component1 + component2;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
-<section id="fourth-byte-in-the-output" class="level4" data-number="3.4.2.4">
-<h4 data-number="3.4.2.4" class="anchored" data-anchor-id="fourth-byte-in-the-output"><span class="header-section-number">3.4.2.4</span> Fourth byte in the output</h4>
-<p>The fourth byte in the output is produced by taking the third byte in the input, and selecting the last six bits, with the <code>&amp;</code> operator and the hexadecimal value <code>0x3f</code>.</p>
-<div class="cell" data-auto_main="true">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>output[<span class="dv">3</span>] = input[<span class="dv">2</span>] &amp; <span class="bn">0x3f</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
-<section id="the-end-result" class="level4" data-number="3.4.2.5">
-<h4 data-number="3.4.2.5" class="anchored" data-anchor-id="the-end-result"><span class="header-section-number">3.4.2.5</span> The end result</h4>
-<p>With this dirty code, we get the end result, which is the string <code>SGk=</code>. We can print this string at the end of the program to see this end result:</p>
-<div class="cell" data-auto_main="true">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Result: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>output<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>Result: SGk=</code></pre>
-</section>
-</section>
-<section id="encapsulating-this-logic-into-a-function" class="level3" data-number="3.4.3">
-<h3 data-number="3.4.3" class="anchored" data-anchor-id="encapsulating-this-logic-into-a-function"><span class="header-section-number">3.4.3</span> Encapsulating this logic into a function</h3>
+<section id="encapsulating-this-logic-into-a-function" class="level3" data-number="3.4.4">
+<h3 data-number="3.4.4" class="anchored" data-anchor-id="encapsulating-this-logic-into-a-function"><span class="header-section-number">3.4.4</span> Encapsulating this logic into a function</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> encode(self: Base64,</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>          input: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>          allocator: std.mem.Allocator) ![]<span class="dt">u8</span> <span class="op">{</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len == <span class="dv">0</span>) <span class="op">{</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="st">""</span>;</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n_out = _calc_encode_length(input);</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> out = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, n_out);</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buf = [<span class="dv">3</span>]<span class="dt">u8</span><span class="op">{</span> <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span> <span class="op">}</span>;</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> count: <span class="dt">u8</span> = <span class="dv">0</span>;</span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> iout: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (input, <span class="dv">0</span>..) |_, i| <span class="op">{</span></span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>        buf[count] = input[i];</span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>        count += <span class="dv">1</span>;</span>
-<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (count == <span class="dv">3</span>) <span class="op">{</span></span>
-<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>            out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
-<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">1</span>] = self._char_at(</span>
-<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>                ((buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span>) + (buf[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>)</span>
-<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>            );</span>
-<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">2</span>] = self._char_at(</span>
-<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>                ((buf[<span class="dv">1</span>] &amp; <span class="bn">0x0f</span>) &lt;&lt; <span class="dv">2</span>) + (buf[<span class="dv">2</span>] &gt;&gt; <span class="dv">6</span>)</span>
-<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>            );</span>
-<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">3</span>] = self._char_at(buf[<span class="dv">2</span>] &amp; <span class="bn">0x3f</span>);</span>
-<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>            iout += <span class="dv">4</span>;</span>
-<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>            count = <span class="dv">0</span>;</span>
-<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (count == <span class="dv">1</span>) <span class="op">{</span></span>
-<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>        out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
-<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">1</span>] = self._char_at(</span>
-<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>            (buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span></span>
-<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>        );</span>
-<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">2</span>] = <span class="ch">'='</span>;</span>
-<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">3</span>] = <span class="ch">'='</span>;</span>
-<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (count == <span class="dv">2</span>) <span class="op">{</span></span>
-<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a>        out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
-<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">1</span>] = self._char_at(</span>
-<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a>            ((buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span>) + (buf[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>)</span>
-<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a>        );</span>
-<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">2</span>] = self._char_at(</span>
-<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a>            (buf[<span class="dv">1</span>] &amp; <span class="bn">0x0f</span>) &lt;&lt; <span class="dv">2</span></span>
-<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a>        );</span>
-<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">3</span>] = <span class="ch">'='</span>;</span>
-<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a>        iout += <span class="dv">4</span>;</span>
-<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> out;</span>
-<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> encode(self: Base64,</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>          input: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>          allocator: std.mem.Allocator) ![]<span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len == <span class="dv">0</span>) <span class="op">{</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="st">""</span>;</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n_out = _calc_encode_length(input);</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> out = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, n_out);</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buf = [<span class="dv">3</span>]<span class="dt">u8</span><span class="op">{</span> <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span> <span class="op">}</span>;</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> count: <span class="dt">u8</span> = <span class="dv">0</span>;</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> iout: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (input, <span class="dv">0</span>..) |_, i| <span class="op">{</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>        buf[count] = input[i];</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>        count += <span class="dv">1</span>;</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (count == <span class="dv">3</span>) <span class="op">{</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>            out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">1</span>] = self._char_at(</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>                ((buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span>) + (buf[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>)</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>            );</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">2</span>] = self._char_at(</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>                ((buf[<span class="dv">1</span>] &amp; <span class="bn">0x0f</span>) &lt;&lt; <span class="dv">2</span>) + (buf[<span class="dv">2</span>] &gt;&gt; <span class="dv">6</span>)</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>            );</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>            out[iout + <span class="dv">3</span>] = self._char_at(buf[<span class="dv">2</span>] &amp; <span class="bn">0x3f</span>);</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>            iout += <span class="dv">4</span>;</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>            count = <span class="dv">0</span>;</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (count == <span class="dv">1</span>) <span class="op">{</span></span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>        out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">1</span>] = self._char_at(</span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>            (buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span></span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">2</span>] = <span class="ch">'='</span>;</span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">3</span>] = <span class="ch">'='</span>;</span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (count == <span class="dv">2</span>) <span class="op">{</span></span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a>        out[iout] = self._char_at(buf[<span class="dv">0</span>] &gt;&gt; <span class="dv">2</span>);</span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">1</span>] = self._char_at(</span>
+<span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a>            ((buf[<span class="dv">0</span>] &amp; <span class="bn">0x03</span>) &lt;&lt; <span class="dv">4</span>) + (buf[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>)</span>
+<span id="cb10-45"><a href="#cb10-45" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">2</span>] = self._char_at(</span>
+<span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a>            (buf[<span class="dv">1</span>] &amp; <span class="bn">0x0f</span>) &lt;&lt; <span class="dv">2</span></span>
+<span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a>        out[iout + <span class="dv">3</span>] = <span class="ch">'='</span>;</span>
+<span id="cb10-50"><a href="#cb10-50" aria-hidden="true" tabindex="-1"></a>        iout += <span class="dv">4</span>;</span>
+<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb10-52"><a href="#cb10-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-53"><a href="#cb10-53" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> out;</span>
+<span id="cb10-54"><a href="#cb10-54" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-microsoftbitwiseand" class="csl-entry" role="listitem">
+Microsoft. 2021. <span>“Bitwise AND Operator: &amp;.”</span> <a href="https://learn.microsoft.com/en-us/cpp/cpp/bitwise-and-operator-amp?view=msvc-170">https://learn.microsoft.com/en-us/cpp/cpp/bitwise-and-operator-amp?view=msvc-170</a>.
+</div>
+</div>
 </section>
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
