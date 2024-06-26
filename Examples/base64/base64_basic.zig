@@ -85,14 +85,12 @@ const Base64 = struct {
         var output = try allocator.alloc(u8, n_output);
         var count: u8 = 0;
         var output_index: u64 = 0;
-
-        for (output, 0..) |_, i| {
+        for (0..output.len) |i| {
             output[i] = 0;
         }
 
-        for (input, 0..) |_, i| {
-            const index: u8 = @intCast(i);
-            tmp_buffer[count] = self._char_index(input[index]);
+        for (0..input.len) |i| {
+            tmp_buffer[count] = self._char_index(input[i]);
             count += 1;
             if (count == 4) {
                 output[output_index] = (tmp_buffer[0] << 2) + (tmp_buffer[1] >> 4);

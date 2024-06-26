@@ -45,7 +45,7 @@ If you are unsure about the differences between an "encoder" and a "decoder",
 take a look at @sec-encode-vs-decode.
 
 
-### The base64 scale
+### The base64 scale {#sec-base64-scale}
 
 In essence, the base64 encoding system is based on a scale that goes from 0 to 64 (hence the name).
 Each index in this scale is represented by a character (it is a scale of 64 characters).
@@ -650,11 +650,72 @@ Now, we can focus on writting the base64 decoder logic. Remember from @fig-base6
 a base64 decoder do the inverse process of an encoder. So, all we need to do, is to
 write a `decode()` function that performs the inverse process that I exposed at @sec-encoder-logic.
 
+
+### Mapping base64 characters to their indexes {#sec-map-base64-index}
+
+One thing that we need to do, in order to decode a base64-encoded message, is to calculate
+the index in the base64 scale of every base64 character that we encounter in the decoder input.
+
+In other words, the decoder receives as input, a sequence of base64 characters. We need
+to translate this sequence of characters into a sequence of indexes. These indexes
+are the index of each character in the base64 scale. This way, we get the value/byte
+that was calculated in the 6-bit transformation step of the encoder process.
+
+There are probably better ways to calculate this, specially using a "divide and conquer"
+type of strategy. But for now, I am satisfied with a simple and "brute force" type of strategy.
+The `_char_index()` function below contains this strategy.
+
+We are essentially looping through the *lookup table* with the base64 scale,
+and comparing the character we got with each character in the base64 scale.
+If these characters match, then, we return the index of this character in the
+base64 scale as the result.
+
+Notice that, if the input character is `'='`, the function returns the index 64, which is
+"out of range" in the scale. But, as I described at @sec-base64-scale,
+the character `'='` does not belong to the base64 scale itself.
+It is a special and meaningless character in base64.
+
+Also notice that this `_char_index()` function is a method from our `Base64` struct,
+because of the `self` argument. Again, I ommitted the `Base64` struct definition in this example, because
+of brevity reasons.
+
+```{zig}
+#| eval: false
+fn _char_index(self: Base64, char: u8) u8 {
+    if (char == '=')
+        return 64;
+    var index: u8 = 0;
+    for (0..63) |i| {
+        if (self._char_at(i) == char) {
+            index = i;
+            break;
+        }
+    }
+
+    return index;
+}
+```
+
+
+
 ### The 6-bit transformation
 
 Once again, the core part of the algorithm is the 6-bit transformation.
 If we understand the necessary steps to perform this transformation, the rest
 of the algorithm becomes much easier.
+
+First of all, before we actually go to the 6-bit transformation,
+we need to make sure that we use `_char_index()` to convert the sequence of base64 characters
+into a sequence of indexes. So the snippet below will be important for the job to be done.
+The result of `_char_index()` will be stored in a temporary buffer, and this temporary buffer
+is what we are going to use in the 6-bit transformation, instead of the actual `input` object.
+
+```{zig}
+#| eval: false
+for (0..input.len) |i| {
+    buf[i] = self._char_index(input[i]);
+}
+```
 
 Now, instead of producing 4 bytes (or 4 characters) as output per each window of 3 characters in the input,
 a base64 decoder produces 3 bytes (or 3 characters) as output per each window of 4 characters in the input.
@@ -662,9 +723,9 @@ Once again, is the inverse process.
 
 So, the steps to produce the 3 bytes in the output are:
 
-1. `output[0]` is produced by summing two components. First, move the bits from `input[0]` two positions to the left. Second, move the bits from `input[1]` 4 positions to the right. Then, sum these two components.
-1. `output[1]` is produced by summing two components. First, move the bits from `input[1]` four positions to the left. Second, move the bits from `input[2]` 2 positions to the right. Then, sum these two components.
-1. `output[2]` is produced by moving the bits from `input[2]` six positions to the left, then, you sum the result with `input[3]`.
+1. `output[0]` is produced by summing two components. First, move the bits from `buf[0]` two positions to the left. Second, move the bits from `buf[1]` 4 positions to the right. Then, sum these two components.
+1. `output[1]` is produced by summing two components. First, move the bits from `buf[1]` four positions to the left. Second, move the bits from `buf[2]` 2 positions to the right. Then, sum these two components.
+1. `output[2]` is produced by summing two components. First, move the bits from `buf[2]` six positions to the left. Then, you sum the result with `buf[3]`.
 
 
 The @tbl-6bit-decode presents how the above steps translate into Zig code:
@@ -679,9 +740,9 @@ library(tibble)
 table_data <- tibble(
   `Byte index in the output` = c(0:2),
   `In code` = c(
-    "`(input[0] << 2) + (input[1] >> 4)`",
-    "`(input[1] << 4) + (input[2] >> 2)`",
-    "`(input[2] << 6) + input[3]`"
+    "`(buf[0] << 2) + (buf[1] >> 4)`",
+    "`(buf[1] << 4) + (buf[2] >> 2)`",
+    "`(buf[2] << 6) + buf[3]`"
   )
 )
 
@@ -718,40 +779,58 @@ The necessary steps for the 6-transformation in the decode process.
 
 ### Writing the `decode()` function
 
+The `decode()` function below contains the entire decoding process.
+Notice that, we first calculate the necessary size for the output, with
+`_calc_decode_length()`, then, we allocate memory for this output with
+the allocator object.
 
+Three temporary variables are created: 1) `count`, to hold the window count
+in each iteration of the for loop; 2) `iout`, to hold the current index in the output;
+3) `buf`, which is the temporary buffer that holds the base64 indexes to be
+converted through the 6-bit transformation.
 
+Then, in each iteration of the for loop we fill the temporary buffer with the current
+window of bytes. When `count` hits the number 4, then, we have a full window of
+indexes in `buf` to be converted, and then, we apply the 6-bit transformation
+over the temporary buffer.
 
+Notice that we check if the indexes 2 and 3 in the temporary buffer are the number 64, which, if you recall
+from @sec-map-base64-index, is when the `_calc_index()` function receives a `'='` character
+as input. So, if these indexes are equal to the number 64, the `decode()` function knows
+that it can simply ignore these indexes. They are not converted, because, as I described before,
+the character `'='` have no meaning, despite being the end of meaningful characters in the sequence.
+So we can safely ignore them, when they appear in the sequence.
 
 ```{zig}
 #| eval: false
-// ======= Function
-fn decode(self: Base64, input: []const u8, allocator: std.mem.Allocator) ![]u8 {
+fn decode(self: Base64,
+        input: []const u8,
+        allocator: std.mem.Allocator) ![]u8 {
+
     if (input.len == 0) {
         return "";
     }
-
     const n_output = _calc_decode_length(input);
-    var tmp_buffer = [4]u8{ 0, 0, 0, 0 };
     var output = try allocator.alloc(u8, n_output);
-    var count: u8 = 0;
-    var output_index: u64 = 0;
     for (output, 0..) |_, i| {
         output[i] = 0;
     }
+    var count: u8 = 0;
+    var iout: u64 = 0;
+    var buf = [4]u8{ 0, 0, 0, 0 };
 
-    for (input, 0..) |_, i| {
-        const index: u8 = @intCast(i);
-        tmp_buffer[count] = self._char_index(input[index]);
+    for (0..input.len) |i| {
+        buf[count] = self._char_index(input[i]);
         count += 1;
         if (count == 4) {
-            output[output_index] = (tmp_buffer[0] << 2) + (tmp_buffer[1] >> 4);
-            if (tmp_buffer[2] != 64) {
-                output[output_index + 1] = (tmp_buffer[1] << 4) + (tmp_buffer[2] >> 2);
+            output[iout] = (buf[0] << 2) + (buf[1] >> 4);
+            if (buf[2] != 64) {
+                output[iout + 1] = (buf[1] << 4) + (buf[2] >> 2);
             }
-            if (tmp_buffer[3] != 64) {
-                output[output_index + 2] = (tmp_buffer[2] << 6) + tmp_buffer[3];
+            if (buf[3] != 64) {
+                output[iout + 2] = (buf[2] << 6) + buf[3];
             }
-            output_index += 3;
+            iout += 3;
             count = 0;
         }
     }
@@ -759,3 +838,35 @@ fn decode(self: Base64, input: []const u8, allocator: std.mem.Allocator) ![]u8 {
     return output;
 }
 ```
+
+
+## The end result
+
+Now that we have both `decode()` and `encode()` implemented. We have a full functioning
+base64 encoder/decoder implemented in Zig. Here is an example of use of our
+`Base64` struct with the `encode()` and `decode()` methods that we implemented.
+
+```{zig}
+#| eval: false
+var memory_buffer: [1000]u8 = undefined;
+var fba = std.heap.FixedBufferAllocator.init(&memory_buffer);
+const allocator = fba.allocator();
+
+const text = "Testing some more shit";
+const etext = "VGVzdGluZyBzb21lIG1vcmUgc2hpdA==";
+const base64 = Base64.init();
+const encoded_text = try base64.encode(text, allocator);
+const decoded_text = try base64.decode(etext, allocator);
+try stdout.print("Encoded text: {s}\n", .{encoded_text});
+try stdout.print("Decoded text: {s}\n", .{decoded_text});
+```
+
+```
+Encoded text: VGVzdGluZyBzb21lIG1vcmUgc2hpdA==
+Decoded text: Testing some more shit
+```
+
+You can also see the full source code at once, by visiting the official repository of this book[^repo].
+More precisely inside the `Examples` folder[^zig-base64-algo].
+
+[^repo]: <https://github.com/pedropark99/zig-book>
