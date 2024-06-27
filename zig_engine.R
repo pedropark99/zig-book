@@ -3,27 +3,26 @@ library(readr)
 library(stringr)
 
 
-sys_info <- Sys.info()
-if (sys_info["sysname"] == "Linux" & str_detect(sys_info["release"], "WSL")) {
-  # Running on WSL
-  p <- "/mnt/c/Users/pedro/Documents/_Programs/zig-linux/zig"
-} else if (sys_info["sysname"] == "Linux") {
-  # Running on Ubuntu
-  p <- "/home/pedro-dev/Documents/_Programs/zig-linux/zig"
+find_zig_ <- function() {
+  possible_paths <- c(
+    "/mnt/c/Users/pedro/Documents/_Programs/zig-linux/zig",
+    "/home/pedro-dev/Documents/_Programs/zig-linux/zig",
+    Sys.which("zig")
+  )
+
+  for (path in possible_paths) {
+    if (file.exists(path)) {
+      return(path)
+    }
+  }
 }
 
 
-options(zig_exe_path = p)
+options(zig_exe_path = find_zig_())
 options(width = 50)
 
-find_zig_ <- function() {
-  p <- Sys.which("zig")
-  if (p == "") {
-    p <- getOption("zig_exe_path")
-  }
 
-  return(p)
-}
+
 
 str_split_lines <- function(text, options) {
   output_width <- getOption("width")
@@ -136,7 +135,6 @@ generate_main <- function(code_without_main) {
     code_without_main$structs,
     code_without_main$funs
   )
-  # cat(code_with_main, file = stderr())
   return(code_with_main)
 }
 
@@ -176,7 +174,7 @@ knitr::knit_engines$set(zig = function(options) {
 
   temp_file <- tempfile(fileext = ".zig")
   readr::write_file(code_to_execute, temp_file)
-  zig_cmd_path <- find_zig_()
+  zig_cmd_path <- getOption("zig_exe_path")
   out <- system2(
     zig_cmd_path,
     c("run", shQuote(temp_file)),
@@ -207,29 +205,3 @@ exit_status_code <- function(output) {
 
   return(status)
 }
-
-
-teste_zig <- function(code) {
-  code <- paste(code, collapse = "\n")
-  temp_file <- tempfile(fileext = ".zig")
-  readr::write_file(code, temp_file)
-  zig_cmd_path <- find_zig_()
-  out <- system2(
-    zig_cmd_path,
-    c("run", shQuote(temp_file)),
-    stdout = TRUE
-  )
-
-  out
-}
-
-test_code <- '
-const std = @import("std");
-
-pub fn main() !void {
-    const stdout = std.io.getStdOut().writer();
-    try stdout.print("Hello, {s}!\\n", .{"world"});
-}
-'
-
-# teste_zig(test_code)

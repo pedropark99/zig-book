@@ -24,35 +24,142 @@ and exploring the exciting world of Zig.
 ## What is Zig?
 
 Zig is a modern low-level programming language. Some programmers interpret
-Zig as the "modern C" language. It is a simple language like C, but with some
+Zig as the "modern C language". It is a simple language like C, but with some
 modern features.
 
+In my (author's) personal interpretation, Zig is tightly connected with "less is more".
+Instead of trying to become a modern language by adding more and more features,
+many of the core improvements that Zig brings to the
+table are actually about removing annoying and evil behaviours/features from C and C++.
+In other words, Zig tries to be better by simplifying the language, and by having more consistent and robust behaviour.
+As a result, analyzing, writing and debugging Zig applications are much easier and simpler than in C or C++.
 
-## Creating variables in Zig
+This philosophy becomes clear with the following phrase from the official website of Zig:
 
-To create a new variable (or a new object) in Zig, we use
-the keywords `const` or `var`. If you use `const`, then, the object you are
+> "Focus on debugging your application rather than debugging your programming language knowledge".
+
+This phrase is specially true for C++ programmers. Because C++ is a gigantic language,
+with tons of features, and also, there are lots of different "flavors of C++". These elements
+are what makes C++ so much complex and hard to learn. Zig tries to go in the opposite direction.
+Zig is a very simple language, more closely related to other simple languages such as C and Go.
+
+The phrase above is still important for C programmers too. Because, even C being a simple
+language, it is still hard sometimes to read and understand C code. For example, pre-processor macros in
+C are an evil source of confusion. They really makes it hard sometimes to debug
+C programs. Because macros are essentially a second language embedded in C that obscures
+your C code. With macros, you are no longer 100% sure about which pieces
+of code are being sent to the compiler. It obscures the actual source code that you wrote.
+
+You don't have macros in Zig. In Zig, the code you write, is the actual code that get's compiled by the compiler.
+You don't have evil features that obscures you code.
+You also don't have hidden control flow happening behind the scenes. And, you also
+don't have functions or operators from the standard library that makes
+hidden allocations behind your back.
+
+By being a simpler language, Zig becomes much more clear and easier to read/write,
+but at the same time, it also achieves a much more robust state, with more consistent
+behaviour in edge situations. Once again, less is more.
+
+
+## Hello world in Zig
+
+We begin our journey in the Zig world by creating a small "Hello World" program.
+To start a new Zig project in your computer, you simply call the `init` command
+from the `zig` compiler.
+
+```bash
+zig init hello_world
+```
+
+
+First, notice that we have a `main()` function in this example. As you would expect
+from a C, C++, Rust and Go program, we also have a `main()` function in Zig.
+
+If you are building a library in Zig, then, you most likely do not need to declare a `main()`
+function in your code. However, if you are building an executable program, then,
+you must declare a `main()` function. Because without this main function, you
+get no entrypoint to your executable. How you are going to execute your program
+without an entrypoint?
+
+Secode, I want to emphasize the line ends. Notice that every line of code
+that have an expression, ends with a semicolon character (`;`). This is
+similar to other languages such as C, C++ and Rust,
+which have the same rule.
+
+
+```{zig}
+#| auto_main: false
+const std = @import("std");
+
+pub fn main() !void {
+    const stdout = std.io.getStdOut().writer();
+    try stdout.print("Hello, {s}!\n", .{"world"});
+}
+```
+
+
+## Identifiers and creating new objects in Zig
+
+In this section, I want to teach you about how you create new objects (or, new identifiers) in Zig.
+To create a new object (or a new "identifier") in Zig, we use
+the keywords `const` or `var`. These keywords specificy if the object
+that you are creating is mutable or not.
+
+If you use `const`, then, the object you are
 creating is a constant object, meaning that, once you declare this object, you
 can no longer change the value stored inside this object.
 
+On the other side, if you use `var`, then, you are creating a variable object.
+So, you can change the value of this object as many times you want.
+
+### Constant objects
+
+For example, in the code example below, we are creating a new constant object called `age`.
+This object stores a number representing the age of someone. However, this code example
+does not compiles succesfully. Because on the next line of code, we are trying to change the value
+of the object `age` to 25.
+
+The `zig` compiler detects that we are trying to change
+the value of an object/identifier that is constant, and because of that,
+the compiler will raise a compilation error, warning us about the mistake.
+
+```{zig}
+const age = 24;
+// The line below is not valid!
+age = 25
+```
+
 In contrast, if you use `var`, then, the object created is a variable object.
-It allows you to declare this object in a poin in your source code.
+With `var` you can declare this object in your source code, and then,
+change the value of this object how many times you want over future points
+in your source code.
+
+So, using the same code example exposed above, if I change the declaration of the
+`age` object to use the `var` keyword, then, the program gets compiled succesfully.
+Because now, the `zig` compiler detects that we are changing the value of an
+object that allows this behaviour, because it is an "variable object".
+
+```{zig}
+var age = 24;
+age = 25;
+```
 
 
 
 
-## There is no such thing as unused variables
+### There is no such thing as unused constant objects
 
-Every variable that you declare in Zig **must be used in some way**, like giving this variable
-to a function call, as a function argument, or, using it in another expression
-to calculate the value of another variable, or, calling a method that belongs to this
-particular variable.
+Every constant that you declare in Zig **must be used in some way**. You can give this constant
+to a function call, as a function argument, or, you can use it in another expression
+to calculate the value of another constant, or, you can call a method that belongs to this
+particular constant.
 
-If you try to break this rule, i.e. if your try to declare a variable, but not use it,
+It doesn't matter in which way you use it. As long as you use it.
+If you try to break this rule, i.e. if your try to declare a constant, but not use it,
 the `zig` compiler will not compile your Zig source code, and it will issue a error
-message warning that you have unused variables in your code.
+message warning that you have unused constants in your code.
 
-Let's demonstrate this with an example. In the source code below, we declare a variable
+Let's demonstrate this with an example. In the source code below, we declare a constant
 called `age`. If you try to compile a simple Zig program with this line of code below,
 the compiler will return an error as demonstrated below:
 
@@ -67,18 +174,18 @@ t.zig:4:11: error: unused local constant
           ^~~
 ```
 
-Everytime you declare a new variable in Zig, you have two choices:
+Everytime you declare a new constant in Zig, you have two choices:
 
-1. you either use the value of this variable;
-2. or you explicitly discard the value of this variable;
+1. you either use the value of this constant;
+2. or you explicitly discard the value of the object;
 
-To explicitly discard the value of a variable, all you need to do is to assign
-this variable to an special character in Zig, which is the underscore (`_`).
-When you assign a variable to a underscore, like in the example below, the `zig` compiler will automatically
-discard the value of this particular variable.
+To explicitly discard the value of any object (any object, constant or variable, whatever), all you need to do is to assign
+this object to an special character in Zig, which is the underscore (`_`).
+When you assign an object to a underscore, like in the example below, the `zig` compiler will automatically
+discard the value of this particular object.
 
 You can see in the example below that, this time, the compiler did not
-complain about any "unused variable", and succesfully compiled our source code.
+complain about any "unused constant", and succesfully compiled our source code.
 
 ```{zig}
 // It compiles!
@@ -86,11 +193,11 @@ const age = 15;
 _ = age;
 ```
 
-Now, remember, everytime you assign a particular variable to the underscore, this variable
+Now, remember, everytime you assign a particular object to the underscore, this object
 is essentially destroyed. It is discarded by the compiler. This means that you can no longer
-use this variable further in your code. It doesn't exist anymore.
+use this object further in your code. It doesn't exist anymore.
 
-So if you try to use the variable `age` in the example below, after we discarded it, you
+So if you try to use the constant `age` in the example below, after we discarded it, you
 will get a loud error message from the compiler (talking about a "pointless discard")
 warning you about this mistake.
 
@@ -109,8 +216,20 @@ t.zig:7:5: error: pointless discard
 ```
 
 
+This same rule applies to variable objects. If you assign a variable object to the underscore,
+this object also get's discarded, and you can no longer use this object.
 
-## Variable
+
+### Creating variable objects
+
+
+### You must mutate your variable objects
+
+Every variable object you create in your source code must be mutated, at some point
+in your souce code. In other words, if you declare an object as a variable
+object, with the keyword `var`, if you do not change the value of this object
+at some point in the future, the `zig` compiler will detect this error,
+and it will raise an error warning you about this mistake.
 
 
 

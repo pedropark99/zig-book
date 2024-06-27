@@ -1,14 +1,7 @@
 library(stringr)
 
-options(zig_exe_path = "/home/pedro-dev/Documents/_Programs/zig-linux-x86_64-0.11.0/zig")
+source("zig_engine.R")
 
-find_zig_ <- function() {
-  p <- Sys.which("zig")
-  if (p == "") {
-    p <- getOption("zig_exe_path")
-  }
-  return(p)
-}
 
 find_quarto_ <- function() {
   p <- Sys.which("quarto")
@@ -39,13 +32,13 @@ bullets <- c(
 )
 bullets <- paste(bullets, sep = "", collapse = "\n\n")
 versions_string <- sprintf(
-  bullets
-  , sys_info["sysname"]
-  , sys_info["release"]
-  , sys_version
-  , sys_info["machine"]
-  , zig_version
-  , quarto_version
+  bullets,
+  sys_info["sysname"],
+  sys_info["release"],
+  sys_version,
+  sys_info["machine"],
+  zig_version,
+  quarto_version
 )
 
 
