@@ -15,11 +15,17 @@ knitr::opts_chunk$set(
 # Introducing Zig
 
 In this chapter, I want to introduce you to the world of Zig.
-Despite it's rapidly growing on the last year, Zig is still a very young language.
-As a consequence, it's world is rather wild and poorly explored.
+Despite it's rapidly growing over the last years, Zig is, still, a very young language.
+As a consequence, it's world is still very wild and to be explored.
+This book is my attempt to help you on your personal journey for understanding and exploring the exciting world of Zig.
 
-This book is my attempt to help you on your personal journey for understanding
-and exploring the exciting world of Zig.
+I assume you have some previous experience with some programming
+language in this book, not necessarily with a low-level one.
+So, if you have experience with Python, or Javascript, for example, is fine.
+But, if you do have experience with low-level languages, such as C, C++, or
+Rust, you will probably learn faster throughout this book.
+
+
 
 ## What is Zig?
 
@@ -63,7 +69,7 @@ behaviour in edge situations. Once again, less is more.
 
 ## Hello world in Zig
 
-We begin our journey in the Zig world by creating a small "Hello World" program.
+We begin our journey in Zig by creating a small "Hello World" program.
 To start a new Zig project in your computer, you simply call the `init` command
 from the `zig` compiler.
 
@@ -84,12 +90,12 @@ info: created src/root.zig
 info: see `zig build --help` for a menu of options
 ```
 
-### Understanding the project files
+### Understanding the project files {#sec-project-files}
 
-After you run the `init` command of the `zig` compiler, some new files
-will be created inside your directory. First, a "source" (`src`) directory
+After you run the `init` command from the `zig` compiler, some new files
+are created inside of your current directory. First, a "source" (`src`) directory
 is created, containing two files, `main.zig` and `root.zig`. Each `.zig` file
-is a separate Zig module, which is simply a file that contains some Zig code.
+is a separate Zig module, which is simply a text file that contains some Zig code.
 
 
 The `main.zig` file for example, contains a `main()` function, which represents
@@ -98,21 +104,11 @@ As you would expect from a C, C++, Rust or Go,
 to build an executabe program in Zig, you also need to declare a `main()` function in your module.
 So, the `main.zig` module represents an executable program written in Zig.
 
-In contrast, the `root.zig` module does not contain a `main()` function. Because
+On the other side, the `root.zig` module does not contain a `main()` function. Because
 it represents a library written in Zig. Libraries are different than executables.
-They don't need an entrypoint to work.
+They don't need to have an entrypoint to work.
 So, you can choose which file (`main.zig` or `root.zig`) you want to follow depending on which type
 of project (executable or library) you want to develop.
-
-
-Now, in addition to the source directory, two other files were created in our working directory:
-`build.zig` and `build.zig.zon`. The first file represents a build script
-written in Zig. In other words, this file contains the necessary commands in Zig to build
-our Zig project.
-
-While the second file (`build.zig.zon`) represents the Zig package manager configuration file,
-where you can list and manage the dependencies of your project. Yes, Zig have
-a package manager called Zon.
 
 ```bash
 tree .
@@ -130,11 +126,54 @@ tree .
 ```
 
 
+Now, in addition to the source directory, two other files were created in our working directory:
+`build.zig` and `build.zig.zon`. The first file (`build.zig`) represents a build script
+written in Zig.
+In other words, this file contain Zig code that executes the necessary steps to build the entire project.
+
+In general, low-level languages normally use a compiler to build your
+source code into binary executables or binary libraries.
+Nevertheless, this process of compiling your source code and building
+binary executables or binary libraries from it, became a real challenge
+in the programming world, once the projects became bigger and bigger.
+As a result, programmers created "build systems", which are a second set of tools designed to make this process
+of compiling and building complex projects, easier.
+
+Examples of build systems are CMake, GNU Make, GNU Autoconf and Ninja,
+which are used to build complex C and C++ projects.
+With these systems, you can write scripts, which are called "build scripts".
+They simply are scripts that describes the necessary steps to compile/build
+your project.
+
+However, these are separate tools, that do not
+belong to C/C++ compilers, like `gcc` or `clang`.
+As a result, in C/C++ projects, you have not only to install and
+manage your C/C++ compilers, but you also have to install and manage
+these build systems separately.
+
+But instead of using a separate build system, in Zig, we use the
+Zig language itself to write build scripts.
+In other words, Zig contains a native build system in it. And
+we can use this build system to write small scripts in Zig,
+which describes the necessary steps to build/compile our Zig project[^zig-build-system].
+So, everything you need to build a complex Zig project is the
+`zig` compiler, and nothing more.
+
+[^zig-build-system]: <https://ziglang.org/learn/overview/#zig-build-system>.
+
+
+Now that we described this topic in more depth, let's focus
+on the second generated file (`build.zig.zon`), which is the Zig package manager configuration file,
+where you can list and manage the dependencies of your project. Yes, Zig have
+a package manager (like `pip` in Python, `cargo` in Rust, or `npm` in Javascript) called Zon,
+and this `build.zig.zon` file is similar to the `package.json` file
+in Javascript projects, or, the `Pipfile` in Python projects.
+
+
 ### Looking at the `root.zig` file
 
 Let's take a look at the `root.zig` file, and start to analyze some of the
 syntax of Zig.
-
 The first thing that you might notice, is that every line of code
 that have an expression in it, ends with a semicolon character (`;`). This is
 similar syntax to other languages such as C, C++ and Rust,
@@ -143,7 +182,7 @@ which have the same rule.
 Also, notice the `@import()` call at the first line. We use this built-in function
 to import functionality from other Zig modules into our current module.
 In other words, the `@import()` function works similarly to the `#include` pre-processor
-in C or C++.
+in C or C++, or, to the `import` statement in Python or Javascript code.
 In this example, we are importing the `std` module,
 which gives you access to the Zig standard library.
 
@@ -207,7 +246,7 @@ care about this keyword.
 Now that we have learned a lot about Zig's syntax from the `root.zig` file,
 let's take a look at the `main.zig` file.
 A lot of the elements we saw in `root.zig` are also present in `main.zig`.
-But we have some other elements that I did not talked about yet, so let's dive in.
+But we have some other elements that we did not have seen yet, so let's dive in.
 
 First, look at the return type of the `main()` function in this file.
 We can see a small change. Now, the return
@@ -231,12 +270,13 @@ below, you can see that we do have a `try` keyword in the 5th line. But we do no
 in this code.
 
 This means that, we are using the keyword `try` to execute a code that might return an error,
-which is the `stdout.print()` expression. But, if this expression do return an error,
-we are not catching and solving this error in any way. That is why the exclamation mark
-was added to the return type of the function.
+which is the `stdout.print()` expression. But because we do not have a `catch` keyword in this line,
+we are not treating (or dealing with) this error.
+So, if this expression do return an error, we are not catching and solving this error in any way.
+That is why the exclamation mark was added to the return type of the function.
 
 So, in essence, the `try` keyword executes the expression `stdout.print()`. If this expression
-returns a valid value, then, the `try` keyword do nothing essentialy. It simply pass this value forward. But, if the expression do
+returns a valid value, then, the `try` keyword do nothing essentially. It simply passes this value forward. But, if the expression do
 return an error, then, the `try` keyword will unwrap this error and print it's
 stack trace to `stderr`.
 
@@ -261,31 +301,35 @@ Unless, you explicitly mark this function as a public function with the `pub` ke
 This means that the `pub` keyword in Zig do essentially the opposite of what the `static` keyword
 do in C/C++.
 
-By making a function "public", you allow other Zig modules to access and call this function.
-To call and use this public function for they own purposes,
+By making a function "public", you allow other Zig modules to access and call this function,
+and use it for they own purposes.
 all these other Zig modules need to do is, to import your module with the `@import()`
 built-in function. Then, they get access to all public functions that are present in
 your Zig module.
 
 
-### Compiling a single module
+### Compiling your source code
 
-You can compile a single Zig module into a binary executable by running the `build-exe` command
-from the `zig` compiler.
-Like in the example below where we are compiling just the module `main.zig` of our project.
+You can compile your Zig modules into a binary executable by running the `build-exe` command
+from the `zig` compiler. You simply list all the Zig modules that you want to build after
+the `build-exe` command, separated by spaces. In the example below, we are compiling the module `main.zig`.
 
 ```bash
 zig build-exe src/main.zig
 ```
 
-This is the easiest way of compiling a single Zig module into a binary executable.
-The Zig compiler also offers a `build-lib` and `build-obj` commands, to compile your
-Zig module into a portale C library, or, into a object file, respectively.
+Since we are building an executable, the `zig` compiler will look for a `main()` function
+declared in any of the files that you list after the `build-exe` command. If
+the compiler does not find a `main()` function declared somewhere, a
+compilation error will be raised, warning about this mistake.
 
-In the case
-of the `build-exe` command above, a binary executable file will be created by the `zig`
-compiler in the root directory of our project.
-If we take a look at the contents of our current directory, with a simple `ls` command, we can
+The `zig` compiler also offers a `build-lib` and `build-obj` commands, which work
+the exact same way as the `build-exe` command. The only difference is that, they compile your
+Zig modules into a portale C ABI library, or, into object files, respectively.
+
+In the case of the `build-exe` command, a binary executable file is created by the `zig`
+compiler in the root directory of your project.
+If we take a look now at the contents of our current directory, with a simple `ls` command, we can
 see the binary file called `main` that was created by the compiler.
 
 ```bash
@@ -296,7 +340,7 @@ ls
 build.zig  build.zig.zon  main  src
 ```
 
-If I execute this binary file, I get the "Hello World" message in the terminal
+If I execute this binary executable, I get the "Hello World" message in the terminal
 , as we expected.
 
 ```bash
@@ -308,35 +352,68 @@ Hello, world!
 ```
 
 
-### Compiling your project
+### Compile and execute at the same time
 
-Although useful, the `build-exe`, `build-lib` and `build-obj` commands
-are hard to use directly when we want to compile multiple modules
-at the same time.
+On the previous section, I presented the `zig build-exe` command, which
+compiles Zig modules into an executable file. However, this means that,
+in order to execute the executable file, we have to run two different commands.
+First, the `zig build-exe` command, and then, we call the executable file
+created by the compiler.
 
-This is important, because most
-real-world projects are composed by dozens and dozens of modules.
-So, compiling each one of these modules into object files, then,
-linking them together, can be an tremendous amount of work if
-done with only these build commands.
+But what if we wanted to perform these two steps,
+all at once, in a single command? We can do that by using the `zig run`
+command.
 
-That is why we normally use a build script written in Zig that
-stays in root of our project directory, called `build.zig`.
-If you project do have such `build.zig` file, then, you can
-easily build/compile your entire project at once by
-running the `zig build` command in the terminal.
+```bash
+zig run src/main.zig
+```
+
+```
+Hello, world!
+```
+
+### Compiling the entire project
+
+Just as I described at @sec-project-files, as our project grows in size and
+complexity, we usually prefer to organize the compilation and build process
+of the project into a build script, using some sort of "build system".
+
+In other words, as our project grows in size and complexity,
+the `build-exe`, `build-lib` and `build-obj` commands become
+harder and header to use directly. Because then we start to list
+multiple and multiple modules at the same time. We also
+start to adding built-in compilation flags to customize the
+build process for our needs, etc. It becomes a lot of work
+to write the necessary commands by hand.
+
+In C/C++ projects, programmers usually opt to use CMake, `Makefile` or `configure` scripts
+to organize this process. However, in Zig, we have a native build system in the language itself.
+So, we can write build scripts in Zig to compile and build Zig projects. Then, all we
+need to do, is to call the `zig build` command to build our project.
+
+So, when you execute the `zig build` command, the `zig` compiler will search
+for a Zig module named `build.zig` inside your current directory, which
+should be your build script, containing the necessary code to compile and
+build your project. If the compiler do find this `build.zig` file in your directory,
+then, the compiler will essentially execute a `zig run` command
+over this `build.zig` file, to compile and execute this build
+script, which in turn, will compile and build your entire project.
+
 
 ```bash
 zig build
 ```
 
+
 After you execute this "build project" command, a `zig-out` directory
 is created in the root of your project directory, where you can find
 the binary executables and libraries created from your Zig modules
-accordingly to the build commands found at `build.zig`.
+accordingly to the build commands that you specified at `build.zig`.
+We will talk more about the build system in Zig latter in this book.
 
-Like in the example below, where I'm executing the binary executable
-named `hello_world` that was generated by the compiler.
+In the example below, I'm executing the binary executable
+named `hello_world` that was generated by the compiler after the
+`zig build` command.
 
 ```bash
 ./zig-out/bin/hello_world
@@ -347,7 +424,7 @@ Hello, world!
 ```
 
 
-## Identifiers and creating new objects in Zig {#sec-assignments}
+## Creating new objects in Zig (i.e. identifiers) {#sec-assignments}
 
 Let's talk more about objects in Zig. Readers that have past experience
 with other programming languages might know the concept of "object" through
@@ -522,8 +599,8 @@ But here is a quick list:
 
 - Unsigned integers: `u8`, 8-bit integer; `u16`, 16-bit integer; `u32`, 32-bit integer; `u64`, 64-bit integer; `u128`, 128-bit integer.
 - Signed integers: `i8`, 8-bit integer; `i16`, 16-bit integer; `i32`, 32-bit integer; `i64`, 64-bit integer; `i128`, 128-bit integer.
-- Float number: `f16`, 16-bit integer; `f32`, 32-bit integer; `f64`, 64-bit integer; `f128`, 128-bit integer;
-- Boolean: `bool`, `true` or `false` values.
+- Float number: `f16`, 16-bit floating point; `f32`, 32-bit floating point; `f64`, 64-bit floating point; `f128`, 128-bit floating point;
+- Boolean: `bool`, represents true or false values.
 - C ABI compatible types: `c_long`, `c_char`, `c_short`, `c_ushort`, `c_int`, `c_uint`, and many others.
 - Pointer sized integers: `isize` and `usize`.
 
@@ -535,22 +612,21 @@ First, you specify the size of the array (i.e. the number of elements that will 
 you want to create inside a pair of brackets.
 
 Then, you specify the data type of the elements that will be stored inside this array.
-All elements present in an array in Zig must have the same data type. You cannot mix elements
+All elements present in an array in Zig must have the same data type. For example, you cannot mix elements
 of type `f32` with elements of type `i32` in the same array.
 
 After that, you simply list the values that you want to store in this array inside
 a pair of curly braces.
-
 In the example below, I am creating two constant objets that contain different arrays.
 The first object contains an array of 4 integer values, while the second object,
-an array of 3 float values.
+an array of 3 floating point values.
 
 Now, you should notice that in the object `ls`, I am
 not explicitly specifying the size of the array inside of the brackets. Instead
 of using a literal value (like the value 4 that I used in the `ns` object), I am
 using the special character underscore (`_`). This syntax tells the `zig` compiler
 to fill this field with the number of elements listed inside of the curly braces.
-So, this syntax `[_]` if for lazy (or smart) people that leaves the job of
+So, this syntax `[_]` is for lazy (or smart) programmers who leave the job of
 counting how many elements there are in the curly braces for the compiler.
 
 ```{zig}
@@ -563,7 +639,6 @@ _ = ns; _ = ls;
 
 One very commom activity is to select specific portions of an array
 you have in your source code.
-
 In Zig, you can select a specific element from your
 array, by simply providing the index of this particular
 element inside brackets after the object name.
@@ -573,18 +648,19 @@ like C, C++, Rust, Python, and many other languages.
 
 ```{zig}
 const ns = [4]u8{48, 24, 12, 6};
-try stdout.print("{d}\n", .{ns[2]});
+try stdout.print("{d}\n", .{ ns[2] });
 ```
 
 In contrast, you can also select specific slices (or sections) of your array, by using a
-range selector. Some programmers also call range selectors of "slice selectors",
+range selector. Some programmers also call these selectors of "slice selectors",
 and they also exist in Rust, and have the exact same syntax as in Zig.
 Anyway, a range selector is a special expression in Zig that defines
-a range of indexes, and it have the syntax `<start>..<end>`.
+a range of indexes, and it have the syntax `start..end`.
 
-After the second line of code in the example below,
+In the example below, at the second line of code,
 the `sl` object stores a slice (or a portion) of the
-`ns` array. More precisely, the items from index 1 to 3.
+`ns` array. More precisely, the elements at index 1 and 2
+in the `ns` array. 
 
 ```{zig}
 const ns = [4]u8{48, 24, 12, 6};
@@ -592,23 +668,69 @@ const sl = ns[1..3];
 _ = sl;
 ```
 
+When you use the `start..end` syntax,
+the "end tail" of the range selector is non-inclusive,
+meaning that, the index at the end is not included in the range that is
+selected from the array.
+Therefore, the syntax `start..end` actually means `start..end - 1` in practice.
 
+You can also use the syntax `start..` in your range selector.
+Which tells the `zig` compiler to select the portion of the array
+that begins at the `start` index until the last element of the array.
+In the example below, we are selecting the range from index 1
+until the end of the array.
+
+```{zig}
+const ns = [4]u8{48, 24, 12, 6};
+const sl = ns[1..];
+_ = sl;
+```
+
+
+### More on slices
+
+As we discussed before, in Zig, you can select specific portions of an existing
+array. This is called *slicing* in Zig [@zigguide], because when you select a portion
+of an array, you are creating a slice object from that array.
+
+A slice object is essentially a pointer object accompained by a length number.
+The pointer object points to the first element in the slice, and the
+length number tells the `zig` compiler how many elements there are in this slice.
+
+> Slices can be thought of as a pair of `[*]T` (the pointer to the data) and a `usize` (the element count) [@zigguide].
+
+Through the pointer contained inside the slice you can access the elements (or values)
+that are inside this range (or portion) that you selected from the original array.
+But the length number (which you can access through the `len` property of your slice object)
+is the really big improvement (over C arrays for example) that Zig brings to the table here.
+
+Because with this length number
+the `zig` compiler can easily check if you are trying to access an index that is out of the bounds of this particular slice,
+or, if you are causing any buffer overflow problems. In the example below,
+we access the `len` property of the slice `sl`, which tells us that this slice
+have 2 elements in it.
+
+```{zig}
+const ns = [4]u8{48, 24, 12, 6};
+const sl = ns[1..3];
+try stdout.print("{d}\n", .{sl.len});
+```
 
 
 ## Control flow
 
-Sometimes, you need to make decisions in your program. You need to decide
+Sometimes, you need to make decisions in your program. Maybe you need to decide
 wether to execute or not a specific piece of code. Or maybe,
-you need to apply the same operation over a sequence of values. To do these kind of tasks, we need to
-use structures that are capable of changing the "control flow" of our program.
+you need to apply the same operation over a sequence of values. These kinds of tasks,
+involve using structures that are capable of changing the "control flow" of our program.
 
-In computer science, control flow is the order in which expressions (or commands)
+In computer science, the term "control flow" usually refers to the order in which expressions (or commands)
 are evaluated in a given language or program. But this term is also used to refer
 to structures that are capable of changing this "evaluation order" of the commands
 executed by a given language/program.
 
 These structures are better known
-by a set of terms (loops, if/else statements, switch statements, among others). So,
+by a set of terms, such as: loops, if/else statements, switch statements, among others. So,
 loops and if/else statements are examples of structures that can change the "control
 flow" of our program. The keywords `continue` and `break` are also examples of symbols
 that can change the order of evaluation, since they can move our program to the next iteration
@@ -617,17 +739,16 @@ of a loop, or make the loop stop completely.
 
 ### If/else statements
 
-An if/else statement performs an conditional flow control operation.
+An if/else statement performs an "conditional flow operation".
 A conditional flow control (or choice control) allows you to execute
 or ignore a certain block of commands based on a logical condition.
+Many programmers and computer science professionals also use
+the term "branching" in this case.
+In essence, we use if/else statements to use the result of a logical test
+to decide whether or not to execute a given block of commands.
 
-In other words, a choice control will use the result of a logical test
-to decide whether or not to execute a certain block of commands.
-Many programmers and computer science professionals in general know conditional
-flow controls by the term "branching".
-
-In Zig, you write if/else statements by using the keywords `if` and `else`.
-You start with the `if` keyword followed by a logical test inside a pair
+In Zig, we write if/else statements by using the keywords `if` and `else`.
+We start with the `if` keyword followed by a logical test inside a pair
 of parentheses, and then, a pair of curly braces with contains the lines
 of code to be executed in case the logical test returns the value `true`.
 
@@ -696,9 +817,7 @@ I could provide the expression `name[0..2]` to the for loop, to iterate
 just through the first 3 elements in the array.
 
 ```{zig}
-const name = [_]u8{
-    'P','e','d','r','o'
-};
+const name = [_]u8{'P','e','d','r','o'};
 for (name) |char| {
     try stdout.print(
         "{d} | ", .{char}
@@ -726,9 +845,7 @@ value items to the underscore character, like in the example below:
 ```{zig}
 #| eval: false
 for (name, 0..) |_, i| {
-    try stdout.print(
-        "{d} | ", .{i}
-    );
+    try stdout.print("{d} | ", .{i});
 }
 ```
 
@@ -739,8 +856,8 @@ for (name, 0..) |_, i| {
 
 ### While loops
 
-A while loop is created from the `while` keyword. A for loop
-iterates through the items of an array. In contrast, a while loop
+A while loop is created from the `while` keyword. While a `for` loop
+iterates through the items of an array, a `while` loop
 will loop continuously, and infinitely, until a logical test
 specified by you becomes false.
 
@@ -751,12 +868,65 @@ loop is provided inside a pair of curly braces.
 ```{zig}
 var i: u8 = 1;
 while (i < 5) {
-    try stdout.print(
-        "{d} | ", .{i}
-    );
+    try stdout.print("{d} | ", .{i});
     i += 1;
 }
 ```
+
+
+
+### Using `break` and `continue`
+
+In Zig, you can explicitly stop the execution of a loop, or, jump to the next iteration of the loop, using
+the keywords `break` and `continue`, respectively. The `while` loop present in the example below, is
+at first sight, an infinite loop. Because the logical value inside the parenthese will always be equal to `true`.
+What makes this `while` loop stop when the `i` object reaches the count
+10? Is the `break` keyword!
+
+Inside the while loop, we have an if statement that is constantly checking if the `i` variable
+is equal to 10. Since we are increasing the value of this `i` variable at each iteration of the
+while loop. At some point, this `i` variable will be equal to 10, and when it does, the if statement
+will execute the `break` expression, and, as a result, the execution of the while loop is stopped.
+
+Notice the `expect()` function from the Zig standard library after the while loop.
+This `expect()` function is an "assert" type of function.
+This function checks if the logical test provided is equal to true. If this logical test is false,
+the function raises an assertion error. But it is equal to true, then, the function will do nothing.
+
+```{zig}
+var i: usize = 0;
+while (true) {
+    if (i == 10) {
+        break;
+    }
+    i += 1;
+}
+try std.testing.expect(i == 10);
+try stdout.print("Everything worked!", .{});
+```
+
+Since this code example was executed succesfully by the `zig` compiler,
+without raising any errors, then, we known that, after the execution of while loop,
+the `i` variable is equal to 10. Because if it wasn't equal to 10, then, an error would
+be raised by `expect()`.
+
+Now, in the next example, we have an use case for
+the `continue` keyword. The if statement is constantly
+checking if the current index is a multiple of 2. If
+it is, then we jump to the next iteration of the loop
+directly. But it the current index is not a multiple of 2,
+then, the loop will simply print this index to the console.
+
+```{zig}
+const ns = [_]u8{1,2,3,4,5,6};
+for (ns) |i| {
+    if ((i % 2) == 0) {
+        continue;
+    }
+    try stdout.print("{d} | ", .{i});
+}
+```
+
 
 
 ## How strings work in Zig? {#sec-zig-strings}

@@ -243,7 +243,8 @@ window.Quarto = {
   <li><a href="#sec-6bit-transf" id="toc-sec-6bit-transf" class="nav-link" data-scroll-target="#sec-6bit-transf"><span class="header-section-number">3.4.1</span> The 6-bit transformation</a></li>
   <li><a href="#bit-shifting-in-zig" id="toc-bit-shifting-in-zig" class="nav-link" data-scroll-target="#bit-shifting-in-zig"><span class="header-section-number">3.4.2</span> Bit-shifting in Zig</a></li>
   <li><a href="#selecting-specific-bits-with-the-operator" id="toc-selecting-specific-bits-with-the-operator" class="nav-link" data-scroll-target="#selecting-specific-bits-with-the-operator"><span class="header-section-number">3.4.3</span> Selecting specific bits with the <code>&amp;</code> operator</a></li>
-  <li><a href="#writing-the-encode-function" id="toc-writing-the-encode-function" class="nav-link" data-scroll-target="#writing-the-encode-function"><span class="header-section-number">3.4.4</span> Writing the <code>encode()</code> function</a></li>
+  <li><a href="#allocating-space-for-the-output" id="toc-allocating-space-for-the-output" class="nav-link" data-scroll-target="#allocating-space-for-the-output"><span class="header-section-number">3.4.4</span> Allocating space for the output</a></li>
+  <li><a href="#writing-the-encode-function" id="toc-writing-the-encode-function" class="nav-link" data-scroll-target="#writing-the-encode-function"><span class="header-section-number">3.4.5</span> Writing the <code>encode()</code> function</a></li>
   </ul></li>
   <li><a href="#sec-decoder-logic" id="toc-sec-decoder-logic" class="nav-link" data-scroll-target="#sec-decoder-logic"><span class="header-section-number">3.5</span> Building the decoder logic</a>
   <ul class="collapse">
@@ -449,7 +450,7 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <div aria-describedby="tbl-transf-6bit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell">
 <div class="cell-output-display">
-<div id="ctksntvjnk" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="wzcybydkcp" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
 <table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
@@ -581,19 +582,30 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 </div>
 </div>
 </section>
-<section id="writing-the-encode-function" class="level3" data-number="3.4.4">
-<h3 data-number="3.4.4" class="anchored" data-anchor-id="writing-the-encode-function"><span class="header-section-number">3.4.4</span> Writing the <code>encode()</code> function</h3>
+<section id="allocating-space-for-the-output" class="level3" data-number="3.4.4">
+<h3 data-number="3.4.4" class="anchored" data-anchor-id="allocating-space-for-the-output"><span class="header-section-number">3.4.4</span> Allocating space for the output</h3>
+<p>As I described at <a href="01-memory.html#sec-stack" class="quarto-xref"><span>Section 2.2.4</span></a>, variables that are stored in the stack need to have known length at compile-time. This is a problem for our a base64 encoder/decoder. Because the size of the output (from both the encoder and decoder) depends directly on the size of the input.</p>
+<p>That means that, we cannot know at compile time which is the size of the output for both the encoder and decoder. So, if we can’t know the size of the output at compile time, this means that we cannot store the output at the encoder or decoder in the stack.</p>
+<p>Consequently, we need to store this output on the heap, and, as I commented at <a href="01-memory.html#sec-heap" class="quarto-xref"><span>Section 2.2.5</span></a>, we can only store variables in the heap by using allocator objects. So, one the arguments to both the <code>encode()</code> and <code>decode()</code> functions, needs to be an allocator object, because we know for sure that, at some point inside the body of these functions, we need to allocate space on the heap to store the output of these functions.</p>
+</section>
+<section id="writing-the-encode-function" class="level3" data-number="3.4.5">
+<h3 data-number="3.4.5" class="anchored" data-anchor-id="writing-the-encode-function"><span class="header-section-number">3.4.5</span> Writing the <code>encode()</code> function</h3>
 <p>Now that we have a basic understanding on how the bitwise operators work, and how exactly they help us to achieve the result we want to achieve. We can now encapsulate all the logic that we described at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a> and <a href="#tbl-transf-6bit" class="quarto-xref">Table&nbsp;<span>3.1</span></a> into a nice function that we can add to our <code>Base64</code> struct definition, that we started at <a href="#sec-base64-table" class="quarto-xref"><span>Section 3.1.2</span></a>.</p>
 <p>You can find the <code>encode()</code> function below. Notice that the first argument of this function, is the <code>Base64</code> struct itself. Therefore, tis argument clearly signals that this function is a method from the <code>Base64</code> struct.</p>
 <p>Because the <code>encode()</code> function itself is fairly long, I intentionally ommitted the <code>Base64</code> struct definition in this source code, just for brevity reasons. So, just remember that this function is a public function (or a public method) from the <code>Base64</code> struct.</p>
-<p>Furthermore, this <code>encode()</code> function have two other arguments: 1) <code>input</code> is the input sequence of characters that you want to encode in base64; 2) <code>allocator</code> is an allocator object to use in the necessary memory allocations. I described everything you need to know about allocator objects at <a href="01-memory.html#sec-allocators" class="quarto-xref"><span>Section 2.3</span></a>. So, if you are not familiar with them, I highly recommend you to comeback to that section, and read it. By looking at the <code>encode()</code> function, you will see that we use this allocator object to allocate enough memory to store the output of encoding process.</p>
+<p>Furthermore, this <code>encode()</code> function have two other arguments:</p>
+<ol type="1">
+<li><code>input</code> is the input sequence of characters that you want to encode in base64;</li>
+<li><code>allocator</code> is an allocator object to use in the necessary memory allocations.</li>
+</ol>
+<p>I described everything you need to know about allocator objects at <a href="01-memory.html#sec-allocators" class="quarto-xref"><span>Section 2.3</span></a>. So, if you are not familiar with them, I highly recommend you to comeback to that section, and read it. By looking at the <code>encode()</code> function, you will see that we use this allocator object to allocate enough memory to store the output of encoding process.</p>
 <p>Remember from <a href="01-memory.html#sec-stack" class="quarto-xref"><span>Section 2.2.4</span></a>, that the stack can be used only to store variables that have a compile-time known fixed size. Unfortunately, this is not the case here. The size of the <code>encode()</code> output is tidly related to the size of the input from the user. So, the size of the output is only known at runtime. That is why we use an allocator object, to allocate memory on the heap (which allows objects whose size are runtime-known), and store the output there.</p>
 <p>The main for loop in the function is responsible for iterating the entire input string. In every iteration, we use a <code>count</code> variable to count how many iterations we had at the moment. When <code>count</code> reaches 3, then, we try to encode the 3 characters (or bytes) that we accumulated until this point in the temporary buffer object (<code>buf</code>).</p>
 <p>After encoding these 3 characters and storing the result in the <code>output</code> variable, we reset the <code>count</code> variable to zero, and start to count again on the next iteration of the loop. If the loop hits the end of the string, and, the <code>count</code> variable is less than 3, then, it means that the temporary buffer contains the last 1 or 2 bytes from the input. That is why we have two <code>if</code> statements after the for loop. To deal which each possible case.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> encode(self: Base64,</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>          input: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>          allocator: std.mem.Allocator) ![]<span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>              allocator: std.mem.Allocator,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>              input: []<span class="kw">const</span> <span class="dt">u8</span>) ![]<span class="dt">u8</span> <span class="op">{</span></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len == <span class="dv">0</span>) <span class="op">{</span></span>
 <span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="st">""</span>;</span>
@@ -700,7 +712,7 @@ Table&nbsp;3.2: The necessary steps for the 6-transformation in the decode proce
 <div aria-describedby="tbl-6bit-decode-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell">
 <div class="cell-output-display">
-<div id="xgygfrvaed" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="epksnprwhl" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
 <table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
@@ -745,8 +757,8 @@ Table&nbsp;3.2: The necessary steps for the 6-transformation in the decode proce
 <p>Notice that we check if the indexes 2 and 3 in the temporary buffer are the number 64, which, if you recall from <a href="#sec-map-base64-index" class="quarto-xref"><span>Section 3.5.1</span></a>, is when the <code>_calc_index()</code> function receives a <code>'='</code> character as input. So, if these indexes are equal to the number 64, the <code>decode()</code> function knows that it can simply ignore these indexes. They are not converted, because, as I described before, the character <code>'='</code> have no meaning, despite being the end of meaningful characters in the sequence. So we can safely ignore them, when they appear in the sequence.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> decode(self: Base64,</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>        input: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>        allocator: std.mem.Allocator) ![]<span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>          allocator: std.mem.Allocator,</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>          input: []<span class="kw">const</span> <span class="dt">u8</span>) ![]<span class="dt">u8</span> <span class="op">{</span></span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len == <span class="dv">0</span>) <span class="op">{</span></span>
 <span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="st">""</span>;</span>
@@ -786,16 +798,26 @@ Table&nbsp;3.2: The necessary steps for the 6-transformation in the decode proce
 <p>Now that we have both <code>decode()</code> and <code>encode()</code> implemented. We have a full functioning base64 encoder/decoder implemented in Zig. Here is an example of use of our <code>Base64</code> struct with the <code>encode()</code> and <code>decode()</code> methods that we implemented.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> memory_buffer: [<span class="dv">1000</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> fba = std.heap.FixedBufferAllocator.init(&amp;memory_buffer);</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = fba.allocator();</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> text = <span class="st">"Testing some more shit"</span>;</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> etext = <span class="st">"VGVzdGluZyBzb21lIG1vcmUgc2hpdA=="</span>;</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> base64 = Base64.init();</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> encoded_text = <span class="kw">try</span> base64.encode(text, allocator);</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> decoded_text = <span class="kw">try</span> base64.decode(etext, allocator);</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"Encoded text: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>encoded_text<span class="op">}</span>);</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"Decoded text: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>decoded_text<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> fba = std.heap.FixedBufferAllocator.init(</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    &amp;memory_buffer</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = fba.allocator();</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> text = <span class="st">"Testing some more shit"</span>;</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> etext = <span class="st">"VGVzdGluZyBzb21lIG1vcmUgc2hpdA=="</span>;</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> base64 = Base64.init();</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> encoded_text = <span class="kw">try</span> base64.encode(</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    allocator, text</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> decoded_text = <span class="kw">try</span> base64.decode(</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    allocator, etext</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Encoded text: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>encoded_text<span class="op">}</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Decoded text: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>decoded_text<span class="op">}</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Encoded text: VGVzdGluZyBzb21lIG1vcmUgc2hpdA==
 Decoded text: Testing some more shit</code></pre>

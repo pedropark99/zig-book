@@ -538,6 +538,31 @@ pub fn main() !void {
 ```
 
 
+### Allocating space for the output
+
+As I described at @sec-stack, variables that are stored in the stack
+need to have known length at compile-time. This is a problem
+for our a base64 encoder/decoder. Because the size of
+the output (from both the encoder and decoder) depends
+directly on the size of the input.
+
+That means that, we cannot know at compile time which is
+the size of the output for both the encoder and decoder.
+So, if we can't know the size of the output at compile time,
+this means that we cannot store the output at the encoder
+or decoder in the stack.
+
+Consequently, we need to store this output on the heap,
+and, as I commented at @sec-heap, we can only
+store variables in the heap by using allocator objects.
+So, one the arguments to both the `encode()` and `decode()`
+functions, needs to be an allocator object, because
+we know for sure that, at some point inside the body of these
+functions, we need to allocate space on the heap to
+store the output of these functions.
+
+
+
 
 ### Writing the `encode()` function
 
@@ -556,8 +581,10 @@ just for brevity reasons. So, just remember that this function is a public funct
 `Base64` struct.
 
 Furthermore, this `encode()` function have two other arguments:
-1) `input` is the input sequence of characters that you want to encode in base64;
-2) `allocator` is an allocator object to use in the necessary memory allocations.
+
+1. `input` is the input sequence of characters that you want to encode in base64;
+2. `allocator` is an allocator object to use in the necessary memory allocations.
+
 I described everything you need to know about allocator objects at @sec-allocators.
 So, if you are not familiar with them, I highly recommend you to comeback to
 that section, and read it.
@@ -587,8 +614,8 @@ That is why we have two `if` statements after the for loop. To deal which each p
 ```{zig}
 #| eval: false
 pub fn encode(self: Base64,
-          input: []const u8,
-          allocator: std.mem.Allocator) ![]u8 {
+              allocator: std.mem.Allocator,
+              input: []const u8) ![]u8 {
 
     if (input.len == 0) {
         return "";
@@ -804,8 +831,8 @@ So we can safely ignore them, when they appear in the sequence.
 ```{zig}
 #| eval: false
 fn decode(self: Base64,
-        input: []const u8,
-        allocator: std.mem.Allocator) ![]u8 {
+          allocator: std.mem.Allocator,
+          input: []const u8) ![]u8 {
 
     if (input.len == 0) {
         return "";
@@ -849,16 +876,26 @@ base64 encoder/decoder implemented in Zig. Here is an example of use of our
 ```{zig}
 #| eval: false
 var memory_buffer: [1000]u8 = undefined;
-var fba = std.heap.FixedBufferAllocator.init(&memory_buffer);
+var fba = std.heap.FixedBufferAllocator.init(
+    &memory_buffer
+);
 const allocator = fba.allocator();
 
 const text = "Testing some more shit";
 const etext = "VGVzdGluZyBzb21lIG1vcmUgc2hpdA==";
 const base64 = Base64.init();
-const encoded_text = try base64.encode(text, allocator);
-const decoded_text = try base64.decode(etext, allocator);
-try stdout.print("Encoded text: {s}\n", .{encoded_text});
-try stdout.print("Decoded text: {s}\n", .{decoded_text});
+const encoded_text = try base64.encode(
+    allocator, text
+);
+const decoded_text = try base64.decode(
+    allocator, etext
+);
+try stdout.print(
+    "Encoded text: {s}\n", .{encoded_text}
+);
+try stdout.print(
+    "Decoded text: {s}\n", .{decoded_text}
+);
 ```
 
 ```
