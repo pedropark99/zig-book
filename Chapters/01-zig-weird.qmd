@@ -27,12 +27,12 @@ Zig is a modern low-level programming language. Some programmers interpret
 Zig as the "modern C language". It is a simple language like C, but with some
 modern features.
 
-In my (author's) personal interpretation, Zig is tightly connected with "less is more".
+In the author's personal interpretation, Zig is tightly connected with "less is more".
 Instead of trying to become a modern language by adding more and more features,
 many of the core improvements that Zig brings to the
 table are actually about removing annoying and evil behaviours/features from C and C++.
 In other words, Zig tries to be better by simplifying the language, and by having more consistent and robust behaviour.
-As a result, analyzing, writing and debugging Zig applications are much easier and simpler than in C or C++.
+As a result, analyzing, writing and debugging applications become much easier and simpler in Zig, than it is in C or C++.
 
 This philosophy becomes clear with the following phrase from the official website of Zig:
 
@@ -53,8 +53,8 @@ of code are being sent to the compiler. It obscures the actual source code that 
 You don't have macros in Zig. In Zig, the code you write, is the actual code that get's compiled by the compiler.
 You don't have evil features that obscures you code.
 You also don't have hidden control flow happening behind the scenes. And, you also
-don't have functions or operators from the standard library that makes
-hidden allocations behind your back.
+don't have functions or operators from the standard library that make
+hidden memory allocations behind your back.
 
 By being a simpler language, Zig becomes much more clear and easier to read/write,
 but at the same time, it also achieves a much more robust state, with more consistent
@@ -67,27 +67,181 @@ We begin our journey in the Zig world by creating a small "Hello World" program.
 To start a new Zig project in your computer, you simply call the `init` command
 from the `zig` compiler.
 
+Just create a new directory in your computer, then, init a new Zig project
+inside this directory, like this:
+
 ```bash
-zig init hello_world
+mkdir hello_world
+cd hello_world
+zig init
+```
+
+```
+info: created build.zig
+info: created build.zig.zon
+info: created src/main.zig
+info: created src/root.zig
+info: see `zig build --help` for a menu of options
+```
+
+### Understanding the project files
+
+After you run the `init` command of the `zig` compiler, some new files
+will be created inside your directory. First, a "source" (`src`) directory
+is created, containing two files, `main.zig` and `root.zig`. Each `.zig` file
+is a separate Zig module, which is simply a file that contains some Zig code.
+
+
+The `main.zig` file for example, contains a `main()` function, which represents
+the entrypoint of your program. It is where the execution of your program begins.
+As you would expect from a C, C++, Rust or Go,
+to build an executabe program in Zig, you also need to declare a `main()` function in your module.
+So, the `main.zig` module represents an executable program written in Zig.
+
+In contrast, the `root.zig` module does not contain a `main()` function. Because
+it represents a library written in Zig. Libraries are different than executables.
+They don't need an entrypoint to work.
+So, you can choose which file (`main.zig` or `root.zig`) you want to follow depending on which type
+of project (executable or library) you want to develop.
+
+
+Now, in addition to the source directory, two other files were created in our working directory:
+`build.zig` and `build.zig.zon`. The first file represents a build script
+written in Zig. In other words, this file contains the necessary commands in Zig to build
+our Zig project.
+
+While the second file (`build.zig.zon`) represents the Zig package manager configuration file,
+where you can list and manage the dependencies of your project. Yes, Zig have
+a package manager called Zon.
+
+```bash
+tree .
+```
+
+```
+.
+├── build.zig
+├── build.zig.zon
+└── src
+    ├── main.zig
+    └── root.zig
+
+1 directory, 4 files
 ```
 
 
-First, notice that we have a `main()` function in this example. As you would expect
-from a C, C++, Rust and Go program, we also have a `main()` function in Zig.
+### Looking at the `root.zig` file
 
-If you are building a library in Zig, then, you most likely do not need to declare a `main()`
-function in your code. However, if you are building an executable program, then,
-you must declare a `main()` function. Because without this main function, you
-get no entrypoint to your executable. How you are going to execute your program
-without an entrypoint?
+Let's take a look at the `root.zig` file, and start to analyze some of the
+syntax of Zig.
 
-Secode, I want to emphasize the line ends. Notice that every line of code
-that have an expression, ends with a semicolon character (`;`). This is
-similar to other languages such as C, C++ and Rust,
+The first thing that you might notice, is that every line of code
+that have an expression in it, ends with a semicolon character (`;`). This is
+similar syntax to other languages such as C, C++ and Rust,
 which have the same rule.
 
+Also, notice the `@import()` call at the first line. We use this built-in function
+to import functionality from other Zig modules into our current module.
+In other words, the `@import()` function works similarly to the `#include` pre-processor
+in C or C++.
+In this example, we are importing the `std` module,
+which gives you access to the Zig standard library.
+
+In this `root.zig` file, we can also see how assignments (i.e. creating new objects)
+are made in Zig. You can create a new object in Zig by using the following syntax
+`(const|var) name = value;`. In the example below, we are creating two constant
+objects (`std` and `testing`). At @sec-assignments we talk more about objects in general.
 
 ```{zig}
+#| eval: false
+const std = @import("std");
+const testing = std.testing;
+
+export fn add(a: i32, b: i32) i32 {
+    return a + b;
+}
+```
+
+Functions in Zig are declared similarly to functions in Rust, using the `fn` keyword. In the example above,
+we are declaring a function called `add()`, which have two arguments named `a` and `b`, and returns
+a integer number (`i32`) as result.
+
+Maybe Zig is not exactly a strongly-typed language, because you do not need
+necessarily to specify the type of every single object you create across your source code.
+But you do have to explicitly specify the type of every function argument, and also,
+the return type of every function you create in Zig. So, at least in function declarations,
+Zig is a strongly-typed language.
+
+We specify the type of an object or a function argument in Zig, by
+using a colon character (`:`) followed by the type after the name of this object/function argument.
+With the expressions `a: i32` and `b: i32`, we know that, both `a` and `b` arguments have type `i32`,
+which is a signed 32 bit integer. In this part,
+the syntax in Zig is identical to the syntax in Rust, which also specifies types by
+using the colon character.
+
+Lastly, we have the return type of the function at the end of the line, before we open
+the curly braces to start writing the function's body, which, in the example above is
+again a signed 32 bit integer (`i32`) value. This specific part is different than it is in Rust.
+Because in Rust, the return type of a function is specified after an arrow (`->`).
+While in Zig, we simply declare the return type directly after the parentheses with the function arguments.
+
+We also have an `export` keyword before the function declaration. This keyword
+is similar to the `extern` keyword in C. It exposes the function
+to make it available in the library API.
+
+In other words, if you have a project where you are currently building
+a library for other people to use, you need to expose your functions
+so that they are available in the library's API, so that users can use it.
+If we removed the `export` keyword from the `add()` function declaration,
+then, this function would be no longer exposed in the library object built
+by the `zig` compiler.
+
+
+Having that in mind, the keyword `export` is a keyword used in libraries written in Zig.
+So, if you are not currently writing a library in your project, then, you do not need to
+care about this keyword.
+
+
+### Looking at the `main.zig` file
+
+Now that we have learned a lot about Zig's syntax from the `root.zig` file,
+let's take a look at the `main.zig` file.
+A lot of the elements we saw in `root.zig` are also present in `main.zig`.
+But we have some other elements that I did not talked about yet, so let's dive in.
+
+First, look at the return type of the `main()` function in this file.
+We can see a small change. Now, the return
+type of the function (`void`) is accompanied by an exclamation mark (`!`).
+What this exclamation mark is telling us, is that this `main()` function
+might also return an error.
+
+So, in this example, the `main()` function can either return `void`, or, return an error.
+This is an interesting feature of Zig. If you write a function, and, something inside of
+the body of this function might return an error, then, you are forced to:
+
+- either add the exclamation mark to the return type of the function, to make it clear that
+this function might return an error.
+- or explicitly handle this error that might occur inside the function, to make sure that,
+if this error does happen, you are prepared, and your function will no longer return an error
+because you handled the error inside your function.
+
+In most programming languages, we normally handle (or deals with) an error through
+a *try catch* pattern, and Zig, this is no different. But, if we look at the `main()` function
+below, you can see that we do have a `try` keyword in the 5th line. But we do not have a `catch` keyword
+in this code.
+
+This means that, we are using the keyword `try` to execute a code that might return an error,
+which is the `stdout.print()` expression. But, if this expression do return an error,
+we are not catching and solving this error in any way. That is why the exclamation mark
+was added to the return type of the function.
+
+So, in essence, the `try` keyword executes the expression `stdout.print()`. If this expression
+returns a valid value, then, the `try` keyword do nothing essentialy. It simply pass this value forward. But, if the expression do
+return an error, then, the `try` keyword will unwrap this error and print it's
+stack trace to `stderr`.
+
+```{zig}
+#| eval: false
 #| auto_main: false
 const std = @import("std");
 
@@ -97,24 +251,124 @@ pub fn main() !void {
 }
 ```
 
+Now, another thing that you might have noticed in this code example, is that
+the `main()` function is marked with the `pub` keyword. This keyword means
+"public". It marks the `main()` function as a *public function* from this module.
 
-## Identifiers and creating new objects in Zig
+In other words, every function that you declare in your Zig module is, by default, a private (or "static")
+function that belongs to this Zig module, and can only be used (or called) from within this same module.
+Unless, you explicitly mark this function as a public function with the `pub` keyword.
+This means that the `pub` keyword in Zig do essentially the opposite of what the `static` keyword
+do in C/C++.
 
-In this section, I want to teach you about how you create new objects (or, new identifiers) in Zig.
+By making a function "public", you allow other Zig modules to access and call this function.
+To call and use this public function for they own purposes,
+all these other Zig modules need to do is, to import your module with the `@import()`
+built-in function. Then, they get access to all public functions that are present in
+your Zig module.
+
+
+### Compiling a single module
+
+You can compile a single Zig module into a binary executable by running the `build-exe` command
+from the `zig` compiler.
+Like in the example below where we are compiling just the module `main.zig` of our project.
+
+```bash
+zig build-exe src/main.zig
+```
+
+This is the easiest way of compiling a single Zig module into a binary executable.
+The Zig compiler also offers a `build-lib` and `build-obj` commands, to compile your
+Zig module into a portale C library, or, into a object file, respectively.
+
+In the case
+of the `build-exe` command above, a binary executable file will be created by the `zig`
+compiler in the root directory of our project.
+If we take a look at the contents of our current directory, with a simple `ls` command, we can
+see the binary file called `main` that was created by the compiler.
+
+```bash
+ls
+```
+
+```
+build.zig  build.zig.zon  main  src
+```
+
+If I execute this binary file, I get the "Hello World" message in the terminal
+, as we expected.
+
+```bash
+./main
+```
+
+```
+Hello, world!
+```
+
+
+### Compiling your project
+
+Although useful, the `build-exe`, `build-lib` and `build-obj` commands
+are hard to use directly when we want to compile multiple modules
+at the same time.
+
+This is important, because most
+real-world projects are composed by dozens and dozens of modules.
+So, compiling each one of these modules into object files, then,
+linking them together, can be an tremendous amount of work if
+done with only these build commands.
+
+That is why we normally use a build script written in Zig that
+stays in root of our project directory, called `build.zig`.
+If you project do have such `build.zig` file, then, you can
+easily build/compile your entire project at once by
+running the `zig build` command in the terminal.
+
+```bash
+zig build
+```
+
+After you execute this "build project" command, a `zig-out` directory
+is created in the root of your project directory, where you can find
+the binary executables and libraries created from your Zig modules
+accordingly to the build commands found at `build.zig`.
+
+Like in the example below, where I'm executing the binary executable
+named `hello_world` that was generated by the compiler.
+
+```bash
+./zig-out/bin/hello_world
+```
+
+```
+Hello, world!
+```
+
+
+## Identifiers and creating new objects in Zig {#sec-assignments}
+
+Let's talk more about objects in Zig. Readers that have past experience
+with other programming languages might know the concept of "object" through
+a different name, such as: "variable" or "identifier". In this book, I choose
+to use the name "object".
+
 To create a new object (or a new "identifier") in Zig, we use
 the keywords `const` or `var`. These keywords specificy if the object
 that you are creating is mutable or not.
 
 If you use `const`, then, the object you are
-creating is a constant object, meaning that, once you declare this object, you
+creating is a constant (or immutable) object, meaning that, once you declare this object, you
 can no longer change the value stored inside this object.
 
-On the other side, if you use `var`, then, you are creating a variable object.
-So, you can change the value of this object as many times you want.
+On the other side, if you use `var`, then, you are creating a variable (or mutable) object.
+So, you can change the value of this object as many times you want. Using the
+keyword `var` in Zig is similar to using the keywords `let mut` in Rust.
 
-### Constant objects
+### Constant objects vs variable objects
 
-For example, in the code example below, we are creating a new constant object called `age`.
+In the code example below, we are creating a new constant object called `age`.
 This object stores a number representing the age of someone. However, this code example
 does not compiles succesfully. Because on the next line of code, we are trying to change the value
 of the object `age` to 25.
@@ -124,9 +378,16 @@ the value of an object/identifier that is constant, and because of that,
 the compiler will raise a compilation error, warning us about the mistake.
 
 ```{zig}
+#| eval: false
 const age = 24;
 // The line below is not valid!
-age = 25
+age = 25;
+```
+
+```
+t.zig:10:5: error: cannot assign to constant
+    age = 25;
+      ~~^~~
 ```
 
 In contrast, if you use `var`, then, the object created is a variable object.
@@ -140,26 +401,26 @@ Because now, the `zig` compiler detects that we are changing the value of an
 object that allows this behaviour, because it is an "variable object".
 
 ```{zig}
-var age = 24;
+var age: u8 = 24;
 age = 25;
 ```
 
 
 
 
-### There is no such thing as unused constant objects
+### There is no such thing as unused objects
 
-Every constant that you declare in Zig **must be used in some way**. You can give this constant
+Every object (being constant or variable) that you declare in Zig **must be used in some way**. You can give this object
 to a function call, as a function argument, or, you can use it in another expression
-to calculate the value of another constant, or, you can call a method that belongs to this
-particular constant.
+to calculate the value of another object, or, you can call a method that belongs to this
+particular object. 
 
 It doesn't matter in which way you use it. As long as you use it.
-If you try to break this rule, i.e. if your try to declare a constant, but not use it,
+If you try to break this rule, i.e. if your try to declare a object, but not use it,
 the `zig` compiler will not compile your Zig source code, and it will issue a error
-message warning that you have unused constants in your code.
+message warning that you have unused objects in your code.
 
-Let's demonstrate this with an example. In the source code below, we declare a constant
+Let's demonstrate this with an example. In the source code below, we declare a constant object
 called `age`. If you try to compile a simple Zig program with this line of code below,
 the compiler will return an error as demonstrated below:
 
@@ -174,12 +435,12 @@ t.zig:4:11: error: unused local constant
           ^~~
 ```
 
-Everytime you declare a new constant in Zig, you have two choices:
+Everytime you declare a new object in Zig, you have two choices:
 
-1. you either use the value of this constant;
+1. you either use the value of this object;
 2. or you explicitly discard the value of the object;
 
-To explicitly discard the value of any object (any object, constant or variable, whatever), all you need to do is to assign
+To explicitly discard the value of any object (constant or variable), all you need to do is to assign
 this object to an special character in Zig, which is the underscore (`_`).
 When you assign an object to a underscore, like in the example below, the `zig` compiler will automatically
 discard the value of this particular object.
@@ -216,27 +477,291 @@ t.zig:7:5: error: pointless discard
 ```
 
 
-This same rule applies to variable objects. If you assign a variable object to the underscore,
+This same rule applies to variable objects. Every variable object must also be used in
+some way. And if you assign a variable object to the underscore,
 this object also get's discarded, and you can no longer use this object.
 
 
-### Creating variable objects
 
+### You must mutate every variable objects
 
-### You must mutate your variable objects
-
-Every variable object you create in your source code must be mutated, at some point
-in your souce code. In other words, if you declare an object as a variable
+Every variable object you create in your source code must be mutated at some point
+in your source code. In other words, if you declare an object as a variable
 object, with the keyword `var`, if you do not change the value of this object
-at some point in the future, the `zig` compiler will detect this error,
+at some point in the future, the `zig` compiler will detect this,
 and it will raise an error warning you about this mistake.
 
+The concept behind this is that, every object you create in Zig should be
+explicitly constant, unless you really need an object whose value will
+change during the execution of your program.
 
+So, if I try to declare a variable object such as `where_i_live` below,
+and I do not change the value of this object in some way,
+the `zig` compiler raises an error about "".
+
+```{zig}
+#| eval: false
+var where_i_live = "Belo Horizonte";
+_ = where_i_live;
+```
+
+```
+t.zig:7:5: error: local variable is never mutated
+t.zig:7:5: note: consider using 'const'
+```
+
+## Primitive Data Types
+
+Zig have many different primitive data types available for you to use.
+You can see the full list of available data types at the
+[Language Reference page](https://ziglang.org/documentation/master/#Primitive-Types)[^lang-data-types].
+
+[^lang-data-types]: <https://ziglang.org/documentation/master/#Primitive-Types>.
+
+But here is a quick list:
+
+- Unsigned integers: `u8`, 8-bit integer; `u16`, 16-bit integer; `u32`, 32-bit integer; `u64`, 64-bit integer; `u128`, 128-bit integer.
+- Signed integers: `i8`, 8-bit integer; `i16`, 16-bit integer; `i32`, 32-bit integer; `i64`, 64-bit integer; `i128`, 128-bit integer.
+- Float number: `f16`, 16-bit integer; `f32`, 32-bit integer; `f64`, 64-bit integer; `f128`, 128-bit integer;
+- Boolean: `bool`, `true` or `false` values.
+- C ABI compatible types: `c_long`, `c_char`, `c_short`, `c_ushort`, `c_int`, `c_uint`, and many others.
+- Pointer sized integers: `isize` and `usize`.
+
+
+## Arrays {#sec-arrays}
+
+You create arrays in Zig by using a syntax that resembles the C syntax.
+First, you specify the size of the array (i.e. the number of elements that will be stored in the array)
+you want to create inside a pair of brackets.
+
+Then, you specify the data type of the elements that will be stored inside this array.
+All elements present in an array in Zig must have the same data type. You cannot mix elements
+of type `f32` with elements of type `i32` in the same array.
+
+After that, you simply list the values that you want to store in this array inside
+a pair of curly braces.
+
+In the example below, I am creating two constant objets that contain different arrays.
+The first object contains an array of 4 integer values, while the second object,
+an array of 3 float values.
+
+Now, you should notice that in the object `ls`, I am
+not explicitly specifying the size of the array inside of the brackets. Instead
+of using a literal value (like the value 4 that I used in the `ns` object), I am
+using the special character underscore (`_`). This syntax tells the `zig` compiler
+to fill this field with the number of elements listed inside of the curly braces.
+So, this syntax `[_]` if for lazy (or smart) people that leaves the job of
+counting how many elements there are in the curly braces for the compiler.
+
+```{zig}
+const ns = [4]u8{48, 24, 12, 6};
+const ls = [_]f64{432.1, 87.2, 900.05};
+_ = ns; _ = ls;
+```
+
+### Selecting elements of the array
+
+One very commom activity is to select specific portions of an array
+you have in your source code.
+
+In Zig, you can select a specific element from your
+array, by simply providing the index of this particular
+element inside brackets after the object name.
+In the example below, I am selecting the third element from the
+`ns` array. Notice that Zig is a "zero-index" based language,
+like C, C++, Rust, Python, and many other languages.
+
+```{zig}
+const ns = [4]u8{48, 24, 12, 6};
+try stdout.print("{d}\n", .{ns[2]});
+```
+
+In contrast, you can also select specific slices (or sections) of your array, by using a
+range selector. Some programmers also call range selectors of "slice selectors",
+and they also exist in Rust, and have the exact same syntax as in Zig.
+Anyway, a range selector is a special expression in Zig that defines
+a range of indexes, and it have the syntax `<start>..<end>`.
+
+After the second line of code in the example below,
+the `sl` object stores a slice (or a portion) of the
+`ns` array. More precisely, the items from index 1 to 3.
+
+```{zig}
+const ns = [4]u8{48, 24, 12, 6};
+const sl = ns[1..3];
+_ = sl;
+```
+
+
+
+
+## Control flow
+
+Sometimes, you need to make decisions in your program. You need to decide
+wether to execute or not a specific piece of code. Or maybe,
+you need to apply the same operation over a sequence of values. To do these kind of tasks, we need to
+use structures that are capable of changing the "control flow" of our program.
+
+In computer science, control flow is the order in which expressions (or commands)
+are evaluated in a given language or program. But this term is also used to refer
+to structures that are capable of changing this "evaluation order" of the commands
+executed by a given language/program.
+
+These structures are better known
+by a set of terms (loops, if/else statements, switch statements, among others). So,
+loops and if/else statements are examples of structures that can change the "control
+flow" of our program. The keywords `continue` and `break` are also examples of symbols
+that can change the order of evaluation, since they can move our program to the next iteration
+of a loop, or make the loop stop completely.
+
+
+### If/else statements
+
+An if/else statement performs an conditional flow control operation.
+A conditional flow control (or choice control) allows you to execute
+or ignore a certain block of commands based on a logical condition.
+
+In other words, a choice control will use the result of a logical test
+to decide whether or not to execute a certain block of commands.
+Many programmers and computer science professionals in general know conditional
+flow controls by the term "branching".
+
+In Zig, you write if/else statements by using the keywords `if` and `else`.
+You start with the `if` keyword followed by a logical test inside a pair
+of parentheses, and then, a pair of curly braces with contains the lines
+of code to be executed in case the logical test returns the value `true`.
+
+After that, you can optionally add an `else` statement. Just add the `else`
+keyword followed by a pair of curly braces, with the lines of code
+to executed in case the logical test defined in the `if`
+returns `false`.
+
+In the example below, we are testing if the object `x` contains a number
+that is greater than 10. Judging by the output printed to the console,
+we know that this logical test returned `false`. Because the output
+in the console is compatible with the line of code present in the
+`else` branch of the if/else statement.
+
+
+```{zig}
+const x = 5;
+if (x > 10) {
+    try stdout.print(
+        "x > 10!\n", .{}
+    );
+} else {
+    try stdout.print(
+        "x <= 10!\n", .{}
+    );
+}
+```
+
+
+
+### For loops
+
+A loop allows you to execute the same lines of code multiple times,
+thus, creating a "repetition space" in the execution flow of your program.
+Loops are particularly useful when we want to replicate the same function
+(or the same set of commands) over several different inputs.
+
+There are different types of loops available in Zig. But the most
+essential of them all is probably the *for loop*. A for loop is
+used to apply the same piece of code over the elements of a slice or an array.
+
+For loops in Zig have a slightly different syntax that you are
+probably used to see in other languages. You start with the `for` keyword, then, you
+list the items that you want to iterate
+over inside a pair of parentheses. Then, inside of a pair of pipes (`|`)
+you should declare an identifier that will serve as your iterator, or,
+the "repetition index of the loop".
+
+```{zig}
+#| eval: false
+for (items) |value| {
+    // code to execute
+}
+```
+
+That is, instead of using a `(value in items)` syntax,
+in Zig, for loops use the syntax `(items) |value|`. In the example
+below, you can see that we are looping through the items
+of the array stored in the object `name`, and printing to the
+console the decimal representation of each character in this array.
+
+If we wanted, we could also iterate through a slice (or a portion) of
+the array, instead of iterating through the entire array stored in the `name` object.
+Just use a range selector to select the section you want. For example,
+I could provide the expression `name[0..2]` to the for loop, to iterate
+just through the first 3 elements in the array.
+
+```{zig}
+const name = [_]u8{
+    'P','e','d','r','o'
+};
+for (name) |char| {
+    try stdout.print(
+        "{d} | ", .{char}
+    );
+}
+```
+
+In the above example we are using the value itself of each
+element in the array as our iterator. But there are many situations where
+we need to use an index instead of the actual values of the items.
+
+You can do that by providing a second set of items to iterate over.
+More precisely, you provide the range selector `0..` to the for loop. So,
+yes, you can use two different iterators at the same time in a for
+loop in Zig.
+
+But remember from @sec-assignments that, every object
+you create in Zig must be used in some way. So if you declare two iterators
+in your for loop, you must use both iterators inside the for loop body.
+But if you want to use just the index iterator, and not use the "value iterator",
+then, you can discard the value iterator by maching the
+value items to the underscore character, like in the example below:
+
+
+```{zig}
+#| eval: false
+for (name, 0..) |_, i| {
+    try stdout.print(
+        "{d} | ", .{i}
+    );
+}
+```
+
+```
+0 | 1 | 2 | 3 | 4 |
+```
+
+
+### While loops
+
+A while loop is created from the `while` keyword. A for loop
+iterates through the items of an array. In contrast, a while loop
+will loop continuously, and infinitely, until a logical test
+specified by you becomes false.
+
+You start with the `while` keyword, then, you define a logical
+expression inside a pair of parentheses, and the body of the
+loop is provided inside a pair of curly braces.
+
+```{zig}
+var i: u8 = 1;
+while (i < 5) {
+    try stdout.print(
+        "{d} | ", .{i}
+    );
+    i += 1;
+}
+```
 
 
 ## How strings work in Zig? {#sec-zig-strings}
 
-The first project that we are going to build and discuss in this book is a base64 encoder/decoder.
+The first project that we are going to build and discuss in this book is a base64 encoder/decoder (@sec-base64).
 But in order for us to build such a thing, we need to get a better understanding on how strings work in Zig.
 So let's discuss this specific aspect of Zig.
 

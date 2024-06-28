@@ -27,10 +27,10 @@ concepts such as "variables", or "objects", to store the values that you generat
 
 ## Memory spaces
 
-Every variable that you create in your Zig source code needs to be stored somewhere,
-in your computer's memory. Depending on where and how you define your variable, Zig
+Every object that you create in your Zig source code needs to be stored somewhere,
+in your computer's memory. Depending on where and how you define your object, Zig
 will use a different "memory space", or a different
-type of memory to store this variable.
+type of memory to store this object.
 
 Each type of memory normally serves for different purposes.
 In Zig, there are 3 types of memory (or 3 different memory spaces) that we care about. They are:
@@ -42,22 +42,22 @@ In Zig, there are 3 types of memory (or 3 different memory spaces) that we care 
 
 ### Compile-time known versus runtime known
 
-One strategy that Zig uses to decide where it will store each variable that you declare, is by looking
-at the value of this particular variable. More specifically, by investigating if this value is
+One strategy that Zig uses to decide where it will store each object that you declare, is by looking
+at the value of this particular object. More specifically, by investigating if this value is
 known at "compile-time" or at "runtime".
 
 When you write a program in Zig, some values that you write in your program are *known
 at compile time*. Meaning that, when you compile your Zig source code, during the compilation process,
-the `zig` compiler can figure it out what is the exact value of a particular variable (or object)
+the `zig` compiler can figure it out what is the exact value of a particular object (or object)
 that exists in your source code.
 
-For example, in the source code below, we have two constant variables (`name` and `array`) declared.
-Because the values of these particular variables are written down, in the source code itself (`"Pedro"`
+For example, in the source code below, we have two constant objects (`name` and `array`) declared.
+Because the values of these particular objects are written down, in the source code itself (`"Pedro"`
 and the number sequence from 1 to 4), the `zig` compiler can easily discover the values of these constant
-variables (`name` and `array`) during the compilation process.
+objects (`name` and `array`) during the compilation process.
 
 
-This is what "known at compile time" means. It refers to any variable that you have in your Zig source code
+This is what "known at compile time" means. It refers to any object that you have in your Zig source code
 whose value can be identified at compile time.
 
 ```{zig}
@@ -71,7 +71,7 @@ fn input_length(input: []const u8) usize {
 }
 ```
 
-The other side of the spectrum are variables whose values are not known at compile time.
+The other side of the spectrum are objects whose values are not known at compile time.
 Function arguments are a classic example of this. Because the value of each function
 argument depends on the value that you assign to this particular argument,
 when you call the function.
@@ -80,7 +80,7 @@ For example, the function `input_length()` contains an argument named `input`, w
 Is impossible to know at compile time the value of this particular argument. We know that it will be an array of `u8` integers.
 But we can't know which exact array of `u8` integers this argument will store, before we execute this function.
 The value of `input` is only *known at runtime*, which is the period of time when you program is executed.
-As a consequence, the value of the expression `input.len` is also only known at runtime.
+As a consequence, the value of the expression `input.len` is also known only at runtime.
 
 So depending on which input your apply this `input_length()` function over, the `input` argument
 will probably have a different value in each case.
@@ -94,7 +94,7 @@ It is known only at runtime.
 The global data register is a specific section of the executable of your Zig program, that is responsible
 for storing any value that is known at compile time.
 
-Every constant variable whose value is known at compile time that you declare in your source code,
+Every constant object whose value is known at compile time that you declare in your source code,
 is stored in the global data register. Also, every literal value that you write in your source code,
 such as the string `"this is a string"`, or the integer `10`, or a boolean value such as `true`,
 is also stored in the global data register.
@@ -122,12 +122,12 @@ In essence, the stack memory is normally used to store values whose length is fi
 at compile time. In contrast, the heap memory is a *dynamic* type of memory space, meaning that, it is
 used to store values whose length might grow during the execution (runtime) of your program [@jenny2022].
 
-Lengths that grow during runtime are intrinsically associated to "runtime known" type of values.
-In other words, if you have a variable whose length might grow during runtime, then, the length
-of this variable becomes not known at compile time. If the length is not known at compile-time,
-the value of this variable also becomes not known at compile-time.
-These types of variables are usually stored in the heap memory space, which is
-a dynamic memory, which can grow or shrink to fit the size of your variables.
+Lengths that grow during runtime are intrinsically associated with "runtime known" type of values.
+In other words, if you have an object whose length might grow during runtime, then, the length
+of this object becomes not known at compile time. If the length is not known at compile-time,
+the value of this object also becomes not known at compile-time.
+These types of objects should be stored in the heap memory space, which is
+a dynamic memory space, which can grow or shrink to fit the size of your objects.
 
 
 
@@ -149,14 +149,14 @@ It adds and removes values from the memory by following a "last in, first out" (
 Every time you make a function call in Zig, an amount of space in the stack is
 reserved for this particular function call [@jenny2022; @zigdocs].
 The value of each function argument given to the function in this function call is stored in this
-stack space. Also, every local variable that you declare inside the function scope are
+stack space. Also, every local object that you declare inside the function scope are
 usually stored in this same stack space.
 
 
-Looking at the example below, the variable `result` is a local variable declared inside the scope of the `add()`
-function. Because of that, this variable is stored inside the stack space reserved for the `add()` function.
-The `r` variable (which is declared outside of the `add()` function scope) is also stored in the stack.
-But since it is declared in the "outer" scope, this variable is stored in the
+Looking at the example below, the object `result` is a local object declared inside the scope of the `add()`
+function. Because of that, this object is stored inside the stack space reserved for the `add()` function.
+The `r` object (which is declared outside of the `add()` function scope) is also stored in the stack.
+But since it is declared in the "outer" scope, this object is stored in the
 stack space that belongs to this outer scope.
 
 ```{zig}
@@ -171,26 +171,26 @@ fn add(x: u8, y: u8) u8 {
 ```
 
 
-So, any variable that you declare inside the scope of a function is always stored inside
+So, any object that you declare inside the scope of a function is always stored inside
 the space that was reserved for that particular function in the stack memory. This
-also counts for any variable declared inside the scope of your `main()` function for example.
+also counts for any object declared inside the scope of your `main()` function for example.
 As you would expect, in this case, they
 are stored inside the stack space reserved for the `main()` function.
 
 One very important detail about the stack memory is that **it frees itself automatically**.
-This is very important, remember that. When variables are stored in the stack memory,
+This is very important, remember that. When objects are stored in the stack memory,
 you don't have the work (or the responsibility) of freeing/destroying these objects.
 Because they will be automatically destroyed once the stack space is freed at the end of the function scope.
 
 So, once the function call returns (or ends, if you prefer to call it this way)
-the space that was reserved in the stack is destroyed, and all of the variables that were in this space goes away with it.
-This mechanism exists because this space, and the variables within it, are not necessary anymore,
+the space that was reserved in the stack is destroyed, and all of the objects that were in that space goes away with it.
+This mechanism exists because this space, and the objects within it, are not necessary anymore,
 since the function "finished it's business".
-Using the `add()` function that we exposed above as an example, it means that the variable `result` is automatically
+Using the `add()` function that we exposed above as an example, it means that the object `result` is automatically
 destroyed once the function returns.
 
 ::: {.callout-important}
-Local variables that are stored in the stack space of a function are automatically
+Local objects that are stored in the stack space of a function are automatically
 freed/destroyed at the end of the function scope.
 :::
 
@@ -198,7 +198,7 @@ freed/destroyed at the end of the function scope.
 This same logic applies to any other special structure in Zig that have it's own scope by surrounding
 it with curly braces (`{}`).
 For loops, while loops, if else statements, etc. For example, if you declare any local
-variable in the scope of a for loop, this local variable is accessible only within the scope
+object in the scope of a for loop, this local object is accessible only within the scope
 of this particular for loop. Because once the scope of this for loop ends, the space in the stack
 reserved for this for loop is freed.
 The example below demonstrates this idea.
@@ -211,7 +211,7 @@ for (0..a.len) |i| {
     const index = i;
     _ = index;
 }
-// Trying to use a variable that was
+// Trying to use an object that was
 // declared in the for loop scope,
 // and that does not exist anymore.
 std.debug.print("{d}\n", index);
@@ -221,20 +221,27 @@ std.debug.print("{d}\n", index);
 
 One important consequence of this mechanism is that, once the function returns, you can no longer access any memory
 address that was inside the space in the stack reserved for this particular function. Because this space was
-destroyed. This means that you can not make a function **return a pointer to one of it's local variables**.
+destroyed. This means that, if this local object is stored in the stack,
+you cannot make a function that **returns a pointer to this object**.
 
-Think about that for a second. If all local variables are destroyed at the end of the function scope, why
-would you even consider returning a pointer to one of these variables? This pointer is at best,
-invalid, or, more likely, "undefined". So, yes, you should never write a function that returns a pointer to one
-of it's local variables.
+Think about that for a second. If all local objects in the stack are destroyed at the end of the function scope, why
+would you even consider returning a pointer to one of these objects? This pointer is at best,
+invalid, or, more likely, "undefined".
+
+Conclusion, is totally fine to write a function that returns the local object
+itself as result, because then, you return the value of that object as the result.
+But, if this local object is stored in the stack, you should never write a function
+that returns a pointer to this local object. Because the memory address pointed by the pointer
+no longer exists.
+
 
 So, using again the `add()` function as an example, if you rewrite this function so that it
-returns a pointer to the local variable `result`, the `zig` compiler will actually compile
+returns a pointer to the local object `result`, the `zig` compiler will actually compile
 you program, with no warnings or erros. At first glance, it looks that this is good code
 that works as expected. But this is a lie!
 
-If you try to take a look at the value inside of the `r` variable,
-or, if you try to use this `r` variable in another expression
+If you try to take a look at the value inside of the `r` object,
+or, if you try to use this `r` object in another expression
 or function call, then, you would have undefined behaviour, and major
 bugs in your program [@zigdocs, see "Lifetime and Ownership"[^life] and "Undefined Behaviour"[^undef] sections].
 
@@ -246,7 +253,7 @@ bugs in your program [@zigdocs, see "Lifetime and Ownership"[^life] and "Undefin
 // This code compiles succesfully. But it has
 // undefined behaviour. Never do this!!!
 // ==== Variable
-// The `r` variable is undefined!
+// The `r` object is undefined!
 const r = add(5, 27);
 _ = r;
 // ====== Function
@@ -258,33 +265,34 @@ fn add(x: u8, y: u8) *const u8 {
 
 This "invalid pointer to stack variable" problem is very known across many programming language communities.
 If you try to do the same thing, for example, in a C or C++ program (i.e. returning an address to
-a local variable stored in the stack), you would also get undefined behaviour
+a local object stored in the stack), you would also get undefined behaviour
 in the program.
 
 ::: {.callout-important}
-If a local variable in your function is stored in the stack, you should never
-return a pointer to this local variable from the function. Because
+If a local object in your function is stored in the stack, you should never
+return a pointer to this local object from the function. Because
 this pointer will always become undefined after the function returns, since the stack space of the function
 is destroyed at the end of it's scope.
 :::
 
-But what if you really need to use this local variable in some way after your function returns?
+But what if you really need to use this local object in some way after your function returns?
 How can you do this? The answer is: "in the same you would do if this was a C or C++ program. By returning
-an address to a variable stored in the heap". The heap memory have a much more flexible lifecycle,
-and allows you to get a valid pointer to a local variable of a function that already returned
+an address to an object stored in the heap". The heap memory have a much more flexible lifecycle,
+and allows you to get a valid pointer to a local object of a function that already returned
 from it's scope.
 
 
 ### Heap {#sec-heap}
 
-While the stack accepts only variables whose length is known at compile-time, the heap is a much more dynamic
+While the stack accepts only objects whose length is known at compile-time, the heap is a much more dynamic
 (and flexible) type of memory. It is the perfect type of memory to use
-on variables whose size/length might grow during the execution of your program.
+on objects whose size/length might grow during the execution of your program.
+
 Virtually any application that behaves as a server is a classic use case of the heap.
 A HTTP server, a SSH server, a DNS server, a LSP server, ... any type of server.
-
 In summary, a server is a type of application that runs for long periods of time,
 and that serves (or "deals with") any incoming request that reaches this particular server.
+
 The heap is a good choice for this type of system, mainly because the server does not know upfront
 how many requests it will receive from users, while it is active. It could be one single request,
 or, 5 thousand requests, or, it could also be zero requests.
@@ -298,7 +306,7 @@ how much memory is allocated, and where this memory is freed.
 
 > Unlike stack memory, heap memory is allocated explicitly by programmers and it won’t be deallocated until it is explicitly freed [@jenny2022].
 
-To store a variable in the heap, you, the programmer, needs to explicitly tells Zig to do so,
+To store an object in the heap, you, the programmer, needs to explicitly tells Zig to do so,
 by using an allocator to allocate some space in the heap. At @sec-allocators, I will present how you can use allocators to allocate memory
 in Zig.
 
@@ -320,16 +328,17 @@ allocations only on the stack.
 
 After discussing all of these boring details, we can quickly recap what we learned.
 In summary, the Zig compiler will use the following rules to decide where each
-variable you declare is stored:
+object you declare is stored:
 
 1. every literal value (such as `"this is string"`, `10`, or `true`) is stored in the global data section.
 
-1. every constant variable (`const`) whose value **is known at compile-time** is also stored in the global data section.
+1. every constant object (`const`) whose value **is known at compile-time** is also stored in the global data section.
 
-1. every variable (constant or not) whose value **is not known at compile time** is, at first glance, stored in the stack space for the current scope.
+1. every object (constant or not) whose value **is not known at compile time** is, at first glance, stored in the stack space for the current scope.
 
-1. if a variable is created with the method `alloc()` or `create()` of an allocator object, this variable is stored in the memory space used by this particular allocator object. Most of allocators available in Zig use the heap memory, so, this variable is likely stored in the heap (`FixedBufferAllocator()` is an exception to that).
+1. if an object is created with the method `alloc()` or `create()` of an allocator object, this object is stored in the memory space used by this particular allocator object. Most of allocators available in Zig use the heap memory, so, this object is likely stored in the heap (`FixedBufferAllocator()` is an exception to that).
 
+1. the heap can only accessed through allocators. If your object were not created through the `alloc()` or `create()` methods of an allocator object, then, it he is most certainly not an object stored in the heap.
 
 
 ## Allocators {#sec-allocators}
@@ -390,37 +399,42 @@ Zig offers different types of allocators, and they are usually available through
 the standard library. So, just import the Zig standard library into your Zig module (with `@import("std")`), and you can start
 using these allocators in your code.
 
+Furthermore, every allocator object is built on top of the `Allocator` interface in Zig. This
+means that, every allocator object you find in Zig must have the methods `alloc()`,
+`create()`, `free()` and `destroy()`. So, you can change the type of allocator you are using,
+but you don't need to change the function calls to the methods that do the memory allocation
+(and the free memory operations) for your program.
 
 ### Why you need an allocator?
 
 As we described at @sec-stack, everytime you make a function call in Zig,
 a space in the stack is reserved for this function call. But the stack
-have a key limitation which is: every variable stored in the stack have a
+have a key limitation which is: every object stored in the stack have a
 known fixed length.
 
 But in reality, there are two very commom instances where this "fixed length limitation" of the stack is a deal braker:
 
-1. the variables that you create inside your function might grow in size during the execution of the function.
+1. the objects that you create inside your function might grow in size during the execution of the function.
 
 2. sometimes, it is impossible to know upfront how many inputs you will receive, or how big this input will be.
 
-Also, there is another where you might want to use an allocator, which is when you want to write a function that returns a pointer
-to a local variable. As I described at @sec-stack, you cannot do that if this local variable is stored in the
-stack. However, if this variable is stored at the heap, then, you can return a pointer to this variable at the
-end of the function. Because you the programmer control the lyfetime of any heap memory that you allocate. You decide
+Also, there is another instance where you might want to use an allocator, which is when you want to write a function that returns a pointer
+to a local object. As I described at @sec-stack, you cannot do that if this local object is stored in the
+stack. However, if this object is stored in the heap, then, you can return a pointer to this object at the
+end of the function. Because you (the programmer) control the lyfetime of any heap memory that you allocate. You decide
 when this memory get's destroyed/freed.
 
 These are commom situations where the stack is not good for.
 That is why you need a different memory management strategy to
-store these variables inside your function. You need to use
-a memory type that can grow together with your variables, or that you
+store these objects inside your function. You need to use
+a memory type that can grow together with your objects, or that you
 can control the lyfetime of this memory.
 The heap fit this description.
 
-This is commonly known as dynamic memory management. As the variables you create grow in size
+Allocating memory on the heap is commonly known as dynamic memory management. As the objects you create grow in size
 during the execution of your program, you grow the amount of memory
-you have by allocating more memory in the heap to store these variables. 
-In Zig, you allocate more memory in the heap by using an allocator object.
+you have by allocating more memory in the heap to store these objects. 
+And you that in Zig, by using an allocator object.
 
 
 ### The different types of allocators
@@ -436,7 +450,7 @@ allocators available in the standard library:
 - `c_allocator()` (requires you to link to libc).
 
 
-Each allocator have it's own perks and limitations. All allocators, except (`FixedBufferAllocator()` and `ArenaAllocator()`),
+Each allocator have it's own perks and limitations. All allocators, except `FixedBufferAllocator()` and `ArenaAllocator()`,
 are allocators that use the heap memory. So any memory that you allocate with
 these allocators, will be placed in the heap.
 
@@ -471,8 +485,9 @@ If you do not link your source code to Libc, Zig will not be able to find the
 
 The `page_allocator()` is an allocator that allocates full pages of memory in the heap. In other words,
 every time you allocate memory with `page_allocator()`, a full page of memory in the heap is allocated,
-instead of just a small piece of it. The size of this page depends on the system you are using.
+instead of just a small piece of it.
 
+The size of this page depends on the system you are using.
 Most systems use a page size of 4KB in the heap, so, that is the amount of memory that is normally
 allocated in each call by `page_allocator()`. That is why, `page_allocator()` is considered a
 fast, but also "wasteful" allocator in Zig. Because it allocates a big amount of memory
@@ -481,7 +496,7 @@ in each call, and you most likely will not need that much memory in your program
 #### Buffer allocators
 
 The `FixedBufferAllocator()` and `ThreadSafeFixedBufferAllocator()` are allocator objects that
-work with a fixed size buffer that is stored in the stack. So these two allocators only allocates
+work with a fixed sized buffer that is stored in the stack. So these two allocators only allocates
 memory in the stack. This also means that, in order to use these allocators, you must first
 create a buffer object, and then, give this buffer as an input to these allocators.
 
@@ -494,7 +509,7 @@ allocate more than that, the `alloc()` method will return an `OutOfMemory` error
 ```{zig}
 var buffer: [10]u8 = undefined;
 for (0..buffer.len) |i| {
-    buffer[i] = 0;
+    buffer[i] = 0; // Initialize to zero
 }
 
 var fba = std.heap.FixedBufferAllocator.init(&buffer);
@@ -508,7 +523,7 @@ defer allocator.free(input);
 
 The `ArenaAllocator()` is an allocator object that takes a child allocator as input. The idea behind the `ArenaAllocator()` in Zig
 is similar to the concept of "arenas" in the programming language Go[^go-arena]. It is an allocator object that allows you
-to allocate memory as many times you want, but, at the same time, you only need to free all the memory you allocated once.
+to allocate memory as many times you want, but free all memory only once.
 In other words, if you have, for example, called 5 times the method `alloc()` of an `ArenaAllocator()` object, you can
 free all the memory you allocated over these 5 calls at once, by simply calling the `deinit()` method of the same `ArenaAllocator()` object.
 
@@ -558,7 +573,7 @@ this array will contain. In the case below, we are allocating an array of 50 ele
 
 At @sec-zig-strings we described that strings in Zig are simply arrays of characters.
 Each character is represented by an `u8` value. So, this means that the array that
-was allocated in the variable `input` is capable of storing a string that is
+was allocated in the object `input` is capable of storing a string that is
 50-characters long.
 
 So, in essence, the expression `var input: [50]u8 = undefined` would create
@@ -591,7 +606,7 @@ pub fn main() !void {
 Also, notice that in this example, we use the keyword `defer` to run a small
 piece of code at the end of the current scope, which is the expression `allocator.free(input)`.
 When you execute this expression, the allocator will free the memory that it allocated
-for the `input` variable.
+for the `input` object.
 
 We have talked about this at @sec-heap. You **should always** explicitly free any memory that you allocate
 using an allocator! You do that by using the `free()` method of the same allocator object you
