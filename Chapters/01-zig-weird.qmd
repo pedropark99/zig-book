@@ -72,7 +72,6 @@ behaviour in edge situations. Once again, less is more.
 We begin our journey in Zig by creating a small "Hello World" program.
 To start a new Zig project in your computer, you simply call the `init` command
 from the `zig` compiler.
-
 Just create a new directory in your computer, then, init a new Zig project
 inside this directory, like this:
 
@@ -277,8 +276,27 @@ That is why the exclamation mark was added to the return type of the function.
 
 So, in essence, the `try` keyword executes the expression `stdout.print()`. If this expression
 returns a valid value, then, the `try` keyword do nothing essentially. It simply passes this value forward. But, if the expression do
-return an error, then, the `try` keyword will unwrap this error and print it's
+return an error, then, the `try` keyword will unwrap and return this error from the function, and also print it's
 stack trace to `stderr`.
+
+This might sound weird to you, if you come from a high-level language. Because in
+high-level languages, such as Python, if an error occurs somewhere, this error is automatically
+returned and the execution of your program will automatically stops, even if you don't want
+to stop the execution. You are obligated to face the error.
+
+But if you come from a low-level language, then, maybe, this idea do not sound so weird or distant to you.
+Because in C for example, normally functions doesn't raise errors, or, they normally don't stop the execution.
+In C, error handling
+is done by constantly checking the return value of the function. So, you run the function,
+and then, you use an if statement to check if the function returned a value that is valid,
+or, if it returned an error. If an error was returned from the function, then, the if statement
+will execute some code that fixes this error.
+
+So, at least for C programmers, they do need to write a lot of if statements to
+constantly check for errors around their code. And because of that, this simple feature from Zig, might be
+extraordinary for them. Because this `try` keyword can automatically unwrap the error,
+and warn you about this error, and let you deal with it, without any extra work from the programmer.
+
 
 ```{zig}
 #| eval: false
@@ -859,11 +877,11 @@ for (name, 0..) |_, i| {
 A while loop is created from the `while` keyword. While a `for` loop
 iterates through the items of an array, a `while` loop
 will loop continuously, and infinitely, until a logical test
-specified by you becomes false.
+(specified by you) becomes false.
 
 You start with the `while` keyword, then, you define a logical
 expression inside a pair of parentheses, and the body of the
-loop is provided inside a pair of curly braces.
+loop is provided inside a pair of curly braces, like in the example below:
 
 ```{zig}
 var i: u8 = 1;
@@ -927,6 +945,27 @@ for (ns) |i| {
 }
 ```
 
+
+## Structs and OOP
+
+Zig is a language more closely related to C (which is a procedural language), than C++ or Java. Because of that, you do not
+have advanced OOP (Object-Oriented Programming) patterns available in Zig, such as classes, interfaces or
+class inheritance. OOP in Zig is possible by using struct definitions, like the same way you would do in C.
+
+With struct definitions, you can create (or define) a new data type in Zig. These struct definitions work the same way as they work in C.
+You declare the data members of this new struct you are creating, and,
+also, you can register functions as methods that belongs to this particular struct. So that every object,
+that you create with this new type, have the same methods associated with them.
+
+In C++, we normally have a constructor method (or, a constructor function) to construct or to instantiate every object
+of the particular class you are using.
+And you also have a destructor method (or a destructor function) that
+is responsible for destroying every object of that class.
+
+In Zig, we normally declare the constructor and the destructor methods
+of our structs, by declaring an `init()` and `deinit()` methods. This is just
+a naming pattern that you will find across the entire Zig standard library.
+So, the `init()` method of a struct normally represents the constructormethod of that class, while the `deinit()` method is the method used for destroying an existing instance of that struct.
 
 
 ## How strings work in Zig? {#sec-zig-strings}

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.549">
+<meta name="generator" content="quarto-1.4.554">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -229,11 +229,12 @@ div.csl-indent {
   <li><a href="#while-loops" id="toc-while-loops" class="nav-link" data-scroll-target="#while-loops"><span class="header-section-number">1.6.3</span> While loops</a></li>
   <li><a href="#using-break-and-continue" id="toc-using-break-and-continue" class="nav-link" data-scroll-target="#using-break-and-continue"><span class="header-section-number">1.6.4</span> Using <code>break</code> and <code>continue</code></a></li>
   </ul></li>
-  <li><a href="#sec-zig-strings" id="toc-sec-zig-strings" class="nav-link" data-scroll-target="#sec-zig-strings"><span class="header-section-number">1.7</span> How strings work in Zig?</a>
+  <li><a href="#structs-and-oop" id="toc-structs-and-oop" class="nav-link" data-scroll-target="#structs-and-oop"><span class="header-section-number">1.7</span> Structs and OOP</a></li>
+  <li><a href="#sec-zig-strings" id="toc-sec-zig-strings" class="nav-link" data-scroll-target="#sec-zig-strings"><span class="header-section-number">1.8</span> How strings work in Zig?</a>
   <ul class="collapse">
-  <li><a href="#strings-in-c" id="toc-strings-in-c" class="nav-link" data-scroll-target="#strings-in-c"><span class="header-section-number">1.7.1</span> Strings in C</a></li>
-  <li><a href="#a-better-look-at-the-object-type" id="toc-a-better-look-at-the-object-type" class="nav-link" data-scroll-target="#a-better-look-at-the-object-type"><span class="header-section-number">1.7.2</span> A better look at the object type</a></li>
-  <li><a href="#byte-vs-unicode-points" id="toc-byte-vs-unicode-points" class="nav-link" data-scroll-target="#byte-vs-unicode-points"><span class="header-section-number">1.7.3</span> Byte vs unicode points</a></li>
+  <li><a href="#strings-in-c" id="toc-strings-in-c" class="nav-link" data-scroll-target="#strings-in-c"><span class="header-section-number">1.8.1</span> Strings in C</a></li>
+  <li><a href="#a-better-look-at-the-object-type" id="toc-a-better-look-at-the-object-type" class="nav-link" data-scroll-target="#a-better-look-at-the-object-type"><span class="header-section-number">1.8.2</span> A better look at the object type</a></li>
+  <li><a href="#byte-vs-unicode-points" id="toc-byte-vs-unicode-points" class="nav-link" data-scroll-target="#byte-vs-unicode-points"><span class="header-section-number">1.8.3</span> Byte vs unicode points</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -277,8 +278,7 @@ div.csl-indent {
 </section>
 <section id="hello-world-in-zig" class="level2" data-number="1.2">
 <h2 data-number="1.2" class="anchored" data-anchor-id="hello-world-in-zig"><span class="header-section-number">1.2</span> Hello world in Zig</h2>
-<p>We begin our journey in Zig by creating a small “Hello World” program. To start a new Zig project in your computer, you simply call the <code>init</code> command from the <code>zig</code> compiler.</p>
-<p>Just create a new directory in your computer, then, init a new Zig project inside this directory, like this:</p>
+<p>We begin our journey in Zig by creating a small “Hello World” program. To start a new Zig project in your computer, you simply call the <code>init</code> command from the <code>zig</code> compiler. Just create a new directory in your computer, then, init a new Zig project inside this directory, like this:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> hello_world</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> hello_world</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> init</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -340,7 +340,10 @@ info: see `zig build --help` for a menu of options</code></pre>
 </ul>
 <p>In most programming languages, we normally handle (or deals with) an error through a <em>try catch</em> pattern, and Zig, this is no different. But, if we look at the <code>main()</code> function below, you can see that we do have a <code>try</code> keyword in the 5th line. But we do not have a <code>catch</code> keyword in this code.</p>
 <p>This means that, we are using the keyword <code>try</code> to execute a code that might return an error, which is the <code>stdout.print()</code> expression. But because we do not have a <code>catch</code> keyword in this line, we are not treating (or dealing with) this error. So, if this expression do return an error, we are not catching and solving this error in any way. That is why the exclamation mark was added to the return type of the function.</p>
-<p>So, in essence, the <code>try</code> keyword executes the expression <code>stdout.print()</code>. If this expression returns a valid value, then, the <code>try</code> keyword do nothing essentially. It simply passes this value forward. But, if the expression do return an error, then, the <code>try</code> keyword will unwrap this error and print it’s stack trace to <code>stderr</code>.</p>
+<p>So, in essence, the <code>try</code> keyword executes the expression <code>stdout.print()</code>. If this expression returns a valid value, then, the <code>try</code> keyword do nothing essentially. It simply passes this value forward. But, if the expression do return an error, then, the <code>try</code> keyword will unwrap and return this error from the function, and also print it’s stack trace to <code>stderr</code>.</p>
+<p>This might sound weird to you, if you come from a high-level language. Because in high-level languages, such as Python, if an error occurs somewhere, this error is automatically returned and the execution of your program will automatically stops, even if you don’t want to stop the execution. You are obligated to face the error.</p>
+<p>But if you come from a low-level language, then, maybe, this idea do not sound so weird or distant to you. Because in C for example, normally functions doesn’t raise errors, or, they normally don’t stop the execution. In C, error handling is done by constantly checking the return value of the function. So, you run the function, and then, you use an if statement to check if the function returned a value that is valid, or, if it returned an error. If an error was returned from the function, then, the if statement will execute some code that fixes this error.</p>
+<p>So, at least for C programmers, they do need to write a lot of if statements to constantly check for errors around their code. And because of that, this simple feature from Zig, might be extraordinary for them. Because this <code>try</code> keyword can automatically unwrap the error, and warn you about this error, and let you deal with it, without any extra work from the programmer.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -570,8 +573,10 @@ t.zig:7:5: note: consider using 'const'</code></pre>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb37"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> name = [_]<span class="dt">u8</span><span class="op">{</span><span class="ch">'P'</span>,<span class="ch">'e'</span>,<span class="ch">'d'</span>,<span class="ch">'r'</span>,<span class="ch">'o'</span><span class="op">}</span>;</span>
 <span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (name) |char| <span class="op">{</span></span>
-<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d} | "</span>, .<span class="op">{</span>char<span class="op">}</span>);</span>
-<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">"{d} | "</span>, .<span class="op">{</span>char<span class="op">}</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>80 | 101 | 100 | 114 | 111 | </code></pre>
 </div>
@@ -588,8 +593,8 @@ t.zig:7:5: note: consider using 'const'</code></pre>
 </section>
 <section id="while-loops" class="level3" data-number="1.6.3">
 <h3 data-number="1.6.3" class="anchored" data-anchor-id="while-loops"><span class="header-section-number">1.6.3</span> While loops</h3>
-<p>A while loop is created from the <code>while</code> keyword. While a <code>for</code> loop iterates through the items of an array, a <code>while</code> loop will loop continuously, and infinitely, until a logical test specified by you becomes false.</p>
-<p>You start with the <code>while</code> keyword, then, you define a logical expression inside a pair of parentheses, and the body of the loop is provided inside a pair of curly braces.</p>
+<p>A while loop is created from the <code>while</code> keyword. While a <code>for</code> loop iterates through the items of an array, a <code>while</code> loop will loop continuously, and infinitely, until a logical test (specified by you) becomes false.</p>
+<p>You start with the <code>while</code> keyword, then, you define a logical expression inside a pair of parentheses, and the body of the loop is provided inside a pair of curly braces, like in the example below:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb41"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> i: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
 <span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="kw">while</span> (i &lt; <span class="dv">5</span>) <span class="op">{</span></span>
@@ -636,8 +641,15 @@ t.zig:7:5: note: consider using 'const'</code></pre>
 </div>
 </section>
 </section>
-<section id="sec-zig-strings" class="level2" data-number="1.7">
-<h2 data-number="1.7" class="anchored" data-anchor-id="sec-zig-strings"><span class="header-section-number">1.7</span> How strings work in Zig?</h2>
+<section id="structs-and-oop" class="level2" data-number="1.7">
+<h2 data-number="1.7" class="anchored" data-anchor-id="structs-and-oop"><span class="header-section-number">1.7</span> Structs and OOP</h2>
+<p>Zig is a language more closely related to C (which is a procedural language), than C++ or Java. Because of that, you do not have advanced OOP (Object-Oriented Programming) patterns available in Zig, such as classes, interfaces or class inheritance. OOP in Zig is possible by using struct definitions, like the same way you would do in C.</p>
+<p>With struct definitions, you can create (or define) a new data type in Zig. These struct definitions work the same way as they work in C. You declare the data members of this new struct you are creating, and, also, you can register functions as methods that belongs to this particular struct. So that every object, that you create with this new type, have the same methods associated with them.</p>
+<p>In C++, we normally have a constructor method (or, a constructor function) to construct or to instantiate every object of the particular class you are using. And you also have a destructor method (or a destructor function) that is responsible for destroying every object of that class.</p>
+<p>In Zig, we normally declare the constructor and the destructor methods of our structs, by declaring an <code>init()</code> and <code>deinit()</code> methods. This is just a naming pattern that you will find across the entire Zig standard library. So, the <code>init()</code> method of a struct normally represents the constructormethod of that class, while the <code>deinit()</code> method is the method used for destroying an existing instance of that struct.</p>
+</section>
+<section id="sec-zig-strings" class="level2" data-number="1.8">
+<h2 data-number="1.8" class="anchored" data-anchor-id="sec-zig-strings"><span class="header-section-number">1.8</span> How strings work in Zig?</h2>
 <p>The first project that we are going to build and discuss in this book is a base64 encoder/decoder (<a href="01-base64.html" class="quarto-xref"><span>Chapter 3</span></a>). But in order for us to build such a thing, we need to get a better understanding on how strings work in Zig. So let’s discuss this specific aspect of Zig.</p>
 <p>In Zig, a string literal (or a string object if you prefer) is a pointer to a null-terminated array of bytes. Each byte in this array is represented by an <code>u8</code> value, which is an unsigned 8 bit integer, so, it is equivalent to the C data type <code>unsigned char</code>.</p>
 <p>Zig always assumes that this sequence of bytes is UTF-8 encoded. This might not be true for every sequence of bytes you have it, but is not really Zig’s job to fix the encoding of your strings (you can use <a href="https://www.gnu.org/software/libiconv/"><code>iconv</code></a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> for that). Today, most of the text in our modern world, specially on the web, should be UTF-8 encoded. So if your string literal is not UTF-8 encoded, then, you will likely have problems in Zig.</p>
@@ -673,8 +685,8 @@ t.zig:7:5: note: consider using 'const'</code></pre>
   20 69 6E 20 5A 69 67 </code></pre>
 </div>
 </div>
-<section id="strings-in-c" class="level3" data-number="1.7.1">
-<h3 data-number="1.7.1" class="anchored" data-anchor-id="strings-in-c"><span class="header-section-number">1.7.1</span> Strings in C</h3>
+<section id="strings-in-c" class="level3" data-number="1.8.1">
+<h3 data-number="1.8.1" class="anchored" data-anchor-id="strings-in-c"><span class="header-section-number">1.8.1</span> Strings in C</h3>
 <p>At first glance, this looks very similar to how C treats strings as well. That is, string values in C are also treated internally as an array of bytes, and this array is also null-terminated.</p>
 <p>But one key difference between a Zig string and a C string, is that Zig also stores the length of the array inside the string object. This small detail makes your code safer, because is much easier for the Zig compiler to check if you are trying to access an element that is “out of bounds”, i.e.&nbsp;if your trying to access memory that does not belong to you.</p>
 <p>To achieve this same kind of safety in C, you have to do a lot of work that kind of seems pointless. So getting this kind of safety is not automatic and much harder to do in C. For example, if you want to track the length of your string troughout your program in C, then, you first need to loop through the array of bytes that represents this string, and find the null element (<code>'\0'</code>) position to discover where exactly the array ends, or, in other words, to find how much elements the array of bytes contain.</p>
@@ -705,8 +717,8 @@ t.zig:7:5: note: consider using 'const'</code></pre>
 </div>
 </div>
 </section>
-<section id="a-better-look-at-the-object-type" class="level3" data-number="1.7.2">
-<h3 data-number="1.7.2" class="anchored" data-anchor-id="a-better-look-at-the-object-type"><span class="header-section-number">1.7.2</span> A better look at the object type</h3>
+<section id="a-better-look-at-the-object-type" class="level3" data-number="1.8.2">
+<h3 data-number="1.8.2" class="anchored" data-anchor-id="a-better-look-at-the-object-type"><span class="header-section-number">1.8.2</span> A better look at the object type</h3>
 <p>Now, we can inspect better the type of objects that Zig create. To check the type of any object in Zig, you can use the <code>@TypeOf()</code> function. If we look at the type of the <code>simple_array</code> object below, you will find that this object is a array of 4 elements. Each element is a signed integer of 32 bits which corresponds to the data type <code>i32</code> in Zig. That is what an object of type <code>[4]i32</code> is.</p>
 <p>But if we look closely at the type of the <code>string_literal</code> object below, you will find that this object is a constant pointer (hence the <code>*const</code> annotation) to an array of 43 elements (or 43 bytes). Each element is a single byte (more precisely, an unsigned 8 bit integer - <code>u8</code>), that is why we have the <code>[43:0]u8</code> portion of the type below. In other words, the string stored inside the <code>string_literal</code> object is 43 bytes long. That is why you have the type <code>*const [43:0]u8</code> below.</p>
 <p>In the case of <code>string_literal</code>, it is a constant pointer (<code>*const</code>) because the object <code>string_literal</code> is declared as constant in the source code (in the line <code>const string_literal = ...</code>). So, if we changed that for some reason, if we declare <code>string_literal</code> as a variable object (i.e.&nbsp;<code>var string_literal = ...</code>), then, <code>string_literal</code> would be just a normal pointer to an array of unsigned 8-bit integers (i.e.&nbsp;<code>* [43:0]u8</code>).</p>
@@ -735,8 +747,8 @@ t.zig:7:5: note: consider using 'const'</code></pre>
 </div>
 </div>
 </section>
-<section id="byte-vs-unicode-points" class="level3" data-number="1.7.3">
-<h3 data-number="1.7.3" class="anchored" data-anchor-id="byte-vs-unicode-points"><span class="header-section-number">1.7.3</span> Byte vs unicode points</h3>
+<section id="byte-vs-unicode-points" class="level3" data-number="1.8.3">
+<h3 data-number="1.8.3" class="anchored" data-anchor-id="byte-vs-unicode-points"><span class="header-section-number">1.8.3</span> Byte vs unicode points</h3>
 <p>Is important to point out that each byte in the array is not necessarily a single character. This fact arises from the difference between a single byte and a single unicode point.</p>
 <p>The encoding UTF-8 works by assigning a number (which is called a unicode point) to each character in the string. For example, the character “H” is stored in UTF-8 as the decimal number 72. This means that the number 72 is the unicode point for the character “H”. Each possible character that can appear in a UTF-8 encoded string have its own unicode point.</p>
 <p>For example, the Latin Capital Letter A With Stroke (Ⱥ) is represented by the number (or the unicode point) 570. However, this decimal number (570) is higher than the maximum number stored inside a single byte, which is 255. In other words, the maximum decimal number that can be represented with a single byte is 255. That is why, the unicode point 570 is actually stored inside the computer’s memory as the bytes <code>C8 BA</code>.</p>
@@ -879,6 +891,24 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     // clear code selection
     e.clearSelection();
   });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
   function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
     const config = {
       allowHTML: true,
@@ -913,7 +943,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
-      return note.innerHTML;
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
     });
   }
   const xrefs = window.document.querySelectorAll('a.quarto-xref');
@@ -1189,12 +1223,12 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../index.html" class="pagination-link  aria-label=" welcome"="">
+      <a href="../index.html" class="pagination-link" aria-label="Welcome">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Welcome</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../Chapters/01-memory.html" class="pagination-link" aria-label="<span class='chapter-number'>2</span>&nbsp; <span class='chapter-title'>Memory and Allocators in Zig</span>">
+      <a href="../Chapters/01-memory.html" class="pagination-link" aria-label="Memory and Allocators in Zig">
         <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Memory and Allocators in Zig</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
