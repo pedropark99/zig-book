@@ -451,7 +451,7 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <div class="cell">
 <div class="cell-output-display">
 <div>
-<div id="wzcybydkcp" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="evioovstdz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
 <table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
@@ -586,9 +586,10 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 </section>
 <section id="allocating-space-for-the-output" class="level3" data-number="3.4.4">
 <h3 data-number="3.4.4" class="anchored" data-anchor-id="allocating-space-for-the-output"><span class="header-section-number">3.4.4</span> Allocating space for the output</h3>
-<p>As I described at <a href="01-memory.html#sec-stack" class="quarto-xref"><span>Section 2.2.4</span></a>, variables that are stored in the stack need to have known length at compile-time. This is a problem for our a base64 encoder/decoder. Because the size of the output (from both the encoder and decoder) depends directly on the size of the input.</p>
-<p>That means that, we cannot know at compile time which is the size of the output for both the encoder and decoder. So, if we can’t know the size of the output at compile time, this means that we cannot store the output at the encoder or decoder in the stack.</p>
+<p>As I described at <a href="01-memory.html#sec-stack" class="quarto-xref"><span>Section 2.2.4</span></a>, to store a variable in the stack, this variable needs to have a known and fixed length at compile-time. This is a problem for our a base64 encoder/decoder case. Because the size of the output (from both the encoder and decoder) depends directly on the size of the input.</p>
+<p>Having this in mind, we cannot know at compile time which is the size of the output for both the encoder and decoder. So, if we can’t know the size of the output at compile time, this means that we cannot store in the stack, the output for both the encoder and decoder.</p>
 <p>Consequently, we need to store this output on the heap, and, as I commented at <a href="01-memory.html#sec-heap" class="quarto-xref"><span>Section 2.2.5</span></a>, we can only store variables in the heap by using allocator objects. So, one the arguments to both the <code>encode()</code> and <code>decode()</code> functions, needs to be an allocator object, because we know for sure that, at some point inside the body of these functions, we need to allocate space on the heap to store the output of these functions.</p>
+<p>That is why, both the <code>encode()</code> and <code>decode()</code> functions that I present in this book, have an argument called <code>allocator</code>, which receives a allocator object as input, identified by the type <code>std.mem.Allocator</code> from the Zig standard library.</p>
 </section>
 <section id="writing-the-encode-function" class="level3" data-number="3.4.5">
 <h3 data-number="3.4.5" class="anchored" data-anchor-id="writing-the-encode-function"><span class="header-section-number">3.4.5</span> Writing the <code>encode()</code> function</h3>
@@ -715,7 +716,7 @@ Table&nbsp;3.2: The necessary steps for the 6-transformation in the decode proce
 <div class="cell">
 <div class="cell-output-display">
 <div>
-<div id="epksnprwhl" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="mkrwzubkxk" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
 <table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">

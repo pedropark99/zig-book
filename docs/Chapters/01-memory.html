@@ -215,8 +215,12 @@ div.csl-indent {
   <li><a href="#what-are-allocators" id="toc-what-are-allocators" class="nav-link" data-scroll-target="#what-are-allocators"><span class="header-section-number">2.3.1</span> What are allocators?</a></li>
   <li><a href="#why-you-need-an-allocator" id="toc-why-you-need-an-allocator" class="nav-link" data-scroll-target="#why-you-need-an-allocator"><span class="header-section-number">2.3.2</span> Why you need an allocator?</a></li>
   <li><a href="#the-different-types-of-allocators" id="toc-the-different-types-of-allocators" class="nav-link" data-scroll-target="#the-different-types-of-allocators"><span class="header-section-number">2.3.3</span> The different types of allocators</a></li>
-  <li><a href="#the-alloc-and-free-methods" id="toc-the-alloc-and-free-methods" class="nav-link" data-scroll-target="#the-alloc-and-free-methods"><span class="header-section-number">2.3.4</span> The <code>alloc()</code> and <code>free()</code> methods</a></li>
-  <li><a href="#the-create-and-destroy-methods" id="toc-the-create-and-destroy-methods" class="nav-link" data-scroll-target="#the-create-and-destroy-methods"><span class="header-section-number">2.3.5</span> The <code>create()</code> and <code>destroy()</code> methods</a></li>
+  <li><a href="#general-purpose-allocators" id="toc-general-purpose-allocators" class="nav-link" data-scroll-target="#general-purpose-allocators"><span class="header-section-number">2.3.4</span> General-purpose allocators</a></li>
+  <li><a href="#page-allocator" id="toc-page-allocator" class="nav-link" data-scroll-target="#page-allocator"><span class="header-section-number">2.3.5</span> Page allocator</a></li>
+  <li><a href="#buffer-allocators" id="toc-buffer-allocators" class="nav-link" data-scroll-target="#buffer-allocators"><span class="header-section-number">2.3.6</span> Buffer allocators</a></li>
+  <li><a href="#sec-arena-allocator" id="toc-sec-arena-allocator" class="nav-link" data-scroll-target="#sec-arena-allocator"><span class="header-section-number">2.3.7</span> Arena allocator</a></li>
+  <li><a href="#the-alloc-and-free-methods" id="toc-the-alloc-and-free-methods" class="nav-link" data-scroll-target="#the-alloc-and-free-methods"><span class="header-section-number">2.3.8</span> The <code>alloc()</code> and <code>free()</code> methods</a></li>
+  <li><a href="#the-create-and-destroy-methods" id="toc-the-create-and-destroy-methods" class="nav-link" data-scroll-target="#the-create-and-destroy-methods"><span class="header-section-number">2.3.9</span> The <code>create()</code> and <code>destroy()</code> methods</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -456,8 +460,9 @@ Important
 <li><code>c_allocator()</code> (requires you to link to libc).</li>
 </ul>
 <p>Each allocator have it’s own perks and limitations. All allocators, except <code>FixedBufferAllocator()</code> and <code>ArenaAllocator()</code>, are allocators that use the heap memory. So any memory that you allocate with these allocators, will be placed in the heap.</p>
-<section id="general-purpose-allocators" class="level4" data-number="2.3.3.1">
-<h4 data-number="2.3.3.1" class="anchored" data-anchor-id="general-purpose-allocators"><span class="header-section-number">2.3.3.1</span> General-purpose allocators</h4>
+</section>
+<section id="general-purpose-allocators" class="level3" data-number="2.3.4">
+<h3 data-number="2.3.4" class="anchored" data-anchor-id="general-purpose-allocators"><span class="header-section-number">2.3.4</span> General-purpose allocators</h3>
 <p>The <code>GeneralPurposeAllocator()</code>, as the name suggests, is a “general purpose” allocator. You can use it for every type of task. In the example below, I’m allocating enough space to store a single integer in the object <code>some_number</code>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
@@ -473,13 +478,13 @@ Important
 </div>
 <p>While useful, you might want to use the <code>c_allocator()</code>, which is a alias to the C standard allocator <code>malloc()</code>. So, yes, you can use <code>malloc()</code> in Zig if you want to. Just use the <code>c_allocator()</code> from the Zig standard library. However, if you do use <code>c_allocator()</code>, you must link to Libc when compiling your source code with the <code>zig</code> compiler, by including the flag <code>-lc</code> in your compilation process. If you do not link your source code to Libc, Zig will not be able to find the <code>malloc()</code> implementation in your system.</p>
 </section>
-<section id="page-allocator" class="level4" data-number="2.3.3.2">
-<h4 data-number="2.3.3.2" class="anchored" data-anchor-id="page-allocator"><span class="header-section-number">2.3.3.2</span> Page allocator</h4>
+<section id="page-allocator" class="level3" data-number="2.3.5">
+<h3 data-number="2.3.5" class="anchored" data-anchor-id="page-allocator"><span class="header-section-number">2.3.5</span> Page allocator</h3>
 <p>The <code>page_allocator()</code> is an allocator that allocates full pages of memory in the heap. In other words, every time you allocate memory with <code>page_allocator()</code>, a full page of memory in the heap is allocated, instead of just a small piece of it.</p>
 <p>The size of this page depends on the system you are using. Most systems use a page size of 4KB in the heap, so, that is the amount of memory that is normally allocated in each call by <code>page_allocator()</code>. That is why, <code>page_allocator()</code> is considered a fast, but also “wasteful” allocator in Zig. Because it allocates a big amount of memory in each call, and you most likely will not need that much memory in your program.</p>
 </section>
-<section id="buffer-allocators" class="level4" data-number="2.3.3.3">
-<h4 data-number="2.3.3.3" class="anchored" data-anchor-id="buffer-allocators"><span class="header-section-number">2.3.3.3</span> Buffer allocators</h4>
+<section id="buffer-allocators" class="level3" data-number="2.3.6">
+<h3 data-number="2.3.6" class="anchored" data-anchor-id="buffer-allocators"><span class="header-section-number">2.3.6</span> Buffer allocators</h3>
 <p>The <code>FixedBufferAllocator()</code> and <code>ThreadSafeFixedBufferAllocator()</code> are allocator objects that work with a fixed sized buffer that is stored in the stack. So these two allocators only allocates memory in the stack. This also means that, in order to use these allocators, you must first create a buffer object, and then, give this buffer as an input to these allocators.</p>
 <p>In the example below, I am creating a <code>buffer</code> object that is 10 elements long. Notice that I give this <code>buffer</code> object to the <code>FixedBufferAllocator()</code> constructor. Now, because this <code>buffer</code> object is 10 elements long, this means that I am limited to this space. I cannot allocate more than 10 elements with this allocator object. If I try to allocate more than that, the <code>alloc()</code> method will return an <code>OutOfMemory</code> error value.</p>
 <div class="cell">
@@ -494,8 +499,8 @@ Important
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> allocator.free(input);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="arena-allocator" class="level4" data-number="2.3.3.4">
-<h4 data-number="2.3.3.4" class="anchored" data-anchor-id="arena-allocator"><span class="header-section-number">2.3.3.4</span> Arena allocator</h4>
+<section id="sec-arena-allocator" class="level3" data-number="2.3.7">
+<h3 data-number="2.3.7" class="anchored" data-anchor-id="sec-arena-allocator"><span class="header-section-number">2.3.7</span> Arena allocator</h3>
 <p>The <code>ArenaAllocator()</code> is an allocator object that takes a child allocator as input. The idea behind the <code>ArenaAllocator()</code> in Zig is similar to the concept of “arenas” in the programming language Go<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a>. It is an allocator object that allows you to allocate memory as many times you want, but free all memory only once. In other words, if you have, for example, called 5 times the method <code>alloc()</code> of an <code>ArenaAllocator()</code> object, you can free all the memory you allocated over these 5 calls at once, by simply calling the <code>deinit()</code> method of the same <code>ArenaAllocator()</code> object.</p>
 <p>If you give, for example, a <code>GeneralPurposeAllocator()</code> object as input to the <code>ArenaAllocator()</code> constructor, like in the example below, then, the allocations you perform with <code>alloc()</code> will actually be made with the underlying object <code>GeneralPurposeAllocator()</code> that was passed. So, with an arena allocator, any new memory you ask for is allocated by the child allocator. The only thing that an arena allocator really do is helping you to free all the memory you allocated multiple times with just a single command. In the example below, I called <code>alloc()</code> 3 times. So, if I did not used an arena allocator, then, I would need to call <code>free()</code> 3 times to free all the allocated memory.</p>
 <div class="cell">
@@ -510,9 +515,8 @@ Important
 <span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>_ = in1; _ = in2; _ = in3;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-</section>
-<section id="the-alloc-and-free-methods" class="level3" data-number="2.3.4">
-<h3 data-number="2.3.4" class="anchored" data-anchor-id="the-alloc-and-free-methods"><span class="header-section-number">2.3.4</span> The <code>alloc()</code> and <code>free()</code> methods</h3>
+<section id="the-alloc-and-free-methods" class="level3" data-number="2.3.8">
+<h3 data-number="2.3.8" class="anchored" data-anchor-id="the-alloc-and-free-methods"><span class="header-section-number">2.3.8</span> The <code>alloc()</code> and <code>free()</code> methods</h3>
 <p>In the code example below, we are accessing the <code>stdin</code>, which is the standard input channel, to receive an input from the user. We read the input given by the user with the <code>readUntilDelimiterOrEof()</code> method.</p>
 <p>Now, after reading the input of the user, we need to store this input somewhere in our program. That is why I use an allocator in this example. I use it to allocate some amount of memory to store this input given by the user. More specifically, the method <code>alloc()</code> of the allocator object is used to allocate an array capable of storing 50 <code>u8</code> values.</p>
 <p>Notice that this <code>alloc()</code> method receives two inputs. The first one, is a type. This defines what type of values the allocated array will store. In the example below, we are allocating an array of unsigned 8-bit integers (<code>u8</code>). But you can create an array to store any type of value you want. Next, on the second argument, we define the size of the allocated array, by specifying how much elements this array will contain. In the case below, we are allocating an array of 50 elements.</p>
@@ -542,8 +546,8 @@ Important
 <p>Also, notice that in this example, we use the keyword <code>defer</code> to run a small piece of code at the end of the current scope, which is the expression <code>allocator.free(input)</code>. When you execute this expression, the allocator will free the memory that it allocated for the <code>input</code> object.</p>
 <p>We have talked about this at <a href="#sec-heap" class="quarto-xref"><span>Section 2.2.5</span></a>. You <strong>should always</strong> explicitly free any memory that you allocate using an allocator! You do that by using the <code>free()</code> method of the same allocator object you used to allocate this memory. The <code>defer</code> keyword is used in this example only to help us execute this free operation at the end of the current scope.</p>
 </section>
-<section id="the-create-and-destroy-methods" class="level3" data-number="2.3.5">
-<h3 data-number="2.3.5" class="anchored" data-anchor-id="the-create-and-destroy-methods"><span class="header-section-number">2.3.5</span> The <code>create()</code> and <code>destroy()</code> methods</h3>
+<section id="the-create-and-destroy-methods" class="level3" data-number="2.3.9">
+<h3 data-number="2.3.9" class="anchored" data-anchor-id="the-create-and-destroy-methods"><span class="header-section-number">2.3.9</span> The <code>create()</code> and <code>destroy()</code> methods</h3>
 <p>With the <code>alloc()</code> and <code>free()</code> methods, you can allocate memory to store multiple elements at once. In other words, with these methods, we always allocate an array to store multiple elements at once. But what if you need enough space to store just a single item? Should you allocate an array of a single element through <code>alloc()</code>?</p>
 <p>The answer is no! In this case, you should use the <code>create()</code> method of the allocator object. Every allocator object offers the <code>create()</code> and <code>destroy()</code> methods, which are used to allocate and free memory for a single item, respectively.</p>
 <p>So, in essence, if you want to allocate memory to store an array of elements, you should use <code>alloc()</code> and <code>free()</code>. But if you need to store just a single item, then, the <code>create()</code> and <code>destroy()</code> methods are ideal for you.</p>
