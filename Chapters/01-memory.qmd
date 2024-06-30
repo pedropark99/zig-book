@@ -45,19 +45,51 @@ One strategy that Zig uses to decide where it will store each object that you de
 at the value of this particular object. More specifically, by investigating if this value is
 known at "compile-time" or at "runtime".
 
-When you write a program in Zig, some values that you write in your program are *known
+When you write a program in Zig, the values of some of the objects that you write in your program are *known
 at compile time*. Meaning that, when you compile your Zig source code, during the compilation process,
 the `zig` compiler can figure it out what is the exact value of a particular object
 that exists in your source code.
+Knowing the length (or the size) of each object is also important. So the length (or the size) of each object that you write in your program is,
+in some cases, *known at compile time*.
 
-For example, in the source code below, we have two constant objects (`name` and `array`) declared.
+The `zig` compiler cares more about knowing the length (or the size) of a particular object
+, than to know it's actual value. But, if the `zig` compiler knows the value of the object, then, it
+automatically knows the size of this object. Because it can simply calculate the
+size of the object by looking at the size of the value.
+
+Therefore, the priority for the `zig` compiler is to discover the size of each object in your source code.
+If the value of the object in question is known at compile-time, then, the `zig` compiler
+automatically knows the size/length of this object. But if the value of this object is not
+known at compile-time, then, the size of this object is only known at compile-time if,
+and only if, the type of this object have a known fixed size.
+
+In order to a type have a known fixed size, this type must have only fixed size data members in it.
+If this type inclues, for example, a variable sized array in it, then, this type do not have a known
+fixed size. Because this array can have any size at runtime
+(i.e. it can be an array of 2 elements, or 50 elements, or 1 thousand elements, etc.).
+
+For example, a string object, which internally is an array of constant u8 values (`[]const u8`)
+have a variable size. It can be a string object with 100 or 500 characters in it. If we do not
+know at compile-time, which exact string will be stored inside this string object, then, we cannot calculate
+the size of this string object at compile-time. So, any type, or any struct declaration that you make, that
+includes a string data member that do not have an explicit fixed size, makes this type, or this
+new struct that you are declaring, a type that do not have a known fixed size at compile-time.
+
+In contrast, if the type or this struct that you are declaring, includes a data member that is an array,
+but this array have a known fixed size, like `[60]u8` (which declares an array of 60 `u8` values), then,
+this type, or, this struct that you are declaring, becomes a type with a known fixed size at compile-time.
+And because of that, in this case, the `zig` compiler do not need to known at compile-time the exact value of
+any object of this type. Since the compiler can find the necessary size to store this object by
+looking at the size of it's type.
+
+
+Let's look at an example. In the source code below, we have two constant objects (`name` and `array`) declared.
 Because the values of these particular objects are written down, in the source code itself (`"Pedro"`
 and the number sequence from 1 to 4), the `zig` compiler can easily discover the values of these constant
 objects (`name` and `array`) during the compilation process.
-
-
 This is what "known at compile time" means. It refers to any object that you have in your Zig source code
 whose value can be identified at compile time.
+
 
 ```{zig}
 // ======== Variables
@@ -66,7 +98,8 @@ const array = [_]u8{1, 2, 3, 4};
 _ = name; _ = array;
 // ========= Function
 fn input_length(input: []const u8) usize {
-    return input.len;
+    const n = input.len;
+    return n;
 }
 ```
 
@@ -75,16 +108,19 @@ Function arguments are a classic example of this. Because the value of each func
 argument depends on the value that you assign to this particular argument,
 when you call the function.
 
-For example, the function `input_length()` contains an argument named `input`, which is an array of `u8` integers (`[]const u8`).
-Is impossible to know at compile time the value of this particular argument. We know that it will be an array of `u8` integers.
-But we can't know which exact array of `u8` integers this argument will store, before we execute this function.
-The value of `input` is only *known at runtime*, which is the period of time when you program is executed.
-As a consequence, the value of the expression `input.len` is also known only at runtime.
+For example, the function `input_length()` contains an argument named `input`, which is an array of constant `u8` integers (`[]const u8`).
+Is impossible to know at compile time the value of this particular argument. And it also is impossible to know the size/length
+of this particular argument. Because it is an array that do not have a fixed size specified explicitly in the argument type annotation.
 
-So depending on which input your apply this `input_length()` function over, the `input` argument
-will probably have a different value in each case.
-Because of this intrinsic characteristic of any function, the value of the argument `input` is not "compile-time known".
-It is known only at runtime.
+So, we know that this `input` argument will be an array of `u8` integers. But we do not know at compile-time, it's value, and neither his size.
+This information is known only at runtime, which is the period of time when you program is executed.
+As a consequence, the value of the expression `input.len` is also known only at runtime.
+This is an intrinsic characteristic of any function. Just remember that the value of function arguments is usually not "compile-time known".
+
+However, as I mentioned earlier, what really matters to the compiler is to know the size of the object
+at compile-time, and not necessarily it's value. So, although we don't know the value of the object `n`, which is the result of the expression
+`input.len`, at compile-time, we do know it's size. Because the expression `input.len` always return a value of type `usize`,
+and the type `usize` have a known fixed size.
 
 
 
@@ -148,7 +184,7 @@ It adds and removes values from the memory by following a "last in, first out" (
 Every time you make a function call in Zig, an amount of space in the stack is
 reserved for this particular function call [@jenny2022; @zigdocs].
 The value of each function argument given to the function in this function call is stored in this
-stack space. Also, every local object that you declare inside the function scope are
+stack space. Also, every local object that you declare inside the function scope is
 usually stored in this same stack space.
 
 
@@ -204,7 +240,7 @@ The example below demonstrates this idea.
 
 ```{zig}
 #| eval: false
-// This does not compile!
+// This does not compile succesfully!
 const a = [_]u8{0, 1, 2, 3, 4};
 for (0..a.len) |i| {
     const index = i;

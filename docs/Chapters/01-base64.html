@@ -451,7 +451,7 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <div class="cell">
 <div class="cell-output-display">
 <div>
-<div id="evioovstdz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="ybkklorrsy" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
 <table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
@@ -562,7 +562,7 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 </div>
 </div>
 <p>If you recall <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a>, the first byte present in the output should be equivalent to the 6-bit group <code>010010</code>. Although being visually different, the sequences <code>010010</code> and <code>00010010</code> are semantically equal. They mean the same thing. They both represent the number 18 in decimal, and the value <code>0x12</code> in hexadecimal.</p>
-<p>So, don’t take the “6-bit group” factor so seriously. We do not need necessarilly to get a 6-bit sequence as result. As long as the meaning of the 8-bit sequence we get is the same of the 6-bit sequence, we are in the clear.</p>
+<p>So, don’t take the “6-bit group” factor so seriously. We do not need necessarily to get a 6-bit sequence as result. As long as the meaning of the 8-bit sequence we get is the same of the 6-bit sequence, we are in the clear.</p>
 </section>
 <section id="selecting-specific-bits-with-the-operator" class="level3" data-number="3.4.3">
 <h3 data-number="3.4.3" class="anchored" data-anchor-id="selecting-specific-bits-with-the-operator"><span class="header-section-number">3.4.3</span> Selecting specific bits with the <code>&amp;</code> operator</h3>
@@ -586,9 +586,9 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 </section>
 <section id="allocating-space-for-the-output" class="level3" data-number="3.4.4">
 <h3 data-number="3.4.4" class="anchored" data-anchor-id="allocating-space-for-the-output"><span class="header-section-number">3.4.4</span> Allocating space for the output</h3>
-<p>As I described at <a href="01-memory.html#sec-stack" class="quarto-xref"><span>Section 2.2.4</span></a>, to store a variable in the stack, this variable needs to have a known and fixed length at compile-time. This is a problem for our a base64 encoder/decoder case. Because the size of the output (from both the encoder and decoder) depends directly on the size of the input.</p>
+<p>As I described at <a href="01-memory.html#sec-stack" class="quarto-xref"><span>Section 2.1.4</span></a>, to store a variable in the stack, this variable needs to have a known and fixed length at compile-time. This is a problem for our a base64 encoder/decoder case. Because the size of the output (from both the encoder and decoder) depends directly on the size of the input.</p>
 <p>Having this in mind, we cannot know at compile time which is the size of the output for both the encoder and decoder. So, if we can’t know the size of the output at compile time, this means that we cannot store in the stack, the output for both the encoder and decoder.</p>
-<p>Consequently, we need to store this output on the heap, and, as I commented at <a href="01-memory.html#sec-heap" class="quarto-xref"><span>Section 2.2.5</span></a>, we can only store variables in the heap by using allocator objects. So, one the arguments to both the <code>encode()</code> and <code>decode()</code> functions, needs to be an allocator object, because we know for sure that, at some point inside the body of these functions, we need to allocate space on the heap to store the output of these functions.</p>
+<p>Consequently, we need to store this output on the heap, and, as I commented at <a href="01-memory.html#sec-heap" class="quarto-xref"><span>Section 2.1.5</span></a>, we can only store variables in the heap by using allocator objects. So, one the arguments to both the <code>encode()</code> and <code>decode()</code> functions, needs to be an allocator object, because we know for sure that, at some point inside the body of these functions, we need to allocate space on the heap to store the output of these functions.</p>
 <p>That is why, both the <code>encode()</code> and <code>decode()</code> functions that I present in this book, have an argument called <code>allocator</code>, which receives a allocator object as input, identified by the type <code>std.mem.Allocator</code> from the Zig standard library.</p>
 </section>
 <section id="writing-the-encode-function" class="level3" data-number="3.4.5">
@@ -601,8 +601,8 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <li><code>input</code> is the input sequence of characters that you want to encode in base64;</li>
 <li><code>allocator</code> is an allocator object to use in the necessary memory allocations.</li>
 </ol>
-<p>I described everything you need to know about allocator objects at <a href="01-memory.html#sec-allocators" class="quarto-xref"><span>Section 2.3</span></a>. So, if you are not familiar with them, I highly recommend you to comeback to that section, and read it. By looking at the <code>encode()</code> function, you will see that we use this allocator object to allocate enough memory to store the output of encoding process.</p>
-<p>Remember from <a href="01-memory.html#sec-stack" class="quarto-xref"><span>Section 2.2.4</span></a>, that the stack can be used only to store variables that have a compile-time known fixed size. Unfortunately, this is not the case here. The size of the <code>encode()</code> output is tidly related to the size of the input from the user. So, the size of the output is only known at runtime. That is why we use an allocator object, to allocate memory on the heap (which allows objects whose size are runtime-known), and store the output there.</p>
+<p>I described everything you need to know about allocator objects at <a href="01-memory.html#sec-allocators" class="quarto-xref"><span>Section 2.2</span></a>. So, if you are not familiar with them, I highly recommend you to comeback to that section, and read it. By looking at the <code>encode()</code> function, you will see that we use this allocator object to allocate enough memory to store the output of encoding process.</p>
+<p>Remember from <a href="01-memory.html#sec-stack" class="quarto-xref"><span>Section 2.1.4</span></a>, that the stack can be used only to store variables that have a compile-time known fixed size. Unfortunately, this is not the case here. The size of the <code>encode()</code> output is tidly related to the size of the input from the user. So, the size of the output is only known at runtime. That is why we use an allocator object, to allocate memory on the heap (which allows objects whose size are runtime-known), and store the output there.</p>
 <p>The main for loop in the function is responsible for iterating the entire input string. In every iteration, we use a <code>count</code> variable to count how many iterations we had at the moment. When <code>count</code> reaches 3, then, we try to encode the 3 characters (or bytes) that we accumulated until this point in the temporary buffer object (<code>buf</code>).</p>
 <p>After encoding these 3 characters and storing the result in the <code>output</code> variable, we reset the <code>count</code> variable to zero, and start to count again on the next iteration of the loop. If the loop hits the end of the string, and, the <code>count</code> variable is less than 3, then, it means that the temporary buffer contains the last 1 or 2 bytes from the input. That is why we have two <code>if</code> statements after the for loop. To deal which each possible case.</p>
 <div class="cell">
@@ -716,7 +716,7 @@ Table&nbsp;3.2: The necessary steps for the 6-transformation in the decode proce
 <div class="cell">
 <div class="cell-output-display">
 <div>
-<div id="mkrwzubkxk" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="iwrrbuuwew" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
 <table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
