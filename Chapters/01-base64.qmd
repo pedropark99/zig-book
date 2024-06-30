@@ -349,7 +349,7 @@ easier, I will use the variable `output` to refer to the bytes in the output of 
 and the variable `input` to refer to the bytes in the input of the encoder.
 
 
-If you have the perfect window of 3 bytes, these are steps for the 6-bit transformation:
+So, if you have the perfect window of 3 bytes, these are steps for the 6-bit transformation:
 
 1. `output[0]` is produced by moving the bits from `input[0]` two positions to the right.
 1. `output[1]` is produced by summing two components. First, take the last two bits from `input[0]`, then, move them four positions to the left. Second, move the bits from `input[1]` four positions to the right. Sum these two components.
@@ -357,6 +357,16 @@ If you have the perfect window of 3 bytes, these are steps for the 6-bit transfo
 1. `output[3]` is produced by taking the last six bits from `input[2]`.
 
 
+This is the perfect scenario, when we have a full window of 3 bytes to work on.
+Just to make things as clear as possible, the @fig-encoder-bitshift demonstrates visually how the process
+to produce the 2nd byte in the `output` of the encoder works, by taking the 1st byte (dark purple)
+and the 2nd byte (orange) in the input. You can see that, at the end of the process, we get a new
+byte that contains the last two bits from the 1st byte in the `input`, and the first 4 bits
+from the 2nd byte in the `input`.
+
+![How the 2nd byte in the output of the encoder is produced from the 1st byte (dark purple) and the 2nd byte (orange) in the input](../../Figures/base64-encoder-bit-shift.png){#fig-encoder-bitshift}
+
+On the other hand, we must be prepared for the possibilities where we do not have the perfect window of 3 bytes.
 If you have a window of 2 bytes, then, the steps 3 and 4, which produces the bytes `output[2]` and `output[3]`, change a little bit,
 and they become:
 
@@ -364,7 +374,7 @@ and they become:
 - `output[3]` is the character `'='`.
 
 
-At last, if you have a window of a single byte, then, the steps 2 to 4, which produces the bytes `output[1]`, `output[2]` and `output[3]` change,
+Finally, if you have a window of a single byte, then, the steps 2 to 4, which produces the bytes `output[1]`, `output[2]` and `output[3]` change,
 becoming:
 
 - `output[1]` is produced by taking the last two bits from `input[0]`, then, move them four positions to the left.

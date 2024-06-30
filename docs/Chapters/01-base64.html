@@ -424,19 +424,30 @@ Figure&nbsp;3.2: The logic behind a base64 decoder
 <p>In essence, this 6-bit transformation is made with the help of bitwise operators. Bitwise operators are essential to any type of low-level operation that is done at the bit-level. For the specific case of the base64 algorithm, the operators <em>bif shift to the left</em> (<code>&lt;&lt;</code>), <em>bit shift to the right</em> (<code>&gt;&gt;</code>), and the <em>bitwise and</em> (<code>&amp;</code>) are used. They are the core solution for the 6-bit transformation.</p>
 <p>We have 3 different scenarios that we need to account for in this transformation. First, is the perfect scenario, where we have the perfect window of 3 bytes to work on. Second, we have the scenario where we have a window of only two bytes to work with. And last, we have the scenario where we have a window of one single byte.</p>
 <p>In each of these 3 scenarios, the 6-bit transformation works a bit different. To make the explanation easier, I will use the variable <code>output</code> to refer to the bytes in the output of the base64 encoder, and the variable <code>input</code> to refer to the bytes in the input of the encoder.</p>
-<p>If you have the perfect window of 3 bytes, these are steps for the 6-bit transformation:</p>
+<p>So, if you have the perfect window of 3 bytes, these are steps for the 6-bit transformation:</p>
 <ol type="1">
 <li><code>output[0]</code> is produced by moving the bits from <code>input[0]</code> two positions to the right.</li>
 <li><code>output[1]</code> is produced by summing two components. First, take the last two bits from <code>input[0]</code>, then, move them four positions to the left. Second, move the bits from <code>input[1]</code> four positions to the right. Sum these two components.</li>
 <li><code>output[2]</code> is produced by summing two components. First, take the last four bits from <code>input[1]</code>, then, move them two positions to the left. Second, move the bits from <code>input[2]</code> six positions to the right.</li>
 <li><code>output[3]</code> is produced by taking the last six bits from <code>input[2]</code>.</li>
 </ol>
-<p>If you have a window of 2 bytes, then, the steps 3 and 4, which produces the bytes <code>output[2]</code> and <code>output[3]</code>, change a little bit, and they become:</p>
+<p>This is the perfect scenario, when we have a full window of 3 bytes to work on. Just to make things as clear as possible, the <a href="#fig-encoder-bitshift" class="quarto-xref">Figure&nbsp;<span>3.3</span></a> demonstrates visually how the process to produce the 2nd byte in the <code>output</code> of the encoder works, by taking the 1st byte (dark purple) and the 2nd byte (orange) in the input. You can see that, at the end of the process, we get a new byte that contains the last two bits from the 1st byte in the <code>input</code>, and the first 4 bits from the 2nd byte in the <code>input</code>.</p>
+<div id="fig-encoder-bitshift" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-encoder-bitshift-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../../Figures/base64-encoder-bit-shift.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-encoder-bitshift-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3.3: How the 2nd byte in the output of the encoder is produced from the 1st byte (dark purple) and the 2nd byte (orange) in the input
+</figcaption>
+</figure>
+</div>
+<p>On the other hand, we must be prepared for the possibilities where we do not have the perfect window of 3 bytes. If you have a window of 2 bytes, then, the steps 3 and 4, which produces the bytes <code>output[2]</code> and <code>output[3]</code>, change a little bit, and they become:</p>
 <ul>
 <li><code>output[2]</code> is produced by taking the last 4 bits from <code>input[1]</code>, then, move them two positions to the left.</li>
 <li><code>output[3]</code> is the character <code>'='</code>.</li>
 </ul>
-<p>At last, if you have a window of a single byte, then, the steps 2 to 4, which produces the bytes <code>output[1]</code>, <code>output[2]</code> and <code>output[3]</code> change, becoming:</p>
+<p>Finally, if you have a window of a single byte, then, the steps 2 to 4, which produces the bytes <code>output[1]</code>, <code>output[2]</code> and <code>output[3]</code> change, becoming:</p>
 <ul>
 <li><code>output[1]</code> is produced by taking the last two bits from <code>input[0]</code>, then, move them four positions to the left.</li>
 <li><code>output[2]</code> and <code>output[3]</code> are the character <code>=</code>.</li>
@@ -451,7 +462,7 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <div class="cell">
 <div class="cell-output-display">
 <div>
-<div id="ybkklorrsy" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="hdyygerwra" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
 <table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
@@ -716,7 +727,7 @@ Table&nbsp;3.2: The necessary steps for the 6-transformation in the decode proce
 <div class="cell">
 <div class="cell-output-display">
 <div>
-<div id="iwrrbuuwew" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="vsuubqrixb" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
 <table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
