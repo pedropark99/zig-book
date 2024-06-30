@@ -358,13 +358,14 @@ So, if you have the perfect window of 3 bytes, these are steps for the 6-bit tra
 
 
 This is the perfect scenario, when we have a full window of 3 bytes to work on.
-Just to make things as clear as possible, the @fig-encoder-bitshift demonstrates visually how the process
-to produce the 2nd byte in the `output` of the encoder works, by taking the 1st byte (dark purple)
+Just to make things as clear as possible, the @fig-encoder-bitshift demonstrates visually how the step 2 mentioned above works.
+So this is the step necessary
+to produce the 2nd byte in the `output` of the encoder, by taking the 1st byte (dark purple)
 and the 2nd byte (orange) in the input. You can see that, at the end of the process, we get a new
-byte that contains the last two bits from the 1st byte in the `input`, and the first 4 bits
+byte that contains the last 2 bits from the 1st byte in the `input`, and the first 4 bits
 from the 2nd byte in the `input`.
 
-![How the 2nd byte in the output of the encoder is produced from the 1st byte (dark purple) and the 2nd byte (orange) in the input](../../Figures/base64-encoder-bit-shift.png){#fig-encoder-bitshift}
+![How the 2nd byte in the output of the encoder is produced from the 1st byte (dark purple) and the 2nd byte (orange) of the input](../../Figures/base64-encoder-bit-shift.png){#fig-encoder-bitshift}
 
 On the other hand, we must be prepared for the possibilities where we do not have the perfect window of 3 bytes.
 If you have a window of 2 bytes, then, the steps 3 and 4, which produces the bytes `output[2]` and `output[3]`, change a little bit,
@@ -466,7 +467,8 @@ you have, and change them in some way. This ultimately also changes
 the value itself, because the binary representation of this value
 changes.
 
-Let's use the first byte in the output of the base64 encoder as an example of what
+We already saw at @fig-encoder-bitshift visually what is the effect produced by a bit-shift.
+But let's use the first byte in the output of the base64 encoder as another example of what
 bit-shifting means. This is the easiest byte of the 4 bytes in the output
 to build. Because we only need to move the bits from the first byte in the input two positions to the right,
 with the *bit shift to the right* (`>>`) operator.
@@ -510,6 +512,9 @@ If you comeback to @sec-6bit-transf, you will see that to produce
 the second and third bytes in the output, we need to select specific
 bits from the first and second bytes in the input string. But how
 can we do that? The answer relies on the *bitwise and* (`&`) operator.
+
+The @fig-encoder-bitshift already showed you what effect this `&` operator
+produces in the bits of it's operands. But let's make a clear description of it.
 
 In summary, the `&` operator performs a logical conjunction operation
 between the bits of it's operands. In more details, the operator `&`
@@ -769,7 +774,21 @@ So, the steps to produce the 3 bytes in the output are:
 1. `output[2]` is produced by summing two components. First, move the bits from `buf[2]` six positions to the left. Then, you sum the result with `buf[3]`.
 
 
-The @tbl-6bit-decode presents how the above steps translate into Zig code:
+Before we continue, let's try to visualize how these transformations make the original bytes that we had
+before the encoding process. First, think back at the 6-bit transformation performed by the encoder exposed at #sec-encoder-logic.
+The first byte in the output of the encoder is produced by moving the bits in the first byte of the input two positions to the right.
+
+So, if for example the first byte in the input of the encoder was the sequence `ABCDEFGH`, then, the first byte in the output of the encoder would be
+`00ABCDEF` (this sequence would be the first byte in the input of the decoder). Now, if the second byte in the input of the encoder was the sequence
+`IJKLMNOP`, then, the second byte in the encoder output would be `00GHIJKL` (as we demonstrated at @fig-encoder-bitshift).
+
+So, if the sequences `00ABCDEF` and `00GHIJKL` sequences are the first byte and the second bytes, respectively, in the input of the decoder, the
+@fig-decoder-bitshift demonstrates visually how these two bytes are transformed into the first byte of the output of the decoder.
+Notice that the output byte is the sequence `ABCDEFGH`, which is the original byte from the input of the encoder.
+
+![How the 1st byte in the decoder output is produced from the 1st byte (dark purple) and the 2nd byte (orange) of the input](../../Figures/base64-decoder-bit-shift.png){#fig-decoder-bitshift}
+
+The @tbl-6bit-decode presents how the three steps described ealier translate into Zig code:
 
 ::: {#tbl-6bit-decode}
 

@@ -431,14 +431,14 @@ Figure&nbsp;3.2: The logic behind a base64 decoder
 <li><code>output[2]</code> is produced by summing two components. First, take the last four bits from <code>input[1]</code>, then, move them two positions to the left. Second, move the bits from <code>input[2]</code> six positions to the right.</li>
 <li><code>output[3]</code> is produced by taking the last six bits from <code>input[2]</code>.</li>
 </ol>
-<p>This is the perfect scenario, when we have a full window of 3 bytes to work on. Just to make things as clear as possible, the <a href="#fig-encoder-bitshift" class="quarto-xref">Figure&nbsp;<span>3.3</span></a> demonstrates visually how the process to produce the 2nd byte in the <code>output</code> of the encoder works, by taking the 1st byte (dark purple) and the 2nd byte (orange) in the input. You can see that, at the end of the process, we get a new byte that contains the last two bits from the 1st byte in the <code>input</code>, and the first 4 bits from the 2nd byte in the <code>input</code>.</p>
+<p>This is the perfect scenario, when we have a full window of 3 bytes to work on. Just to make things as clear as possible, the <a href="#fig-encoder-bitshift" class="quarto-xref">Figure&nbsp;<span>3.3</span></a> demonstrates visually how the step 2 mentioned above works. So this is the step necessary to produce the 2nd byte in the <code>output</code> of the encoder, by taking the 1st byte (dark purple) and the 2nd byte (orange) in the input. You can see that, at the end of the process, we get a new byte that contains the last 2 bits from the 1st byte in the <code>input</code>, and the first 4 bits from the 2nd byte in the <code>input</code>.</p>
 <div id="fig-encoder-bitshift" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-encoder-bitshift-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="../../Figures/base64-encoder-bit-shift.png" class="img-fluid figure-img">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-encoder-bitshift-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure&nbsp;3.3: How the 2nd byte in the output of the encoder is produced from the 1st byte (dark purple) and the 2nd byte (orange) in the input
+Figure&nbsp;3.3: How the 2nd byte in the output of the encoder is produced from the 1st byte (dark purple) and the 2nd byte (orange) of the input
 </figcaption>
 </figure>
 </div>
@@ -462,7 +462,7 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <div class="cell">
 <div class="cell-output-display">
 <div>
-<div id="hdyygerwra" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="nurjkspclb" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
 <table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
@@ -557,7 +557,7 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <h3 data-number="3.4.2" class="anchored" data-anchor-id="bit-shifting-in-zig"><span class="header-section-number">3.4.2</span> Bit-shifting in Zig</h3>
 <p>Bit-shifting in Zig works similarly to bit-shifting in C. All bitwise operators that exists in C are available in Zig. Here, in the base64 encoder algorithm, they are essential to produce the result we want.</p>
 <p>For those who are not familiar with these operators, they are operators that operates at the bit-level of your values. This means that these operators takes the bits that form the value you have, and change them in some way. This ultimately also changes the value itself, because the binary representation of this value changes.</p>
-<p>Let’s use the first byte in the output of the base64 encoder as an example of what bit-shifting means. This is the easiest byte of the 4 bytes in the output to build. Because we only need to move the bits from the first byte in the input two positions to the right, with the <em>bit shift to the right</em> (<code>&gt;&gt;</code>) operator.</p>
+<p>We already saw at <a href="#fig-encoder-bitshift" class="quarto-xref">Figure&nbsp;<span>3.3</span></a> visually what is the effect produced by a bit-shift. But let’s use the first byte in the output of the base64 encoder as another example of what bit-shifting means. This is the easiest byte of the 4 bytes in the output to build. Because we only need to move the bits from the first byte in the input two positions to the right, with the <em>bit shift to the right</em> (<code>&gt;&gt;</code>) operator.</p>
 <p>If we take the string “Hi” that we used at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>3.1</span></a> as an example, the first byte in this string is “H”, which is the sequence <code>01001000</code> in binary. If we move the bits of this byte, two places to the right, we get the sequence <code>00010010</code> as result. This binary sequence is the value <code>18</code> in decimal, and also, the value <code>0x12</code> in hexadecimal. Notice that the first 6 bits of the first byte in the input were moved to the end of the byte. With this operation, we get the first byte of the ouput, which corresponds to the index in the base64 scale for the first character in the base64 scale.</p>
 <div class="cell" data-auto_main="false">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
@@ -578,6 +578,7 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <section id="selecting-specific-bits-with-the-operator" class="level3" data-number="3.4.3">
 <h3 data-number="3.4.3" class="anchored" data-anchor-id="selecting-specific-bits-with-the-operator"><span class="header-section-number">3.4.3</span> Selecting specific bits with the <code>&amp;</code> operator</h3>
 <p>If you comeback to <a href="#sec-6bit-transf" class="quarto-xref"><span>Section 3.4.1</span></a>, you will see that to produce the second and third bytes in the output, we need to select specific bits from the first and second bytes in the input string. But how can we do that? The answer relies on the <em>bitwise and</em> (<code>&amp;</code>) operator.</p>
+<p>The <a href="#fig-encoder-bitshift" class="quarto-xref">Figure&nbsp;<span>3.3</span></a> already showed you what effect this <code>&amp;</code> operator produces in the bits of it’s operands. But let’s make a clear description of it.</p>
 <p>In summary, the <code>&amp;</code> operator performs a logical conjunction operation between the bits of it’s operands. In more details, the operator <code>&amp;</code> compares each bit of the first operand to the corresponding bit of the second operand. If both bits are 1, the corresponding result bit is set to 1. Otherwise, the corresponding result bit is set to 0 <span class="citation" data-cites="microsoftbitwiseand">(<a href="../references.html#ref-microsoftbitwiseand" role="doc-biblioref">Microsoft 2021</a>)</span>.</p>
 <p>So, if we apply this operator to the binary sequences <code>1000100</code> and <code>00001101</code> the result of this operation is the binary sequence <code>00000100</code>. Because only at the sixth position in both binary sequences we had a 1 value. So any position where we do not have both binary sequences setted to 1, we get a 0 bit in the resulting binary sequence.</p>
 <p>We loose information about the original bit values from both sequences in this case. Because we no longer know if this 0 bit in the resulting binary sequence was produced by combining 0 with 0, or 1 with 0, etc.</p>
@@ -717,7 +718,20 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <li><code>output[1]</code> is produced by summing two components. First, move the bits from <code>buf[1]</code> four positions to the left. Second, move the bits from <code>buf[2]</code> 2 positions to the right. Then, sum these two components.</li>
 <li><code>output[2]</code> is produced by summing two components. First, move the bits from <code>buf[2]</code> six positions to the left. Then, you sum the result with <code>buf[3]</code>.</li>
 </ol>
-<p>The <a href="#tbl-6bit-decode" class="quarto-xref">Table&nbsp;<span>3.2</span></a> presents how the above steps translate into Zig code:</p>
+<p>Before we continue, let’s try to visualize how these transformations make the original bytes that we had before the encoding process. First, think back at the 6-bit transformation performed by the encoder exposed at #sec-encoder-logic. The first byte in the output of the encoder is produced by moving the bits in the first byte of the input two positions to the right.</p>
+<p>So, if for example the first byte in the input of the encoder was the sequence <code>ABCDEFGH</code>, then, the first byte in the output of the encoder would be <code>00ABCDEF</code> (this sequence would be the first byte in the input of the decoder). Now, if the second byte in the input of the encoder was the sequence <code>IJKLMNOP</code>, then, the second byte in the encoder output would be <code>00GHIJKL</code> (as we demonstrated at <a href="#fig-encoder-bitshift" class="quarto-xref">Figure&nbsp;<span>3.3</span></a>).</p>
+<p>So, if the sequences <code>00ABCDEF</code> and <code>00GHIJKL</code> sequences are the first byte and the second bytes, respectively, in the input of the decoder, the <a href="#fig-decoder-bitshift" class="quarto-xref">Figure&nbsp;<span>3.4</span></a> demonstrates visually how these two bytes are transformed into the first byte of the output of the decoder. Notice that the output byte is the sequence <code>ABCDEFGH</code>, which is the original byte from the input of the encoder.</p>
+<div id="fig-decoder-bitshift" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-decoder-bitshift-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../../Figures/base64-decoder-bit-shift.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-decoder-bitshift-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3.4: How the 1st byte in the decoder output is produced from the 1st byte (dark purple) and the 2nd byte (orange) of the input
+</figcaption>
+</figure>
+</div>
+<p>The <a href="#tbl-6bit-decode" class="quarto-xref">Table&nbsp;<span>3.2</span></a> presents how the three steps described ealier translate into Zig code:</p>
 <div id="tbl-6bit-decode" class="quarto-float anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-6bit-decode-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -727,7 +741,7 @@ Table&nbsp;3.2: The necessary steps for the 6-transformation in the decode proce
 <div class="cell">
 <div class="cell-output-display">
 <div>
-<div id="vsuubqrixb" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="vwactnaope" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
 <table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
