@@ -1,0 +1,241 @@
+---
+engine: knitr
+knitr: true
+syntax-definition: "../Assets/zig.xml"
+---
+
+```{r}
+#| include: false
+source("../zig_engine.R")
+knitr::opts_chunk$set(
+    auto_main = FALSE,
+    zig_test = TRUE
+)
+```
+
+
+# Unit tests in Zig {#sec-unittests}
+
+In this chapter, I want to dive in on how unit tests are developed in
+Zig. We are going to talk about what is the testing wokflow in Zig, and
+also, about the `test` command from the `zig` compiler.
+
+
+## Introducing the `test` scope
+
+In Zig, unit tests are written inside a `test` scope.
+First, write the keyword `test`, then, you can optionally write a string with a label
+for the group of unit tests that are being performed in this `test` scope.
+After that, just start writing your unit tests
+inside a pair of curly braces.
+
+In the example below, we are testing if the sum of two objects (`a` and `b`)
+is equal to 4. The `expect()` function from the Zig Standard Library
+is a function that receives a logical test as input. If this logical test
+results in `true`, then, the test passes. But if it results
+in `false`, then, the test fails.
+
+You can write any Zig code you want inside of each `test` scope.
+Part of this code might be some necessary commands to setup your testing
+environment, or just initializing some necessary objects.
+
+```{zig}
+const std = @import("std");
+const expect = std.testing.expect;
+test "testing simple sum" {
+    const a: u8 = 2;
+    const b: u8 = 2;
+    try expect((a + b) == 4);
+}
+```
+
+You can have multiple `test` scopes written on the same Zig module.
+Also, you can mix `test` scopes with your source code, with no problems
+or consequences. If you mix `test` scopes with your normal source code,
+when you execute the `build`, `build-exe`, `build-obj` or `build-lib` commands from the
+`zig` compiler, these `test` scopes are automatically ignored by the
+compiler.
+
+In other words, the `zig` compiler only builds and execute your tests
+when you ask it to. By default, the compiler always ignore `test`
+scopes written in your Zig modules. The compiler normally only checks if
+there are any syntax errors in these `test` scopes.
+
+If you look at the source code for most of the files present in the
+Zig Standard Library[^zig-std-lib], you can see that the `test` scopes
+are written together with the normal source code of the library.
+You can see this for example, at the [`array_list` module](https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig)[^zig-array].
+
+
+Each programmer might have a different opinion on this.
+Some of them might prefer, to keep unit tests separate from the actual
+source code of their application. If that is your case, you can
+simply create a separate `tests` folder in your project, and
+start writing Zig modules that contains only unit tests (as would normally do on a Python project with `pytest`, for example),
+and everything will work fine.
+It boils down to which is your preference here.
+
+[^zig-std-lib]: <https://github.com/ziglang/zig/tree/master/lib/std>
+[^zig-array]: <https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig>
+
+
+## How to run your tests
+
+If the `zig` compiler ignores any `test` scope by default, how can
+you compile and run your unit tests? The answer is the `test` command from
+the `zig` compiler. By running `zig test` command, the compiler will
+find every instance of `test` scope in your Zig module, and, it will
+compile and run the unit tests you wrote.
+
+
+```bash
+zig test simple_sum.zig
+```
+
+```
+1/1 simple_sum.test.testing simple sum... OK
+All 1 tests passed.
+```
+
+
+## Testing memory allocations
+
+One of the advantages of Zig is that it offers great tools
+that hep us, programmers, to avoid (but also detect) memory problems, such as
+memory leaks and double-frees. The `defer` keyword
+is specially helpful in this regard.
+
+When developing your
+source code, you, the programmer, is responsible for making
+sure that your code do not produce such problems. However,
+you can also use a special type of allocator object in Zig,
+that is capable of automatically detect such problems for you.
+This is the `std.testing.allocator` object.
+This allocator object offers some basic memory safety detection
+features, which are capable of detecting memory leaks.
+
+As we described at @sec-heap, to allocate memory on the heap, you need
+to use an allocator object, and your functions that use these objects to allocate memory
+on the heap, should receive an allocator object as one of it's inputs.
+Every memory on the heap that you allocate using these allocator objects,
+must also be freed using this same allocator object.
+
+So, if you want to test the memory allocations performed by your functions,
+and make sure that you don't have problems in these allocations, you can simply
+write unit tests for these functions, where you provide the
+`std.testing.allocator` object as input to these functions.
+
+Look at the example below, where I'm defining a function that clearly causes
+a memory leak. Because we allocate memory with the allocator object,
+but we do not free this allocated memory in any point. So, when the function
+returns, we lose the reference to the `buffer` object, which contains
+the allocated memory, and, as a result, we can no longer free this memory.
+
+Notice that, inside a `test` scope I execute this function with
+the `std.testing.allocator`. Since no visible errors were raised inside
+the `test` scope, the `zig` compiler completes the process indicating that
+the unit tests performed inside the `test` scope labeled as `"memory leak`
+have all passed. But despite this result, the allocator object was capable
+of looking deeper in our program, and detecting the memory leak. As a result,
+this allocator object returns a message "tests leaked memory", and also,
+a stack trace showing the exact point where the memory was leaked.
+
+```{zig}
+#| eval: false
+const std = @import("std");
+const Allocator = std.mem.Allocator;
+fn some_memory_leak(allocator: Allocator) !void {
+    const buffer = try allocator.alloc(u32, 10);
+    _ = buffer;
+    // Return without freeing the
+    // allocated memory
+}
+
+test "memory leak" {
+    const allocator = std.testing.allocator;
+    try some_memory_leak(allocator);
+}
+```
+
+```
+Test [1/1] leak_memory.test.memory leak...
+    [gpa] (err): memory address 0x7c1fddf39000 leaked: 
+./ZigExamples/debugging/leak_memory.zig:4:39: 0x10395f2
+    const buffer = try allocator.alloc(u32, 10);
+                                      ^
+./ZigExamples/debugging/leak_memory.zig:12:25: 0x10398ea
+    try some_memory_leak(allocator);
+
+... more stack trace
+```
+
+
+## Testing errors
+
+One commom style of unit tests are those that look for
+specific errors in your functions. In other words, you write
+a unit test that tries to assert if a specific function call
+returns any error, or a specific type of error.
+
+In C++ you would normally write this stye of unit test using, for example,
+the functions `REQUIRE_THROWS()` or `CHECK_THROWS()` from the [`Catch2` test framework](https://github.com/catchorg/Catch2/tree/devel)[^catch2].
+In the case of a Python project, you would use the
+[`raises()` function from `pytest`](https://docs.pytest.org/en/7.1.x/reference/reference.html#pytest-raises)[^pytest].
+While in Rust, you would probably use `assert_eq!()` in conjunction with `Err()`.
+
+[^pytest]: <https://docs.pytest.org/en/7.1.x/reference/reference.html#pytest-raises>
+[^catch2]: <https://github.com/catchorg/Catch2/tree/devel>
+
+
+But in Zig, we use the `expectError()` function, from the `std.testing` module.
+With this function, you can test if a specific function call returns the exact
+type of error that you expect it to return. To use this function, you first write
+`try expectError()`. Then, on the first argument, you provide the type of error that you
+are expecting from the function call. Then, on the second argument, you write
+the function call you expect to fail.
+
+The code example below demonstrates such type of unit test in Zig.
+Notice that, inside the function `alloc_error()` we are allocating
+100 bytes of memory, or, an array of 100 elements, for the object `ibuffer`. However,
+in the `test` scope, we are using the `FixedBufferAllocator()`
+allocator object, which is limited to 10 bytes of space, because
+the object `buffer`, which we provided to the allocator object,
+have only 10 bytes of space.
+
+That is why, the `alloc_error()` function raises an `OutOfMemory` error
+on this case.
+Because this function is trying to allocate more space than the allocator
+object allows.
+So, in essence, we are testing for a specific type of error,
+which is `OutOfMemory`. If the `alloc_error()` function returns any other type of error,
+then, the `expectError()` function would make the entire test fail.
+
+
+```{zig}
+const std = @import("std");
+const Allocator = std.mem.Allocator;
+const expectError = std.testing.expectError;
+fn alloc_error(allocator: Allocator) !void {
+    var ibuffer = try allocator.alloc(u8, 100);
+    defer allocator.free(ibuffer);
+    ibuffer[0] = 2;
+}
+
+test "testing error" {
+    var buffer: [10]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&buffer);
+    const allocator = fba.allocator();
+    try expectError(error.OutOfMemory, alloc_error(allocator));
+}
+```
+
+```
+1/1 oom.test.testing error... OK
+All 1 tests passed.
+```
+
+
+
+
+
+

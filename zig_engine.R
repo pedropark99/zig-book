@@ -157,6 +157,13 @@ get_auto_main <- function(options) {
   return(options$auto_main)
 }
 
+get_zig_test <- function(options) {
+  if (length(options$zig_test) == 0L) {
+    return(FALSE)
+  }
+
+  return(options$zig_test)
+}
 
 
 
@@ -165,6 +172,7 @@ knitr::knit_engines$set(zig = function(options) {
   if (!options$eval) {
     return(knitr::engine_output(options, code, NULL))
   }
+
   auto_main <- get_auto_main(options)
   if (auto_main) {
     code_to_execute <- generate_main(code)
@@ -172,12 +180,19 @@ knitr::knit_engines$set(zig = function(options) {
     code_to_execute <- code
   }
 
+  zig_test <- get_zig_test(options)
+  if (zig_test) {
+    cmd_name <- "test"
+  } else {
+    cmd_name <- "run"
+  }
+
   temp_file <- tempfile(fileext = ".zig")
   readr::write_file(code_to_execute, temp_file)
   zig_cmd_path <- getOption("zig_exe_path")
   out <- system2(
     zig_cmd_path,
-    c("run", shQuote(temp_file)),
+    c(cmd_name, shQuote(temp_file)),
     stdout = TRUE
   )
   if (exit_status_code(out) != 0L) {
