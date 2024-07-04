@@ -21,13 +21,12 @@ Zig. We are going to talk about what is the testing wokflow in Zig, and
 also, about the `test` command from the `zig` compiler.
 
 
-## Introducing the `test` scope
+## Introducing the `test` block
 
-In Zig, unit tests are written inside a `test` scope.
-First, write the keyword `test`, then, you can optionally write a string with a label
-for the group of unit tests that are being performed in this `test` scope.
-After that, just start writing your unit tests
-inside a pair of curly braces.
+In Zig, unit tests are written inside a `test` declaration, or, how I prefer to call it, inside a `test` block.
+Every `test` block is written by using the keyword `test`.
+You can optionally use a string literal to write a label, which is responsible for identifying
+the specific group of unit tests that you are writing inside this specific `test` block.
 
 In the example below, we are testing if the sum of two objects (`a` and `b`)
 is equal to 4. The `expect()` function from the Zig Standard Library
@@ -35,7 +34,7 @@ is a function that receives a logical test as input. If this logical test
 results in `true`, then, the test passes. But if it results
 in `false`, then, the test fails.
 
-You can write any Zig code you want inside of each `test` scope.
+You can write any Zig code you want inside of each `test` block.
 Part of this code might be some necessary commands to setup your testing
 environment, or just initializing some necessary objects.
 
@@ -49,26 +48,28 @@ test "testing simple sum" {
 }
 ```
 
-You can have multiple `test` scopes written on the same Zig module.
-Also, you can mix `test` scopes with your source code, with no problems
-or consequences. If you mix `test` scopes with your normal source code,
+You can have multiple `test` blocks written on the same Zig module.
+Also, you can mix `test` blocks with your source code, with no problems
+or consequences. If you mix `test` blocks with your normal source code,
 when you execute the `build`, `build-exe`, `build-obj` or `build-lib` commands from the
-`zig` compiler, these `test` scopes are automatically ignored by the
+`zig` compiler that we exposed at @sec-compile-code, these `test` blocks are automatically ignored by the
 compiler.
 
 In other words, the `zig` compiler only builds and execute your tests
 when you ask it to. By default, the compiler always ignore `test`
-scopes written in your Zig modules. The compiler normally only checks if
-there are any syntax errors in these `test` scopes.
+blocks written in your Zig modules. The compiler normally checks only if
+there are any syntax errors in these `test` blocks.
 
 If you look at the source code for most of the files present in the
-Zig Standard Library[^zig-std-lib], you can see that the `test` scopes
+Zig Standard Library[^zig-std-lib], you can see that the `test` blocks
 are written together with the normal source code of the library.
 You can see this for example, at the [`array_list` module](https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig)[^zig-array].
-
+So, the standard that the Zig developers decided to adopt
+is to keep their unit tests together with the source code
+of the functionality that they are testing.
 
 Each programmer might have a different opinion on this.
-Some of them might prefer, to keep unit tests separate from the actual
+Some of them might prefer to keep unit tests separate from the actual
 source code of their application. If that is your case, you can
 simply create a separate `tests` folder in your project, and
 start writing Zig modules that contains only unit tests (as would normally do on a Python project with `pytest`, for example),
@@ -81,10 +82,10 @@ It boils down to which is your preference here.
 
 ## How to run your tests
 
-If the `zig` compiler ignores any `test` scope by default, how can
+If the `zig` compiler ignores any `test` block by default, how can
 you compile and run your unit tests? The answer is the `test` command from
 the `zig` compiler. By running `zig test` command, the compiler will
-find every instance of `test` scope in your Zig module, and, it will
+find every instance of `test` block in your Zig module, and, it will
 compile and run the unit tests you wrote.
 
 
@@ -131,10 +132,10 @@ but we do not free this allocated memory in any point. So, when the function
 returns, we lose the reference to the `buffer` object, which contains
 the allocated memory, and, as a result, we can no longer free this memory.
 
-Notice that, inside a `test` scope I execute this function with
+Notice that, inside a `test` block I execute this function with
 the `std.testing.allocator`. Since no visible errors were raised inside
-the `test` scope, the `zig` compiler completes the process indicating that
-the unit tests performed inside the `test` scope labeled as `"memory leak`
+the `test` block, the `zig` compiler completes the process indicating that
+the unit tests performed inside the `test` block labeled as `"memory leak`
 have all passed. But despite this result, the allocator object was capable
 of looking deeper in our program, and detecting the memory leak. As a result,
 this allocator object returns a message "tests leaked memory", and also,
@@ -197,7 +198,7 @@ the function call you expect to fail.
 The code example below demonstrates such type of unit test in Zig.
 Notice that, inside the function `alloc_error()` we are allocating
 100 bytes of memory, or, an array of 100 elements, for the object `ibuffer`. However,
-in the `test` scope, we are using the `FixedBufferAllocator()`
+in the `test` block, we are using the `FixedBufferAllocator()`
 allocator object, which is limited to 10 bytes of space, because
 the object `buffer`, which we provided to the allocator object,
 have only 10 bytes of space.
@@ -236,6 +237,48 @@ All 1 tests passed.
 
 
 
+## Testing for simple equalities
+
+In Zig, there are some different ways you can test for an equality.
+You already saw that we can use `expect()` with the logical operator `==`
+to essentially reproduce an equality test. But we also have
+some helper functions that you should know about, specially
+`expectEqual()`, `expectEqualSlices()` and `expectEqualStrings()`.
 
 
+```{zig}
+const std = @import("std");
+test "arrays are equal?" {
+    const array1 = [3]u32{1, 2, 3};
+    const array2 = [3]u32{1, 2, 3};
+    try std.testing.expectEqualSlices(
+        u32, &array1, &array2
+    );
+}
+```
+
+```
+1/1 oom.test.arrays are equal?... OK
+All 1 tests passed.
+```
+
+
+
+
+
+```{zig}
+const std = @import("std");
+test "strings are equal?" {
+    const str1 = "hello, world!";
+    const str2 = "hello, world!";
+    try std.testing.expectEqualStrings(
+        str1, str2
+    );
+}
+```
+
+```
+1/1 oom.test.strings are equal?... OK
+All 1 tests passed.
+```
 
