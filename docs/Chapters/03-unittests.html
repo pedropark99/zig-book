@@ -196,7 +196,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#how-to-run-your-tests" id="toc-how-to-run-your-tests" class="nav-link" data-scroll-target="#how-to-run-your-tests"><span class="header-section-number">5.2</span> How to run your tests</a></li>
   <li><a href="#testing-memory-allocations" id="toc-testing-memory-allocations" class="nav-link" data-scroll-target="#testing-memory-allocations"><span class="header-section-number">5.3</span> Testing memory allocations</a></li>
   <li><a href="#testing-errors" id="toc-testing-errors" class="nav-link" data-scroll-target="#testing-errors"><span class="header-section-number">5.4</span> Testing errors</a></li>
-  <li><a href="#testing-for-simple-equalities" id="toc-testing-for-simple-equalities" class="nav-link" data-scroll-target="#testing-for-simple-equalities"><span class="header-section-number">5.5</span> Testing for simple equalities</a></li>
+  <li><a href="#testing-simple-equalities" id="toc-testing-simple-equalities" class="nav-link" data-scroll-target="#testing-simple-equalities"><span class="header-section-number">5.5</span> Testing simple equalities</a></li>
   </ul>
 </nav>
     </div>
@@ -309,33 +309,65 @@ All 1 tests passed.</code></pre>
 <pre><code>1/1 oom.test.testing error... OK
 All 1 tests passed.</code></pre>
 </section>
-<section id="testing-for-simple-equalities" class="level2" data-number="5.5">
-<h2 data-number="5.5" class="anchored" data-anchor-id="testing-for-simple-equalities"><span class="header-section-number">5.5</span> Testing for simple equalities</h2>
+<section id="testing-simple-equalities" class="level2" data-number="5.5">
+<h2 data-number="5.5" class="anchored" data-anchor-id="testing-simple-equalities"><span class="header-section-number">5.5</span> Testing simple equalities</h2>
 <p>In Zig, there are some different ways you can test for an equality. You already saw that we can use <code>expect()</code> with the logical operator <code>==</code> to essentially reproduce an equality test. But we also have some helper functions that you should know about, specially <code>expectEqual()</code>, <code>expectEqualSlices()</code> and <code>expectEqualStrings()</code>.</p>
+<p>The <code>expectEqual()</code> function, as the name suggests, is a classic test equality function. It receives two objects as input. The first object is the value that you expect to be in the second object. While second object is the object you have, or, the object that your application produced as result. So, with <code>expectEqual()</code> you are essentially testing if the values stored inside the two provided objects are equal or not.</p>
+<p>You can see in the example below that, the test performed by <code>expectEqual()</code> failed. Because the objects <code>v1</code> and <code>v2</code> contain different values in them.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"arrays are equal?"</span> <span class="op">{</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> array1 = [<span class="dv">3</span>]<span class="dt">u32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span><span class="op">}</span>;</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> array2 = [<span class="dv">3</span>]<span class="dt">u32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span><span class="op">}</span>;</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqualSlices(</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u32</span>, &amp;array1, &amp;array2</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"values are equal?"</span> <span class="op">{</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> v1 = <span class="dv">15</span>;</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> v2 = <span class="dv">18</span>;</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqual(v1, v2);</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<pre><code>1/1 oom.test.arrays are equal?... OK
-All 1 tests passed.</code></pre>
+<pre><code>1/1 ve.test.values are equal?...
+    expected 15, found 18
+    FAIL (TestExpectedEqual)
+ve.zig:5:5: test.values are equal? (test)
+    try std.testing.expectEqual(v1, v2);
+    ^
+0 passed; 0 skipped; 1 failed.</code></pre>
+<p>Although useful, the <code>expectEqual()</code> function does not work with arrays. For testing if two arrays are equal, you should use the <code>expectEqualSlices()</code> function instead. This function have three arguments. First, you provide the data type contained in both arrays that you are trying to compare. While the second and third arguments corresponds to the array objects that you want to compare.</p>
+<p>In the example below, we are using this function to test if two array objects (<code>array1</code> and <code>array2</code>) are equal or not. Since they are in fact equal, the unit test passed with no errors.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"strings are equal?"</span> <span class="op">{</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> str1 = <span class="st">"hello, world!"</span>;</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> str2 = <span class="st">"hello, world!"</span>;</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqualStrings(</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        str1, str2</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"arrays are equal?"</span> <span class="op">{</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> array1 = [<span class="dv">3</span>]<span class="dt">u32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span><span class="op">}</span>;</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> array2 = [<span class="dv">3</span>]<span class="dt">u32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span><span class="op">}</span>;</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqualSlices(</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u32</span>, &amp;array1, &amp;array2</span>
 <span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    );</span>
 <span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>1/1 oom.test.arrays are equal?... OK
 All 1 tests passed.</code></pre>
+<p>At last, you might also want to use the <code>expectEqualStrings()</code> function. As the name suggests, you can use this function to test if two strings are equal or not. Just provide the two string objects that you want to compare, as inputs to the functions.</p>
+<p>If the function finds any existing difference between the two strings, then, the function will raise an error, and also, print an error message that shows the exact difference between the two string objects provided, as the example below demonstrates:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"strings are equal?"</span> <span class="op">{</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> str1 = <span class="st">"hello, world!"</span>;</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> str2 = <span class="st">"Hello, world!"</span>;</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqualStrings(</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        str1, str2</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>1/1 t.test.strings are equal?... 
+====== expected this output: =========
+hello, world!␃
+======== instead found this: =========
+Hello, world!␃
+======================================
+First difference occurs on line 1:
+expected:
+hello, world!
+^ ('\x68')
+found:
+Hello, world!
+^ ('\x48')</code></pre>
 
 
 </section>
