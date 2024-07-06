@@ -236,16 +236,36 @@ pub const Socket = struct {
 
 ### Listening and receiving connections
 
-Once we created our socket object, we can focus now on making this socket object
-listen and receiving new incoming connections.
 Notice in the example below that, we stored the `Socket` struct
 declaration that we built at @sec-create-socket inside a Zig module named `config.zig`.
 Then, I imported this module into our main module as the `SocketConf` object,
 to access the `Socket` struct.
 
-We do that, by calling
-the `listen()` and `accept()` methods from the `Address` object that is
-contained in the socket object.
+Once we created our socket object, we can focus now on making this socket object to
+listen and receive new incoming connections. We do that, by calling the `listen()`
+method from the `Address` object that is contained in the socket object, and then,
+we call the `accept()` method over the result.
+
+The `listen()` method from the `Address` object produces a server object,
+which is an object that will stay open and running indefinitely, waiting
+to receive an incoming connection. Therefore, if you run the Zig
+code below, by calling the `run` command from the `zig` compiler,
+you will notice that the programs keeps running indefinitely,
+without a clear end.
+
+This happens, because the program is waiting for something to happen.
+It is waiting for someone to try to connect to the address (`http://127.0.0.1:3490`) where
+the server is running and listening for incoming connections. This is what
+the `listen()` method do, it makes the socket to be active waiting for someone
+to connect.
+
+On the other side, the `accept()` method is the function that establish the connection
+when someone try to connect to the socket. This means that, the `accept()` method
+returns a new connection object as a result. And you can use this connection object
+to read or write messages from or to the client.
+
+For now, we are not doing anything with this connection object.
+But we are going to use it on the next section.
 
 
 ```{zig}
