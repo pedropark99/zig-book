@@ -54,7 +54,27 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="../site_libs/quarto-nav/quarto-nav.js"></script>
@@ -200,7 +220,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#what-is-a-http-server" id="toc-what-is-a-http-server" class="nav-link active" data-scroll-target="#what-is-a-http-server"><span class="header-section-number">6.1</span> What is a HTTP Server?</a></li>
   <li><a href="#how-a-http-server-works" id="toc-how-a-http-server-works" class="nav-link" data-scroll-target="#how-a-http-server-works"><span class="header-section-number">6.2</span> How a HTTP Server works?</a></li>
-  <li><a href="#how-a-http-server-is-normally-implemented" id="toc-how-a-http-server-is-normally-implemented" class="nav-link" data-scroll-target="#how-a-http-server-is-normally-implemented"><span class="header-section-number">6.3</span> How a HTTP server is normally implemented?</a></li>
+  <li><a href="#sec-http-how-impl" id="toc-sec-http-how-impl" class="nav-link" data-scroll-target="#sec-http-how-impl"><span class="header-section-number">6.3</span> How a HTTP server is normally implemented?</a></li>
+  <li><a href="#implementing-the-server" id="toc-implementing-the-server" class="nav-link" data-scroll-target="#implementing-the-server"><span class="header-section-number">6.4</span> Implementing the server</a>
+  <ul class="collapse">
+  <li><a href="#sec-create-socket" id="toc-sec-create-socket" class="nav-link" data-scroll-target="#sec-create-socket"><span class="header-section-number">6.4.1</span> Creating the socket object</a></li>
+  <li><a href="#listening-and-receiving-connections" id="toc-listening-and-receiving-connections" class="nav-link" data-scroll-target="#listening-and-receiving-connections"><span class="header-section-number">6.4.2</span> Listening and receiving connections</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -247,9 +272,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Once the server understands what the client wants, he simply perform the action that was requested, and, to finish the whole process, the server sends back a HTTP message to the client, informing if the action performed was succesful or not, and, at last, the server ends (or closes) the connection with the client.</p>
 <p>This last HTTP message sent from the server to the client, is called the <em>HTTP Response</em>. Because the server is responding to the action that was requested by the client. The main objective of this response message is let the client knows if the action requested was succesful or not, before the server closes the connection.</p>
 </section>
-<section id="how-a-http-server-is-normally-implemented" class="level2" data-number="6.3">
-<h2 data-number="6.3" class="anchored" data-anchor-id="how-a-http-server-is-normally-implemented"><span class="header-section-number">6.3</span> How a HTTP server is normally implemented?</h2>
-<p>Let’s use the C language as an example. In C, we normally implement a HTTP server by performing the following steps:</p>
+<section id="sec-http-how-impl" class="level2" data-number="6.3">
+<h2 data-number="6.3" class="anchored" data-anchor-id="sec-http-how-impl"><span class="header-section-number">6.3</span> How a HTTP server is normally implemented?</h2>
+<p>Let’s use the C language as an example. There are many materials teaching how to write a simple HTTP server in C code, like <span class="citation" data-cites="jeffrey_http">Yu (<a href="../references.html#ref-jeffrey_http" role="doc-biblioref">2023</a>)</span>, or <span class="citation" data-cites="nipun_http">Weerasiri (<a href="../references.html#ref-nipun_http" role="doc-biblioref">2023</a>)</span>, or <span class="citation" data-cites="eric_http">Meehan (<a href="../references.html#ref-eric_http" role="doc-biblioref">2021</a>)</span>. Having this in mind, I will not show C code examples here, because you can find them on the internet. But I will describe the theory behind the necessary steps to perform in the C code.</p>
+<p>In essence, we normally implement a HTTP server in C using WebSocket technology, which involves the following steps:</p>
 <ol type="1">
 <li>Create a socket object.</li>
 <li>Bind a name (or more specifically, an address) to this socket object.</li>
@@ -261,45 +287,79 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>That is what the “bind” operation do. It binds a name (or more specifically, an address) to this socket object, or, this channel of communication, so that it becomes available, or, accessible through this address. While the “listen” operation makes the socket object to listen for incoming connections in this address. In other words, the “listen” operation makes the socket to wait for incoming connections.</p>
 <p>Now, when a client actually attempts to connect to the server through the address we specify, then, the socket object needs to accept this incoming connection. When we accept it, then, the connection is established, client and server are now connected to each other, and they can read or write messages in this established connection.</p>
 <p>After we received the HTTP Request from the client, and sent the HTTP Response to the client, we can now close the connection, and end this communication.</p>
-<p>All of this process, in C, would be something like this code example below. There are lot of things happening in this code, and, I am also not doing a lot of necessary things, like error handling. But this is just an simplified example of how this code in C would look like.</p>
-<p>Also, this code would not compile on Windows, because in Windows we need to use slightly different functions and patterns to make the connections and also close them. So, this code example works only on Linux<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode c code-with-copy"><code class="sourceCode c"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> sock <span class="op">=</span> socket<span class="op">(</span>AF_INET<span class="op">,</span> SOCK_STREAM<span class="op">,</span> <span class="dv">0</span><span class="op">);</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">uint16_t</span> port <span class="op">=</span> htons<span class="op">(</span>PORT<span class="op">);</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> sockaddr_in socket_address<span class="op">;</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>socket_address<span class="op">.</span>sin_family <span class="op">=</span> AF_INET<span class="op">;</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>socket_address<span class="op">.</span>sin_addr<span class="op">.</span>s_addr <span class="op">=</span> htonl<span class="op">(</span>INADDR_ANY<span class="op">);</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>socket_address<span class="op">.</span>sin_port <span class="op">=</span> port<span class="op">;</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>memset<span class="op">(&amp;(</span>socket_address<span class="op">.</span>sin_zero<span class="op">),</span> <span class="ch">'</span><span class="sc">\0</span><span class="ch">'</span><span class="op">,</span> <span class="dv">8</span><span class="op">);</span></span>
+</section>
+<section id="implementing-the-server" class="level2" data-number="6.4">
+<h2 data-number="6.4" class="anchored" data-anchor-id="implementing-the-server"><span class="header-section-number">6.4</span> Implementing the server</h2>
+<p>Let’s begin with creating the socket for our server. In Zig, we can create a web socket using the <code>std.posix.socket()</code> function, from the Zig Standard Library.</p>
+<section id="sec-create-socket" class="level3" data-number="6.4.1">
+<h3 data-number="6.4.1" class="anchored" data-anchor-id="sec-create-socket"><span class="header-section-number">6.4.1</span> Creating the socket object</h3>
+<p>As I meantioned earlier at <a href="#sec-http-how-impl" class="quarto-xref"><span>Section 6.3</span></a>, every socket object we create represents a communication channel, and we need to bind this channel to a specific address. An “address” is defined as an IP address, or, more specifically, an IPv4 address<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. Every IPv4 address is composed by two components. The first component is the host, which is a sequence of 4 numbers separated by dot characters (<code>.</code>) that identifies the machine used. While the second component is a port number, which identifies the specific door, or, the specific port to use in the host.</p>
+<p>The sequence of 4 numbers (i.e.&nbsp;the host) identifies the machine (i.e.&nbsp;the computer itselft) where this socket will live in. Every computer normally have multiple “doors” available inside him, because this allows the computer to receive multiple connections at the same time. He simply use a single door for each connection. So the port number, is essentially a number that identifies the specific door in the computer that will be resposible for receiving the connection. That is, it identifies the “door” in the computer that the socket will use to receive incoming connections.</p>
+<p>To make things simpler, I will use an IP address that identifies our current machine in this example. This means that, our socket object will reside on the same computer that we are currently using (this is also known as the “localhost”) to write this Zig source code.</p>
+<p>By convention, the IP address that identifies the “locahost”, which is the current machine we are using, is the IP <code>127.0.0.1</code>. So, that is the IP address we are going to use in our server. I can declare it in Zig by using an array of 4 integers, like this: <code>[4]u8{ 127, 0, 0, 1 }</code>.</p>
+<p>Now, we need to decide which port number to use. By convention, there are some port numbers that are reserved, meaning that, we cannot use them for our own purposes, like the port 22 (which is normally used for SSH connections). For TCP connections, which is our case here, a port number is a 16-bit unsigned integer (type <code>u16</code> in Zig), thus ranging from 0 to 65535 <span class="citation" data-cites="wikipedia_port">(<a href="../references.html#ref-wikipedia_port" role="doc-biblioref">Wikipedia 2024</a>)</span>. So, we can choose a number from 0 to 65535 for our port number. In the example of this book, I will use the port number 3490 (just a random number).</p>
+<p>Now that we have these two informations at hand, I can finally create our socket object, using the <code>std.posix.socket()</code> function. First, we use the host and the port number to create an <code>Address</code> object, with the <code>std.net.Address.initIp4()</code> function, like in the example below. After that, I use this address object inside the <code>socket()</code> function to create our socket object.</p>
+<p>The <code>Socket</code> struct defined below summarizes all the logic behind this this process. In this struct, we have two data members, which are: 1) the address object; 2) and a stream object, which is the object we will use to read and write the messages into any connection we establish.</p>
+<p>Notice that, inside the constructor method of this struct, when we create the socket object, we are using the <code>IPROTO.TCP</code> property as an input to tell the function to create a socket for TCP connections.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> builtin = <span class="bu">@import</span>(<span class="st">"builtin"</span>);</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> net = <span class="bu">@import</span>(<span class="st">"std"</span>).net;</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">const</span> Socket = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    _address: std.net.Address,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    _stream: std.net.Stream,</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>bind<span class="op">(</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    sock<span class="op">,</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span><span class="kw">struct</span> sockaddr <span class="op">*)</span> <span class="op">&amp;</span>socket_address<span class="op">,</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">sizeof</span><span class="op">(</span>socket_address<span class="op">)</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="op">);</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>listen<span class="op">(</span>sock<span class="op">,</span> <span class="dv">10</span><span class="op">);</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> sockaddr_in their_addr<span class="op">;</span></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> client_connected<span class="op">;</span></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>socklen_t sock_addr_size <span class="op">=</span> <span class="kw">sizeof</span><span class="op">(</span><span class="kw">struct</span> sockaddr_in<span class="op">);</span></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>client_connected <span class="op">=</span> accept<span class="op">(</span></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    sock<span class="op">,</span></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span><span class="kw">struct</span> sockaddr <span class="op">*)&amp;</span>their_addr<span class="op">,</span></span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span>sock_addr_size<span class="op">)</span></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="op">);</span></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="dt">char</span><span class="op">*</span> msg <span class="op">=</span> <span class="st">"Hello, World!"</span><span class="op">;</span></span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> len<span class="op">,</span> bytes_sent<span class="op">;</span></span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>len <span class="op">=</span> strlen<span class="op">(</span>msg<span class="op">);</span></span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>bytes_sent <span class="op">=</span> send<span class="op">(</span>client_connected<span class="op">,</span> msg<span class="op">,</span> len<span class="op">,</span> <span class="dv">0</span><span class="op">);</span></span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>close<span class="op">(</span>client_connected<span class="op">);</span></span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>close<span class="op">(</span>sock<span class="op">);</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init() !Socket <span class="op">{</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> host = [<span class="dv">4</span>]<span class="dt">u8</span><span class="op">{</span> <span class="dv">127</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span> <span class="op">}</span>;</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> port = <span class="dv">3490</span>;</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> addr = net.Address.initIp4(host, port);</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> socket = <span class="kw">try</span> std.posix.socket(addr.any.family, std.posix.SOCK.STREAM, std.posix.IPPROTO.TCP);</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> stream = net.Stream<span class="op">{</span> .handle = socket <span class="op">}</span>;</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> Socket<span class="op">{</span> ._address = addr, ._stream = stream <span class="op">}</span>;</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="listening-and-receiving-connections" class="level3" data-number="6.4.2">
+<h3 data-number="6.4.2" class="anchored" data-anchor-id="listening-and-receiving-connections"><span class="header-section-number">6.4.2</span> Listening and receiving connections</h3>
+<p>Once we created our socket object, we can focus now on making this socket object listen and receiving new incoming connections. Notice in the example below that, we stored the <code>Socket</code> struct declaration that we built at <a href="#sec-create-socket" class="quarto-xref"><span>Section 6.4.1</span></a> inside a Zig module named <code>config.zig</code>. Then, I imported this module into our main module as the <code>SocketConf</code> object, to access the <code>Socket</code> struct.</p>
+<p>We do that, by calling the <code>listen()</code> and <code>accept()</code> methods from the <code>Address</code> object that is contained in the socket object.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> SocketConf = <span class="bu">@import</span>(<span class="st">"config.zig"</span>);</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> socket = <span class="kw">try</span> SocketConf.Socket.init();</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Server Addr: {any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>socket._address<span class="op">}</span>);</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> server = <span class="kw">try</span> socket._address.listen(.<span class="op">{}</span>);</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> connection = <span class="kw">try</span> server.accept();</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    _ = connection;</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 
 
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-eric_http" class="csl-entry" role="listitem">
+Meehan, Eric. 2021. <span>“Creating a Web Server from Scratch in c.”</span> Youtube. <a href="https://www.youtube.com/watch?v=gk6NL1pZi1M&amp;ab_channel=EricOMeehan">https://www.youtube.com/watch?v=gk6NL1pZi1M&amp;ab_channel=EricOMeehan</a>.
+</div>
+<div id="ref-nipun_http" class="csl-entry" role="listitem">
+Weerasiri, Nipun Chamikara. 2023. <span>“A Simple Web Server Written in c.”</span> Medium. <a href="https://medium.com/@nipunweerasiri/a-simple-web-server-written-in-c-cf7445002e6">https://medium.com/@nipunweerasiri/a-simple-web-server-written-in-c-cf7445002e6</a>.
+</div>
+<div id="ref-wikipedia_port" class="csl-entry" role="listitem">
+Wikipedia. 2024. <span>“Port (Computer Networking).”</span> Wikipedia. <a href="https://en.wikipedia.org/wiki/Port_(computer_networking)">https://en.wikipedia.org/wiki/Port_(computer_networking)</a>.
+</div>
+<div id="ref-jeffrey_http" class="csl-entry" role="listitem">
+Yu, Jeffrey. 2023. <span>“How i Built a Simple HTTP Server from Scratch Using c.”</span> DEV Community. <a href="https://dev.to/jeffreythecoder/how-i-built-a-simple-http-server-from-scratch-using-c-739">https://dev.to/jeffreythecoder/how-i-built-a-simple-http-server-from-scratch-using-c-739</a>.
+</div>
+</div>
+</section>
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>
 <ol>
-<li id="fn1"><p>The functions used in this code example, such as <code>socket()</code>, <code>bind()</code>, <code>listen()</code> and <code>accept()</code>, and also, some <code>struct</code> objects, such as <code>sockaddr</code> and <code>sockaddr_in</code>, come from the header files <code>sys/socket.h</code>, <code>netinet/in.h</code> and <code>arpa/inet.h</code>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1"><p>It can be also an IPv6 address. But normally, we use a IPv4 address for that.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 

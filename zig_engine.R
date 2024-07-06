@@ -157,12 +157,12 @@ get_auto_main <- function(options) {
   return(options$auto_main)
 }
 
-get_zig_test <- function(options) {
-  if (length(options$zig_test) == 0L) {
-    return(FALSE)
+get_build_type <- function(options) {
+  if (length(options$build_type) == 0L) {
+    return("run")
   }
 
-  return(options$zig_test)
+  return(options$build_type)
 }
 
 
@@ -180,9 +180,11 @@ knitr::knit_engines$set(zig = function(options) {
     code_to_execute <- code
   }
 
-  zig_test <- get_zig_test(options)
-  if (zig_test) {
+  build_type <- get_build_type(options)
+  if (build_type == "test") {
     cmd_name <- "test"
+  } else if (build_type == "lib") {
+    cmd_name <- "build-lib"
   } else {
     cmd_name <- "run"
   }
@@ -206,10 +208,23 @@ knitr::knit_engines$set(zig = function(options) {
     cat(code_report, file = stderr())
   }
   fs::file_delete(temp_file)
+  if (build_type == "lib") {
+    clean_lib_files()
+  }
+
+
   out <- str_split_lines(out, options)
   code <- remove_delim_lines(code)
   knitr::engine_output(options, code, out)
 })
+
+
+clean_lib_files <- function() {
+  obj_files <- fs::dir_ls(glob = "*.a")
+  lib_files <- fs::dir_ls(glob = "*.o")
+  files <- c(obj_files, lib_files)
+  fs::file_delete(files)
+}
 
 
 exit_status_code <- function(output) {

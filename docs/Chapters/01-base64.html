@@ -323,7 +323,7 @@ window.Quarto = {
 <p>The best way to represent this scale in code, is to represent it as a <em>lookup table</em>. Lookup tables are a classic strategy in computer science to speed calculations. The basic idea is to replace a runtime calculation (which can take a long time to be done) by a basic array indexing operation.</p>
 <p>Instead of calculating the results everytime you need them, you calculate all possible results at once, and then, you store them in an array (which behaves lake a “table”). Then, every time that you need to use one of the characters in the base64 scale, instead of using many resources to calculate the exact character to be used, you simply retrieve this character from the array where you stored all the possible characters in the base64 scale. So we retrieve the character that we need directly from memory.</p>
 <p>We can start building a Zig struct to store our base64 decoder/encoder logic. We start with the <code>Base64</code> struct below. You can see that, for now, we only have an <code>init()</code> function, to create a new instance of a <code>Base64</code> object, and, a <code>_char_at()</code> function, which is a “get chat at index …” type of function.</p>
-<div class="cell">
+<div class="cell" data-build_type="lib" data-auto_main="false">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Base64 = <span class="kw">struct</span> <span class="op">{</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    _table: *<span class="kw">const</span> [<span class="dv">64</span>]<span class="dt">u8</span>,</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -405,7 +405,7 @@ Figure&nbsp;3.2: The logic behind a base64 decoder
 <p>One task that we need to do is to calculate how much space we need to reserve for the output, both of the encoder and decoder. This is simple math, and can be done easily in Zig because every array have it’s length (it’s number of bytes) easily accesible by consulting the <code>.len</code> property of the array.</p>
 <p>For the encoder, the logic is the following: for each 3 bytes that we find in the input, 4 new bytes are created in the output. So, we take the number of bytes in the input, divide it by 3, use a ceiling function, then, we multiply the result by 4. That way, we get the total number of bytes that will be produced by the encoder in it’s output.</p>
 <p>The <code>_calc_encode_length()</code> function below encapsulates this logic. Notice that we convert the <code>.len</code> property of the array, which is always a integer (more precisely, an <code>usize</code> value), into a floating point number of 64 bits (<code>f64</code>). We do this, because the ceiling function (<code>@ceil()</code>) works only with floating point numbers. So, we convert it so that the division with the number <code>3.0</code> results in a floating point number. Then, after the ceiling process, we can convert the result back into an integer value (with the <code>@intFromFloat()</code> function).</p>
-<div class="cell">
+<div class="cell" data-auto_main="false" data-build_type="lib">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> _calc_encode_length(input: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">u64</span> <span class="op">{</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len &lt; <span class="dv">3</span>) <span class="op">{</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n_output: <span class="dt">u64</span> = <span class="dv">4</span>;</span>
@@ -420,7 +420,7 @@ Figure&nbsp;3.2: The logic behind a base64 decoder
 <p>Also, you might have notice that, if the input length is less than 3 bytes, then, the output length of the encoder will be always 4 bytes. This is because the algorithm will always fill the gap in the input with zeroes, until it fits the window of 24 bits that the algorithm likes to work on, as I described at <a href="#sec-base64-encoder-algo" class="quarto-xref"><span>Section 3.1.3</span></a>. So the output of the algorithm will always be 4 bytes in this specific case.</p>
 <p>Now, for the decoder, we just need to apply the inverse logic: for each 4 bytes in the input, 3 bytes will be produced in the output of the decoder. I mean, this is roughly true, because we also need to take the <code>=</code> character into account, which is always ignored by the decoder, as we described at <a href="#sec-base64-decoder-algo" class="quarto-xref"><span>Section 3.1.4</span></a>, and, at <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>3.2</span></a>. But we can ignore this fact for now, to make things simpler.</p>
 <p>So, the function <code>_calc_decode_length()</code> summarizes this logic that we described. It is very similar to the function <code>_calc_encode_length()</code>, only the division part is twisted, and also, in the special case where we have less than 4 bytes in the input to work on.</p>
-<div class="cell">
+<div class="cell" data-auto_main="false" data-build_type="lib">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> _calc_decode_length(input: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">u64</span> <span class="op">{</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len &lt; <span class="dv">4</span>) <span class="op">{</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n_output: <span class="dt">u64</span> = <span class="dv">3</span>;</span>
@@ -480,7 +480,7 @@ Table&nbsp;3.1: How the 6-bit transformation translates into code in different w
 <div class="cell">
 <div class="cell-output-display">
 <div>
-<div id="wiusiuwdez" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="mgwtnmbdcs" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
 <table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
@@ -759,7 +759,7 @@ Table&nbsp;3.2: The necessary steps for the 6-transformation in the decode proce
 <div class="cell">
 <div class="cell-output-display">
 <div>
-<div id="azvxrsuvqh" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<div id="axrppdnlmk" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
 <table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
@@ -874,7 +874,7 @@ Decoded text: Testing some more shit</code></pre>
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
 <div id="ref-microsoftbitwiseand" class="csl-entry" role="listitem">
-Microsoft. 2021. <span>“Bitwise AND Operator: &amp;.”</span> <a href="https://learn.microsoft.com/en-us/cpp/cpp/bitwise-and-operator-amp?view=msvc-170">https://learn.microsoft.com/en-us/cpp/cpp/bitwise-and-operator-amp?view=msvc-170</a>.
+Microsoft. 2021. <span>“Bitwise AND Operator: &amp;.”</span> Microsoft Learn. <a href="https://learn.microsoft.com/en-us/cpp/cpp/bitwise-and-operator-amp?view=msvc-170">https://learn.microsoft.com/en-us/cpp/cpp/bitwise-and-operator-amp?view=msvc-170</a>.
 </div>
 </div>
 </section>

@@ -9,7 +9,7 @@ syntax-definition: "../Assets/zig.xml"
 source("../zig_engine.R")
 knitr::opts_chunk$set(
     auto_main = FALSE,
-    zig_test = TRUE
+    build_type = "run"
 )
 ```
 
@@ -105,10 +105,18 @@ The main objective of this response message is let the client knows if the
 action requested was succesful or not, before the server closes the connection.
 
 
-## How a HTTP server is normally implemented?
+## How a HTTP server is normally implemented? {#sec-http-how-impl}
 
-Let's use the C language as an example. In C, we normally implement a HTTP server
-by performing the following steps:
+Let's use the C language as an example. There are many materials
+teaching how to write a simple HTTP server in C code, like @jeffrey_http,
+or @nipun_http, or @eric_http.
+Having this in mind, I will not show C code examples here, because you
+can find them on the internet.
+But I will describe the theory behind the necessary steps to perform in the C code.
+
+
+In essence, we normally implement a HTTP server in C using WebSocket technology,
+which involves the following steps:
 
 1. Create a socket object.
 1. Bind a name (or more specifically, an address) to this socket object.
@@ -142,3 +150,115 @@ we can now close the connection, and end
 this communication.
 
 
+## Implementing the server
+
+Let's begin with creating the socket for our server. In Zig, we can create a web socket using
+the `std.posix.socket()` function, from the Zig Standard Library.
+
+
+### Creating the socket object {#sec-create-socket}
+
+As I meantioned earlier at @sec-http-how-impl, every socket object we create
+represents a communication channel, and we need to bind this channel to a specific address.
+An "address" is defined as an IP address, or, more specifically, an IPv4 address^[It can be also an IPv6 address. But normally, we use a IPv4 address for that.].
+Every IPv4 address is composed by two components. The first component is the host,
+which is a sequence of 4 numbers separated by dot characters (`.`) that identifies the machine used.
+While the second component is a port number, which identifies the specific
+door, or, the specific port to use in the host.
+
+The sequence of 4 numbers (i.e. the host) identifies the machine (i.e. the computer itselft) where
+this socket will live in. Every computer normally have multiple "doors" available inside him, because 
+this allows the computer to receive multiple connections at the same time.
+He simply use a single door for each connection. So the port number, is
+essentially a number that identifies the specific door in the computer that will be resposible
+for receiving the connection. That is, it identifies the "door" in the computer that the socket will use
+to receive incoming connections.
+
+To make things simpler, I will use an IP address that identifies our current machine in this example.
+This means that, our socket object will reside on the same computer that we are currently using
+(this is also known as the "localhost") to write this Zig source code.
+
+By convention, the IP address that identifies the "locahost", which is the current machine we
+are using, is the IP `127.0.0.1`. So, that is the IP
+address we are going to use in our server. I can declare it in Zig
+by using an array of 4 integers, like this: `[4]u8{ 127, 0, 0, 1 }`.
+
+Now, we need to decide which port number to use. By convention, there are some
+port numbers that are reserved, meaning that, we cannot use them for our own
+purposes, like the port 22 (which is normally used for SSH connections).
+For TCP connections, which is our case here,
+a port number is a 16-bit unsigned integer (type `u16` in Zig),
+thus ranging from 0 to 65535 [@wikipedia_port].
+So, we can choose
+a number from 0 to 65535 for our port number. In the 
+example of this book, I will use the port number 3490
+(just a random number).
+
+
+Now that we have these two informations at hand, I can
+finally create our socket object, using the `std.posix.socket()` function.
+First, we use the host and the port number to create an `Address` object,
+with the `std.net.Address.initIp4()` function, like in the example below.
+After that, I use this address object inside the `socket()` function
+to create our socket object.
+
+The `Socket` struct defined below summarizes all the logic behind this
+this process. In this struct, we have two data members, which are:
+1)  the address object; 2) and a stream object, which is
+the object we will use to read and write the messages into any connection we establish.
+
+Notice that, inside the constructor method of this struct,
+when we create the socket object, we are using the `IPROTO.TCP` property as an input to
+tell the function to create a socket for TCP connections.
+
+
+```{zig}
+#| build_type: "lib"
+const std = @import("std");
+const builtin = @import("builtin");
+const net = @import("std").net;
+
+pub const Socket = struct {
+    _address: std.net.Address,
+    _stream: std.net.Stream,
+
+    pub fn init() !Socket {
+        const host = [4]u8{ 127, 0, 0, 1 };
+        const port = 3490;
+        const addr = net.Address.initIp4(host, port);
+        const socket = try std.posix.socket(addr.any.family, std.posix.SOCK.STREAM, std.posix.IPPROTO.TCP);
+        const stream = net.Stream{ .handle = socket };
+        return Socket{ ._address = addr, ._stream = stream };
+    }
+};
+```
+
+
+### Listening and receiving connections
+
+Once we created our socket object, we can focus now on making this socket object
+listen and receiving new incoming connections.
+Notice in the example below that, we stored the `Socket` struct
+declaration that we built at @sec-create-socket inside a Zig module named `config.zig`.
+Then, I imported this module into our main module as the `SocketConf` object,
+to access the `Socket` struct.
+
+We do that, by calling
+the `listen()` and `accept()` methods from the `Address` object that is
+contained in the socket object.
+
+
+```{zig}
+#| eval: false
+const std = @import("std");
+const SocketConf = @import("config.zig");
+const stdout = std.io.getStdOut().writer();
+
+pub fn main() !void {
+    const socket = try SocketConf.Socket.init();
+    try stdout.print("Server Addr: {any}\n", .{socket._address});
+    var server = try socket._address.listen(.{});
+    const connection = try server.accept();
+    _ = connection;
+}
+```
