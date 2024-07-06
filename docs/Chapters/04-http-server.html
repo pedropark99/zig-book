@@ -20,6 +20,40 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -215,6 +249,7 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="how-a-http-server-is-normally-implemented" class="level2" data-number="6.3">
 <h2 data-number="6.3" class="anchored" data-anchor-id="how-a-http-server-is-normally-implemented"><span class="header-section-number">6.3</span> How a HTTP server is normally implemented?</h2>
+<p>Let’s use the C language as an example. In C, we normally implement a HTTP server by performing the following steps:</p>
 <ol type="1">
 <li>Create a socket object.</li>
 <li>Bind a name (or more specifically, an address) to this socket object.</li>
@@ -222,8 +257,50 @@ ul.task-list li input[type="checkbox"] {
 <li>When a connection arrive, we accept this connection, and we exchange the HTTP messages (HTTP Request and HTTP Response).</li>
 <li>Then, we simply close this connection.</li>
 </ol>
+<p>A socket object (which uses the WebSocket technology) is essentially a channel of communication. You are creating a channel where people can send messages to. When you create a socket object, this object is not binded to any particular address. This means that with this object you have a representation of a channel of communication in your hands. But this channel is not currently available, or, it is not currently accessible, because it do not have a known address where you can find it.</p>
+<p>That is what the “bind” operation do. It binds a name (or more specifically, an address) to this socket object, or, this channel of communication, so that it becomes available, or, accessible through this address. While the “listen” operation makes the socket object to listen for incoming connections in this address. In other words, the “listen” operation makes the socket to wait for incoming connections.</p>
+<p>Now, when a client actually attempts to connect to the server through the address we specify, then, the socket object needs to accept this incoming connection. When we accept it, then, the connection is established, client and server are now connected to each other, and they can read or write messages in this established connection.</p>
+<p>After we received the HTTP Request from the client, and sent the HTTP Response to the client, we can now close the connection, and end this communication.</p>
+<p>All of this process, in C, would be something like this code example below. There are lot of things happening in this code, and, I am also not doing a lot of necessary things, like error handling. But this is just an simplified example of how this code in C would look like.</p>
+<p>Also, this code would not compile on Windows, because in Windows we need to use slightly different functions and patterns to make the connections and also close them. So, this code example works only on Linux<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode c code-with-copy"><code class="sourceCode c"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> sock <span class="op">=</span> socket<span class="op">(</span>AF_INET<span class="op">,</span> SOCK_STREAM<span class="op">,</span> <span class="dv">0</span><span class="op">);</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">uint16_t</span> port <span class="op">=</span> htons<span class="op">(</span>PORT<span class="op">);</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> sockaddr_in socket_address<span class="op">;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>socket_address<span class="op">.</span>sin_family <span class="op">=</span> AF_INET<span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>socket_address<span class="op">.</span>sin_addr<span class="op">.</span>s_addr <span class="op">=</span> htonl<span class="op">(</span>INADDR_ANY<span class="op">);</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>socket_address<span class="op">.</span>sin_port <span class="op">=</span> port<span class="op">;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>memset<span class="op">(&amp;(</span>socket_address<span class="op">.</span>sin_zero<span class="op">),</span> <span class="ch">'</span><span class="sc">\0</span><span class="ch">'</span><span class="op">,</span> <span class="dv">8</span><span class="op">);</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>bind<span class="op">(</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    sock<span class="op">,</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span><span class="kw">struct</span> sockaddr <span class="op">*)</span> <span class="op">&amp;</span>socket_address<span class="op">,</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">sizeof</span><span class="op">(</span>socket_address<span class="op">)</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="op">);</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>listen<span class="op">(</span>sock<span class="op">,</span> <span class="dv">10</span><span class="op">);</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> sockaddr_in their_addr<span class="op">;</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> client_connected<span class="op">;</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>socklen_t sock_addr_size <span class="op">=</span> <span class="kw">sizeof</span><span class="op">(</span><span class="kw">struct</span> sockaddr_in<span class="op">);</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>client_connected <span class="op">=</span> accept<span class="op">(</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    sock<span class="op">,</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span><span class="kw">struct</span> sockaddr <span class="op">*)&amp;</span>their_addr<span class="op">,</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span>sock_addr_size<span class="op">)</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="op">);</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="dt">char</span><span class="op">*</span> msg <span class="op">=</span> <span class="st">"Hello, World!"</span><span class="op">;</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> len<span class="op">,</span> bytes_sent<span class="op">;</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>len <span class="op">=</span> strlen<span class="op">(</span>msg<span class="op">);</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>bytes_sent <span class="op">=</span> send<span class="op">(</span>client_connected<span class="op">,</span> msg<span class="op">,</span> len<span class="op">,</span> <span class="dv">0</span><span class="op">);</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>close<span class="op">(</span>client_connected<span class="op">);</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>close<span class="op">(</span>sock<span class="op">);</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p>The functions used in this code example, such as <code>socket()</code>, <code>bind()</code>, <code>listen()</code> and <code>accept()</code>, and also, some <code>struct</code> objects, such as <code>sockaddr</code> and <code>sockaddr_in</code>, come from the header files <code>sys/socket.h</code>, <code>netinet/in.h</code> and <code>arpa/inet.h</code>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
 </section>
 
 </main> <!-- /main -->
