@@ -22,9 +22,17 @@ const Header = struct {
 
 fn parse_request(text: *[1000]u8) void {
     var iterator = std.mem.splitScalar(u8, text, ' ');
-    //var count: u8 = 0;
-    while (iterator.peek() != null) {
-        const field = iterator.next();
-        std.debug.print("{?s}\n", .{field});
+    var method = Method.GET;
+    var field = iterator.next();
+    method = parse_method(field);
+    std.debug.print("{any}\n", .{method});
+    field = iterator.next();
+    std.debug.print("{?s}\n", .{field});
+}
+
+fn parse_method(text: ?[]const u8) Method {
+    if (std.mem.eql(u8, text.?, "GET")) {
+        return Method.GET;
     }
+    return Method.POST;
 }
