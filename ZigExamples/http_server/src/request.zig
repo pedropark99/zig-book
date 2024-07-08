@@ -9,7 +9,7 @@ pub fn read_request(conn: Connection) !void {
     const reader = conn.stream.reader();
     _ = try reader.read(&buffer);
     std.debug.print("{s}\n", .{buffer});
-    parse_request(&buffer);
+    //parse_request(&buffer);
 }
 
 const Method = enum { GET, POST };
