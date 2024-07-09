@@ -173,7 +173,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../Chapters/05-pointers.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Pointers in Zig</span></span></a>
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Pointers and Optionals in Zig</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -210,6 +210,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#compile-your-source-code-in-debug-mode" id="toc-compile-your-source-code-in-debug-mode" class="nav-link" data-scroll-target="#compile-your-source-code-in-debug-mode"><span class="header-section-number">4.2.1</span> Compile your source code in Debug mode</a></li>
   <li><a href="#lets-debug-a-program" id="toc-lets-debug-a-program" class="nav-link" data-scroll-target="#lets-debug-a-program"><span class="header-section-number">4.2.2</span> Let’s debug a program</a></li>
   </ul></li>
+  <li><a href="#how-to-investigate-the-data-type-of-your-objects" id="toc-how-to-investigate-the-data-type-of-your-objects" class="nav-link" data-scroll-target="#how-to-investigate-the-data-type-of-your-objects"><span class="header-section-number">4.3</span> How to investigate the data type of your objects</a></li>
   </ul>
 </nav>
     </div>
@@ -341,7 +342,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>I can start to navigate through the code, and investigating the variables that are being generated. If you not familiar with the commands available in LLDB, I recommend you to read the official documentation of the project<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. You can also look for cheat sheets. Which quickly describes all commands available for you, and, as a result, are also good resources for you<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>.</p>
 <p>Currently, we are in the first line at the <code>main()</code> function. In this line, we create the <code>n</code> object, by executing the <code>add_and_increment()</code> function. To execute the current line of code, and go to the next line, we can run the <code>n</code> LLDB command. Let’s execute this command.</p>
 <p>After we executed this line, we can also look at the value stored inside this <code>n</code> object by using the <code>p</code> LLDB command. The syntax for this command is <code>p &lt;name-of-object&gt;</code>.</p>
-<p>If we take a look at the value stored in the <code>n</code> object (<code>p n</code>), notice that it stores the hexadecimal value <code>0x06</code>, which is the number 6 in decimal. We can also see that, this value have a type <code>unsigned char</code>, which is an unsigned 8-bit integer. We have talked already about this at <a href="01-zig-weird.html#sec-zig-strings" class="quarto-xref"><span>Section 1.11</span></a>, that <code>u8</code> integers in Zig are equivalent to the C data type <code>unsigned char</code>.</p>
+<p>If we take a look at the value stored in the <code>n</code> object (<code>p n</code>), notice that it stores the hexadecimal value <code>0x06</code>, which is the number 6 in decimal. We can also see that, this value have a type <code>unsigned char</code>, which is an unsigned 8-bit integer. We have talked already about this at <a href="01-zig-weird.html#sec-zig-strings" class="quarto-xref"><span>Section 1.10</span></a>, that <code>u8</code> integers in Zig are equivalent to the C data type <code>unsigned char</code>.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">n</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Process</span> 4798 stopped</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> thread <span class="co">#1, name = 'debugging',</span></span>
@@ -375,9 +376,29 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">unsigned</span> char<span class="kw">)</span> <span class="ex">b</span> = <span class="st">'\x06'</span></span>
 <span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">unsigned</span> char<span class="kw">)</span> <span class="fu">sum</span> = <span class="st">'\f'</span></span>
 <span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">unsigned</span> char<span class="kw">)</span> <span class="ex">incremented</span> = <span class="st">'\x06'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-
-
 </section>
+</section>
+<section id="how-to-investigate-the-data-type-of-your-objects" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="how-to-investigate-the-data-type-of-your-objects"><span class="header-section-number">4.3</span> How to investigate the data type of your objects</h2>
+<p>Since Zig is a strongly-typed language, the data types associated with your objects are very important for your program. So, debugging the data types associated with your objects might be important to understand bugs and errors in your program.</p>
+<p>When you walk through your program with a debugger, you can inspect the types of your objects by simply printing them to the console, with the LLDB <code>p</code> command. But also have alternatives embedded in the language itself to access the data types of your objects.</p>
+<p>In Zig, you can retrieve the data type of an object, by using the built-in function <code>@TypeOf()</code>. Just apply this function over the object, and you get access to the data type of the object.</p>
+<div class="cell" data-build_type="run">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expect = std.testing.expect;</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> number: <span class="dt">i32</span> = <span class="dv">5</span>;</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect(<span class="bu">@TypeOf</span>(number) == <span class="dt">i32</span>);</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(number)<span class="op">}</span>);</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>i32</code></pre>
+</div>
+</div>
+
+
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>
@@ -784,8 +805,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../Chapters/05-pointers.html" class="pagination-link" aria-label="<span class='chapter-number'>5</span>&nbsp; <span class='chapter-title'>Pointers in Zig</span>">
-        <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Pointers in Zig</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../Chapters/05-pointers.html" class="pagination-link" aria-label="<span class='chapter-number'>5</span>&nbsp; <span class='chapter-title'>Pointers and Optionals in Zig</span>">
+        <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Pointers and Optionals in Zig</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

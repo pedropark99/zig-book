@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>An Introduction to Zig - 5&nbsp; Pointers in Zig</title>
+<title>An Introduction to Zig - 5&nbsp; Pointers and Optionals in Zig</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -135,7 +135,7 @@ div.csl-indent {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/05-pointers.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Pointers in Zig</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/05-pointers.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Pointers and Optionals in Zig</span></a></li></ol></nav>
         <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
@@ -193,7 +193,7 @@ div.csl-indent {
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../Chapters/05-pointers.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Pointers in Zig</span></span></a>
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Pointers and Optionals in Zig</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -224,10 +224,15 @@ div.csl-indent {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#constant-objects-vs-variable-objects" id="toc-constant-objects-vs-variable-objects" class="nav-link active" data-scroll-target="#constant-objects-vs-variable-objects"><span class="header-section-number">5.1</span> Constant objects vs variable objects</a></li>
-  <li><a href="#pointer-arithmethic" id="toc-pointer-arithmethic" class="nav-link" data-scroll-target="#pointer-arithmethic"><span class="header-section-number">5.2</span> Pointer arithmethic</a></li>
-  <li><a href="#non-nullable-pointers" id="toc-non-nullable-pointers" class="nav-link" data-scroll-target="#non-nullable-pointers"><span class="header-section-number">5.3</span> Non-nullable pointers</a></li>
-  <li><a href="#types-of-pointer" id="toc-types-of-pointer" class="nav-link" data-scroll-target="#types-of-pointer"><span class="header-section-number">5.4</span> Types of pointer</a></li>
+  <li><a href="#sec-pointer-var" id="toc-sec-pointer-var" class="nav-link active" data-scroll-target="#sec-pointer-var"><span class="header-section-number">5.1</span> Constant objects vs variable objects</a></li>
+  <li><a href="#types-of-pointer" id="toc-types-of-pointer" class="nav-link" data-scroll-target="#types-of-pointer"><span class="header-section-number">5.2</span> Types of pointer</a></li>
+  <li><a href="#pointer-arithmethic" id="toc-pointer-arithmethic" class="nav-link" data-scroll-target="#pointer-arithmethic"><span class="header-section-number">5.3</span> Pointer arithmethic</a></li>
+  <li><a href="#optionals-and-optional-pointers" id="toc-optionals-and-optional-pointers" class="nav-link" data-scroll-target="#optionals-and-optional-pointers"><span class="header-section-number">5.4</span> Optionals and Optional Pointers</a>
+  <ul class="collapse">
+  <li><a href="#what-are-optionals" id="toc-what-are-optionals" class="nav-link" data-scroll-target="#what-are-optionals"><span class="header-section-number">5.4.1</span> What are optionals?</a></li>
+  <li><a href="#optional-pointers" id="toc-optional-pointers" class="nav-link" data-scroll-target="#optional-pointers"><span class="header-section-number">5.4.2</span> Optional pointers</a></li>
+  <li><a href="#null-handling-in-optionals" id="toc-null-handling-in-optionals" class="nav-link" data-scroll-target="#null-handling-in-optionals"><span class="header-section-number">5.4.3</span> Null handling in optionals</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -236,7 +241,7 @@ div.csl-indent {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><span id="sec-pointer" class="quarto-section-identifier"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Pointers in Zig</span></span></h1>
+<h1 class="title"><span id="sec-pointer" class="quarto-section-identifier"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Pointers and Optionals in Zig</span></span></h1>
 </div>
 
 
@@ -253,8 +258,8 @@ div.csl-indent {
 </header>
 
 
-<p>On the next chapter, we are going to build a HTTP server from scratch. But in order to do that, we need to learn more about what pointers are, and how they work in Zig.</p>
-<p>Pointers in Zig are similar to pointers in C. A pointer is an object that contains a memory address. This memory address is the address where a particular value is stored in the memory. It can be any value. Most of the times, it is a value that comes from another object (or variable) present in our code.</p>
+<p>On our next project we are going to build a HTTP server from scratch. But in order to do that, we need to learn more about pointers and how they work in Zig. Pointers in Zig are similar to pointers in C.</p>
+<p>A pointer is an object that contains a memory address. This memory address is the address where a particular value is stored in the memory. It can be any value. Most of the times, it is a value that comes from another object (or variable) present in our code.</p>
 <p>In the example below, I’m creating two objects (<code>number</code> and <code>pointer</code>). The <code>pointer</code> object contains the memory address where the value of the <code>number</code> object (the number 5) is stored. So, that is a pointer in a nutshell. It is a memory address that points to a particular existing value in the memory. You could also say, that, the <code>pointer</code> object points to the memory address where the <code>number</code> object is stored.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> number: <span class="dt">u8</span> = <span class="dv">5</span>;</span>
@@ -267,7 +272,7 @@ div.csl-indent {
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>doubled<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>10</code></pre>
-<p>This syntax to dereference the pointer is nice. Because we can easily chain it with methods of the value pointed by the pointer. We can use the <code>User</code> struct that we created at <a href="01-zig-weird.html#sec-structs-and-oop" class="quarto-xref"><span>Section 1.9</span></a> as an example. If you comeback to that section, you will see that this struct have a method named <code>print_name()</code>.</p>
+<p>This syntax to dereference the pointer is nice. Because we can easily chain it with methods of the value pointed by the pointer. We can use the <code>User</code> struct that we created at <a href="01-zig-weird.html#sec-structs-and-oop" class="quarto-xref"><span>Section 1.8</span></a> as an example. If you comeback to that section, you will see that this struct have a method named <code>print_name()</code>.</p>
 <p>So, for example, if we have an user object, and a pointer that points to this user object, we can use the pointer to access this user object, and, at the same time, call the method <code>print_name()</code> on it, by chaining the dereference method (<code>*</code>) with the <code>print_name()</code> method. Like in the example below:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> u = User.init(<span class="dv">1</span>, <span class="st">"pedro"</span>, <span class="st">"email@gmail.com"</span>);</span>
@@ -288,10 +293,10 @@ div.csl-indent {
 <p>Therefore, as I mentioned earlier, people use pointers as an alternative way to access a particular value. And they use it specially when they do not want to “move” the values they produce in their code. There are situations where, you want to access a particular value in a different scope of your code, but you do not want to “move” this value to the new scope that you are in.</p>
 <p>This matters especially if this value is big in size. Because if it is, then, moving this value becomes an expensive operation to do. The computer will have to spend a considerable amount of time copying this value to a new location.</p>
 <p>That is why, many programmers avoid this heavy operation of copying the value, by accessing it through pointers. We are going to talk more about this “moving operation” on the next sections. For now, just keep in your mind that avoiding this “move operation” is one of main reasons why pointers are used in programming languages.</p>
-<section id="constant-objects-vs-variable-objects" class="level2" data-number="5.1">
-<h2 data-number="5.1" class="anchored" data-anchor-id="constant-objects-vs-variable-objects"><span class="header-section-number">5.1</span> Constant objects vs variable objects</h2>
-<p>You can have a pointer to a constant object, or, a pointer to a variable object. A pointer must always respect the characteristics of the object that it points to. If the pointer points to a constant object, then, you cannot use this pointer to change the value that it points to. Because it points to a value that is constant.</p>
-<p>For example, if I have a <code>number</code> object, which is constant, I cannot execute the expression below where I’m trying to change the value of <code>number</code> to 6 through the <code>pointer</code> object. As demonstrated below, we get a compile time error:</p>
+<section id="sec-pointer-var" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="sec-pointer-var"><span class="header-section-number">5.1</span> Constant objects vs variable objects</h2>
+<p>You can have a pointer that points to a constant object, or, a pointer that points to a variable object. But regardless of who this pointer is, a pointer <strong>must always respect the characteristics of the object that it points to</strong>. As a consequence, if the pointer points to a constant object, then, you cannot use this pointer to change the value that it points to. Because it points to a value that is constant. As we discussed at <a href="01-zig-weird.html#sec-assignments" class="quarto-xref"><span>Section 1.4</span></a>, you cannot change a value that is constant.</p>
+<p>For example, if I have a <code>number</code> object, which is constant, I cannot execute the expression below where I’m trying to change the value of <code>number</code> to 6 through the <code>pointer</code> object. As demonstrated below, when you try to do something like that, you get a compile time error:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> number = <span class="dv">5</span>;</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pointer = &amp;number;</span>
@@ -299,7 +304,7 @@ div.csl-indent {
 </div>
 <pre><code>p.zig:6:12: error: cannot assign to constant
     pointer.* = 6;</code></pre>
-<p>So, if I change the <code>number</code> object to a variable object, then I can change the value of this object through a pointer.</p>
+<p>If I change the <code>number</code> object to be a variable object, by introducing the <code>var</code> keyword, then I can change the value of this object through a pointer, as demonstrated below:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> number: <span class="dt">u8</span> = <span class="dv">5</span>;</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pointer = &amp;number;</span>
@@ -309,10 +314,11 @@ div.csl-indent {
 <pre><code>6</code></pre>
 </div>
 </div>
-<p>You can see this relationship on the types of the pointer objects. When a pointer object points to a constant value, then, this pointer have a type <code>*const T</code>, which means “a pointer to a constant value of type <code>T</code>”. In contrast, if the pointer points to a variable value, then, the type of the pointer is <code>*T</code>, which is simply “a pointer to a value of type <code>T</code>”.</p>
+<p>You can see this relationship on the data type of your pointer object. In other words, the data type of a pointer object already gives you some clues about whether the value that it points to is constant or not.</p>
+<p>When a pointer object points to a constant value, then, this pointer have a data type <code>*const T</code>, which means “a pointer to a constant value of type <code>T</code>”. In contrast, if the pointer points to a variable value, then, the type of the pointer is usually <code>*T</code>, which is simply “a pointer to a value of type <code>T</code>”.</p>
 <p>Whenever you see a pointer object whose type is in the format <code>*const T</code>, then, you know that you cannot use this pointer to change the value that it points to. Because this pointer points to a constant value of type <code>T</code>.</p>
-<p>Now, what about the pointer object itself? I mean, what happens if the pointer object is constant or not? Think about it. We can have a constant pointer that points to a constant value. But we can also have a variable pointer that points to a constant value.</p>
-<p>Until this point, the <code>pointer</code> object was always constant, but what this means for us? What is the consequence of the <code>pointer</code> object being constant? The consequence is that we cannot change the pointer object. We can use the pointer object in multiple ways, but we cannot change the memory address that is inside this pointer object.</p>
+<p>Hence, we talked about the value pointed by the pointer being constant or not, and the consequences that arises from it. But, what about the pointer object itself? I mean, what happens if the pointer object itself is constant or not? Think about it. We can have a constant pointer that points to a constant value. But we can also have a variable pointer that points to a constant value. And vice-versa.</p>
+<p>Until this point, the <code>pointer</code> object was always constant, but what this means for us? What is the consequence of the <code>pointer</code> object being constant? The consequence is that we cannot change the pointer object, because it is constant. We can use the pointer object in multiple ways, but we cannot change the memory address that is inside this pointer object.</p>
 <p>However, if we mark the <code>pointer</code> object as a variable object, then, we can change the memory address pointed by this <code>pointer</code> object. The example below demonstrates that. Notice that the object pointed by the <code>pointer</code> object changes from <code>c1</code> to <code>c2</code>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c1: <span class="dt">u8</span> = <span class="dv">5</span>;</span>
@@ -326,37 +332,8 @@ div.csl-indent {
 6</code></pre>
 <p>Thus, by setting the <code>pointer</code> object to a <code>var</code> or <code>const</code> object, you specify if the memory address contained in this pointer object can change or not in your program. On the other side, you can change the value pointed by the pointer, if, and only if this value is stored in a variable object. If this value is in a constant object, then, you cannot change this value through a pointer.</p>
 </section>
-<section id="pointer-arithmethic" class="level2" data-number="5.2">
-<h2 data-number="5.2" class="anchored" data-anchor-id="pointer-arithmethic"><span class="header-section-number">5.2</span> Pointer arithmethic</h2>
-<p>Pointer arithmethic is available in Zig, and they work the same way they work in C. When you have a pointer that points to an array, the pointer usually points to the first element in the array, and you can use pointer arithmethic to incrementally advance this pointer, to access the other elements in the array.</p>
-<p>Notice in the example below, that initially, the <code>ptr</code> object was pointing to the first element in the array <code>ar</code>. But then, I start to walk through the array, by advancing the pointer with pointer arithmethic.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ar = [_]<span class="dt">i32</span><span class="op">{</span><span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span><span class="op">}</span>;</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> ptr: [*]<span class="kw">const</span> <span class="dt">i32</span> = &amp;ar;</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr[<span class="dv">0</span>]<span class="op">}</span>);</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>ptr += <span class="dv">1</span>;</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr[<span class="dv">0</span>]<span class="op">}</span>);</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>ptr += <span class="dv">1</span>;</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr[<span class="dv">0</span>]<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>1
-2
-3</code></pre>
-<p>Although you can create a pointer to an array like that, and start to walk through this array by using pointer arithmethic, in Zig, we prefer to use slices, which were presented at <a href="01-zig-weird.html#sec-arrays" class="quarto-xref"><span>Section 1.7</span></a>.</p>
-<p>Slices are better because, behind the hood, they already are pointers, but, they come with a caveat, which is the <code>len</code> property, which indicates how many elements are in the slice. This is good because the <code>zig</code> compiler can use it to check for potential buffer overflow problems, and other problems like that.</p>
-<p>Also, you don’t need to use pointer arithmethic to walk through the elements of a slice. You simply use the <code>slice[index]</code> syntax to directly access any element you want in the slice.</p>
-<p>As I mentioned at <a href="01-zig-weird.html#sec-arrays" class="quarto-xref"><span>Section 1.7</span></a>, you can get a slice from an array, by using a range selector inside brackets. In the example below, I create a slice (<code>sl</code>) that takes the entire <code>ar</code> array. So I can access all elements of <code>ar</code> from this slice.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ar = [_]<span class="dt">i32</span><span class="op">{</span><span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span><span class="op">}</span>;</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> sl = ar[<span class="dv">0</span>..ar.len];</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>_ = sl;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
-<section id="non-nullable-pointers" class="level2" data-number="5.3">
-<h2 data-number="5.3" class="anchored" data-anchor-id="non-nullable-pointers"><span class="header-section-number">5.3</span> Non-nullable pointers</h2>
-</section>
-<section id="types-of-pointer" class="level2" data-number="5.4">
-<h2 data-number="5.4" class="anchored" data-anchor-id="types-of-pointer"><span class="header-section-number">5.4</span> Types of pointer</h2>
+<section id="types-of-pointer" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="types-of-pointer"><span class="header-section-number">5.2</span> Types of pointer</h2>
 <p>In Zig, there are two types of pointers <span class="citation" data-cites="zigdocs">(<a href="../references.html#ref-zigdocs" role="doc-biblioref">Zig Software Foundation 2024</a>)</span>, which are:</p>
 <ul>
 <li>single-item pointer (<code>*</code>);</li>
@@ -365,6 +342,132 @@ div.csl-indent {
 <p>Single-item pointer objects are objects whose data types are in the format <code>*T</code>. So, for example, if an object have a data type <code>*u32</code>, it means that, this object contains a pointer that points to an unsigned 32-bit integer value. As another example, if an object have type <code>*User</code>, then, it contains a pointer to a <code>User</code> value.</p>
 <p>In contrast, many-item pointer objects are objects whose data types are in the format <code>[*]T</code>. Notice that the star symbol (<code>*</code>) is now inside a pair of brackets (<code>[]</code>). If the star symbol is inside a pair of brackets, you know that this object is a many-item pointer.</p>
 <p>When you apply the <code>&amp;</code> operator over an object, you will always get a single-item pointer. Many-item pointers are more of a “internal type” of the language, more closely related to slices. So, when you deliberately create a pointer with the <code>&amp;</code> operator, you always get a single-item pointer as result. Remember that.</p>
+</section>
+<section id="pointer-arithmethic" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="pointer-arithmethic"><span class="header-section-number">5.3</span> Pointer arithmethic</h2>
+<p>Pointer arithmethic is available in Zig, and they work the same way they work in C. When you have a pointer that points to an array, the pointer usually points to the first element in the array, and you can use pointer arithmethic to advance this pointer and access the other elements in the array.</p>
+<p>Notice in the example below, that initially, the <code>ptr</code> object was pointing to the first element in the array <code>ar</code>. But then, I started to walk through the array, by advancing the pointer with simple pointer arithmethic.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ar = [_]<span class="dt">i32</span><span class="op">{</span><span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span><span class="op">}</span>;</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> ptr = &amp;ar;</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr.*<span class="op">}</span>);</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>ptr += <span class="dv">1</span>;</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr.*<span class="op">}</span>);</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>ptr += <span class="dv">1</span>;</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr.*<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>1
+2
+3</code></pre>
+<p>Although you can create a pointer to an array like that, and start to walk through this array by using pointer arithmethic, in Zig, we prefer to use slices, which were presented at <a href="01-zig-weird.html#sec-arrays" class="quarto-xref"><span>Section 1.6</span></a>.</p>
+<p>Behind the hood, slices already are pointers, and they also come with the <code>len</code> property, which indicates how many elements are in the slice. This is good because the <code>zig</code> compiler can use it to check for potential buffer overflows, and other problems like that.</p>
+<p>Also, you don’t need to use pointer arithmethic to walk through the elements of a slice. You can simply use the <code>slice[index]</code> syntax to directly access any element you want in the slice. As I mentioned at <a href="01-zig-weird.html#sec-arrays" class="quarto-xref"><span>Section 1.6</span></a>, you can get a slice from an array by using a range selector inside brackets. In the example below, I’m creating a slice (<code>sl</code>) that covers the entire <code>ar</code> array. I can access any element of <code>ar</code> from this slice, and, the slice itself already is a pointer behind the hood.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ar = [_]<span class="dt">i32</span><span class="op">{</span><span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span><span class="op">}</span>;</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> sl = ar[<span class="dv">0</span>..ar.len];</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>_ = sl;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="optionals-and-optional-pointers" class="level2" data-number="5.4">
+<h2 data-number="5.4" class="anchored" data-anchor-id="optionals-and-optional-pointers"><span class="header-section-number">5.4</span> Optionals and Optional Pointers</h2>
+<p>Let’s talk about optionals and how they relate to pointers in Zig. By default, objects in Zig are <strong>non-nullable</strong>. This means that, in Zig, you can safely assume that any object in your source code is not null.</p>
+<p>This is a powerful feature of Zig when you compare it to the developer experience in C. Because in C, any object can be null at any point, and, as consequence, a pointer in C might point to a null value. This is a commom source of undefined behaviour in C. When programmers work with pointers in C, they have to constantly check if their pointers are pointing to null values or not.</p>
+<p>If for some reason, your Zig code produces a null value somewhere, and, this null value ends up in an object that is non-nullable, a runtime error is always raised by your Zig program. Take the program below as an example. The <code>zig</code> compiler can see the <code>null</code> value at compile time, and, as result, it raises a compile time error. But, if a <code>null</code> value is raised during runtime, a runtime error is also raised by the Zig program, with a “attempt to use null value” message.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> number: <span class="dt">u8</span> = <span class="dv">5</span>;</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>number = <span class="cn">null</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>p5.zig:5:14: error: expected type 'u8',
+        found '@TypeOf(null)'
+    number = null;
+             ^~~~</code></pre>
+<p>You don’t get this type of security in C. In C, you don’t get warnings or errors about null values being produced in your program. If for some reason, your code produces a null value in C, most of the times, you end up getting a segmentation fault error as result, which can mean many things. That is why programmers have to constantly check for null values in C. Because they do not have much visibility of null values.</p>
+<p>Pointers in Zig are also, by default, <strong>non-nullable</strong>. This is another amazing feature in Zig. So, any pointer you create in your code, you can safely assume that this pointer is pointing to a non-null value. Therefore, you don’t have this heavy work of checking if the pointers you create in Zig are pointing to a null value.</p>
+<p>This is an important feature, because this is also a commom source source of undefined behaviour in C. For example, if you have a pointer <code>x</code> that points to an object <code>y</code>, the value of the object <code>y</code> might change during the runtime of your program, and, as consequence, the value pointed by the pointer <code>x</code> will change. I demonstrated already how the value pointed by a pointer might change at <a href="#sec-pointer-var" class="quarto-xref"><span>Section 5.1</span></a>.</p>
+<p>So, if for some reason, the value of <code>y</code> changes to a null value during runtime, and, you try to use the object <code>y</code> in some way in your code, the chances of producing a undefined behaviour in your program are sky high.</p>
+<p>In C, when the value of <code>y</code> changes, you have no garantees that the value of the object <code>y</code> changed to a null value or not. You simply don’t know upfront if you have a null value in <code>y</code> or not. But in Zig, you can safely assume that the object <code>y</code> will never have a null value.</p>
+<section id="what-are-optionals" class="level3" data-number="5.4.1">
+<h3 data-number="5.4.1" class="anchored" data-anchor-id="what-are-optionals"><span class="header-section-number">5.4.1</span> What are optionals?</h3>
+<p>Ok, we know now that all objects are non-nullable by default in Zig. But what if we actually need to use an object that might receive a null value? Here is where optionals come in.</p>
+<p>An optional object in Zig is an object that can be null. To mark an object as optional, we use the <code>?</code> operator. When you put this <code>?</code> operator right before the data type of an object, you transform this data type into an optional data type, and the object becomes an optional object.</p>
+<p>Take the snippet below as an example. We are creating a new variable object called <code>num</code>. This object have data type <code>?i32</code>, which means that, this object contains either a signed 32-bit integer (<code>i32</code>), or, a null value. Both alternatives are valid values to the <code>num</code> object. That is why, I can actually change the value of this object to null, and, no errors are raised by the <code>zig</code> compiler, as demonstrated below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> num: ?<span class="dt">i32</span> = <span class="dv">5</span>;</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>num = <span class="cn">null</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="optional-pointers" class="level3" data-number="5.4.2">
+<h3 data-number="5.4.2" class="anchored" data-anchor-id="optional-pointers"><span class="header-section-number">5.4.2</span> Optional pointers</h3>
+<p>You can also mark a pointer object as an optional pointer, meaning that, this pointer points to either a null value, or, a value that is not null. In other words, by marking a pointer as optional, you get a pointer that behaves like a pointer in C.</p>
+<p>When you mark a pointer as optional, the data type of this pointer object becomes <code>?*const T</code> or <code>?*T</code>, depending if the value pointed by the pointer is a constant value or not. The <code>?</code> identifies the object as optional, and the <code>*</code> identifies it as a pointer object.</p>
+<p>In the example below, we are creating a variable object named <code>num</code>, and an optional pointer object named <code>ptr</code>. Notice that the data type of the object <code>ptr</code> indicates that it is either a null value, or a pointer to an <code>i32</code> value. Also, notice that the pointer object (<code>ptr</code>) can be marked as optional, even if the object <code>num</code> is not optional.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> num: <span class="dt">i32</span> = <span class="dv">5</span>;</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ptr: ?*<span class="dt">i32</span> = &amp;num;</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>_ = ptr;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>But what happens if we turn the table, and mark the <code>num</code> object as optional, instead of the pointer object. If we do that, then, the pointer object is not optional anymore. It would be a similar (altough different) result. Because then, we would have a pointer to an optional value. In other words, a pointer to a value that is either a null value, or, a not-null value.</p>
+<p>In the example below, we are recreating this idea. Now, the <code>ptr</code> object have a data type of <code>*?i32</code>, instead of <code>?*i32</code>. Notice that the <code>*</code> symbol comes before of <code>?</code> this time. So now, we have a pointer that points to a value that is either null , or, a signed 32-bits integer.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> num: ?<span class="dt">i32</span> = <span class="dv">5</span>;</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="co">// ptr have type `*?i32`, instead of `?*i32`.</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ptr = &amp;num;</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>_ = ptr;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="null-handling-in-optionals" class="level3" data-number="5.4.3">
+<h3 data-number="5.4.3" class="anchored" data-anchor-id="null-handling-in-optionals"><span class="header-section-number">5.4.3</span> Null handling in optionals</h3>
+<p>When you have an optional object in your Zig code, you have to explicitly handle the possibility of this object being null. Is like error-handling with <code>try</code> and <code>catch</code>. In Zig you also have to handle null values like if they were a type of error.</p>
+<p>We can do that, by using either:</p>
+<ul>
+<li>an if statement, like you would do in C.</li>
+<li>the <code>orelse</code> keyword.</li>
+<li>unwrap the optional value with the <code>?</code> method.</li>
+</ul>
+<p>When you use an if statement, you use a pair of pipes to unwrap the optional value, and use this “unwrapped object” inside the if block.</p>
+<p>Using the example below as a reference, if the object <code>num</code> is null, then, the code inside the if statement is not executed. Otherwise, the if statement will unwrap the object <code>num</code> into the <code>not_null_num</code> object. This <code>not_null_num</code> object is garanteed to be not null inside the scope of the if statement.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num: ?<span class="dt">i32</span> = <span class="dv">5</span>;</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> (num) |not_null_num| <span class="op">{</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>not_null_num<span class="op">}</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>5</code></pre>
+</div>
+</div>
+<p>Now, the <code>orelse</code> keyword have a syntax similar to a <code>try</code> and <code>catch</code> pattern. On the left side of <code>orelse</code>, you provide the expression that might result in a null value, and on the right side of <code>orelse</code> you provide another expression that will not result in a null value.</p>
+<p>The idea behind the <code>orelse</code> keyword is, if the expression on the left side result in a not-null value, then, this not-null value is used. However, if this expression on the left side result in a null value, then, the value of the expression on the right side is used instead.</p>
+<p>Looking at the example below, since the <code>x</code> object is currently null, the <code>orelse</code> decided to use the alternative value, which is the number 15.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> x: ?<span class="dt">i32</span> = <span class="cn">null</span>;</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dbl = (x <span class="kw">orelse</span> <span class="dv">15</span>) * <span class="dv">2</span>;</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>dbl<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>30</code></pre>
+</div>
+</div>
+<p>You can use the if statement or the <code>orelse</code> keyword, when you want to solve (or deal with) this null value. However, if there is no clear solution to this null value, and the most logic and sane path is to simply panic and raise a loud error in your program when this null value is encountered, you can use the <code>?</code> method of your optional object.</p>
+<p>In essence, when you use this <code>?</code> method, the optional object is unwraped. If a not-null value is found in the optional object, then, this not-null value is used. Otherwise, the <code>unreachable</code> keyword is used. You can read more about this <a href="https://ziglang.org/documentation/master/#unreachable"><code>unreacheable</code> keyword at the official documentation</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. But in essence, when you build your Zig source code using the build modes <code>ReleaseSafe</code> or <code>Debug</code>, this <code>unreacheable</code> keyword causes the program to panic and raise an error during runtime, like in the example below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> return_null(n: <span class="dt">i32</span>) ?<span class="dt">i32</span> <span class="op">{</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (n == <span class="dv">5</span>) <span class="kw">return</span> <span class="cn">null</span>;</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> n;</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x: <span class="dt">i32</span> = <span class="dv">5</span>;</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> y: ?<span class="dt">i32</span> = return_null(x);</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>y.?<span class="op">}</span>);</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>thread 12767 panic: attempt to use null value
+p7.zig:12:34: 0x103419d in main (p7):
+    try stdout.print("{d}\n", .{y.?});
+                                 ^</code></pre>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
@@ -372,6 +475,13 @@ div.csl-indent {
 Zig Software Foundation. 2024. <span>“Language Reference.”</span> Zig Software Foundation. <a href="https://ziglang.org/documentation/master/">https://ziglang.org/documentation/master/</a>.
 </div>
 </div>
+</section>
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p><a href="https://ziglang.org/documentation/master/#unreachable" class="uri">https://ziglang.org/documentation/master/#unreachable</a>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
 </section>
 
 </main> <!-- /main -->

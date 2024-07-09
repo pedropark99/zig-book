@@ -13,14 +13,13 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Pointers in Zig {#sec-pointer}
+# Pointers and Optionals in Zig {#sec-pointer}
 
-On the next chapter, we are going to build a HTTP server from scratch.
-But in order to do that,
-we need to learn more about what pointers are, and how they work in Zig.
+On our next project we are going to build a HTTP server from scratch.
+But in order to do that, we need to learn more about pointers and how they work in Zig.
+Pointers in Zig are similar to pointers in C.
 
-Pointers in Zig are similar to pointers in C. A pointer is an object
-that contains a memory address. This memory address is the address where
+A pointer is an object that contains a memory address. This memory address is the address where
 a particular value is stored in the memory. It can be any value. Most of the times,
 it is a value that comes from another object (or variable) present in our code.
 
@@ -117,16 +116,18 @@ one of main reasons why pointers are used in programming languages.
 
 
 
-## Constant objects vs variable objects
+## Constant objects vs variable objects {#sec-pointer-var}
 
-You can have a pointer to a constant object, or, a pointer to a variable object.
-A pointer must always respect the characteristics of the object that it points to.
-If the pointer points to a constant object, then, you cannot use this pointer
-to change the value that it points to. Because it points to a value that is constant.
+You can have a pointer that points to a constant object, or, a pointer that points to a variable object.
+But regardless of who this pointer is, a pointer **must always respect the characteristics of the object that it points to**.
+As a consequence, if the pointer points to a constant object, then, you cannot use this pointer
+to change the value that it points to. Because it points to a value that is constant. As we discussed at @sec-assignments, you cannot
+change a value that is constant.
 
 For example, if I have a `number` object, which is constant, I cannot execute
 the expression below where I'm trying to change the value of `number` to 6 through
-the `pointer` object. As demonstrated below, we get a compile time error:
+the `pointer` object. As demonstrated below, when you try to do something
+like that, you get a compile time error:
 
 ```{zig}
 #| eval: false
@@ -140,9 +141,8 @@ p.zig:6:12: error: cannot assign to constant
     pointer.* = 6;
 ```
 
-So, if I change the `number` object to a variable object,
-then I can change the value of this object through
-a pointer.
+If I change the `number` object to be a variable object, by introducing the `var` keyword,
+then I can change the value of this object through a pointer, as demonstrated below:
 
 ```{zig}
 var number: u8 = 5;
@@ -151,30 +151,30 @@ pointer.* = 6;
 try stdout.print("{d}\n", .{number});
 ```
 
-You can see this relationship on the types of the
-pointer objects. When a pointer object points to
-a constant value, then, this pointer have a type `*const T`,
+You can see this relationship on the data type of your pointer object.
+In other words, the data type of a pointer object already gives you
+some clues about whether the value that it points to is
+constant or not.
+
+When a pointer object points to a constant value, then, this pointer have a data type `*const T`,
 which means "a pointer to a constant value of type `T`".
-In contrast, if the pointer points to a variable value,
-then, the type of the pointer is `*T`, which is
+In contrast, if the pointer points to a variable value, then, the type of the pointer is usually `*T`, which is
 simply "a pointer to a value of type `T`".
 
-Whenever you see a pointer object whose type is in the
-format `*const T`, then, you know that you cannot use this pointer
-to change the value that it points to. Because this pointer
-points to a constant value of type `T`.
+Whenever you see a pointer object whose type is in the format `*const T`, then, you know that you cannot use this pointer
+to change the value that it points to. Because this pointer points to a constant value of type `T`.
 
 
-Now, what about the pointer object itself? I mean, what happens
-if the pointer object is constant or not? Think about it.
+Hence, we talked about the value pointed by the pointer being constant or not,
+and the consequences that arises from it. But, what about the pointer object itself? I mean, what happens
+if the pointer object itself is constant or not? Think about it.
 We can have a constant pointer that points to a constant value.
-But we can also have a variable pointer that points to a
-constant value.
+But we can also have a variable pointer that points to a constant value. And vice-versa.
 
 Until this point, the `pointer` object was always constant,
 but what this means for us? What is the consequence of the
 `pointer` object being constant? The consequence is that
-we cannot change the pointer object. We can use the
+we cannot change the pointer object, because it is constant. We can use the
 pointer object in multiple ways, but we cannot change the
 memory address that is inside this pointer object.
 
@@ -205,62 +205,6 @@ if, and only if this value is stored in a variable object. If this value
 is in a constant object, then, you cannot change this value through a pointer.
 
 
-## Pointer arithmethic
-
-Pointer arithmethic is available in Zig, and they work the same way they work in C.
-When you have a pointer that points to an array, the pointer usually points to
-the first element in the array, and you can use pointer arithmethic to
-incrementally advance this pointer, to access the other elements in the array.
-
-
-Notice in the example below, that initially, the `ptr` object was pointing
-to the first element in the array `ar`. But then, I start to walk through the array, by advancing
-the pointer with pointer arithmethic.
-
-```{zig}
-#| eval: false
-const ar = [_]i32{1,2,3,4};
-var ptr: [*]const i32 = &ar;
-try stdout.print("{d}\n", .{ptr[0]});
-ptr += 1;
-try stdout.print("{d}\n", .{ptr[0]});
-ptr += 1;
-try stdout.print("{d}\n", .{ptr[0]});
-```
-```
-1
-2
-3
-```
-
-Although you can create a pointer to an array like that, and
-start to walk through this array by using pointer arithmethic,
-in Zig, we prefer to use slices, which were presented at @sec-arrays.
-
-Slices are better because, behind the hood, they already are pointers,
-but, they come with a caveat, which is the `len` property, which indicates
-how many elements are in the slice. This is good because the `zig` compiler
-can use it to check for potential buffer overflow problems, and other problems like that.
-
-Also, you don't need to use pointer arithmethic to walk through the elements
-of a slice. You simply use the `slice[index]` syntax to directly access
-any element you want in the slice.
-
-As I mentioned at @sec-arrays, you can get a slice from an array, by using
-a range selector inside brackets. In the example below, I create
-a slice (`sl`) that takes the entire `ar` array. So I can access all
-elements of `ar` from this slice.
-
-```{zig}
-const ar = [_]i32{1,2,3,4};
-const sl = ar[0..ar.len];
-_ = sl;
-```
-
-
-## Non-nullable pointers
-
-
 ## Types of pointer
 
 In Zig, there are two types of pointers [@zigdocs], which are:
@@ -283,3 +227,280 @@ When you apply the `&` operator over an object, you will always get a single-ite
 Many-item pointers are more of a "internal type" of the language, more closely
 related to slices. So, when you deliberately create a pointer with the `&` operator,
 you always get a single-item pointer as result. Remember that.
+
+
+
+## Pointer arithmethic
+
+Pointer arithmethic is available in Zig, and they work the same way they work in C.
+When you have a pointer that points to an array, the pointer usually points to
+the first element in the array, and you can use pointer arithmethic to
+advance this pointer and access the other elements in the array.
+
+
+Notice in the example below, that initially, the `ptr` object was pointing
+to the first element in the array `ar`. But then, I started to walk through the array, by advancing
+the pointer with simple pointer arithmethic.
+
+```{zig}
+#| eval: false
+const ar = [_]i32{1,2,3,4};
+var ptr = &ar;
+try stdout.print("{d}\n", .{ptr.*});
+ptr += 1;
+try stdout.print("{d}\n", .{ptr.*});
+ptr += 1;
+try stdout.print("{d}\n", .{ptr.*});
+```
+
+```
+1
+2
+3
+```
+
+Although you can create a pointer to an array like that, and
+start to walk through this array by using pointer arithmethic,
+in Zig, we prefer to use slices, which were presented at @sec-arrays.
+
+Behind the hood, slices already are pointers,
+and they also come with the `len` property, which indicates
+how many elements are in the slice. This is good because the `zig` compiler
+can use it to check for potential buffer overflows, and other problems like that.
+
+Also, you don't need to use pointer arithmethic to walk through the elements
+of a slice. You can simply use the `slice[index]` syntax to directly access
+any element you want in the slice.
+As I mentioned at @sec-arrays, you can get a slice from an array by using
+a range selector inside brackets. In the example below, I'm creating
+a slice (`sl`) that covers the entire `ar` array. I can access any
+element of `ar` from this slice, and, the slice itself already is a pointer
+behind the hood.
+
+```{zig}
+const ar = [_]i32{1,2,3,4};
+const sl = ar[0..ar.len];
+_ = sl;
+```
+
+
+## Optionals and Optional Pointers
+
+Let's talk about optionals and how they relate to pointers in Zig.
+By default, objects in Zig are **non-nullable**. This means that, in Zig,
+you can safely assume that any object in your source code is not null.
+
+This is a powerful feature of Zig when you compare it to the developer experience in C.
+Because in C, any object can be null at any point, and, as consequence, a pointer in C
+might point to a null value. This is a commom source of undefined behaviour in C.
+When programmers work with pointers in C, they have to constantly check if
+their pointers are pointing to null values or not.
+
+If for some reason, your Zig code produces a null value somewhere, and, this null
+value ends up in an object that is non-nullable, a runtime error is always
+raised by your Zig program. Take the program below as an example.
+The `zig` compiler can see the `null` value at compile time, and, as result,
+it raises a compile time error. But, if a `null` value is raised during
+runtime, a runtime error is also raised by the Zig program, with a
+"attempt to use null value" message.
+
+```{zig}
+#| eval: false
+var number: u8 = 5;
+number = null;
+```
+```
+p5.zig:5:14: error: expected type 'u8',
+        found '@TypeOf(null)'
+    number = null;
+             ^~~~
+```
+
+
+You don't get this type of security in C.
+In C, you don't get warnings or errors about null values being produced in your program.
+If for some reason, your code produces a null value in C, most of the times, you end up getting a segmentation fault error
+as result, which can mean many things.
+That is why programmers have to constantly check for null values in C.
+Because they do not have much visibility of null values.
+
+Pointers in Zig are also, by default, **non-nullable**. This is another amazing
+feature in Zig. So, any pointer you create in your code, you can
+safely assume that this pointer is pointing to a non-null value.
+Therefore, you don't have this heavy work of checking if the pointers you create
+in Zig are pointing to a null value.
+
+This is an important feature, because this is also a commom source
+source of undefined behaviour in C. For example, if you have a pointer `x` that points to
+an object `y`, the value of the object `y` might change during the runtime
+of your program, and, as consequence, the value pointed by the pointer `x`
+will change. I demonstrated already how the value pointed by a pointer
+might change at @sec-pointer-var.
+
+So, if for some reason, the value of `y` changes to a null value during runtime,
+and, you try to use the object `y` in some way in your code, the chances of
+producing a undefined behaviour in your program are sky high.
+
+In C, when the value of `y` changes, you have no garantees that the value
+of the object `y` changed to a null value or not. You simply don't know
+upfront if you have a null value in `y` or not. But in Zig,
+you can safely assume that the object `y` will never have a null value.
+
+
+### What are optionals?
+
+Ok, we know now that all objects are non-nullable by default in Zig.
+But what if we actually need to use an object that might receive a null value?
+Here is where optionals come in.
+
+An optional object in Zig is an object that can be null.
+To mark an object as optional, we use the `?` operator. When you put
+this `?` operator right before the data type of an object, you transform
+this data type into an optional data type, and the object becomes an optional object.
+
+Take the snippet below as an example. We are creating a new variable object
+called `num`. This object have data type `?i32`, which means that,
+this object contains either a signed 32-bit integer (`i32`), or, a null value.
+Both alternatives are valid values to the `num` object.
+That is why, I can actually change the value of this object to null, and,
+no errors are raised by the `zig` compiler, as demonstrated below:
+
+```{zig}
+var num: ?i32 = 5;
+num = null;
+```
+
+### Optional pointers
+
+You can also mark a pointer object as an optional pointer, meaning that,
+this pointer points to either a null value, or, a value that is not null.
+In other words, by marking a pointer as optional, you get a pointer that
+behaves like a pointer in C.
+
+When you mark a pointer as optional, the data type of this pointer object
+becomes `?*const T` or `?*T`, depending if the value pointed by the pointer
+is a constant value or not. The `?` identifies the object as optional, and
+the `*` identifies it as a pointer object.
+
+In the example below, we are creating a variable object named `num`, and an
+optional pointer object named `ptr`. Notice that the data type of the object
+`ptr` indicates that it is either a null value, or a pointer to an `i32` value.
+Also, notice that the pointer object (`ptr`) can be marked as optional, even if
+the object `num` is not optional.
+
+```{zig}
+var num: i32 = 5;
+const ptr: ?*i32 = &num;
+_ = ptr;
+```
+
+But what happens if we turn the table, and mark the `num` object as optional,
+instead of the pointer object. If we do that, then, the pointer object is
+not optional anymore. It would be a similar (altough different) result. Because then, we would have
+a pointer to an optional value. In other words, a pointer to a value that is either a
+null value, or, a not-null value.
+
+In the example below, we are recreating this idea. Now, the `ptr` object
+have a data type of `*?i32`, instead of `?*i32`. Notice that the `*` symbol comes before of `?`
+this time. So now, we have a pointer that points to a value that is either null
+, or, a signed 32-bits integer.
+
+```{zig}
+var num: ?i32 = 5;
+// ptr have type `*?i32`, instead of `?*i32`.
+const ptr = &num;
+_ = ptr;
+```
+
+
+### Null handling in optionals
+
+When you have an optional object in your Zig code, you have to explicitly handle
+the possibility of this object being null. Is like error-handling with `try` and `catch`.
+In Zig you also have to handle null values like if they were a type of error.
+
+We can do that, by using either:
+
+- an if statement, like you would do in C.
+- the `orelse` keyword.
+- unwrap the optional value with the `?` method.
+
+When you use an if statement, you use a pair of pipes
+to unwrap the optional value, and use this "unwrapped object"
+inside the if block.
+
+Using the example below as a reference, if the object `num` is null,
+then, the code inside the if statement is not executed. Otherwise,
+the if statement will unwrap the object `num` into the `not_null_num`
+object. This `not_null_num` object is garanteed to be not null inside
+the scope of the if statement.
+
+```{zig}
+const num: ?i32 = 5;
+if (num) |not_null_num| {
+    try stdout.print(
+        "{d}\n", .{not_null_num}
+    );
+}
+```
+
+Now, the `orelse` keyword have a syntax similar to a `try` and `catch` pattern.
+On the left side of `orelse`, you provide the expression that might result
+in a null value, and on the right side of `orelse` you provide another expression
+that will not result in a null value.
+
+The idea behind the `orelse` keyword is, if the expression on the left side
+result in a not-null value, then, this not-null value is used. However,
+if this expression on the left side result in a null value, then, the value
+of the expression on the right side is used instead.
+
+Looking at the example below, since the `x` object is currently null, the
+`orelse` decided to use the alternative value, which is the number 15.
+
+```{zig}
+const x: ?i32 = null;
+const dbl = (x orelse 15) * 2;
+try stdout.print("{d}\n", .{dbl});
+```
+
+You can use the if statement or the `orelse` keyword, when you want to
+solve (or deal with) this null value. However, if there is no clear solution
+to this null value, and the most logic and sane path is to simply panic
+and raise a loud error in your program when this null value is encountered,
+you can use the `?` method of your optional object.
+
+In essence, when you use this `?` method, the optional object is unwraped.
+If a not-null value is found in the optional object, then, this not-null value is used.
+Otherwise, the `unreachable` keyword is used. You can read more about this
+[`unreacheable` keyword at the official documentation](https://ziglang.org/documentation/master/#unreachable)[^un-docs].
+But in essence, when you build your Zig source code using the build modes `ReleaseSafe` or `Debug`, this
+`unreacheable` keyword causes the program to panic and raise an error during runtime,
+like in the example below:
+
+```{zig}
+#| eval: false
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+fn return_null(n: i32) ?i32 {
+    if (n == 5) return null;
+    return n;
+}
+
+pub fn main() !void {
+    const x: i32 = 5;
+    const y: ?i32 = return_null(x);
+    try stdout.print("{d}\n", .{y.?});
+}
+```
+
+```
+thread 12767 panic: attempt to use null value
+p7.zig:12:34: 0x103419d in main (p7):
+    try stdout.print("{d}\n", .{y.?});
+                                 ^
+```
+
+
+[^un-docs]: <https://ziglang.org/documentation/master/#unreachable>.
+
+

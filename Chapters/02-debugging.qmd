@@ -298,3 +298,33 @@ Process 4798 stopped
 (unsigned char) incremented = '\x06'
 ```
 
+
+
+## How to investigate the data type of your objects
+
+Since Zig is a strongly-typed language, the data types associated with your objects
+are very important for your program. So, debugging the data types associated
+with your objects might be important to understand bugs and errors in your program.
+
+When you walk through your program with a debugger, you can inspect the types of
+your objects by simply printing them to the console, with the LLDB `p` command.
+But also have alternatives embedded in the language itself to access the data
+types of your objects.
+
+In Zig, you can retrieve the data type of an object, by using the built-in function
+`@TypeOf()`. Just apply this function over the object, and you get access to 
+the data type of the object.
+
+```{zig}
+#| auto_main: false
+#| build_type: "run"
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+const expect = std.testing.expect;
+
+pub fn main() !void {
+    const number: i32 = 5;
+    try expect(@TypeOf(number) == i32);
+    try stdout.print("{any}\n", .{@TypeOf(number)});
+}
+```
