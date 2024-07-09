@@ -225,7 +225,9 @@ div.csl-indent {
    
   <ul>
   <li><a href="#constant-objects-vs-variable-objects" id="toc-constant-objects-vs-variable-objects" class="nav-link active" data-scroll-target="#constant-objects-vs-variable-objects"><span class="header-section-number">6.1</span> Constant objects vs variable objects</a></li>
-  <li><a href="#types-of-pointer" id="toc-types-of-pointer" class="nav-link" data-scroll-target="#types-of-pointer"><span class="header-section-number">6.2</span> Types of pointer</a></li>
+  <li><a href="#pointer-arithmethic" id="toc-pointer-arithmethic" class="nav-link" data-scroll-target="#pointer-arithmethic"><span class="header-section-number">6.2</span> Pointer arithmethic</a></li>
+  <li><a href="#non-nullable-pointers" id="toc-non-nullable-pointers" class="nav-link" data-scroll-target="#non-nullable-pointers"><span class="header-section-number">6.3</span> Non-nullable pointers</a></li>
+  <li><a href="#types-of-pointer" id="toc-types-of-pointer" class="nav-link" data-scroll-target="#types-of-pointer"><span class="header-section-number">6.4</span> Types of pointer</a></li>
   </ul>
 </nav>
     </div>
@@ -251,7 +253,7 @@ div.csl-indent {
 </header>
 
 
-<p>On the next chapter, we are going to build a HTTP server from scratch. But in order to do that, we need to learn more about what are pointers, and how they work in Zig.</p>
+<p>On the next chapter, we are going to build a HTTP server from scratch. But in order to do that, we need to learn more about what pointers are, and how they work in Zig.</p>
 <p>Pointers in Zig are similar to pointers in C. A pointer is an object that contains a memory address. This memory address is the address where a particular value is stored in the memory. It can be any value. Most of the times, it is a value that comes from another object (or variable) present in our code.</p>
 <p>In the example below, I’m creating two objects (<code>number</code> and <code>pointer</code>). The <code>pointer</code> object contains the memory address where the value of the <code>number</code> object (the number 5) is stored. So, that is a pointer in a nutshell. It is a memory address that points to a particular existing value in the memory. You could also say, that, the <code>pointer</code> object points to the memory address where the <code>number</code> object is stored.</p>
 <div class="cell">
@@ -307,9 +309,11 @@ div.csl-indent {
 <pre><code>6</code></pre>
 </div>
 </div>
-<p>Now, what about the pointer object itself? I mean, what happens if the pointer object is constant or not? Think about it. We can have a constant pointer that points to a constant value. But we can also have a constant pointer that points to a variable value.</p>
+<p>You can see this relationship on the types of the pointer objects. When a pointer object points to a constant value, then, this pointer have a type <code>*const T</code>, which means “a pointer to a constant value of type <code>T</code>”. In contrast, if the pointer points to a variable value, then, the type of the pointer is <code>*T</code>, which is simply “a pointer to a value of type <code>T</code>”.</p>
+<p>Whenever you see a pointer object whose type is in the format <code>*const T</code>, then, you know that you cannot use this pointer to change the value that it points to. Because this pointer points to a constant value of type <code>T</code>.</p>
+<p>Now, what about the pointer object itself? I mean, what happens if the pointer object is constant or not? Think about it. We can have a constant pointer that points to a constant value. But we can also have a variable pointer that points to a constant value.</p>
 <p>Until this point, the <code>pointer</code> object was always constant, but what this means for us? What is the consequence of the <code>pointer</code> object being constant? The consequence is that we cannot change the pointer object. We can use the pointer object in multiple ways, but we cannot change the memory address that is inside this pointer object.</p>
-<p>However, if we mark the <code>pointer</code> object as a variable object, then, we can change the memory address pointed by this <code>pointer</code> object. The example below demonstrates that. Notice that the value pointed by the <code>pointer</code> object changes from 5 to 6.</p>
+<p>However, if we mark the <code>pointer</code> object as a variable object, then, we can change the memory address pointed by this <code>pointer</code> object. The example below demonstrates that. Notice that the object pointed by the <code>pointer</code> object changes from <code>c1</code> to <code>c2</code>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c1: <span class="dt">u8</span> = <span class="dv">5</span>;</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c2: <span class="dt">u8</span> = <span class="dv">6</span>;</span>
@@ -322,8 +326,36 @@ div.csl-indent {
 6</code></pre>
 <p>Thus, by setting the <code>pointer</code> object to a <code>var</code> or <code>const</code> object, you specify if the memory address contained in this pointer object can change or not in your program. On the other side, you can change the value pointed by the pointer, if, and only if this value is stored in a variable object. If this value is in a constant object, then, you cannot change this value through a pointer.</p>
 </section>
-<section id="types-of-pointer" class="level2" data-number="6.2">
-<h2 data-number="6.2" class="anchored" data-anchor-id="types-of-pointer"><span class="header-section-number">6.2</span> Types of pointer</h2>
+<section id="pointer-arithmethic" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="pointer-arithmethic"><span class="header-section-number">6.2</span> Pointer arithmethic</h2>
+<p>Pointer arithmethic is available in Zig, and they work the same way they work in C. When you have a pointer that points to an array, the pointer usually points to the first element in the array, and you can use pointer arithmethic to incrementally advance this pointer, to access the other elements in the array.</p>
+<p>Notice in the example below, that initially, the <code>ptr</code> object was pointing to the first element in the array <code>ar</code>. But then, I start to walk through the array, by advancing the pointer with pointer arithmethic.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ar = [_]<span class="dt">i32</span><span class="op">{</span><span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span><span class="op">}</span>;</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> ptr: [*]<span class="kw">const</span> <span class="dt">i32</span> = &amp;ar;</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr[<span class="dv">0</span>]<span class="op">}</span>);</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>ptr += <span class="dv">1</span>;</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr[<span class="dv">0</span>]<span class="op">}</span>);</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>ptr += <span class="dv">1</span>;</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr[<span class="dv">0</span>]<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>1
+2
+3</code></pre>
+<p>Although you can create a pointer to an array like that, and start to walk through this array by using pointer arithmethic, in Zig, we prefer to use slices, which were presented at <a href="01-zig-weird.html#sec-arrays" class="quarto-xref"><span>Section 1.7</span></a>.</p>
+<p>Slices are better because, behind the hood, they already are pointers, but, they come with a caveat, which is the <code>len</code> property, which indicates how many elements are in the slice. This is good because the <code>zig</code> compiler can use it to check for potential buffer overflow problems, and other problems like that.</p>
+<p>As I mentioned at <a href="01-zig-weird.html#sec-arrays" class="quarto-xref"><span>Section 1.7</span></a>, you can get a slice from an array, using a range selector inside brackets. In the example below, I create a slice that takes the entire <code>ar</code> array. So I can access all elements of <code>ar</code> from this slice.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ar = [_]<span class="dt">i32</span><span class="op">{</span><span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span><span class="op">}</span>;</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ptr = ar[<span class="dv">0</span>..ar.len];</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>_ = ptr;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="non-nullable-pointers" class="level2" data-number="6.3">
+<h2 data-number="6.3" class="anchored" data-anchor-id="non-nullable-pointers"><span class="header-section-number">6.3</span> Non-nullable pointers</h2>
+</section>
+<section id="types-of-pointer" class="level2" data-number="6.4">
+<h2 data-number="6.4" class="anchored" data-anchor-id="types-of-pointer"><span class="header-section-number">6.4</span> Types of pointer</h2>
 <p>In Zig, there are two types of pointers <span class="citation" data-cites="zigdocs">(<a href="../references.html#ref-zigdocs" role="doc-biblioref">Zig Software Foundation 2024</a>)</span>, which are:</p>
 <ul>
 <li>single-item pointer (<code>*</code>);</li>

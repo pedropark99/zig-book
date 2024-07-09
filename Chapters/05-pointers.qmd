@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 
 On the next chapter, we are going to build a HTTP server from scratch.
 But in order to do that,
-we need to learn more about what are pointers, and how they work in Zig.
+we need to learn more about what pointers are, and how they work in Zig.
 
 Pointers in Zig are similar to pointers in C. A pointer is an object
 that contains a memory address. This memory address is the address where
@@ -151,11 +151,25 @@ pointer.* = 6;
 try stdout.print("{d}\n", .{number});
 ```
 
+You can see this relationship on the types of the
+pointer objects. When a pointer object points to
+a constant value, then, this pointer have a type `*const T`,
+which means "a pointer to a constant value of type `T`".
+In contrast, if the pointer points to a variable value,
+then, the type of the pointer is `*T`, which is
+simply "a pointer to a value of type `T`".
+
+Whenever you see a pointer object whose type is in the
+format `*const T`, then, you know that you cannot use this pointer
+to change the value that it points to. Because this pointer
+points to a constant value of type `T`.
+
+
 Now, what about the pointer object itself? I mean, what happens
 if the pointer object is constant or not? Think about it.
 We can have a constant pointer that points to a constant value.
-But we can also have a constant pointer that points to a
-variable value.
+But we can also have a variable pointer that points to a
+constant value.
 
 Until this point, the `pointer` object was always constant,
 but what this means for us? What is the consequence of the
@@ -166,8 +180,8 @@ memory address that is inside this pointer object.
 
 However, if we mark the `pointer` object as a variable object,
 then, we can change the memory address pointed by this `pointer` object.
-The example below demonstrates that. Notice that the value pointed
-by the `pointer` object changes from 5 to 6.
+The example below demonstrates that. Notice that the object pointed
+by the `pointer` object changes from `c1` to `c2`.
 
 ```{zig}
 #| eval: false
@@ -189,6 +203,62 @@ you specify if the memory address contained in this pointer object can change or
 in your program. On the other side, you can change the value pointed by the pointer,
 if, and only if this value is stored in a variable object. If this value
 is in a constant object, then, you cannot change this value through a pointer.
+
+
+## Pointer arithmethic
+
+Pointer arithmethic is available in Zig, and they work the same way they work in C.
+When you have a pointer that points to an array, the pointer usually points to
+the first element in the array, and you can use pointer arithmethic to
+incrementally advance this pointer, to access the other elements in the array.
+
+
+Notice in the example below, that initially, the `ptr` object was pointing
+to the first element in the array `ar`. But then, I start to walk through the array, by advancing
+the pointer with pointer arithmethic.
+
+```{zig}
+#| eval: false
+const ar = [_]i32{1,2,3,4};
+var ptr: [*]const i32 = &ar;
+try stdout.print("{d}\n", .{ptr[0]});
+ptr += 1;
+try stdout.print("{d}\n", .{ptr[0]});
+ptr += 1;
+try stdout.print("{d}\n", .{ptr[0]});
+```
+```
+1
+2
+3
+```
+
+Although you can create a pointer to an array like that, and
+start to walk through this array by using pointer arithmethic,
+in Zig, we prefer to use slices, which were presented at @sec-arrays.
+
+Slices are better because, behind the hood, they already are pointers,
+but, they come with a caveat, which is the `len` property, which indicates
+how many elements are in the slice. This is good because the `zig` compiler
+can use it to check for potential buffer overflow problems, and other problems like that.
+
+Also, you don't need to use pointer arithmethic to walk through the elements
+of a slice. You simply use the `slice[index]` syntax to directly access
+any element you want in the slice.
+
+As I mentioned at @sec-arrays, you can get a slice from an array, by using
+a range selector inside brackets. In the example below, I create
+a slice (`sl`) that takes the entire `ar` array. So I can access all
+elements of `ar` from this slice.
+
+```{zig}
+const ar = [_]i32{1,2,3,4};
+const sl = ar[0..ar.len];
+_ = sl;
+```
+
+
+## Non-nullable pointers
 
 
 ## Types of pointer
