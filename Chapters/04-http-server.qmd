@@ -54,6 +54,12 @@ a program that is running indefinetly, waiting for connections),
 and a client (which is someone that wants to connect to
 and exchange HTTP messages with the server).
 
+You may find the material about the [HTTP Protocol available at the Mozilla MDN Docs](https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview)[^mdn-http]
+, a great resource for you to also look at. It gives you a great overview on how
+HTTP works, and what role the server plays in this matter.
+
+[^mdn-http]: <https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview>.
+
 ## How a HTTP Server works? {#sec-how-http-works}
 
 Imagine a HTTP Server as if it were the receptionist of a large hotel. In a hotel,
@@ -337,37 +343,32 @@ thing that we need to deal with.
 That is why, I'm going to create a new Zig module in this small project, named `request.zig`
 to keep all functions related to the HTTP Request
 together. Then, I will create a new function named `read_request()` that will
-use our connection object to read the message sent by the client, and,
-parse this message as a HTTP Request.
+use our connection object to read the message sent by the client,
+which is the HTTP Request.
 
 
 ```{zig}
 #| eval: false
 const std = @import("std");
 const Connection = std.net.Server.Connection;
-
-pub fn read_request(conn: Connection) !void {
-    var buffer: [1000]u8 = undefined;
-    for (0..buffer.len) |i| {
-        buffer[i] = 0;
-    }
+pub fn read_request(conn: Connection,
+                    buffer: []u8) !void {
     const reader = conn.stream.reader();
-    _ = try reader.read(&buffer);
-    std.debug.print("{s}\n", .{buffer});
+    _ = try reader.read(buffer);
 }
 ```
 
-Notice that, inside this function, I'm creating a buffer object, which will be
-responsible for storing the message sent by the client. Also, notice that,
-I use a `for` loop to initialize all fields of this buffer object to the number zero.
-This is important to make sure that we don't have uninitialized memory in
-this object. Because uninitialized may cause undefined behaviour in our program.
 
-Also, notice that I'm using the connection object that we created to read
+This function accepts a slice object which behaves as a buffer.
+The `read_request()` function reads the contents of the message sent into
+the connection object, and saves this content into this buffer we provided
+as input.
+
+Notice that I'm using the connection object that we created to read
 the message from the client. I first access the `reader` object that lives inside the
 connection object. Then, I call the `read()` method of this `reader` object
 to effectivelly read and save the data sent by the client into the buffer object
-that we created earlier. Notice that I'm discarting the return value
+that we created earlier. I'm discarting the return value
 of the `read()` method, by assigning it to the underscore character (`_`),
 because this return value is not useful for us right now.
 
@@ -375,12 +376,24 @@ because this return value is not useful for us right now.
 
 ## Looking at the current state of the program
 
-You might have notice that I'm using a print statement at the end of the `read_request()` function,
-just so that you can see what the HTTP Request we just loaded into the buffer object
-looks like. Actually... why not we demonstrate how our program is currently working? Shall we?
+You might have 
+
+I think it is a good time to see how our program is currently working. Shall we?
 So, the first thing I will do is to update the `main.zig` module in our small Zig project,
 so that the `main()` function call this new `read_request()` function that we just created.
+I will also add a print statement at the end of the `main()` function,
+just so that you can see what the HTTP Request we just loaded into the buffer object
+looks like.
 
+Also, I'm creating a buffer object, which will be
+responsible for storing the message sent by the client, and, I'm also
+using a `for` loop to initialize all fields of this buffer object to the number zero.
+This is important to make sure that we don't have uninitialized memory in
+this object. Because uninitialized may cause undefined behaviour in our program.
+
+Since the `read_request()` receives the buffer object as a slice object (`[]u8`),
+I am using the syntax `array[0..array.len]` to get a slice of this `buffer` object
+to provide as input to the function.
 
 ```{zig}
 #| eval: false
@@ -394,7 +407,14 @@ pub fn main() !void {
     try stdout.print("Server Addr: {any}\n", .{socket._address});
     var server = try socket._address.listen(.{});
     const connection = try server.accept();
-    try Request.read_request(connection);
+    var buffer: [1000]u8 = undefined;
+    for (0..buffer.len) |i| {
+        buffer[i] = 0;
+    }
+    _ = try Request.read_request(
+        connection, buffer[0..buffer.len]
+    );
+    try stdout.print("{s}\n", .{buffer});
 }
 ```
 
@@ -443,13 +463,10 @@ If you comeback to the console that you left open
 when you executed the program, you will see that the
 program finished it's execution, and, a new message is
 printed in the console, which is the actual HTTP Request
-message that was sent by the web browser to the console.
+message that was sent by the web browser to the server.
 You can see that at @fig-print-zigrun2.
 
 ![A screenshot of the HTTP Request sent by the web browser](./../Figures/print-zigrun2.png){#fig-print-zigrun2}
-
-
-
 
 
 
@@ -503,9 +520,382 @@ work in C. Each enum value is essentially represented as a integer.
 The first value in the set is represented as zero,
 then, the second value is one, ... etc.
 
+One thing that we are going to learn on the next section is that
+enums can have methods in them. Wait... What? This is amazing!
+Yes, enums in Zig are similar to structs, and they can have
+private and public methods inside them.
+
+
+
+
+
 
 
 ## Implementing the server - Part 2
 
 Now, on this section, I want to focus on parsing
 the HTTP Request we received from the client.
+However, to effectively parse a HTTP Request message, we first need to understand it's
+structure.
+In summary, a HTTP Request is a text message that is divided into 3 different
+sections (or parts):
+
+- The top-level header indicating the method of the HTTP Request, the URI, and the HTTP version used in the message.
+- A list of HTTP Headers.
+- The body of the HTTP Request.
+
+### The top-level header
+
+The first line of text in a HTTP Request always come with the three most essential
+information about the request being analyzed. These three key attributes of the HTTP Request
+are separated by a simple space in this first line of the request.
+The first information is the HTTP method that is being
+used in the request, second, we have the URI to which this HTTP Request is being sent to,
+and third, we have the version of the HTTP protocol that is being used in this HTTP Request.
+
+In the snippet below, you will find an example of this first line in a HTTP Request.
+First, we have the the HTTP method of this request (`GET`). Many programmers
+refer to the URI component (`/users/list`) as the "API endpoint" to which the HTTP Request
+is being sent to. In the context of this specific request, since it is a GET request,
+you could also say that the URI component is the path to the resource we want to access,
+or, the path to the document (or the file) that we want to retrieve from the server.
+
+```
+GET /users/list HTTP/1.1
+```
+
+Also, notice that this HTTP Request is using the version 1.1 of the HTTP protocol,
+which is the most popular version of the protocol used in the web.
+
+
+
+### The list of HTTP headers
+
+Most HTTP Requests also include a section of HTTP Headers,
+which is just a list of attributes or key-value pairs associated with this
+particular request. This section always comes right after the "top-level header" of the request.
+
+For our purpose in this chapter, which is to build a simple HTTP Server,
+we are going to ignore this section of the HTTP Request, for simplicity.
+But most HTTP servers that exist in the wild parses and use these
+HTTP headers to change the way that the server responds to the request
+send by the client.
+
+For example, many requests we encounter in the real-world comes with
+a HTTP header called `Accept`. In this header, we find a list of [MIME types](https://en.wikipedia.org/wiki/Media_type)[^mime].
+This list indicates the file formats that the client can read, or parse, or interpret.
+In other words, you also interpret this header as the client saying the following phrase
+to the server: "Hey! Look, I can read only HTML documents, so please, send me back
+a document that is in a HTML format.".
+
+[^mime]: <https://en.wikipedia.org/wiki/Media_type>.
+
+So, if the HTTP server can read and use this `Accept` header, then, the server can identify
+which is the best format of the document to send to the client. Maybe the HTTP server have
+the same document in multiple formats, for example, in JSON, in XML, in HTML and in PDF,
+but the client can only understand documents in the format HTML. That is the purpose
+of this `Accept` header.
+
+
+### The body
+
+The body comes after the list of HTTP headers, and it is an optional section of the HTTP Request, meaning that, not
+all HTTP Request will come with a body in it. For example, every HTTP Request that uses the
+GET method usually do not come with a body.
+
+Because a GET request is used to request data,
+instead of sending it to the server. So, the body section is more related to the POST method, which is a method that involves
+sending data to the server, to be processed and stored.
+
+Since we are going to support only the GET method in this project, it means that
+we also do not need to care about the body of the request.
+
+
+
+### Creating the HTTP Method enum
+
+Every HTTP Request comes with a explicit method. The method used in a HTTP Request
+is identified by one these words:
+
+- GET;
+- POST;
+- OPTIONS;
+- PATCH;
+- DELETE;
+- and some other methods.
+
+Each HTTP method is used for a specific type of task. The POST method for example is normally
+used to post some data into the destination. In other words, it is used
+to send some data to the HTTP server, so that it can be processed and stored by the server.
+
+As another example, the GET method is normally used to get content from the server.
+In other words, we use this method whenever we want the server to send some
+content back to us. It can be any type of content. It can be a web page,
+a document file, or some data in JSON format.
+
+When a client send a POST HTTP Request, the HTTP Response sent by the server normally have the sole purpose of
+letting the client know if the server processed and stored the data succesfully.
+In contrast, when the server receives a GET HTTP Request, then, the server sends the content
+that the client asked for in the HTTP Response itself. This demonstrates that the method associated
+with the HTTP Request changes a lot on the dynamics and the roles that each party
+plays in the whole process.
+
+Since the HTTP method of the HTTP Request is identified by this very small and specific
+set of words, it would be interesting to create an enum structure to represent a HTTP method.
+This way, we can easily check if the HTTP Request we receive from the client is a
+HTTP method that we currently support in our small HTTP server project.
+
+The `Method` structure below represents this enumeration.
+Notice that, for now, only the GET HTTP method is included in this
+enumeration. Because, for the purpose of this chapter, I want to
+implement only the GET HTTP method. That is why I am not
+including the other HTTP methods in this enumeration.
+
+```{zig}
+#| build_type: "lib"
+const Method = enum {
+    GET
+};
+```
+
+
+Now, I think we should add two methods to this enum structure. One method is `is_supported()`,
+which will be a function that returns a boolean value, indicating if the input HTTP method is supported
+or not by our HTTP Server. The other is `init()`, which is a constructor function that takes a string as input,
+and tries to convert it into a `Method` value.
+
+
+But in order to build these functions, I will use a functionality from the Zig Standard Library, called
+`StaticStringMap()`. This function allows us to create a simple map from strings to enum values.
+In other words, we can use this map structure to map a string to the respective enum value.
+To some extent, this specific structure from the standard library works almost like a "hashtable" structure,
+and it is optmized for a small sets of words, or, a small set of keys, which is our case here.
+
+To use this function, you have to import it from the `std.static_string_map` module. Just
+to make things shorter and easier to type, I am going to import this function through a different
+and shorter name (`Map`).
+
+With `Map()` imported, we just apply this function over the enum structure
+that we are going to use in the resulting map. In our case here, it is the `Method` enum structure
+that we declared at the last code example. Then, I call the `initComptime()` method with the
+map, i.e. the list of key-value pairs that we are going to use.
+
+You can see in the example below that I write this map using multiple anonymous struct literals.
+Inside the first (or "top-level") struct literal we have a list (or a sequence) of struct literals.
+Each struct literal in this list represents a key-value pair. The first element
+in this struct is the key, while the second element is the value. The first element (or the key)
+in each key-value pair should always be a string value. While the second element should
+be a value from the enum structure that you used inside the `Map()` function.
+
+
+```{zig}
+#| eval: false
+const Map = std.static_string_map.StaticStringMap;
+const MethodMap = Map(Method).initComptime(.{
+    .{ "GET", Method.GET },
+});
+```
+
+Therefore, the `MethodMap` object is basically a `std::map` object from C++, or,
+a `dict` object from Python. You can retrieve (or get) the enum value that
+corresponds to a particular key, by using the `get()` method from the map
+object. This method returns an optional value, so, the `get()` method might
+result in a null value.
+
+We can use this in our advantage to detect if a particular HTTP method is
+supported or not in our HTTP server. Because, if the `get()` method returns null,
+it means that it did not find this method inside our `MethodMap` object, and,
+as a consequence, this method is not supported by our HTTP server.
+In this specific case, a null value means "not supported method".
+
+The `init()` method below, takes a string value as input, and then, it simply passes this string value
+to the `get()` method of our `MethodMap` object. As consequence, we should get the enum value that corresponds
+to this input string.
+
+Notice in the example below that, the `init()` method returns either an error
+(which might happen if the `?` method returns `unreacheable`, checkout @sec-null-handling for more details)
+or a `Method` object as result. Since `GET` is currently the only value in our `Method` enum
+structure, it means that, the `init()` method will most likely return the value `Method.GET` as result.
+
+Also notice that, in the `is_supported()` method, we are using the optional value returned
+by the `get()` method from our `MethodMap` object. The if statement unwrapes the optional value
+returned by this method, and returns `true` in case this optional value is a not-null value.
+Otherwise, it simply returns `false`.
+
+```{zig}
+#| eval: false
+const Method = enum {
+    GET,
+    pub fn init(text: []const u8) !Method {
+        return MethodMap.get(text).?;
+    }
+    pub fn is_supported(m: []const u8) bool {
+        const method = MethodMap.get(m);
+        if (method) |_| {
+            return true;
+        }
+        return false;
+    }
+};
+```
+
+
+
+
+
+
+
+### Writing the parse request function
+
+Now that we created the enum that represents our HTTP method,
+we should start to write the function responsible for
+actually parsing the HTTP Request. Let's first, understand
+the structure of a HTTP Request.
+
+The first thing we can do, is to write a struct to represent the HTTP Request.
+Take the `Request` struct below as an example. It contains the three
+essential information from the "top-level" header (i.e. the first line)
+in the HTTP Request.
+
+```{zig}
+#| eval: false
+const Request = struct {
+    method: Method,
+    version: []const u8,
+    uri: []const u8,
+    pub fn init(method: Method,
+                uri: []const u8,
+                version: []const u8) Request {
+        return Request{
+            .method = method,
+            .uri = uri,
+            .version = version,
+        };
+    }
+};
+```
+
+
+The `parse_request()` function should receive a string as input. This input string
+contains the entire HTTP Request message, and the parsing function should
+read and understand the individual parts of this message.
+
+Now, remember that for the purpose of this chapter, we care about only about the first
+line in this message, which contains the "top-level header", or, the three essential attributes about the HTTP Request,
+which are the HTTP method used, the URI and the HTTP version.
+
+Notice that I use the function `indexOfScalar()` in `parse_request()`. This function from the
+Zig Standard Library returns the first index where the scalar value that we provide
+happens in a string. In this case, I'm looking at the first occurrence of the new line character (`\n`).
+Because once again, we care only about the first line in the HTTP Request message.
+This is the line where we have the three information we want to parse
+(version of HTTP, the HTTP method and the URI).
+
+Therefore, we are using this `indexOfScalar()` function
+to limit our parsing process to the first line in the message.
+Is also worth mentioning that, the `indexOfScalar()` function returns an optional value.
+That is why I use the `orelse` keyword to provide an alternative value, in case
+the value returned by the function is a null value.
+
+Since each of these three attributes are separated by a simple space, we
+could use the function `splitScalar()` from the Zig Standard Library to split
+the input string into sections by looking for every position that appears
+a simple space. In other words, this `splitScalar()` function is equivalent
+to the `split()` method in Python, or, the `std::getline()` function from C++,
+or the `strtok()` function in C.
+
+When you use this `splitScalar()` function you get an iterator as the result.
+This iterator have a `next()` method that you can use to advance the iterator
+to the next position, or, to the next section of the splitted string.
+Note that, when you use `next()`, the method not only advances the iterator,
+but it also returns a slice to the current section of the splitted
+string as result.
+
+Now, if you want to get a slice to the current section of the splitted
+string, but not advance the iterator to the next position, you can use
+the `peek()` method. Both `next()` and `peek()` methods return an optional value, that is
+why I use the `?` method to unwrap these optional values.
+
+
+```{zig}
+#| eval: false
+pub fn parse_request(text: []u8) Request {
+    const line_index = std.mem.indexOfScalar(
+        u8, text, '\n'
+    ) orelse text.len;
+    var iterator = std.mem.splitScalar(
+        u8, text[0..line_index], ' '
+    );
+    const method = try Method.init(iterator.next().?);
+    const uri = iterator.next().?;
+    const version = iterator.next().?;
+    const request = Request.init(method, uri, version);
+    return request;
+}
+```
+
+Have you notice that the "string utility functions" we imported from the Zig Standard Library,
+and that we applied over the input string, comes from the `mem` module (which is the "memory utility functions" module)?
+
+As I described at @sec-zig-strings, strings in Zig are simply arrays of bytes in the language.
+So, you will find inside this `mem` module lots of excellent utility functions to work directly with bytes
+and arrays in Zig, and, as a result, these functions will also be very useful if you have to work with string data.
+
+
+
+### Using the parse request function
+
+Now that we wrote the function responsible for parsing the HTTP Request,
+we can add the function call to `parse_request()` in
+the `main()` function of our program.
+
+After, is a good idea to test once again the state of our program.
+I execute this program again with the `run` command from the `zig` compiler,
+then, I use my web browser to connect once again to the server through the URL `localhost:3490`, and finally,
+the end result of our `Request` object is printed to the console.
+
+A quick observation, since I used the `any` format specifier in the
+print statement, the data members `version` and `uri` of the `Request`
+struct were printed as raw integer values. String data being printed
+as integer values is commom in Zig, and remember, these integer values are just the decimal representation of
+the bytes that form the string in question.
+
+In the result below, the sequence of decimal values 72, 84, 84, 80, 47, 49, 46, 49, and 13,
+are the bytes that form the text "HTTP/1.1". And the integer 47, is the decimal value of
+the character `/`, which represents our URI in this request.
+
+```{zig}
+#| eval: false
+const std = @import("std");
+const SocketConf = @import("config.zig");
+const Request = @import("request.zig");
+const stdout = std.io.getStdOut().writer();
+
+pub fn main() !void {
+    const socket = try SocketConf.Socket.init();
+    var server = try socket._address.listen(.{});
+    const connection = try server.accept();
+
+    var buffer: [1000]u8 = undefined;
+    for (0..buffer.len) |i| {
+        buffer[i] = 0;
+    }
+    try Request.read_request(
+        connection, buffer[0..buffer.len]
+    );
+    const request = Request.parse_request(buffer[0..buffer.len]);
+    try stdout.print("{any}\n", .{request});
+}
+```
+
+```
+request.Request{
+    .method = request.Method.GET,
+    .version = {72, 84, 84, 80, 47, 49, 46, 49, 13},
+    .uri = {47}
+}
+```
+
+
+
+## Implementing the server - Part 3
