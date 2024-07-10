@@ -19,9 +19,9 @@ pub fn main() !void {
     const request = Request.parse_request(buffer[0..buffer.len]);
     if (request.method == Method.GET) {
         if (std.mem.eql(u8, request.uri, "/")) {
-            Response.resp_200(connection);
+            try Response.send_200(connection);
         } else {
-            Response.resp_404(connection);
+            try Response.send_404(connection);
         }
     }
 }
@@ -29,4 +29,3 @@ pub fn main() !void {
 // const reader = incoming_connection.stream.reader();
 // _ = try reader.read(&buffer);
 // try stdout.print("{s}\n", .{buffer});
-// _ = try incoming_connection.stream.write("HTTP/1.1 200 OK\nContent-Length: 48\nContent-Type: text/html\nConnection: Closed\n\n<html><body><h1>Hello, World!</h1></body></html>");

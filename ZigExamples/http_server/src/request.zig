@@ -10,7 +10,7 @@ const Map = std.static_string_map.StaticStringMap;
 const MethodMap = Map(Method).initComptime(.{
     .{ "GET", Method.GET },
 });
-const Method = enum {
+pub const Method = enum {
     GET,
 
     pub fn init(text: []const u8) !Method {
