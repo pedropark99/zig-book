@@ -898,4 +898,113 @@ request.Request{
 
 
 
+
 ## Implementing the server - Part 3
+
+In this last part, we are going to write the logic responsible for
+sending the HTTP Response from the server to the client. To make things
+simple, the server in this project will send just a simple web page
+containing the text "Hello world".
+
+First, I create a new Zig module in the project, named `response.zig`.
+In this module, I will declare just two functions. Each function
+corresponds to a specific status code in the HTTP Response.
+The `send_200()` function will send a HTTP Response with status code 200
+(which means "Success") to the client. While the `send_404()` sends a response
+with status code 404 (which means "Not found").
+
+This is definitely not the most ergonomic and adequate way of handling the
+HTTP Response, but it works for our case here. We are just building toy projects
+in this book after all. So, the source code we write do not need to be perfect.
+It just needs to work!
+
+
+```{zig}
+#| eval: false
+const std = @import("std");
+const Connection = std.net.Server.Connection;
+pub fn send_200(conn: Connection) !void {
+    const message = (
+        "HTTP/1.1 200 OK\nContent-Length: 48"
+        ++ "\nContent-Type: text/html\n"
+        ++ "Connection: Closed\n\n<html><body>"
+        ++ "<h1>Hello, World!</h1></body></html>"
+    );
+    _ = try conn.stream.write(message);
+}
+
+pub fn send_404(conn: Connection) !void {
+    const message = (
+        "HTTP/1.1 404 Bad Request\nContent-Length: 50"
+        ++ "\nContent-Type: text/html\n"
+        ++ "Connection: Closed\n\n<html><body>"
+        ++ "<h1>File not found!</h1></body></html>"
+    );
+    _ = try conn.stream.write(message);
+}
+```
+
+Notice that both functions receives the connection object as input, and
+use the `write()` method to write the HTTP Response message directly
+into this communication channel. As result, the party in the other
+side of the connection (i.e. the client), will receive such message.
+
+Most real-world HTTP Servers will have a single function (or a single struct) to effectively handle
+the response. It gets the HTTP Request already parsed as input, and then, it tries to build
+the HTTP Response bit by bit, before the function sends it over the connection.
+
+We would also have a specialized struct to represent a HTTP Response, and
+a lot of methods that would be used to build each part or component of the response object.
+Take the `Response` struct created by the Javascript runtime Bun as an example.
+You can find this struct in the [`response.zig` module](https://github.com/oven-sh/bun/blob/main/src/bun.js/webcore/response.zig)[^bun-resp]
+in their GitHub project.
+
+[^bun-resp]: <https://github.com/oven-sh/bun/blob/main/src/bun.js/webcore/response.zig>.
+
+
+## The end result
+
+We can now, update once again our `main()` to incorporate our new
+functions from the `respons.zig` module. First I need to import this module
+into our `main.zig` module, then, I add the function calls to `send_200()`
+and `send_404()`.
+
+Notice that I'm using if statements to decide which "response function" to call,
+based specially on the URI present in the HTTP Request. If the user asked for
+a content (or a document) that is not present in our server, we should respond
+with a 404 status code. But since we have just a simple HTTP server, with no
+real documents to send, we can just check if the URI is the root path (`/`)
+or not to decide which function to call.
+
+```{zig}
+#| eval: false
+const std = @import("std");
+const SocketConf = @import("config.zig");
+const Request = @import("request.zig");
+const Method = Request.Method;
+const Response = @import("response.zig");
+const stdout = std.io.getStdOut().writer();
+
+pub fn main() !void {
+    const socket = try SocketConf.Socket.init();
+    var server = try socket._address.listen(.{});
+    const connection = try server.accept();
+
+    var buffer: [1000]u8 = undefined;
+    for (0..buffer.len) |i| {
+        buffer[i] = 0;
+    }
+    try Request.read_request(
+        connection, buffer[0..buffer.len]
+    );
+    const request = Request.parse_request(buffer[0..buffer.len]);
+    if (request.method == Method.GET) {
+        if (request.uri == "/") {
+            try Response.resp_200(connection);
+        } else {
+            try Response.resp_404(connection);
+        }
+    }
+}
+```
+

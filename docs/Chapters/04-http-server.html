@@ -245,6 +245,7 @@ div.csl-indent {
   <li><a href="#using-the-parse-request-function" id="toc-using-the-parse-request-function" class="nav-link" data-scroll-target="#using-the-parse-request-function"><span class="header-section-number">6.7.6</span> Using the parse request function</a></li>
   </ul></li>
   <li><a href="#implementing-the-server---part-3" id="toc-implementing-the-server---part-3" class="nav-link" data-scroll-target="#implementing-the-server---part-3"><span class="header-section-number">6.8</span> Implementing the server - Part 3</a></li>
+  <li><a href="#the-end-result" id="toc-the-end-result" class="nav-link" data-scroll-target="#the-end-result"><span class="header-section-number">6.9</span> The end result</a></li>
   </ul>
 </nav>
     </div>
@@ -632,6 +633,70 @@ Figure&nbsp;6.2: A screenshot of the HTTP Request sent by the web browser
 </section>
 <section id="implementing-the-server---part-3" class="level2" data-number="6.8">
 <h2 data-number="6.8" class="anchored" data-anchor-id="implementing-the-server---part-3"><span class="header-section-number">6.8</span> Implementing the server - Part 3</h2>
+<p>In this last part, we are going to write the logic responsible for sending the HTTP Response from the server to the client. To make things simple, the server in this project will send just a simple web page containing the text “Hello world”.</p>
+<p>First, I create a new Zig module in the project, named <code>response.zig</code>. In this module, I will declare just two functions. Each function corresponds to a specific status code in the HTTP Response. The <code>send_200()</code> function will send a HTTP Response with status code 200 (which means “Success”) to the client. While the <code>send_404()</code> sends a response with status code 404 (which means “Not found”).</p>
+<p>This is definitely not the most ergonomic and adequate way of handling the HTTP Response, but it works for our case here. We are just building toy projects in this book after all. So, the source code we write do not need to be perfect. It just needs to work!</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Connection = std.net.Server.Connection;</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> send_200(conn: Connection) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> message = (</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"HTTP/1.1 200 OK</span><span class="sc">\n</span><span class="st">Content-Length: 48"</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"</span><span class="sc">\n</span><span class="st">Content-Type: text/html</span><span class="sc">\n</span><span class="st">"</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"Connection: Closed</span><span class="sc">\n\n</span><span class="st">&lt;html&gt;&lt;body&gt;"</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"&lt;h1&gt;Hello, World!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;"</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> conn.stream.write(message);</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> send_404(conn: Connection) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> message = (</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"HTTP/1.1 404 Bad Request</span><span class="sc">\n</span><span class="st">Content-Length: 50"</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"</span><span class="sc">\n</span><span class="st">Content-Type: text/html</span><span class="sc">\n</span><span class="st">"</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"Connection: Closed</span><span class="sc">\n\n</span><span class="st">&lt;html&gt;&lt;body&gt;"</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"&lt;h1&gt;File not found!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;"</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> conn.stream.write(message);</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Notice that both functions receives the connection object as input, and use the <code>write()</code> method to write the HTTP Response message directly into this communication channel. As result, the party in the other side of the connection (i.e.&nbsp;the client), will receive such message.</p>
+<p>Most real-world HTTP Servers will have a single function (or a single struct) to effectively handle the response. It gets the HTTP Request already parsed as input, and then, it tries to build the HTTP Response bit by bit, before the function sends it over the connection.</p>
+<p>We would also have a specialized struct to represent a HTTP Response, and a lot of methods that would be used to build each part or component of the response object. Take the <code>Response</code> struct created by the Javascript runtime Bun as an example. You can find this struct in the <a href="https://github.com/oven-sh/bun/blob/main/src/bun.js/webcore/response.zig"><code>response.zig</code> module</a><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> in their GitHub project.</p>
+</section>
+<section id="the-end-result" class="level2" data-number="6.9">
+<h2 data-number="6.9" class="anchored" data-anchor-id="the-end-result"><span class="header-section-number">6.9</span> The end result</h2>
+<p>We can now, update once again our <code>main()</code> to incorporate our new functions from the <code>respons.zig</code> module. First I need to import this module into our <code>main.zig</code> module, then, I add the function calls to <code>send_200()</code> and <code>send_404()</code>.</p>
+<p>Notice that I’m using if statements to decide which “response function” to call, based specially on the URI present in the HTTP Request. If the user asked for a content (or a document) that is not present in our server, we should respond with a 404 status code. But since we have just a simple HTTP server, with no real documents to send, we can just check if the URI is the root path (<code>/</code>) or not to decide which function to call.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> SocketConf = <span class="bu">@import</span>(<span class="st">"config.zig"</span>);</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Request = <span class="bu">@import</span>(<span class="st">"request.zig"</span>);</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Method = Request.Method;</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Response = <span class="bu">@import</span>(<span class="st">"response.zig"</span>);</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> socket = <span class="kw">try</span> SocketConf.Socket.init();</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> server = <span class="kw">try</span> socket._address.listen(.<span class="op">{}</span>);</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> connection = <span class="kw">try</span> server.accept();</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">1000</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..buffer.len) |i| <span class="op">{</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>        buffer[i] = <span class="dv">0</span>;</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> Request.read_request(</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>        connection, buffer[<span class="dv">0</span>..buffer.len]</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> request = Request.parse_request(buffer[<span class="dv">0</span>..buffer.len]);</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (request.method == Method.GET) <span class="op">{</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (request.uri == <span class="st">"/"</span>) <span class="op">{</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>            <span class="kw">try</span> Response.resp_200(connection);</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>            <span class="kw">try</span> Response.resp_404(connection);</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
@@ -655,6 +720,7 @@ Yu, Jeffrey. 2023. <span>“How i Built a Simple HTTP Server from Scratch Using 
 <li id="fn1"><p><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview" class="uri">https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview</a>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn2"><p>It can be also an IPv6 address. But normally, we use a IPv4 address for that.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn3"><p><a href="https://en.wikipedia.org/wiki/Media_type" class="uri">https://en.wikipedia.org/wiki/Media_type</a>.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p><a href="https://github.com/oven-sh/bun/blob/main/src/bun.js/webcore/response.zig" class="uri">https://github.com/oven-sh/bun/blob/main/src/bun.js/webcore/response.zig</a>.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
