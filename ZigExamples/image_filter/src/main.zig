@@ -41,31 +41,35 @@ pub fn main() !void {
     std.debug.print("Decoded: {any}\n", .{decoded_buffer[0..40]});
 
     const n_pixels = 36000;
-    var cred: @Vector(n_pixels, u8) = undefined;
-    var cblue: @Vector(n_pixels, u8) = undefined;
-    var cgreen: @Vector(n_pixels, u8) = undefined;
+    var cred: @Vector(n_pixels, f16) = undefined;
+    var cblue: @Vector(n_pixels, f16) = undefined;
+    var cgreen: @Vector(n_pixels, f16) = undefined;
     var index: u64 = 0;
-    var count: u8 = 0;
-    for (0..decoded_buffer.len) |i| {
-        if (count == 0) {
-            std.debug.print("{d}\n", .{i});
-            cred[index] = decoded_buffer[i];
-            index += 1;
-            count += 1;
-            continue;
-        }
-        if (count == 1) {
-            cgreen[index] = decoded_buffer[i];
-            index += 1;
-            count += 1;
-            continue;
-        }
-
-        cblue[index] = decoded_buffer[i];
-        index += 1;
-        count = 0;
+    var channel_index: u64 = 0;
+    while (index < (n_pixels - 3)) : (index += 3) {
+        cred[channel_index] = @floatFromInt(decoded_buffer[index]);
+        cgreen[channel_index] = @floatFromInt(decoded_buffer[index + 1]);
+        cblue[channel_index] = @floatFromInt(decoded_buffer[index + 2]);
+        channel_index += 1;
     }
 
-    // var gray_buffer = try allocator.alloc(u8, n_pixels);
-    // defer allocator.free(gray_buffer);
+    var red_factor_as_array: [n_pixels]f16 = undefined;
+    @memset(&red_factor_as_array, 0.299);
+    var green_factor_as_array: [n_pixels]f16 = undefined;
+    @memset(&green_factor_as_array, 0.587);
+    var blue_factor_as_array: [n_pixels]f16 = undefined;
+    @memset(&blue_factor_as_array, 0.114);
+
+    const red_factor: @Vector(n_pixels, f16) = red_factor_as_array;
+    const green_factor: @Vector(n_pixels, f16) = green_factor_as_array;
+    const blue_factor: @Vector(n_pixels, f16) = blue_factor_as_array;
+
+    // _ = red_factor;
+    // _ = blue_factor;
+    // _ = green_factor;
+
+    cred = cred * red_factor;
+    cgreen = cgreen * green_factor;
+    cblue = cblue * blue_factor;
+    std.debug.print("Red channel: {any}\n", .{cred[1]});
 }
