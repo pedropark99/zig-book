@@ -237,7 +237,6 @@ window.document.addEventListener("DOMContentLoaded", function () {
     const links = window.document.querySelectorAll("a");
     for (let i = 0; i < links.length; i++) {
       if (links[i].href) {
-        links[i].dataset.originalHref = links[i].href;
         links[i].href = links[i].href.replace(/\/index\.html/, "/");
       }
     }
