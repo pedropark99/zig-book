@@ -384,7 +384,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"hello"</span>,</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"src/hello.zig"</span>),</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span>
@@ -402,6 +402,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>run_step.dependOn(&amp;run_arti.step);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>The entire source code of this specific build script that we wrote, piece by piece, in this section, is available in the <code>build_and_run.zig</code> module. You can see this module by <a href="https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_and_run.zig">visiting the official repository of this book</a> <a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>.</p>
+<p>When you declare a new build step in your build script, this step becomes available through the <code>build</code> command in the <code>zig</code> compiler. You can actually see this step by running <code>zig build --help</code> in the terminal, like in the example below, where we can see that this new “run” step that we declared in the build script appeared in the output.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> build <span class="at">--help</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<pre><code>Steps:
+  ...
+  run   Run the project
+  ...</code></pre>
 </section>
 <section id="build-for-unit-tests" class="level2" data-number="7.8">
 <h2 data-number="7.8" class="anchored" data-anchor-id="build-for-unit-tests"><span class="header-section-number">7.8</span> Build for unit tests</h2>
@@ -410,16 +417,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A test target object essentially filter all <code>test</code> blocks in all Zig modules across your project, and builds only the source code present inside these <code>test</code> blocks in your project. As a result, this target object creates an executable file, that when you execute it, you are executing the source in all of these <code>test</code> blocks, i.e.&nbsp;the unit tests.</p>
 <p>When we create a test target object and add a run step into this test target object, we create a very useful shortcut to build all unit tests of your project, and execute them, at once.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> test_exe = b.addTest(.<span class="op">{</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"test"</span>,</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>b.installArtifact(test_exe);</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_test = b.addRunArtifact(test_exe);</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_step = b.step(<span class="st">"run"</span>, <span class="st">"Run the unit tests"</span>);</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>run_step.dependOn(&amp;run_test.step);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> test_exe = b.addTest(.<span class="op">{</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"test"</span>,</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>b.installArtifact(test_exe);</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_test = b.addRunArtifact(test_exe);</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_step = b.step(<span class="st">"run"</span>, <span class="st">"Run the unit tests"</span>);</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>run_step.dependOn(&amp;run_test.step);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="tailoring-your-build-process-with-user-provided-options" class="level2" data-number="7.9">
@@ -435,6 +442,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ol>
 <li id="fn1"><p><a href="https://cmake.org/cmake/help/latest/manual/cmake-buildsystem.7.html" class="uri">https://cmake.org/cmake/help/latest/manual/cmake-buildsystem.7.html</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn2"><p><a href="https://semver.org/" class="uri">https://semver.org/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p><a href="https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_and_run.zig" class="uri">https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_and_run.zig</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 

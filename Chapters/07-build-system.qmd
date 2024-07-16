@@ -340,7 +340,7 @@ this `hello` executable file.
 #| eval: false
 const exe = b.addExecutable(.{
     .name = "hello",
-    .root_source_file = b.path("hello.zig"),
+    .root_source_file = b.path("src/hello.zig"),
     .target = b.host
 });
 b.installArtifact(exe);
@@ -351,7 +351,6 @@ Now that we created the run artifact, we need to include it in
 the build process. We do that by declaring a new "build step" in our build
 script to call this artifact, through the `step()` method of the `Build`
 struct.
-
 We can give any name we want to this step, but, for our
 context here, I'm going to name this step as "run".
 Also, I give it a brief description to this step ("Run the project").
@@ -362,6 +361,7 @@ const run_step = b.step(
     "run", "Run the project"
 );
 ```
+
 
 Now that we declared this "run step" we need to tell Zig that
 this "run step" depends on the run artifact.
@@ -380,10 +380,43 @@ using this `dependsOn()` method from the run step.
 run_step.dependOn(&run_arti.step);
 ```
 
+The entire source code of this specific build script that
+we wrote, piece by piece, in this section, is
+available in the `build_and_run.zig` module. You can
+see this module by
+[visiting the official repository of this book](https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_and_run.zig)
+[^module-src].
 
 
+[^module-src]: <https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_and_run.zig>
 
+When you declare a new build step in your build script, this step
+becomes available through the `build` command in the `zig` compiler.
+You can actually see this step by running `zig build --help` in the terminal, like
+in the example below, where we can see that this new "run"
+step that we declared in the build script appeared in the output.
 
+```bash
+zig build --help
+```
+
+```
+Steps:
+  ...
+  run   Run the project
+  ...
+```
+
+Now, everything that we need to is to
+call this "run" step that we created in our build script. We
+call it by using the name that we gave to this step
+after the `build` command from the `zig` compiler.
+This will cause the compiler to build our executable file
+and execute it at this same time, 
+
+```bash
+zig build run
+```
 
 ## Build for unit tests
 
