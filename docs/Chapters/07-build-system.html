@@ -256,8 +256,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Library files (either a dynamic library or a static library);</li>
 <li>Compiler flags that tailors the build process to your needs.</li>
 </ul>
-<p>These are the things that you need to connect together in order to build your source code. In C and C++, you would have an extra component, which is the header files of the libraries you are using. But header files do not exist in Zig, so, you don’t need to care about them here.</p>
-<p>Your build process is usually organized into a build script. In Zig, we normally write this build script into a Zig module in the root directory of our project, named as <code>build.zig</code>. You write a build script, then, when you run it, your project get’s built into binary files that you can use and distribute.</p>
+<p>These are the things that you need to connect together in order to build your source code. In C and C++, you would have an extra component, which is the header files of the libraries you are using. But header files do not exist in Zig, so, you only need to care about them if you are linking your Zig source code with a C library. If that is not your case, you can forget about it.</p>
+<p>Your build process is usually organized into a build script. In Zig, we normally write this build script into a Zig module in the root directory of our project, named as <code>build.zig</code>. You write this build script, then, when you run it, your project get’s built into binary files that you can use and distribute to your users.</p>
 <p>This build script is normally organized around <em>target objects</em>. A target is simply something to be built, or, in other words, it’s something that you want the <code>zig</code> compiler to build for you. This concept of “targets” is present in most Build Systems, specially in CMake<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
 <p>There are three types of target objects that you can build in Zig, which are:</p>
 <ul>
@@ -270,8 +270,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="sec-build-fun" class="level2" data-number="7.2">
 <h2 data-number="7.2" class="anchored" data-anchor-id="sec-build-fun"><span class="header-section-number">7.2</span> The <code>build()</code> function</h2>
-<p>A build script in Zig always contains a public (and top-level) <code>build()</code> function. It is like the <code>main()</code> function on the main Zig module of your project, that we discussed at <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>. But instead of creating the entrypoint to your code, this <code>build()</code> function is the entrypoint to the build process.</p>
-<p>This <code>build()</code> function accepts a pointer to a <code>Build</code> object as input, and uses this “build object” to perform the necessary steps to build your project. The return type of this function is always <code>void</code>. This <code>Build</code> struct comes directly from the Zig Standard Library (<code>std.Build</code>). So, you can access this struct by just importing the Zig Standard Library into your module.</p>
+<p>A build script in Zig always contains a public (and top-level) <code>build()</code> function declared. It is like the <code>main()</code> function on the main Zig module of your project, that we discussed at <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>. But instead of creating the entrypoint to your code, this <code>build()</code> function is the entrypoint to the build process.</p>
+<p>This <code>build()</code> function should accept a pointer to a <code>Build</code> object as input, and it should use this “build object” to perform the necessary steps to build your project. The return type of this function is always <code>void</code>, and this <code>Build</code> struct comes directly from the Zig Standard Library (<code>std.Build</code>). So, you can access this struct by just importing the Zig Standard Library into your module.</p>
 <p>Just as a very simple example, here you can see the source code necessary to build an executable file from the <code>hello.zig</code> Zig module.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
@@ -288,8 +288,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="sec-targets" class="level2" data-number="7.3">
 <h2 data-number="7.3" class="anchored" data-anchor-id="sec-targets"><span class="header-section-number">7.3</span> Target objects</h2>
-<p>As we described over the previous sections, a build script is composed around target objects. Each target object is an output that you want to get from the build process. You can list multiple target objects in your build script, so that the build process generates multiple binary files for you at once.</p>
-<p>For example, we could list two target objects in the build script. The first one could be an executable file, while the second one, a static library file. That is, we listed two different types of target objects in the build script, and, when we execute this script, the <code>zig</code> compiler builds our project into two separate files at the same time.</p>
+<p>As we described over the previous sections, a build script is composed around target objects. Each target object is normally a binary file (or an output) that you want to get from the build process. You can list multiple target objects in your build script, so that the build process generates multiple binary files for you at once.</p>
+<p>For example, you may be a developer working in a cross-platform application, and, because this application is cross-platform, you probably need to realease binary files of your software for each OS supported by your application to your end users. You can define a target object in your build script for each OS (Windows, Linux, etc.) where you want to publish your software. This will make the <code>zig</code> compiler to build your project to multiple target OS’s at once.</p>
 <p>A target object is created by the following methods of the <code>Build</code> struct that we introduced at <a href="#sec-build-fun" class="quarto-xref"><span>Section 7.2</span></a>:</p>
 <ul>
 <li><code>addExecutable()</code> creates an executable file;</li>
@@ -297,9 +297,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><code>addStaticLibrary()</code> creates a static library file;</li>
 <li><code>addTest()</code> creates an executable file that executes unit tests.</li>
 </ul>
-<p>These functions are methods from the <code>Build</code> struct that you receive as input of the <code>build()</code> function. All of them, create as output a <code>Compile</code> object, which represents an object to be compiled.</p>
-<p>All these functions accept a similar struct literal as input. This struct literal defines three essential specs about this target object you are building: <code>name</code>, <code>target</code> and <code>root_source_file</code>.</p>
-<p>We already saw these three options being used on the previous example, where we used the <code>addExecutable()</code> method to create an executable target object. This example is reproduced below. Notice the use of the <code>path()</code> method to define a path in the <code>root_source_file</code> option.</p>
+<p>These functions are methods from the <code>Build</code> struct that you receive as input of the <code>build()</code> function. All of them, create as output a <code>Compile</code> object, which represents a target object to be compiled by the <code>zig</code> compiler. All of these functions accept a similar struct literal as input. This struct literal defines three essential specs about this target object that you are building: <code>name</code>, <code>target</code> and <code>root_source_file</code>.</p>
+<p>We already saw these three options being used on the previous example, where we used the <code>addExecutable()</code> method to create an executable target object. This example is reproduced below. Notice the use of the <code>path()</code> method from the <code>Build</code> struct, to define a path in the <code>root_source_file</code> option.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>exe = b.addExecutable(.<span class="op">{</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"hello"</span>,</span>
@@ -307,17 +306,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>The <code>name</code> option specificy the name that you want to give to the binary file defined by this target. So, in this example, we are building an executable file named <code>hello</code>. Is traditional to set this <code>name</code> option to the name of our project.</p>
+<p>The <code>name</code> option specificy the name that you want to give to the binary file defined by this target. So, in this example, we are building an executable file named <code>hello</code>. Is traditional to set this <code>name</code> option to the name of your project.</p>
 <p>Furthermore, the <code>target</code> option specify the target computer architecture (or operational system) of this binary file. For example, if you want this target object to run on a Windows machine that uses a <code>x86_64</code> architecture, you can set this <code>target</code> option to the <code>x86_64-windows-gnu</code> target. This will make the <code>zig</code> compiler to compile the project to run on a <code>x86_64</code> Windows machine.</p>
-<p>Now, if you are building the project to run on the current machine that you are using to run this build script, you can set this <code>target</code> option to the <code>host</code> method of the <code>Build</code> object, like we did in the example above. This <code>host</code> method which identifies the current machine where you are currently running the <code>zig</code> compiler.</p>
-<p>At last, the <code>root_source_file</code> option specifies the root Zig module of your project. That is the Zig module that contains the entrypoint to your application, or, the main API of your library. This also means that, all the Zig modules that compose your project are automatically discovered from the import statements that you have inside this “root source file”. The <code>zig</code> compiler can detect when a Zig module depends on the other through the import statements, and, as a result, it can discover the entire map of Zig modules used in your project.</p>
-<p>This is handy, and it is different than what happens in other build systems. In CMake for example, you have to explicitly list the paths to all source files that you want to include in your build process. This is probably a symptom of the lack of conditional compilation in C and C++ compilers. Because they lack this feature that Zig has, you have to explicitly choose which source files are sent to the compiler, since not every C/C++ code is portable or supported in every operational system, and, therefore, would cause a compilation error in the C/C++ compiler.</p>
+<p>Now, if you are building the project to run on the current machine that you are using to run this build script, you can set this <code>target</code> option to the <code>host</code> method of the <code>Build</code> object, like we did in the example above. This <code>host</code> method identifies the current machine where you are currently running the <code>zig</code> compiler.</p>
+<p>At last, the <code>root_source_file</code> option specifies the root Zig module of your project. That is the Zig module that contains the entrypoint to your application (i.e.&nbsp;the <code>main()</code> function), or, the main API of your library. This also means that, all the Zig modules that compose your project are automatically discovered from the import statements that you have inside this “root source file”. The <code>zig</code> compiler can detect when a Zig module depends on the other through the import statements, and, as a result, it can discover the entire map of Zig modules used in your project.</p>
+<p>This is handy, and it is different than what happens in other build systems. In CMake for example, you have to explicitly list the paths to all source files that you want to include in your build process. This is probably a symptom of the lack of conditional compilation in C and C++ compilers. Because they lack this feature that Zig has, you have to explicitly choose which source files are sent to the C/C++ compiler, since not every C/C++ code is portable or supported in every operational system, and, therefore, would cause a compilation error in the C/C++ compiler.</p>
 <p>Now, one important detail about the build process is that, you have to <strong>explicitly install the target objects that you create in your build script</strong>, by using the <code>installArtifact()</code> method of the <code>Build</code> struct.</p>
 <p>Everytime you invoke the build process of your project, by calling the <code>build</code> command of the <code>zig</code> compiler, a new directory named <code>zig-out</code> is created in the root directory of your project. This new directory contains the output of the build process, that is, the binary files built from your source code.</p>
-<p>What the <code>installArtifact()</code> method do is to ask the <code>zig</code> compiler to copy the target object when is already built into the <code>zig-out</code> directory. This means that, if you do not install the target objects you define in your build script, these target objects are essentially discarded at the end of the build process.</p>
-<p>The <code>installArtifact()</code> will by default install (or copy) the built target objects that you defined to inside this <code>zig-out</code> directory. But the user, not you, the programmer that created your project, I mean the actual user that will compile and install your application or library in their computers to use it; these users can define the prefix path where they want to install your application/library in their computers, by providing the prefix path through the <code>--prefix</code> command line argument when they build your project with the <code>build</code> command from the <code>zig</code> compiler.</p>
+<p>What the <code>installArtifact()</code> method do is install (or copy) the built target objects that you defined in this <code>zig-out</code> directory. This means that, if you do not install the target objects you define in your build script, these target objects are essentially discarded at the end of the build process.</p>
 <p>For example, you might be building a project that uses a third party library that is built together with the project. So, when you build your project, you would need to first, build the third party library, and then, you link it with the source code of your project. So, in this case, we have two binary files that are generated in the build process. But only one is of interest, which is the executable file of our project. We can discard the binary file of the third party library, by simply not installing it into this <code>zig-out</code> directory.</p>
-<p>So, is easy to use this <code>installArtifact()</code> method. Just remember to apply it to every target object that you define in your build script, and, that you want to save it into the <code>zig-out</code> directory, like in the example below:</p>
+<p>So, is easy to use this <code>installArtifact()</code> method. Just remember to apply it to every target object that you want to save it into the <code>zig-out</code> directory, like in the example below:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>exe = b.addExecutable(.<span class="op">{</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"hello"</span>,</span>
@@ -338,6 +336,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><code>ReleaseFast</code>, mode that tries to optimize your code, in order to produce a binary file that is as fast as possible;</li>
 <li><code>ReleaseSafe</code>, mode that tries to make your code as safe as possible, by including safeguards when possible.</li>
 </ul>
+<p>So, when you build your project, you can set the build mode of your target object to <code>ReleaseFast</code> for example, which will tell the <code>zig</code> compiler to apply important optimizations in your code. This creates a binary file that simply runs faster on most contexts, because it contains a more optimized version of your code. However, as a result, we normally loose some security funcionalities in our code. Because some safety checks are removed from the final binary file, which makes your code run faster, but in a less safe manner.</p>
+<p>This choice depends on your current priorities. If you are building a cryptography or banking system, you might prefer to prioritize safety in your code, so, you would choose the <code>ReleaseSafe</code> build mode, which is a little slower to run, but much more secure, because it includes all possible runtime safety checks in the binary file built in the build process. In the other hand, if you are writing a game for example, you might prefer to prioritize performance over safety, by using the <code>ReleaseFast</code> build mode, so that your users can experience faster frame rates in your game.</p>
 <p>In the example below, we are creating the same target object that we used on previous examples. But this time, we are specifying the build mode of this target object to use the <code>ReleaseSafe</code> mode.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
@@ -351,13 +351,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="setting-the-version-of-your-build" class="level2" data-number="7.5">
 <h2 data-number="7.5" class="anchored" data-anchor-id="setting-the-version-of-your-build"><span class="header-section-number">7.5</span> Setting the version of your build</h2>
-<p>In modern development flow, is commom to release new versions of the same software by marking these different versions with a version number. This version number usually follows a semantic versioning framework, which defines a version number divided into three parts:</p>
-<ul>
-<li>major number;</li>
-<li>minor number;</li>
-<li>patch number;</li>
-</ul>
-<p>You can find more about semantic versioning by visiting the <a href="https://semver.org/">Semantic Versioning website</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. Anyway, in Zig, you can specify the version of your build, by providing a <code>SemanticVersion</code> struct to the <code>version</code> option, like in the example below:</p>
+<p>Everytime you build a target object in your build script, you can assign a version number to this specific build, following a semantic versioning framework. You can find more about semantic versioning by visiting the <a href="https://semver.org/">Semantic Versioning website</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. Anyway, in Zig, you can specify the version of your build, by providing a <code>SemanticVersion</code> struct to the <code>version</code> option, like in the example below:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"hello"</span>,</span>
@@ -384,6 +378,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="adding-a-run-step-to-your-build-process" class="level2" data-number="7.7">
 <h2 data-number="7.7" class="anchored" data-anchor-id="adding-a-run-step-to-your-build-process"><span class="header-section-number">7.7</span> Adding a run step to your build process</h2>
+<p>One thing that is neat in Rust is that you can compile and run your source code with one single command (<code>cargo run</code>) from the Rust compiler. We saw at <a href="01-zig-weird.html#sec-compile-run-code" class="quarto-xref"><span>Section 1.2.5</span></a> how can we perform a similar job in Zig, by building and running our Zig source code through the <code>run</code> command from the <code>zig</code> compiler.</p>
+<p>But how can we, at the same time, build and run the binary file specified by a target object in our build script? The answer is by including a “run artifact” in our build script. A run artifact is created through the <code>addRunArtifact()</code> method from the <code>Build</code> struct. We simply provide as input to this function the target object that describes the binary file that we want to execute, and the function creates as output, a run artifact capable of executing this binary file.</p>
+<p>In the example below, we are defining an executable binary file named <code>hello</code>, and we use this <code>addRunArtifact()</code> method to create a run artifact that will execute this <code>hello</code> executable file.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"hello"</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_arti = b.addRunArtifact(exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now that we created the run artifact, we need to include it in the build process. We do that by declaring a new “build step” in our build script to call this artifact, through the <code>step()</code> method of the <code>Build</code> struct.</p>
+<p>We can give any name we want to this step, but, for our context here, I’m going to name this step as “run”. Also, I give it a brief description to this step (“Run the project”).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_step = b.step(</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"run"</span>, <span class="st">"Run the project"</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now that we declared this “run step” we need to tell Zig that this “run step” depends on the run artifact. In other words, a run artifact always depends on a “build step” to effectivelly be executed. By creating this dependency we finally stablish the necessary commands to build and run the executable file from the build script.</p>
+<p>We establish a dependency between the run step and the run artifact by using the <code>dependsOn()</code> method from the run step. So, we first create the run step, and then, we link it with the run artifact, by using this <code>dependsOn()</code> method from the run step.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>run_step.dependOn(&amp;run_arti.step);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 </section>
 <section id="build-for-unit-tests" class="level2" data-number="7.8">
 <h2 data-number="7.8" class="anchored" data-anchor-id="build-for-unit-tests"><span class="header-section-number">7.8</span> Build for unit tests</h2>
@@ -392,16 +410,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A test target object essentially filter all <code>test</code> blocks in all Zig modules across your project, and builds only the source code present inside these <code>test</code> blocks in your project. As a result, this target object creates an executable file, that when you execute it, you are executing the source in all of these <code>test</code> blocks, i.e.&nbsp;the unit tests.</p>
 <p>When we create a test target object and add a run step into this test target object, we create a very useful shortcut to build all unit tests of your project, and execute them, at once.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> test_exe = b.addTest(.<span class="op">{</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"test"</span>,</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>b.installArtifact(test_exe);</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_test = b.addRunArtifact(test_exe);</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_step = b.step(<span class="st">"run"</span>, <span class="st">"Run the unit tests"</span>);</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>run_step.dependOn(&amp;run_test.step);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> test_exe = b.addTest(.<span class="op">{</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"test"</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>b.installArtifact(test_exe);</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_test = b.addRunArtifact(test_exe);</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_step = b.step(<span class="st">"run"</span>, <span class="st">"Run the unit tests"</span>);</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>run_step.dependOn(&amp;run_test.step);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="tailoring-your-build-process-with-user-provided-options" class="level2" data-number="7.9">
