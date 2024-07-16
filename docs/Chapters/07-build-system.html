@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.549">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>An Introduction to Zig - 7&nbsp; Build System in Zig</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../Chapters/03-unittests.html" rel="next">
+<link href="../Chapters/04-http-server.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/07-build-system.html"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Build System in Zig</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">An Introduction to Zig</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Welcome</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-zig-weird.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Introducing Zig</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-memory.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Memory and Allocators in Zig</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-base64.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Building a base64 encoder/decoder</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/02-debugging.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Debugging Zig applications</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/05-pointers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Pointers and Optionals in Zig</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/04-http-server.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Building a HTTP Server from scratch</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/07-build-system.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Build System in Zig</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/03-unittests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests in Zig</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#how-source-code-is-built" id="toc-how-source-code-is-built" class="nav-link active" data-scroll-target="#how-source-code-is-built"><span class="header-section-number">7.1</span> How source code is built?</a></li>
+  <li><a href="#sec-build-fun" id="toc-sec-build-fun" class="nav-link" data-scroll-target="#sec-build-fun"><span class="header-section-number">7.2</span> The <code>build()</code> function</a></li>
+  <li><a href="#sec-targets" id="toc-sec-targets" class="nav-link" data-scroll-target="#sec-targets"><span class="header-section-number">7.3</span> Target objects</a></li>
+  <li><a href="#setting-the-build-mode" id="toc-setting-the-build-mode" class="nav-link" data-scroll-target="#setting-the-build-mode"><span class="header-section-number">7.4</span> Setting the build mode</a></li>
+  <li><a href="#setting-the-version-of-your-build" id="toc-setting-the-version-of-your-build" class="nav-link" data-scroll-target="#setting-the-version-of-your-build"><span class="header-section-number">7.5</span> Setting the version of your build</a></li>
+  <li><a href="#detecting-the-os-in-your-build-script" id="toc-detecting-the-os-in-your-build-script" class="nav-link" data-scroll-target="#detecting-the-os-in-your-build-script"><span class="header-section-number">7.6</span> Detecting the OS in your build script</a></li>
+  <li><a href="#adding-a-run-step-to-your-build-process" id="toc-adding-a-run-step-to-your-build-process" class="nav-link" data-scroll-target="#adding-a-run-step-to-your-build-process"><span class="header-section-number">7.7</span> Adding a run step to your build process</a></li>
+  <li><a href="#build-for-unit-tests" id="toc-build-for-unit-tests" class="nav-link" data-scroll-target="#build-for-unit-tests"><span class="header-section-number">7.8</span> Build for unit tests</a></li>
+  <li><a href="#tailoring-your-build-process-with-user-provided-options" id="toc-tailoring-your-build-process-with-user-provided-options" class="nav-link" data-scroll-target="#tailoring-your-build-process-with-user-provided-options"><span class="header-section-number">7.9</span> Tailoring your build process with user provided options</a></li>
+  <li><a href="#linking-with-external-libraries" id="toc-linking-with-external-libraries" class="nav-link" data-scroll-target="#linking-with-external-libraries"><span class="header-section-number">7.10</span> Linking with external libraries</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Build System in Zig</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>One advantage of Zig is that it includes a build system embedded in the language itself. This is great, because then you do not have to depend on a external system, separated from the compiler, to build your code. So, in this chapter, we are going to talk about the build system in Zig, and how code is built in Zig.</p>
+<section id="how-source-code-is-built" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="how-source-code-is-built"><span class="header-section-number">7.1</span> How source code is built?</h2>
+<p>We already talked about the challenges of building source code in low-level languages at <a href="01-zig-weird.html#sec-project-files" class="quarto-xref"><span>Section 1.2.1</span></a>. As we described at that section, programmers invented Build Systems to surpass these challenges on the building processes of low-level languages.</p>
+<p>Low-level languages uses a compiler to compile (or to build) your source code into binary instructions. In C and C++, we normally use compilers like <code>gcc</code>, <code>g++</code> or <code>clang</code> to compile our C and C++ source code into these instructions. Every language have it’s own compiler, and this is no different in Zig.</p>
+<p>In Zig, we have the <code>zig</code> compiler to compile our Zig source code into binary instructions that can be executed by our computer. In Zig, the compilation (or the build) process involves the following components:</p>
+<ul>
+<li>The Zig modules that contains your source code;</li>
+<li>Library files (either a dynamic library or a static library);</li>
+<li>Compiler flags that tailors the build process to your needs.</li>
+</ul>
+<p>These are the things that you need to connect together in order to build your source code. In C and C++, you would have an extra component, which is the header files of the libraries you are using. But header files do not exist in Zig, so, you don’t need to care about them here.</p>
+<p>Your build process is usually organized into a build script. In Zig, we normally write this build script into a Zig module in the root directory of our project, named as <code>build.zig</code>. You write a build script, then, when you run it, your project get’s built into binary files that you can use and distribute.</p>
+<p>This build script is normally organized around <em>target objects</em>. A target is simply something to be built, or, in other words, it’s something that you want the <code>zig</code> compiler to build for you. This concept of “targets” is present in most Build Systems, specially in CMake<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
+<p>There are three types of target objects that you can build in Zig, which are:</p>
+<ul>
+<li>An executable, which is simply a binary executable file (e.g.&nbsp;a <code>.exe</code> file on Windows).</li>
+<li>A shared library, which is simply a binary library file (e.g.&nbsp;a <code>.so</code> file in Linux or a <code>.dll</code> file on Windows).</li>
+<li>A static library, which is simply a binary library file (e.g.&nbsp;a <code>.a</code> file in Linux or a <code>.lib</code> file on Windows).</li>
+<li>An unit tests executable, which is an executable file that executes only unit tests.</li>
+</ul>
+<p>We are going to talk more about these target objects at <a href="#sec-targets" class="quarto-xref"><span>Section 7.3</span></a>.</p>
+</section>
+<section id="sec-build-fun" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="sec-build-fun"><span class="header-section-number">7.2</span> The <code>build()</code> function</h2>
+<p>A build script in Zig always contains a public (and top-level) <code>build()</code> function. It is like the <code>main()</code> function on the main Zig module of your project, that we discussed at <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>. But instead of creating the entrypoint to your code, this <code>build()</code> function is the entrypoint to the build process.</p>
+<p>This <code>build()</code> function accepts a pointer to a <code>Build</code> object as input, and uses this “build object” to perform the necessary steps to build your project. The return type of this function is always <code>void</code>. This <code>Build</code> struct comes directly from the Zig Standard Library (<code>std.Build</code>). So, you can access this struct by just importing the Zig Standard Library into your module.</p>
+<p>Just as a very simple example, here you can see the source code necessary to build an executable file from the <code>hello.zig</code> Zig module.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> build(b: *std.Build) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"hello"</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        .target = b.host,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    b.installArtifact(exe);</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>You can define and use other functions and objects in this build script. You can also import other Zig modules as you would normally do in any other module of your project. The only real requirement for this build script, is to have a public and top-level <code>build()</code> function defined, that accepts a pointer to a <code>Build</code> struct as input.</p>
+</section>
+<section id="sec-targets" class="level2" data-number="7.3">
+<h2 data-number="7.3" class="anchored" data-anchor-id="sec-targets"><span class="header-section-number">7.3</span> Target objects</h2>
+<p>As we described over the previous sections, a build script is composed around target objects. Each target object is an output that you want to get from the build process. You can list multiple target objects in your build script, so that the build process generates multiple binary files for you at once.</p>
+<p>For example, we could list two target objects in the build script. The first one could be an executable file, while the second one, a static library file. That is, we listed two different types of target objects in the build script, and, when we execute this script, the <code>zig</code> compiler builds our project into two separate files at the same time.</p>
+<p>A target object is created by the following methods of the <code>Build</code> struct that we introduced at <a href="#sec-build-fun" class="quarto-xref"><span>Section 7.2</span></a>:</p>
+<ul>
+<li><code>addExecutable()</code> creates an executable file;</li>
+<li><code>addSharedLibrary()</code> creates a shared library file;</li>
+<li><code>addStaticLibrary()</code> creates a static library file;</li>
+<li><code>addTest()</code> creates an executable file that executes unit tests.</li>
+</ul>
+<p>These functions are methods from the <code>Build</code> struct that you receive as input of the <code>build()</code> function. All of them, create as output a <code>Compile</code> object, which represents an object to be compiled.</p>
+<p>All these functions accept a similar struct literal as input. This struct literal defines three essential specs about this target object you are building: <code>name</code>, <code>target</code> and <code>root_source_file</code>.</p>
+<p>We already saw these three options being used on the previous example, where we used the <code>addExecutable()</code> method to create an executable target object. This example is reproduced below. Notice the use of the <code>path()</code> method to define a path in the <code>root_source_file</code> option.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>exe = b.addExecutable(.<span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"hello"</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The <code>name</code> option specificy the name that you want to give to the binary file defined by this target. So, in this example, we are building an executable file named <code>hello</code>. Is traditional to set this <code>name</code> option to the name of our project.</p>
+<p>Furthermore, the <code>target</code> option specify the target computer architecture (or operational system) of this binary file. For example, if you want this target object to run on a Windows machine that uses a <code>x86_64</code> architecture, you can set this <code>target</code> option to the <code>x86_64-windows-gnu</code> target. This will make the <code>zig</code> compiler to compile the project to run on a <code>x86_64</code> Windows machine.</p>
+<p>Now, if you are building the project to run on the current machine that you are using to run this build script, you can set this <code>target</code> option to the <code>host</code> method of the <code>Build</code> object, like we did in the example above. This <code>host</code> method which identifies the current machine where you are currently running the <code>zig</code> compiler.</p>
+<p>At last, the <code>root_source_file</code> option specifies the root Zig module of your project. That is the Zig module that contains the entrypoint to your application, or, the main API of your library. This also means that, all the Zig modules that compose your project are automatically discovered from the import statements that you have inside this “root source file”. The <code>zig</code> compiler can detect when a Zig module depends on the other through the import statements, and, as a result, it can discover the entire map of Zig modules used in your project.</p>
+<p>This is handy, and it is different than what happens in other build systems. In CMake for example, you have to explicitly list the paths to all source files that you want to include in your build process. This is probably a symptom of the lack of conditional compilation in C and C++ compilers. Because they lack this feature that Zig has, you have to explicitly choose which source files are sent to the compiler, since not every C/C++ code is portable or supported in every operational system, and, therefore, would cause a compilation error in the C/C++ compiler.</p>
+<p>Now, one important detail about the build process is that, you have to <strong>explicitly install the target objects that you create in your build script</strong>, by using the <code>installArtifact()</code> method of the <code>Build</code> struct.</p>
+<p>Everytime you invoke the build process of your project, by calling the <code>build</code> command of the <code>zig</code> compiler, a new directory named <code>zig-out</code> is created in the root directory of your project. This new directory contains the output of the build process, that is, the binary files built from your source code.</p>
+<p>What the <code>installArtifact()</code> method do is to ask the <code>zig</code> compiler to copy the target object when is already built into the <code>zig-out</code> directory. This means that, if you do not install the target objects you define in your build script, these target objects are essentially discarded at the end of the build process.</p>
+<p>The <code>installArtifact()</code> will by default install (or copy) the built target objects that you defined to inside this <code>zig-out</code> directory. But the user, not you, the programmer that created your project, I mean the actual user that will compile and install your application or library in their computers to use it; these users can define the prefix path where they want to install your application/library in their computers, by providing the prefix path through the <code>--prefix</code> command line argument when they build your project with the <code>build</code> command from the <code>zig</code> compiler.</p>
+<p>For example, you might be building a project that uses a third party library that is built together with the project. So, when you build your project, you would need to first, build the third party library, and then, you link it with the source code of your project. So, in this case, we have two binary files that are generated in the build process. But only one is of interest, which is the executable file of our project. We can discard the binary file of the third party library, by simply not installing it into this <code>zig-out</code> directory.</p>
+<p>So, is easy to use this <code>installArtifact()</code> method. Just remember to apply it to every target object that you define in your build script, and, that you want to save it into the <code>zig-out</code> directory, like in the example below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>exe = b.addExecutable(.<span class="op">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"hello"</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="setting-the-build-mode" class="level2" data-number="7.4">
+<h2 data-number="7.4" class="anchored" data-anchor-id="setting-the-build-mode"><span class="header-section-number">7.4</span> Setting the build mode</h2>
+<p>We talked about the three essential options that are set when you create a new target object. But there is also a fourth option that you can use to set the build mode of this target object, which is the <code>optimize</code> option. This option is called this way, because the build modes in Zig are treated more of an “optimization vs safety” problem. So optmization plays an important role here. Don’t worry, I’m going back to this question very soon.</p>
+<p>In Zig, we have the four build modes listed below. Each one of these build modes offer different advantages and characteristics. As we described at <a href="02-debugging.html#sec-compile-debug-mode" class="quarto-xref"><span>Section 4.2.1</span></a>, the <code>zig</code> compiler uses the <code>Debug</code> build mode by default, when you don’t explicitly choose a build mode.</p>
+<ul>
+<li><code>Debug</code>, mode that produces and includes debugging information in the output of the build process (i.e.&nbsp;the binary file defined by the target object);</li>
+<li><code>ReleaseSmall</code>, mode that tries to produce a binary file that is small in size;</li>
+<li><code>ReleaseFast</code>, mode that tries to optimize your code, in order to produce a binary file that is as fast as possible;</li>
+<li><code>ReleaseSafe</code>, mode that tries to make your code as safe as possible, by including safeguards when possible.</li>
+</ul>
+<p>In the example below, we are creating the same target object that we used on previous examples. But this time, we are specifying the build mode of this target object to use the <code>ReleaseSafe</code> mode.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"hello"</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    .optimize = .ReleaseSafe</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="setting-the-version-of-your-build" class="level2" data-number="7.5">
+<h2 data-number="7.5" class="anchored" data-anchor-id="setting-the-version-of-your-build"><span class="header-section-number">7.5</span> Setting the version of your build</h2>
+<p>In modern development flow, is commom to release new versions of the same software by marking these different versions with a version number. This version number usually follows a semantic versioning framework, which defines a version number divided into three parts:</p>
+<ul>
+<li>major number;</li>
+<li>minor number;</li>
+<li>patch number;</li>
+</ul>
+<p>You can find more about semantic versioning by visiting the <a href="https://semver.org/">Semantic Versioning website</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. Anyway, in Zig, you can specify the version of your build, by providing a <code>SemanticVersion</code> struct to the <code>version</code> option, like in the example below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"hello"</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    .version = .<span class="op">{</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        .major = <span class="dv">2</span>, .minor = <span class="dv">9</span>, .patch = <span class="dv">7</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="detecting-the-os-in-your-build-script" class="level2" data-number="7.6">
+<h2 data-number="7.6" class="anchored" data-anchor-id="detecting-the-os-in-your-build-script"><span class="header-section-number">7.6</span> Detecting the OS in your build script</h2>
+<p>Is very commom in Build Systems to use different options, or, to include different modules, or, to link against different libraries depending on the Operational System (OS) that you are targeting in the build process.</p>
+<p>In Zig, you can detect the target OS of the build process, by looking at the <code>os.tag</code> inside the <code>builtin</code> module from the Zig library. In the example below, we are using an if statement to run some arbitrary code when the target of the build process is the Windows system.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> builtin = <span class="bu">@import</span>(<span class="st">"builtin"</span>);</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> (builtin.target.os.tag == .windows) <span class="op">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Code that runs only when the target of</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">// the compilation process is Windows.</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="adding-a-run-step-to-your-build-process" class="level2" data-number="7.7">
+<h2 data-number="7.7" class="anchored" data-anchor-id="adding-a-run-step-to-your-build-process"><span class="header-section-number">7.7</span> Adding a run step to your build process</h2>
+</section>
+<section id="build-for-unit-tests" class="level2" data-number="7.8">
+<h2 data-number="7.8" class="anchored" data-anchor-id="build-for-unit-tests"><span class="header-section-number">7.8</span> Build for unit tests</h2>
+<p>We talk at length about writing unit tests in Zig, and we also talk about how to execute these unit tests through the <code>test</code> command of the <code>zig</code> compiler at <a href="03-unittests.html" class="quarto-xref"><span>Chapter 8</span></a>. However, the <code>test</code> command is used to run the unit tests from a single Zig module.</p>
+<p>But how to run all unit tests in the project at once? Here is where a test target object comes into play. As was described at <a href="#sec-targets" class="quarto-xref"><span>Section 7.3</span></a>, we can create a test target object by using the <code>addTest()</code> method of the <code>Build</code> struct.</p>
+<p>A test target object essentially filter all <code>test</code> blocks in all Zig modules across your project, and builds only the source code present inside these <code>test</code> blocks in your project. As a result, this target object creates an executable file, that when you execute it, you are executing the source in all of these <code>test</code> blocks, i.e.&nbsp;the unit tests.</p>
+<p>When we create a test target object and add a run step into this test target object, we create a very useful shortcut to build all unit tests of your project, and execute them, at once.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> test_exe = b.addTest(.<span class="op">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"test"</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>b.installArtifact(test_exe);</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_test = b.addRunArtifact(test_exe);</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_step = b.step(<span class="st">"run"</span>, <span class="st">"Run the unit tests"</span>);</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>run_step.dependOn(&amp;run_test.step);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="tailoring-your-build-process-with-user-provided-options" class="level2" data-number="7.9">
+<h2 data-number="7.9" class="anchored" data-anchor-id="tailoring-your-build-process-with-user-provided-options"><span class="header-section-number">7.9</span> Tailoring your build process with user provided options</h2>
+</section>
+<section id="linking-with-external-libraries" class="level2" data-number="7.10">
+<h2 data-number="7.10" class="anchored" data-anchor-id="linking-with-external-libraries"><span class="header-section-number">7.10</span> Linking with external libraries</h2>
+
+
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p><a href="https://cmake.org/cmake/help/latest/manual/cmake-buildsystem.7.html" class="uri">https://cmake.org/cmake/help/latest/manual/cmake-buildsystem.7.html</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p><a href="https://semver.org/" class="uri">https://semver.org/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../Chapters/04-http-server.html" class="pagination-link  aria-label=" &lt;span="" a="" http="" server="" from="" scratch&lt;="" span&gt;"="">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Building a HTTP Server from scratch</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../Chapters/03-unittests.html" class="pagination-link" aria-label="<span class='chapter-number'>8</span>&nbsp; <span class='chapter-title'>Unit tests in Zig</span>">
+        <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests in Zig</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

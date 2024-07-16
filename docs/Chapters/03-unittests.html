@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>An Introduction to Zig - 7&nbsp; Unit tests in Zig</title>
+<title>An Introduction to Zig - 8&nbsp; Unit tests in Zig</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -65,7 +65,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
 <link href="../references.html" rel="next">
-<link href="../Chapters/04-http-server.html" rel="prev">
+<link href="../Chapters/07-build-system.html" rel="prev">
 <script src="../site_libs/quarto-html/quarto.js"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -115,7 +115,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/03-unittests.html"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Unit tests in Zig</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/03-unittests.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests in Zig</span></a></li></ol></nav>
         <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
@@ -184,8 +184,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../Chapters/07-build-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Build System in Zig</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../Chapters/03-unittests.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Unit tests in Zig</span></span></a>
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests in Zig</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -204,11 +210,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#introducing-the-test-block" id="toc-introducing-the-test-block" class="nav-link active" data-scroll-target="#introducing-the-test-block"><span class="header-section-number">7.1</span> Introducing the <code>test</code> block</a></li>
-  <li><a href="#how-to-run-your-tests" id="toc-how-to-run-your-tests" class="nav-link" data-scroll-target="#how-to-run-your-tests"><span class="header-section-number">7.2</span> How to run your tests</a></li>
-  <li><a href="#testing-memory-allocations" id="toc-testing-memory-allocations" class="nav-link" data-scroll-target="#testing-memory-allocations"><span class="header-section-number">7.3</span> Testing memory allocations</a></li>
-  <li><a href="#testing-errors" id="toc-testing-errors" class="nav-link" data-scroll-target="#testing-errors"><span class="header-section-number">7.4</span> Testing errors</a></li>
-  <li><a href="#testing-simple-equalities" id="toc-testing-simple-equalities" class="nav-link" data-scroll-target="#testing-simple-equalities"><span class="header-section-number">7.5</span> Testing simple equalities</a></li>
+  <li><a href="#introducing-the-test-block" id="toc-introducing-the-test-block" class="nav-link active" data-scroll-target="#introducing-the-test-block"><span class="header-section-number">8.1</span> Introducing the <code>test</code> block</a></li>
+  <li><a href="#how-to-run-your-tests" id="toc-how-to-run-your-tests" class="nav-link" data-scroll-target="#how-to-run-your-tests"><span class="header-section-number">8.2</span> How to run your tests</a></li>
+  <li><a href="#testing-memory-allocations" id="toc-testing-memory-allocations" class="nav-link" data-scroll-target="#testing-memory-allocations"><span class="header-section-number">8.3</span> Testing memory allocations</a></li>
+  <li><a href="#testing-errors" id="toc-testing-errors" class="nav-link" data-scroll-target="#testing-errors"><span class="header-section-number">8.4</span> Testing errors</a></li>
+  <li><a href="#testing-simple-equalities" id="toc-testing-simple-equalities" class="nav-link" data-scroll-target="#testing-simple-equalities"><span class="header-section-number">8.5</span> Testing simple equalities</a></li>
   </ul>
 </nav>
     </div>
@@ -217,7 +223,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><span id="sec-unittests" class="quarto-section-identifier"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Unit tests in Zig</span></span></h1>
+<h1 class="title"><span id="sec-unittests" class="quarto-section-identifier"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests in Zig</span></span></h1>
 </div>
 
 
@@ -235,8 +241,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <p>In this chapter, I want to dive in on how unit tests are developed in Zig. We are going to talk about what is the testing wokflow in Zig, and also, about the <code>test</code> command from the <code>zig</code> compiler.</p>
-<section id="introducing-the-test-block" class="level2" data-number="7.1">
-<h2 data-number="7.1" class="anchored" data-anchor-id="introducing-the-test-block"><span class="header-section-number">7.1</span> Introducing the <code>test</code> block</h2>
+<section id="introducing-the-test-block" class="level2" data-number="8.1">
+<h2 data-number="8.1" class="anchored" data-anchor-id="introducing-the-test-block"><span class="header-section-number">8.1</span> Introducing the <code>test</code> block</h2>
 <p>In Zig, unit tests are written inside a <code>test</code> declaration, or, how I prefer to call it, inside a <code>test</code> block. Every <code>test</code> block is written by using the keyword <code>test</code>. You can optionally use a string literal to write a label, which is responsible for identifying the specific group of unit tests that you are writing inside this specific <code>test</code> block.</p>
 <p>In the example below, we are testing if the sum of two objects (<code>a</code> and <code>b</code>) is equal to 4. The <code>expect()</code> function from the Zig Standard Library is a function that receives a logical test as input. If this logical test results in <code>true</code>, then, the test passes. But if it results in <code>false</code>, then, the test fails.</p>
 <p>You can write any Zig code you want inside of each <code>test</code> block. Part of this code might be some necessary commands to setup your testing environment, or just initializing some necessary objects.</p>
@@ -254,15 +260,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>If you look at the source code for most of the files present in the Zig Standard Library<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, you can see that the <code>test</code> blocks are written together with the normal source code of the library. You can see this for example, at the <a href="https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig"><code>array_list</code> module</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. So, the standard that the Zig developers decided to adopt is to keep their unit tests together with the source code of the functionality that they are testing.</p>
 <p>Each programmer might have a different opinion on this. Some of them might prefer to keep unit tests separate from the actual source code of their application. If that is your case, you can simply create a separate <code>tests</code> folder in your project, and start writing Zig modules that contains only unit tests (as would normally do on a Python project with <code>pytest</code>, for example), and everything will work fine. It boils down to which is your preference here.</p>
 </section>
-<section id="how-to-run-your-tests" class="level2" data-number="7.2">
-<h2 data-number="7.2" class="anchored" data-anchor-id="how-to-run-your-tests"><span class="header-section-number">7.2</span> How to run your tests</h2>
+<section id="how-to-run-your-tests" class="level2" data-number="8.2">
+<h2 data-number="8.2" class="anchored" data-anchor-id="how-to-run-your-tests"><span class="header-section-number">8.2</span> How to run your tests</h2>
 <p>If the <code>zig</code> compiler ignores any <code>test</code> block by default, how can you compile and run your unit tests? The answer is the <code>test</code> command from the <code>zig</code> compiler. By running <code>zig test</code> command, the compiler will find every instance of <code>test</code> block in your Zig module, and, it will compile and run the unit tests you wrote.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> test simple_sum.zig</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <pre><code>1/1 simple_sum.test.testing simple sum... OK
 All 1 tests passed.</code></pre>
 </section>
-<section id="testing-memory-allocations" class="level2" data-number="7.3">
-<h2 data-number="7.3" class="anchored" data-anchor-id="testing-memory-allocations"><span class="header-section-number">7.3</span> Testing memory allocations</h2>
+<section id="testing-memory-allocations" class="level2" data-number="8.3">
+<h2 data-number="8.3" class="anchored" data-anchor-id="testing-memory-allocations"><span class="header-section-number">8.3</span> Testing memory allocations</h2>
 <p>One of the advantages of Zig is that it offers great tools that hep us, programmers, to avoid (but also detect) memory problems, such as memory leaks and double-frees. The <code>defer</code> keyword is specially helpful in this regard.</p>
 <p>When developing your source code, you, the programmer, is responsible for making sure that your code do not produce such problems. However, you can also use a special type of allocator object in Zig, that is capable of automatically detect such problems for you. This is the <code>std.testing.allocator</code> object. This allocator object offers some basic memory safety detection features, which are capable of detecting memory leaks.</p>
 <p>As we described at <a href="01-memory.html#sec-heap" class="quarto-xref"><span>Section 2.1.5</span></a>, to allocate memory on the heap, you need to use an allocator object, and your functions that use these objects to allocate memory on the heap, should receive an allocator object as one of it’s inputs. Every memory on the heap that you allocate using these allocator objects, must also be freed using this same allocator object.</p>
@@ -294,8 +300,8 @@ All 1 tests passed.</code></pre>
 
 ... more stack trace</code></pre>
 </section>
-<section id="testing-errors" class="level2" data-number="7.4">
-<h2 data-number="7.4" class="anchored" data-anchor-id="testing-errors"><span class="header-section-number">7.4</span> Testing errors</h2>
+<section id="testing-errors" class="level2" data-number="8.4">
+<h2 data-number="8.4" class="anchored" data-anchor-id="testing-errors"><span class="header-section-number">8.4</span> Testing errors</h2>
 <p>One commom style of unit tests are those that look for specific errors in your functions. In other words, you write a unit test that tries to assert if a specific function call returns any error, or a specific type of error.</p>
 <p>In C++ you would normally write this stye of unit test using, for example, the functions <code>REQUIRE_THROWS()</code> or <code>CHECK_THROWS()</code> from the <a href="https://github.com/catchorg/Catch2/tree/devel"><code>Catch2</code> test framework</a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. In the case of a Python project, you would use the <a href="https://docs.pytest.org/en/7.1.x/reference/reference.html#pytest-raises"><code>raises()</code> function from <code>pytest</code></a><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>. While in Rust, you would probably use <code>assert_eq!()</code> in conjunction with <code>Err()</code>.</p>
 <p>But in Zig, we use the <code>expectError()</code> function, from the <code>std.testing</code> module. With this function, you can test if a specific function call returns the exact type of error that you expect it to return. To use this function, you first write <code>try expectError()</code>. Then, on the first argument, you provide the type of error that you are expecting from the function call. Then, on the second argument, you write the function call you expect to fail.</p>
@@ -321,8 +327,8 @@ All 1 tests passed.</code></pre>
 <pre><code>1/1 oom.test.testing error... OK
 All 1 tests passed.</code></pre>
 </section>
-<section id="testing-simple-equalities" class="level2" data-number="7.5">
-<h2 data-number="7.5" class="anchored" data-anchor-id="testing-simple-equalities"><span class="header-section-number">7.5</span> Testing simple equalities</h2>
+<section id="testing-simple-equalities" class="level2" data-number="8.5">
+<h2 data-number="8.5" class="anchored" data-anchor-id="testing-simple-equalities"><span class="header-section-number">8.5</span> Testing simple equalities</h2>
 <p>In Zig, there are some different ways you can test for an equality. You already saw that we can use <code>expect()</code> with the logical operator <code>==</code> to essentially reproduce an equality test. But we also have some helper functions that you should know about, specially <code>expectEqual()</code>, <code>expectEqualSlices()</code> and <code>expectEqualStrings()</code>.</p>
 <p>The <code>expectEqual()</code> function, as the name suggests, is a classic test equality function. It receives two objects as input. The first object is the value that you expect to be in the second object. While second object is the object you have, or, the object that your application produced as result. So, with <code>expectEqual()</code> you are essentially testing if the values stored inside the two provided objects are equal or not.</p>
 <p>You can see in the example below that, the test performed by <code>expectEqual()</code> failed. Because the objects <code>v1</code> and <code>v2</code> contain different values in them.</p>
@@ -783,8 +789,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../Chapters/04-http-server.html" class="pagination-link  aria-label=" &lt;span="" a="" http="" server="" from="" scratch&lt;="" span&gt;"="">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Building a HTTP Server from scratch</span></span>
+      <a href="../Chapters/07-build-system.html" class="pagination-link  aria-label=" &lt;span="" system="" in="" zig&lt;="" span&gt;"="">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Build System in Zig</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
