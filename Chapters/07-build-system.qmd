@@ -16,11 +16,30 @@ knitr::opts_chunk$set(
 
 # Build System in Zig
 
-One advantage of Zig is that it includes a build system embedded in the language itself.
+
+In this chapter, we are going to talk about the build system in Zig, and how an entire project
+is built in Zig.
+One key advantage of Zig is that it includes a build system embedded in the language itself.
 This is great, because then you do not have to depend on a external system, separated
 from the compiler, to build your code.
-So, in this chapter, we are going to talk about the build system in Zig, and how
-code is built in Zig.
+
+
+You can find a good description of Zig's build system
+on the [article entitled "Build System"](https://ziglang.org/learn/build-system/#user-provided-options)[^zig-art1]
+available in the official Zig's website.
+We also have the excellent [series of posts written by Felix](https://zig.news/xq/zig-build-explained-part-1-59lf)[^felix].
+But this chapter represents an extra resource for you to consult and rely on.
+
+[^felix]: <https://zig.news/xq/zig-build-explained-part-1-59lf>
+[^zig-art1]: <https://ziglang.org/learn/build-system/#user-provided-options>
+
+Building code is one of the things that Zig is best at. One thing that is particularly
+difficult in C/C++ and even in Rust, is to cross-compile source code to multiple targets
+(e.g. multiple computer architectures and operational systems),
+and the `zig` compiler is known for being one of the best existing pieces of software
+for this particular task.
+
+
 
 
 ## How source code is built?
@@ -44,8 +63,8 @@ the following components:
 - Compiler flags that tailors the build process to your needs.
 
 These are the things that you need to connect together in order to build your
-source code. In C and C++, you would have an extra component, which is the header files of
-the libraries you are using. But header files do not exist in Zig, so, you only need
+source code in Zig. In C and C++, you would have an extra component, which is the header files of
+the libraries that you are using. But header files do not exist in Zig, so, you only need
 to care about them if you are linking your Zig source code with a C library.
 If that is not your case, you can forget about it.
 
@@ -81,7 +100,7 @@ But instead of creating the entrypoint to your code, this `build()` function is 
 This `build()` function should accept a pointer to a `Build` object as input, and it should use this "build object" to perform
 the necessary steps to build your project. The return type of this function is always `void`,
 and this `Build` struct comes directly from the Zig Standard Library (`std.Build`). So, you can 
-access this struct by just importing the Zig Standard Library into your module.
+access this struct by just importing the Zig Standard Library into your `build.zig` module.
 
 Just as a very simple example, here you can see the source code necessary to build
 an executable file from the `hello.zig` Zig module.
@@ -150,14 +169,16 @@ exe = b.addExecutable(.{
 ```
 
 The `name` option specificy the name that you want to give to the binary file defined
-by this target. So, in this example, we are building an executable file named `hello`.
+by this target object. So, in this example, we are building an executable file named `hello`.
 Is traditional to set this `name` option to the name of your project.
 
 
-Furthermore, the `target` option specify the target computer architecture (or operational system) of this
+Furthermore, the `target` option specify the target computer architecture (or the target operational system) of this
 binary file. For example, if you want this target object to run on a Windows machine
-that uses a `x86_64` architecture, you can set this `target` option to the `x86_64-windows-gnu` target.
+that uses a `x86_64` architecture, you can set this `target` option to `x86_64-windows-gnu` for example.
 This will make the `zig` compiler to compile the project to run on a `x86_64` Windows machine.
+You can see the full list of architectures and OS's that the `zig` compiler supports by running
+the `zig targets` command in the terminal.
 
 Now, if you are building the project to run on the current machine
 that you are using to run this build script, you can set this `target`
@@ -173,10 +194,10 @@ from the import statements that you have inside this "root source file".
 The `zig` compiler can detect when a Zig module depends on the other through the import statements,
 and, as a result, it can discover the entire map of Zig modules used in your project.
 
-This is handy, and it is different than what happens in other build systems.
+This is handy, and it is different from what happens in other build systems.
 In CMake for example, you have to explicitly list the paths to all source files that you want to
-include in your build process. This is probably a symptom of the lack of conditional
-compilation in C and C++ compilers. Because they lack this feature that Zig has, you have
+include in your build process. This is probably a symptom of the "lack of conditional
+compilation" in C and C++ compilers. Since they lack this feature, you have
 to explicitly choose which source files are sent to the C/C++ compiler, since not
 every C/C++ code is portable or supported in every operational system, and, therefore,
 would cause a compilation error in the C/C++ compiler.
@@ -191,16 +212,16 @@ of the `zig` compiler, a new directory named `zig-out` is created in the root
 directory of your project. This new directory contains the output of the build process,
 that is, the binary files built from your source code.
 
-What the `installArtifact()` method do is  install (or copy) the built target objects
-that you defined in this `zig-out` directory.
+What the `installArtifact()` method do is install (or copy) the built target objects
+that you defined to this `zig-out` directory.
 This means that, if you do not
 install the target objects you define in your build script, these target objects are
 essentially discarded at the end of the build process.
 
 For example, you might be building a project that uses a third party library that is built
-together with the project. So, when you build your project, you would need to first,
+together with the project. So, when you build your project, you would need first, to
 build the third party library, and then, you link it with the source code of your project.
-So, in this case, we have two binary files that are generated in the build process.
+So, in this case, we have two binary files that are generated in the build process (the executable file of your project, and the third party library).
 But only one is of interest, which is the executable file of our project.
 We can discard the binary file of the third party library, by simply not installing it
 into this `zig-out` directory.
@@ -304,7 +325,7 @@ that you are targeting in the build process.
 In Zig, you can detect the target OS of the build process, by looking
 at the `os.tag` inside the `builtin` module from the Zig library.
 In the example below, we are using an if statement to run some
-arbitrary code when the target of the build process is the
+arbitrary code when the target of the build process is a
 Windows system.
 
 ```{zig}
@@ -348,7 +369,7 @@ const run_arti = b.addRunArtifact(exe);
 ```
 
 Now that we created the run artifact, we need to include it in
-the build process. We do that by declaring a new "build step" in our build
+the build process. We do that by declaring a new step in our build
 script to call this artifact, through the `step()` method of the `Build`
 struct.
 We can give any name we want to this step, but, for our
@@ -365,7 +386,7 @@ const run_step = b.step(
 
 Now that we declared this "run step" we need to tell Zig that
 this "run step" depends on the run artifact.
-In other words, a run artifact always depends on a "build step" to effectivelly be executed.
+In other words, a run artifact always depends on a "step" to effectively be executed.
 By creating this dependency
 we finally stablish the necessary commands to build and run the executable file
 from the build script.
@@ -390,7 +411,7 @@ see this module by
 
 [^module-src]: <https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_and_run.zig>
 
-When you declare a new build step in your build script, this step
+When you declare a new step in your build script, this step
 becomes available through the `build` command in the `zig` compiler.
 You can actually see this step by running `zig build --help` in the terminal, like
 in the example below, where we can see that this new "run"
@@ -428,9 +449,9 @@ include some commands in our build script to also build and execute the unit tes
 So, once again, we are going to discuss how a specific built-in command from the `zig` compiler,
 (in this case, the `test` command) can be used in a build script in Zig.
 This means that, we can include a step in our build script to build and run
-unit tests in the project at once.
+all unit tests in our project at once.
 
-Here is where a test target object comes into play.
+Here is where a "test target object" comes into play.
 As was described at @sec-targets, we can create a test target object by using the `addTest()` method of
 the `Build` struct. So the first thing that we need to do is to
 declare a test target object in our build script.
@@ -453,13 +474,13 @@ these `test` blocks in your project. As a result, this target object
 creates an executable file that contains only the source code present
 in all of these `test` blocks (i.e. the unit tests) in your project.
 
-Perfect, now that we declared this test target object, an executable file
+Perfect! Now that we declared this test target object, an executable file
 named `unit_tests` is built by the `zig` compiler when we trigger the build
-script with the `build` command from the `zig` compiler. After the build
+script with the `build` command. After the build
 process is finished, we can simply execute this `unit_tests` executable
 in the terminal.
 
-Though, if you remember from the previous section, we already learned
+However, if you remember the previous section, we already learned
 how can we create a run step in our build script, to execute an executable file
 built by the build script.
 
@@ -476,8 +497,7 @@ const run_step = b.step("tests", "Run unit tests");
 run_step.dependOn(&run_arti.step);
 ```
 
-Now that we registered this new build step, we can call it
-and trigger the execution process by calling the command below
+Now that we registered this new build step, we can trigger it by calling the command below
 in the terminal. You can also checkout the complete source
 code for this specific build script at the `build_tests.zig` module at the
 [official repository of this book](https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_tests.zig)
@@ -492,10 +512,58 @@ zig build tests
 ```
 
 
-## Tailoring your build process with user provided options
+## Tailoring your build process with user-provided options
+
+Sometimes, you want to make a build script that is customizable by the user
+of your project. You can do that by creating user-provided options in
+your build script. In Zig, we create these options using the
+`option()` method from the `Build` struct.
+
+With this method, we create a "build option" which can be passed
+to the `build.zig` script at the command line. The user have the power of setting
+this option at the `build` command from the
+`zig` compiler. In other words, each build option that we create
+becomes a new command line argument accessible in the `build` command
+of the compiler.
+
+These "user-provided options" are set by using the prefix `-D` in the command line.
+For example, if we declare an option named `use_zlib`, that receives a boolean value which
+indicates if we should link our source code to `zlib` or not, we can set the value
+of this option in the command line with `-Duse_zlib`. The code example below
+demonstrates this idea:
+
+```{zig}
+#| eval: false
+const std = @import("std");
+pub fn build(b: *std.Build) void {
+    const use_zlib = b.option(
+        bool,
+        "use_zlib",
+        "Should link to zlib?"
+    ) orelse false;
+    const exe = b.addExecutable(.{
+        .name = "hello",
+        .root_source_file = b.path("example.zig"),
+        .target = b.host,
+    });
+    if (use_zlib) {
+        exe.linkSystemLibrary("zlib");
+    }
+    b.installArtifact(exe);
+}
+```
+
+You can set this `use_zlib` option at the command line when you are invoking the
+`build` command from the `zig` compiler. In the example below, we set this option
+to false, which means that the build script will not link our binary executable to
+the `zlib` library.
+
+```bash
+zig build -Duse_zlib=false
+```
 
 
-## Linking with external libraries
+## Linking to external libraries
 
 
 
