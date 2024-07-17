@@ -390,8 +390,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span>
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_arti = b.addRunArtifact(exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Now that we created the run artifact, we need to include it in the build process. We do that by declaring a new “build step” in our build script to call this artifact, through the <code>step()</code> method of the <code>Build</code> struct.</p>
-<p>We can give any name we want to this step, but, for our context here, I’m going to name this step as “run”. Also, I give it a brief description to this step (“Run the project”).</p>
+<p>Now that we created the run artifact, we need to include it in the build process. We do that by declaring a new “build step” in our build script to call this artifact, through the <code>step()</code> method of the <code>Build</code> struct. We can give any name we want to this step, but, for our context here, I’m going to name this step as “run”. Also, I give it a brief description to this step (“Run the project”).</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_step = b.step(</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"run"</span>, <span class="st">"Run the project"</span></span>
@@ -409,25 +408,33 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   ...
   run   Run the project
   ...</code></pre>
+<p>Now, everything that we need to is to call this “run” step that we created in our build script. We call it by using the name that we gave to this step after the <code>build</code> command from the <code>zig</code> compiler. This will cause the compiler to build our executable file and execute it at the same time.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> build run</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="build-for-unit-tests" class="level2" data-number="7.8">
 <h2 data-number="7.8" class="anchored" data-anchor-id="build-for-unit-tests"><span class="header-section-number">7.8</span> Build for unit tests</h2>
-<p>We talk at length about writing unit tests in Zig, and we also talk about how to execute these unit tests through the <code>test</code> command of the <code>zig</code> compiler at <a href="03-unittests.html" class="quarto-xref"><span>Chapter 8</span></a>. However, the <code>test</code> command is used to run the unit tests from a single Zig module.</p>
-<p>But how to run all unit tests in the project at once? Here is where a test target object comes into play. As was described at <a href="#sec-targets" class="quarto-xref"><span>Section 7.3</span></a>, we can create a test target object by using the <code>addTest()</code> method of the <code>Build</code> struct.</p>
-<p>A test target object essentially filter all <code>test</code> blocks in all Zig modules across your project, and builds only the source code present inside these <code>test</code> blocks in your project. As a result, this target object creates an executable file, that when you execute it, you are executing the source in all of these <code>test</code> blocks, i.e.&nbsp;the unit tests.</p>
-<p>When we create a test target object and add a run step into this test target object, we create a very useful shortcut to build all unit tests of your project, and execute them, at once.</p>
+<p>We talk at length about writing unit tests in Zig, and we also talk about how to execute these unit tests through the <code>test</code> command of the <code>zig</code> compiler at <a href="03-unittests.html" class="quarto-xref"><span>Chapter 8</span></a>. However, as we did with the <code>run</code> command on the previous section, we also might want to include some commands in our build script to also build and execute the unit tests in our project.</p>
+<p>So, once again, we are going to discuss how a specific built-in command from the <code>zig</code> compiler, (in this case, the <code>test</code> command) can be used in a build script in Zig. This means that, we can include a step in our build script to build and run unit tests in the project at once.</p>
+<p>Here is where a test target object comes into play. As was described at <a href="#sec-targets" class="quarto-xref"><span>Section 7.3</span></a>, we can create a test target object by using the <code>addTest()</code> method of the <code>Build</code> struct. So the first thing that we need to do is to declare a test target object in our build script.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> test_exe = b.addTest(.<span class="op">{</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"test"</span>,</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>b.installArtifact(test_exe);</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_test = b.addRunArtifact(test_exe);</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_step = b.step(<span class="st">"run"</span>, <span class="st">"Run the unit tests"</span>);</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>run_step.dependOn(&amp;run_test.step);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> test_exe = b.addTest(.<span class="op">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"unit_tests"</span>,</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"src/main.zig"</span>),</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>b.installArtifact(test_exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>A test target object essentially filter all <code>test</code> blocks in all Zig modules across your project, and builds only the source code present inside these <code>test</code> blocks in your project. As a result, this target object creates an executable file that contains only the source code present in all of these <code>test</code> blocks (i.e.&nbsp;the unit tests) in your project.</p>
+<p>Perfect, now that we declared this test target object, an executable file named <code>unit_tests</code> is built by the <code>zig</code> compiler when we trigger the build script with the <code>build</code> command from the <code>zig</code> compiler. After the build process is finished, we can simply execute this <code>unit_tests</code> executable in the terminal.</p>
+<p>Though, if you remember from the previous section, we already learned how can we create a run step in our build script, to execute an executable file built by the build script.</p>
+<p>So, we could simply add a run step in our build script to run these unit tests from a single command in the <code>zig</code> compiler, to make our lifes easier. In the example below, we demonstrate the commands to register a new build step called “tests” in our build script to run these unit tests.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_arti = b.addRunArtifact(test_exe);</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_step = b.step(<span class="st">"tests"</span>, <span class="st">"Run unit tests"</span>);</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>run_step.dependOn(&amp;run_arti.step);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now that we registered this new build step, we can call it and trigger the execution process by calling the command below in the terminal. You can also checkout the complete source code for this specific build script at the <a href="https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_tests.zig">official repository of this book</a> <a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> build tests</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="tailoring-your-build-process-with-user-provided-options" class="level2" data-number="7.9">
 <h2 data-number="7.9" class="anchored" data-anchor-id="tailoring-your-build-process-with-user-provided-options"><span class="header-section-number">7.9</span> Tailoring your build process with user provided options</h2>
@@ -443,6 +450,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li id="fn1"><p><a href="https://cmake.org/cmake/help/latest/manual/cmake-buildsystem.7.html" class="uri">https://cmake.org/cmake/help/latest/manual/cmake-buildsystem.7.html</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn2"><p><a href="https://semver.org/" class="uri">https://semver.org/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn3"><p><a href="https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_and_run.zig" class="uri">https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_and_run.zig</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p><a href="https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_tests.zig" class="uri">https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_tests.zig</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
