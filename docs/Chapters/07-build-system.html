@@ -220,6 +220,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#build-unit-tests-in-your-project" id="toc-build-unit-tests-in-your-project" class="nav-link" data-scroll-target="#build-unit-tests-in-your-project"><span class="header-section-number">8.8</span> Build unit tests in your project</a></li>
   <li><a href="#tailoring-your-build-process-with-user-provided-options" id="toc-tailoring-your-build-process-with-user-provided-options" class="nav-link" data-scroll-target="#tailoring-your-build-process-with-user-provided-options"><span class="header-section-number">8.9</span> Tailoring your build process with user-provided options</a></li>
   <li><a href="#linking-to-external-libraries" id="toc-linking-to-external-libraries" class="nav-link" data-scroll-target="#linking-to-external-libraries"><span class="header-section-number">8.10</span> Linking to external libraries</a></li>
+  <li><a href="#building-c-code" id="toc-building-c-code" class="nav-link" data-scroll-target="#building-c-code"><span class="header-section-number">8.11</span> Building C code</a>
+  <ul class="collapse">
+  <li><a href="#adding-include-paths" id="toc-adding-include-paths" class="nav-link" data-scroll-target="#adding-include-paths"><span class="header-section-number">8.11.1</span> Adding include paths</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -467,8 +471,63 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="linking-to-external-libraries" class="level2" data-number="8.10">
 <h2 data-number="8.10" class="anchored" data-anchor-id="linking-to-external-libraries"><span class="header-section-number">8.10</span> Linking to external libraries</h2>
+<p>One essential part of every build process is the linking stage. This stage is responsible for combining the multiple object files that represent your code, into a single executable file. It also links this executable file to an external libraries, if you use any in your code.</p>
+<p>In Zig, we have two notions of a “library”, which are: 1) a system’s library; 2) a local library. A system’s library is just a library that already is installed in your system. While a local library is a library that belongs to the current project. Is a library that is present in your project directory, and that you are building together with your project source code.</p>
+<p>The basic difference between the two, is that a system’s library is already built and installed in your system, supposedly, and all you need to do is to link your source code to this library to start using it. We do that by using the <code>linkSystemLibrary()</code> method from a <code>Compile</code> object. This method accepts the name of the library in a string as input. Remember from <a href="#sec-targets" class="quarto-xref"><span>Section 8.3</span></a> that a <code>Compile</code> object is a target object that you declare in your build script.</p>
+<p>When you link a particular target object with a system’s library, the <code>zig</code> compiler will use <code>pkg-config</code> to find where in your system are the binary files and also the header files of this library that you requested for. When it finds these files, the linker present in the <code>zig</code> compiler will link your object files with the files of this library to produce a single executable file.</p>
+<p>In the example below, we are creating an executable file named <code>image_filter</code>, and, we are linking this executable file to the C Standard Library with the method <code>linkLibC()</code>, but we also are linking this executable file to the C library <code>libpng</code> that is currently installed in my system.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> build(b: *std.Build) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"image_filter"</span>,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>        .root_source_file = b.path(<span class="st">"src/main.zig"</span>),</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>        .target = target,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>        .optimize = optimize,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    exe.linkLibC();</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    exe.linkSystemLibrary(<span class="st">"png"</span>);</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    b.installArtifact(exe);</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>If you are linking with a C library in your project, is generally a good idea to also link your code with the C Standard Library. Because is very likely that this C library uses some functionality of the C Standard Library at some point. The same goes to C++ libraries. So, if you are linking with C++ libraries, is a good idea to link your project with the C++ Standard Library using the <code>linkLibCpp()</code> method.</p>
+<p>On the order side, when you want to link with a local library, you should use the <code>linkLibrary()</code> method of a <code>Compile</code> object. This method expects to receive another <code>Compile</code> object as input. That is, another target object defined in your build script, using either the <code>addStaticLibrary()</code> or <code>addSharedLibrary()</code> methods which defines a library to be built.</p>
+<p>Because as we discussed earlier, a local library is a library that is local to your project, and that is being built together with your project. So, you need to create a target object in your build script to build this local library. Then, you link the target objects of interest in your project, with this target object that identifies this local library.</p>
+<p>Take a look at this example extracted from the build script of the <a href="https://github.com/mitchellh/libxev/tree/main"><code>libxev</code> library</a><a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a>. You can see in this snippet that we are declaring a shared library file, from the <code>c_api.zig</code> module. Then later in the build script, we declare an executable file named “dynamic-binding-test”, which links to this shared library that we defined earlier in the script.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> optimize = b.standardOptimizeOption(.<span class="op">{}</span>);</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> target = b.standardTargetOptions(.<span class="op">{}</span>);</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dynamic_lib = b.addSharedLibrary(.<span class="op">{</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    .name = dynamic_lib_name,</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"src/c_api.zig"</span>),</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    .target = target,</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    .optimize = optimize,</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>b.installArtifact(dynamic_lib);</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="co">// ... more lines in the script</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dynamic_binding_test = b.addExecutable(.<span class="op">{</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"dynamic-binding-test"</span>,</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>    .target = target,</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>    .optimize = optimize,</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>dynamic_binding_test.linkLibrary(dynamic_lib);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="building-c-code" class="level2" data-number="8.11">
+<h2 data-number="8.11" class="anchored" data-anchor-id="building-c-code"><span class="header-section-number">8.11</span> Building C code</h2>
+<p>If is not clear yet, the <code>zig</code> compiler is also a C compiler. In other words, you can use the <code>zig</code> compiler to compile C projects, through the <code>zig cc</code> command.</p>
+<section id="adding-include-paths" class="level3" data-number="8.11.1">
+<h3 data-number="8.11.1" class="anchored" data-anchor-id="adding-include-paths"><span class="header-section-number">8.11.1</span> Adding include paths</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> inc_path: std.Build.LazyPath = <span class="op">{</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    .cwd_relative = <span class="st">"/usr/local/lib/"</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>exe.addLibraryPath(inc_path);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 
 
+</section>
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>
@@ -479,6 +538,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li id="fn4"><p><a href="https://semver.org/" class="uri">https://semver.org/</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn5"><p><a href="https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_and_run.zig" class="uri">https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_and_run.zig</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn6"><p><a href="https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_tests.zig" class="uri">https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_tests.zig</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7"><p><a href="https://github.com/mitchellh/libxev/tree/main" class="uri">https://github.com/mitchellh/libxev/tree/main</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 

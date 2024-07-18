@@ -567,8 +567,120 @@ zig build -Duse_zlib=false
 
 
 One essential part of every build process is the linking stage.
-This stage is responsible for linking your code to external libraries
-that you use in your code.
+This stage is responsible for combining the multiple object files
+that represent your code, into a single executable file. It also links
+this executable file to an external libraries, if you use any in your code.
 
-Zig understand two types of libraries: system's library or external libraries.
+In Zig, we have two notions of a "library", which are: 1) a system's library;
+2) a local library. A system's library is just a library that already is installed
+in your system. While a local library is a library that belongs to the current
+project. Is a library that is present in your project directory, and
+that you are building together with your project source code.
+
+The basic difference between the two, is that a system's library is already
+built and installed in your system, supposedly, and all you need to do
+is to link your source code to this library to start using it.
+We do that by using the `linkSystemLibrary()` method from a
+`Compile` object. This method accepts the name of the library
+in a string as input. Remember from @sec-targets that a `Compile` object
+is a target object that you declare in your build script.
+
+When you link a particular target object with a system's library,
+the `zig` compiler will use `pkg-config` to find where in your system
+are the binary files and also the header files of this library that you requested for.
+When it finds these files, the linker present in the `zig` compiler
+will link your object files with the files of this library to
+produce a single executable file.
+
+In the example below, we are creating an executable file named `image_filter`,
+and, we are linking this executable file to the C Standard Library with the
+method `linkLibC()`, but we also are linking this executable file to the
+C library `libpng` that is currently installed in my system.
+
+```{zig}
+#| eval: false
+const std = @import("std");
+pub fn build(b: *std.Build) void {
+    const exe = b.addExecutable(.{
+        .name = "image_filter",
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    exe.linkLibC();
+    exe.linkSystemLibrary("png");
+    b.installArtifact(exe);
+}
+```
+
+If you are linking with a C library in your project, is generally a good idea
+to also link your code with the C Standard Library. Because is very likely
+that this C library uses some functionality of the C Standard Library at some point.
+The same goes to C++ libraries. So, if you are linking with
+C++ libraries, is a good idea to link your project with the C++
+Standard Library using the `linkLibCpp()` method.
+
+On the order side, when you want to link with a local library,
+you should use the `linkLibrary()` method of a `Compile` object.
+This method expects to receive another `Compile` object as input.
+That is, another target object defined in your build script,
+using either the `addStaticLibrary()` or `addSharedLibrary()` methods
+which defines a library to be built.
+
+Because as we discussed earlier, a local library is a library
+that is local to your project, and that is being built together
+with your project. So, you need to create a target object in your build script
+to build this local library. Then, you link the target objects of interest in your project,
+with this target object that identifies this local library.
+
+Take a look at this example extracted from the build script of the [`libxev` library](https://github.com/mitchellh/libxev/tree/main)[^libxev2].
+You can see in this snippet that
+we are declaring a shared library file, from the `c_api.zig`
+module. Then later in the build script, we declare an
+executable file named "dynamic-binding-test", which
+links to this shared library that we defined earlier
+in the script.
+
+[^libxev2]: <https://github.com/mitchellh/libxev/tree/main>
+
+
+```{zig}
+#| eval: false
+const optimize = b.standardOptimizeOption(.{});
+const target = b.standardTargetOptions(.{});
+
+const dynamic_lib = b.addSharedLibrary(.{
+    .name = dynamic_lib_name,
+    .root_source_file = b.path("src/c_api.zig"),
+    .target = target,
+    .optimize = optimize,
+});
+b.installArtifact(dynamic_lib);
+// ... more lines in the script
+const dynamic_binding_test = b.addExecutable(.{
+    .name = "dynamic-binding-test",
+    .target = target,
+    .optimize = optimize,
+});
+dynamic_binding_test.linkLibrary(dynamic_lib);
+```
+
+
+
+## Building C code
+
+If is not clear yet, the `zig` compiler is also a C compiler. In other words,
+you can use the `zig` compiler to compile C projects, through the `zig cc`
+command.
+
+### Adding include paths
+
+```{zig}
+#| eval: false
+const inc_path: std.Build.LazyPath = {
+    .cwd_relative = "/usr/local/lib/"
+};
+exe.addLibraryPath(inc_path);
+```
+
 
