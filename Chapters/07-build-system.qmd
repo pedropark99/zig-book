@@ -316,7 +316,7 @@ b.installArtifact(exe);
 ```
 
 
-## Detecting the OS in your build script
+## Detecting the OS in your build script {#sec-detect-os}
 
 Is very commom in Build Systems to use different options, or, to include different modules, or,
 to link against different libraries depending on the Operational System (OS)
@@ -669,18 +669,216 @@ dynamic_binding_test.linkLibrary(dynamic_lib);
 
 ## Building C code
 
-If is not clear yet, the `zig` compiler is also a C compiler. In other words,
-you can use the `zig` compiler to compile C projects, through the `zig cc`
-command.
+The `zig` compiler comes with a C compiler embedded in it. In other words,
+you can use the `zig` compiler to build C projects. This C compiler is available
+through the `cc` command of the `zig` compiler.
 
-### Adding include paths
+As an example, let's use the famous [FreeType library](https://freetype.org/)[^freetype].
+FreeType is one of the most widely used pieces of software.
+It is a C library designed to produce high-quality fonts. But it is also
+heavily used in the industry to natively render text and fonts
+in the screen of your computer.
+
+In this section, we are going to write a build script, piece by piece, that is capable
+of building the FreeType project from source.
+You can find the source code of this build script on the
+[`freetype-zig` repository](https://github.com/pedropark99/freetype-zig/tree/main)[^freetype-zig]
+available at GitHub.
+
+[^freetype]: <https://freetype.org/>
+[^freetype-zig]: <https://github.com/pedropark99/freetype-zig/tree/main>
+
+After you download the source code of FreeType from the official website[^freetype],
+you can start writing the `build.zig` module. We begin by defining the target object
+that defines the binary file that we want to compile.
+
+Since FreeType is a C library, I link it against `libc` through the `linkLibC()` method.
+Just as an example, I will build FreeType as a static library. That is why I use
+the `addStaticLibrary()` method below to create the target object to build the library.
 
 ```{zig}
 #| eval: false
-const inc_path: std.Build.LazyPath = {
-    .cwd_relative = "/usr/local/lib/"
-};
-exe.addLibraryPath(inc_path);
+const target = b.standardTargetOptions(.{});
+const opti = b.standardOptimizeOption(.{});
+const lib = b.addStaticLibrary(.{
+    .name = "freetype",
+    .optimize = opti,
+    .target = target,
+});
+lib.linkLibC();
 ```
 
+### Creating C compiler flags
+
+You can list the C compiler flags to be used in the compilation process
+in a simple array, like in the example below.
+
+```{zig}
+#| eval: false
+const c_flags = [_][]const u8{
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+};
+```
+
+In theory, there is nothing stopping you from using this array to also add include paths (with the `-I` flag),
+to the compilation process. But there is a formal way in Zig to include these paths, which is
+discussed at @sec-include-paths.
+
+In Zig, we add C flags to the build process
+together with the C files that we want to compile, using the
+`addCSourceFile()` and `addCSourceFiles()` methods.
+So in the example above, we have just declared the C flags that we want to use.
+But we haven't added them to the build process yet.
+To do that, we first need to list the C files to be compiled.
+
+### Listing your C files
+
+The C files that contains "cross-platform" code are listed in the `c_source_files`
+object below. These are the C files that are included by default in every platform supported by the library.
+Since the amount of C files in the FreeType library is big, I omitted
+the rest of the files in the code example below, for brevity purposes.
+
+```{zig}
+#| eval: false
+const c_source_files = [_][]const u8{
+    "src/autofit/autofit.c",
+    "src/base/ftbase.c",
+    // ... and many other C files.
+};
+```
+
+Now, there are some C files that are platform-specific, meaning that, they are only
+included in the build process on specific target platforms. The objects that list
+these C files are exposed in the code example below.
+
+```{zig}
+#| eval: false
+const windows_c_source_files = [_][]const u8{
+    "builds/windows/ftdebug.c",
+    "builds/windows/ftsystem.c"
+};
+const linux_c_source_files = [_][]const u8{
+    "src/base/ftsystem.c",
+    "src/base/ftdebug.c"
+};
+```
+
+Now that we declared both the files that we want to include and the C compiler flags to be used,
+we can add them to the target object that describes the FreeType library, by using the
+`addCSourceFile()` and `addCSourceFiles()` methods.
+
+Both of these functions are methods from a `Compile` object (i.e. target object).
+The `addCSourceFile()` method is capable of adding a single C file to the target object,
+while the `addCSourceFiles()` method is used to add multiple C files in a single command.
+You might prefer to use `addCSourceFile()` when you need to use different compiler flags
+on specific C files in your project. But, if you can use the same compiler flags
+across all files, you will probably find `addCSourceFiles()` a better choice.
+
+Notice that we are using the `addCSourceFiles()` method in the example below,
+to add both the C files and the C compiler flags. Also notice that we
+are using the `os.tag` that we learned at @sec-detect-os, to add the platform-specific
+C files.
+
+```{zig}
+#| eval: false
+const builtin = @import("builtin");
+lib.addCSourceFiles(
+    &c_source_files, &c_flags
+);
+
+switch (builtin.target.os.tag) {
+    .windows => {
+        lib.addCSourceFiles(
+            &windows_c_source_files,
+            &c_flags
+        );
+    },
+    .linux => {
+        lib.addCSourceFiles(
+            &linux_c_source_files,
+            &c_flags
+        );
+    },
+    else => {},
+}
+```
+
+
+### Defining C Macros
+
+C Macros are commonly defined through the `-D` flag
+from a C compiler.
+In Zig, you can define a C Macro to be used in your build process
+by using the `defineCMacro()` method from the target object that
+defines the binary file that you are building.
+
+In the example below, we are using the `lib` object that we defined
+on the previous sections to define some C Macros used by FreeType
+in the compilation process. These C Macros specify if FreeType
+should (or should not) include functionalities from different
+external libraries.
+
+```{zig}
+#| eval: false
+lib.defineCMacro("FT_DISABLE_ZLIB", "TRUE");
+lib.defineCMacro("FT_DISABLE_PNG", "TRUE");
+lib.defineCMacro("FT_DISABLE_HARFBUZZ", "TRUE");
+lib.defineCMacro("FT_DISABLE_BZIP2", "TRUE");
+lib.defineCMacro("FT_DISABLE_BROTLI", "TRUE");
+lib.defineCMacro("FT2_BUILD_LIBRARY", "TRUE");
+```
+
+
+### Adding library paths
+
+Library paths are paths in your computer where the C compiler will look (or search) for
+library files to link against your source code. In other words, when you use a library in your
+C source code, and you ask the C compiler to link your source code against this library,
+the C compiler will search for the binary files of this library across the paths listed
+in this "library paths" set.
+
+These paths are platform specific, and, by default, the C compiler starts by looking at a
+pre-defined set of places in your computer. But you can add more paths (or more places)
+to this list. For example, you may have a library installed in a non-conventional place of your
+computer, and you can make the C compiler "see" this "non-conventional place" by adding this path
+to this list of pre-defined paths.
+
+In Zig, you can add more paths to this set by using the `addLibraryPath()` method from your target object.
+First, you defined a `LazyPath` object, containing the path you want to add, then,
+you provide this object as input to the `addLibraryPath()` method, like in the example below:
+
+```{zig}
+#| eval: false
+const lib_path: std.Build.LazyPath = .{
+    .cwd_relative = "/usr/local/lib/"
+};
+lib.addLibraryPath(lib_path);
+```
+
+
+
+
+### Adding include paths {#sec-include-paths}
+
+Include paths are similar to library paths. They are a set of pre-defined places in your computer where
+the C compiler will look for files during the compilation process. But instead of looking for
+library files, the include paths are places where the compiler looks for header files included
+in your C source code.
+
+Every header file that you include in your C source code, through a `#include` statements needs to
+be found somewhere, and the C compiler will search for this header file across the paths listed in this "include paths" set.
+Include paths are added to the compilation process through the `-I` flag.
+
+In Zig, you can add new paths to this pre-defined set of paths, by using the `addIncludePath()` method
+from your target object. This method also accepts a `LazyPath` object as input.
+
+```{zig}
+#| eval: false
+const inc_path: std.Build.LazyPath = .{
+    .path = "./include"
+};
+lib.addIncludePath(inc_path);
+```
 

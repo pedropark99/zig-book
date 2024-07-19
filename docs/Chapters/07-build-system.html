@@ -71,10 +71,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -131,6 +133,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div class="pt-lg-2 mt-2 text-left sidebar-header">
     <div class="sidebar-title mb-0 py-0">
       <a href="../">An Introduction to Zig</a> 
+        <div class="sidebar-tools-main">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
     </div>
       </div>
         <div class="mt-2 flex-shrink-0 align-items-center">
@@ -215,14 +220,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#sec-targets" id="toc-sec-targets" class="nav-link" data-scroll-target="#sec-targets"><span class="header-section-number">8.3</span> Target objects</a></li>
   <li><a href="#setting-the-build-mode" id="toc-setting-the-build-mode" class="nav-link" data-scroll-target="#setting-the-build-mode"><span class="header-section-number">8.4</span> Setting the build mode</a></li>
   <li><a href="#setting-the-version-of-your-build" id="toc-setting-the-version-of-your-build" class="nav-link" data-scroll-target="#setting-the-version-of-your-build"><span class="header-section-number">8.5</span> Setting the version of your build</a></li>
-  <li><a href="#detecting-the-os-in-your-build-script" id="toc-detecting-the-os-in-your-build-script" class="nav-link" data-scroll-target="#detecting-the-os-in-your-build-script"><span class="header-section-number">8.6</span> Detecting the OS in your build script</a></li>
+  <li><a href="#sec-detect-os" id="toc-sec-detect-os" class="nav-link" data-scroll-target="#sec-detect-os"><span class="header-section-number">8.6</span> Detecting the OS in your build script</a></li>
   <li><a href="#adding-a-run-step-to-your-build-process" id="toc-adding-a-run-step-to-your-build-process" class="nav-link" data-scroll-target="#adding-a-run-step-to-your-build-process"><span class="header-section-number">8.7</span> Adding a run step to your build process</a></li>
   <li><a href="#build-unit-tests-in-your-project" id="toc-build-unit-tests-in-your-project" class="nav-link" data-scroll-target="#build-unit-tests-in-your-project"><span class="header-section-number">8.8</span> Build unit tests in your project</a></li>
   <li><a href="#tailoring-your-build-process-with-user-provided-options" id="toc-tailoring-your-build-process-with-user-provided-options" class="nav-link" data-scroll-target="#tailoring-your-build-process-with-user-provided-options"><span class="header-section-number">8.9</span> Tailoring your build process with user-provided options</a></li>
   <li><a href="#linking-to-external-libraries" id="toc-linking-to-external-libraries" class="nav-link" data-scroll-target="#linking-to-external-libraries"><span class="header-section-number">8.10</span> Linking to external libraries</a></li>
   <li><a href="#building-c-code" id="toc-building-c-code" class="nav-link" data-scroll-target="#building-c-code"><span class="header-section-number">8.11</span> Building C code</a>
   <ul class="collapse">
-  <li><a href="#adding-include-paths" id="toc-adding-include-paths" class="nav-link" data-scroll-target="#adding-include-paths"><span class="header-section-number">8.11.1</span> Adding include paths</a></li>
+  <li><a href="#creating-c-compiler-flags" id="toc-creating-c-compiler-flags" class="nav-link" data-scroll-target="#creating-c-compiler-flags"><span class="header-section-number">8.11.1</span> Creating C compiler flags</a></li>
+  <li><a href="#listing-your-c-files" id="toc-listing-your-c-files" class="nav-link" data-scroll-target="#listing-your-c-files"><span class="header-section-number">8.11.2</span> Listing your C files</a></li>
+  <li><a href="#defining-c-macros" id="toc-defining-c-macros" class="nav-link" data-scroll-target="#defining-c-macros"><span class="header-section-number">8.11.3</span> Defining C Macros</a></li>
+  <li><a href="#adding-library-paths" id="toc-adding-library-paths" class="nav-link" data-scroll-target="#adding-library-paths"><span class="header-section-number">8.11.4</span> Adding library paths</a></li>
+  <li><a href="#sec-include-paths" id="toc-sec-include-paths" class="nav-link" data-scroll-target="#sec-include-paths"><span class="header-section-number">8.11.5</span> Adding include paths</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -370,8 +379,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="detecting-the-os-in-your-build-script" class="level2" data-number="8.6">
-<h2 data-number="8.6" class="anchored" data-anchor-id="detecting-the-os-in-your-build-script"><span class="header-section-number">8.6</span> Detecting the OS in your build script</h2>
+<section id="sec-detect-os" class="level2" data-number="8.6">
+<h2 data-number="8.6" class="anchored" data-anchor-id="sec-detect-os"><span class="header-section-number">8.6</span> Detecting the OS in your build script</h2>
 <p>Is very commom in Build Systems to use different options, or, to include different modules, or, to link against different libraries depending on the Operational System (OS) that you are targeting in the build process.</p>
 <p>In Zig, you can detect the target OS of the build process, by looking at the <code>os.tag</code> inside the <code>builtin</code> module from the Zig library. In the example below, we are using an if statement to run some arbitrary code when the target of the build process is a Windows system.</p>
 <div class="cell">
@@ -516,14 +525,116 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="building-c-code" class="level2" data-number="8.11">
 <h2 data-number="8.11" class="anchored" data-anchor-id="building-c-code"><span class="header-section-number">8.11</span> Building C code</h2>
-<p>If is not clear yet, the <code>zig</code> compiler is also a C compiler. In other words, you can use the <code>zig</code> compiler to compile C projects, through the <code>zig cc</code> command.</p>
-<section id="adding-include-paths" class="level3" data-number="8.11.1">
-<h3 data-number="8.11.1" class="anchored" data-anchor-id="adding-include-paths"><span class="header-section-number">8.11.1</span> Adding include paths</h3>
+<p>The <code>zig</code> compiler comes with a C compiler embedded in it. In other words, you can use the <code>zig</code> compiler to build C projects. This C compiler is available through the <code>cc</code> command of the <code>zig</code> compiler.</p>
+<p>As an example, let’s use the famous <a href="https://freetype.org/">FreeType library</a><a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a>. FreeType is one of the most widely used pieces of software. It is a C library designed to produce high-quality fonts. But it is also heavily used in the industry to natively render text and fonts in the screen of your computer.</p>
+<p>In this section, we are going to write a build script, piece by piece, that is capable of building the FreeType project from source. You can find the source code of this build script on the <a href="https://github.com/pedropark99/freetype-zig/tree/main"><code>freetype-zig</code> repository</a><a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a> available at GitHub.</p>
+<p>After you download the source code of FreeType from the official website<a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a>, you can start writing the <code>build.zig</code> module. We begin by defining the target object that defines the binary file that we want to compile.</p>
+<p>Since FreeType is a C library, I link it against <code>libc</code> through the <code>linkLibC()</code> method. Just as an example, I will build FreeType as a static library. That is why I use the <code>addStaticLibrary()</code> method below to create the target object to build the library.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> inc_path: std.Build.LazyPath = <span class="op">{</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    .cwd_relative = <span class="st">"/usr/local/lib/"</span></span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>exe.addLibraryPath(inc_path);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> target = b.standardTargetOptions(.<span class="op">{}</span>);</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> opti = b.standardOptimizeOption(.<span class="op">{}</span>);</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> lib = b.addStaticLibrary(.<span class="op">{</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"freetype"</span>,</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    .optimize = opti,</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    .target = target,</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>lib.linkLibC();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="creating-c-compiler-flags" class="level3" data-number="8.11.1">
+<h3 data-number="8.11.1" class="anchored" data-anchor-id="creating-c-compiler-flags"><span class="header-section-number">8.11.1</span> Creating C compiler flags</h3>
+<p>You can list the C compiler flags to be used in the compilation process in a simple array, like in the example below.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c_flags = [_][]<span class="kw">const</span> <span class="dt">u8</span><span class="op">{</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"-Wall"</span>,</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"-Wextra"</span>,</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"-Werror"</span>,</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In theory, there is nothing stopping you from using this array to also add include paths (with the <code>-I</code> flag), to the compilation process. But there is a formal way in Zig to include these paths, which is discussed at <a href="#sec-include-paths" class="quarto-xref"><span>Section 8.11.5</span></a>.</p>
+<p>In Zig, we add C flags to the build process together with the C files that we want to compile, using the <code>addCSourceFile()</code> and <code>addCSourceFiles()</code> methods. So in the example above, we have just declared the C flags that we want to use. But we haven’t added them to the build process yet. To do that, we first need to list the C files to be compiled.</p>
+</section>
+<section id="listing-your-c-files" class="level3" data-number="8.11.2">
+<h3 data-number="8.11.2" class="anchored" data-anchor-id="listing-your-c-files"><span class="header-section-number">8.11.2</span> Listing your C files</h3>
+<p>The C files that contains “cross-platform” code are listed in the <code>c_source_files</code> object below. These are the C files that are included by default in every platform supported by the library. Since the amount of C files in the FreeType library is big, I omitted the rest of the files in the code example below, for brevity purposes.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c_source_files = [_][]<span class="kw">const</span> <span class="dt">u8</span><span class="op">{</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"src/autofit/autofit.c"</span>,</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"src/base/ftbase.c"</span>,</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ... and many other C files.</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now, there are some C files that are platform-specific, meaning that, they are only included in the build process on specific target platforms. The objects that list these C files are exposed in the code example below.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> windows_c_source_files = [_][]<span class="kw">const</span> <span class="dt">u8</span><span class="op">{</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"builds/windows/ftdebug.c"</span>,</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"builds/windows/ftsystem.c"</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> linux_c_source_files = [_][]<span class="kw">const</span> <span class="dt">u8</span><span class="op">{</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"src/base/ftsystem.c"</span>,</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"src/base/ftdebug.c"</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now that we declared both the files that we want to include and the C compiler flags to be used, we can add them to the target object that describes the FreeType library, by using the <code>addCSourceFile()</code> and <code>addCSourceFiles()</code> methods.</p>
+<p>Both of these functions are methods from a <code>Compile</code> object (i.e.&nbsp;target object). The <code>addCSourceFile()</code> method is capable of adding a single C file to the target object, while the <code>addCSourceFiles()</code> method is used to add multiple C files in a single command. You might prefer to use <code>addCSourceFile()</code> when you need to use different compiler flags on specific C files in your project. But, if you can use the same compiler flags across all files, you will probably find <code>addCSourceFiles()</code> a better choice.</p>
+<p>Notice that we are using the <code>addCSourceFiles()</code> method in the example below, to add both the C files and the C compiler flags. Also notice that we are using the <code>os.tag</code> that we learned at <a href="#sec-detect-os" class="quarto-xref"><span>Section 8.6</span></a>, to add the platform-specific C files.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> builtin = <span class="bu">@import</span>(<span class="st">"builtin"</span>);</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>lib.addCSourceFiles(</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    &amp;c_source_files, &amp;c_flags</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="kw">switch</span> (builtin.target.os.tag) <span class="op">{</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>    .windows =&gt; <span class="op">{</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>        lib.addCSourceFiles(</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>            &amp;windows_c_source_files,</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>            &amp;c_flags</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>,</span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>    .linux =&gt; <span class="op">{</span></span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>        lib.addCSourceFiles(</span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>            &amp;linux_c_source_files,</span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>            &amp;c_flags</span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>,</span>
+<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">else</span> =&gt; <span class="op">{}</span>,</span>
+<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="defining-c-macros" class="level3" data-number="8.11.3">
+<h3 data-number="8.11.3" class="anchored" data-anchor-id="defining-c-macros"><span class="header-section-number">8.11.3</span> Defining C Macros</h3>
+<p>C Macros are commonly defined through the <code>-D</code> flag from a C compiler. In Zig, you can define a C Macro to be used in your build process by using the <code>defineCMacro()</code> method from the target object that defines the binary file that you are building.</p>
+<p>In the example below, we are using the <code>lib</code> object that we defined on the previous sections to define some C Macros used by FreeType in the compilation process. These C Macros specify if FreeType should (or should not) include functionalities from different external libraries.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>lib.defineCMacro(<span class="st">"FT_DISABLE_ZLIB"</span>, <span class="st">"TRUE"</span>);</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>lib.defineCMacro(<span class="st">"FT_DISABLE_PNG"</span>, <span class="st">"TRUE"</span>);</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>lib.defineCMacro(<span class="st">"FT_DISABLE_HARFBUZZ"</span>, <span class="st">"TRUE"</span>);</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>lib.defineCMacro(<span class="st">"FT_DISABLE_BZIP2"</span>, <span class="st">"TRUE"</span>);</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>lib.defineCMacro(<span class="st">"FT_DISABLE_BROTLI"</span>, <span class="st">"TRUE"</span>);</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>lib.defineCMacro(<span class="st">"FT2_BUILD_LIBRARY"</span>, <span class="st">"TRUE"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="adding-library-paths" class="level3" data-number="8.11.4">
+<h3 data-number="8.11.4" class="anchored" data-anchor-id="adding-library-paths"><span class="header-section-number">8.11.4</span> Adding library paths</h3>
+<p>Library paths are paths in your computer where the C compiler will look (or search) for library files to link against your source code. In other words, when you use a library in your C source code, and you ask the C compiler to link your source code against this library, the C compiler will search for the binary files of this library across the paths listed in this “library paths” set.</p>
+<p>These paths are platform specific, and, by default, the C compiler starts by looking at a pre-defined set of places in your computer. But you can add more paths (or more places) to this list. For example, you may have a library installed in a non-conventional place of your computer, and you can make the C compiler “see” this “non-conventional place” by adding this path to this list of pre-defined paths.</p>
+<p>In Zig, you can add more paths to this set by using the <code>addLibraryPath()</code> method from your target object. First, you defined a <code>LazyPath</code> object, containing the path you want to add, then, you provide this object as input to the <code>addLibraryPath()</code> method, like in the example below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> lib_path: std.Build.LazyPath = .<span class="op">{</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>    .cwd_relative = <span class="st">"/usr/local/lib/"</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>lib.addLibraryPath(lib_path);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="sec-include-paths" class="level3" data-number="8.11.5">
+<h3 data-number="8.11.5" class="anchored" data-anchor-id="sec-include-paths"><span class="header-section-number">8.11.5</span> Adding include paths</h3>
+<p>Include paths are similar to library paths. They are a set of pre-defined places in your computer where the C compiler will look for files during the compilation process. But instead of looking for library files, the include paths are places where the compiler looks for header files included in your C source code.</p>
+<p>Every header file that you include in your C source code, through a <code>#include</code> statements needs to be found somewhere, and the C compiler will search for this header file across the paths listed in this “include paths” set. Include paths are added to the compilation process through the <code>-I</code> flag.</p>
+<p>In Zig, you can add new paths to this pre-defined set of paths, by using the <code>addIncludePath()</code> method from your target object. This method also accepts a <code>LazyPath</code> object as input.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> inc_path: std.Build.LazyPath = .<span class="op">{</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>    .path = <span class="st">"./include"</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>lib.addIncludePath(inc_path);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 
@@ -539,6 +650,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li id="fn5"><p><a href="https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_and_run.zig" class="uri">https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_and_run.zig</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn6"><p><a href="https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_tests.zig" class="uri">https://github.com/pedropark99/zig-book/blob/main/ZigExamples/build_system/build_tests.zig</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn7"><p><a href="https://github.com/mitchellh/libxev/tree/main" class="uri">https://github.com/mitchellh/libxev/tree/main</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn8"><p><a href="https://freetype.org/" class="uri">https://freetype.org/</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn9"><p><a href="https://github.com/pedropark99/freetype-zig/tree/main" class="uri">https://github.com/pedropark99/freetype-zig/tree/main</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn10"><p><a href="https://freetype.org/" class="uri">https://freetype.org/</a><a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
@@ -563,6 +677,150 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
   }
   toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
   const icon = "";
   const anchorJS = new window.AnchorJS();
   anchorJS.options = {
