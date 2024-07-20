@@ -443,63 +443,6 @@ Hello, world!
 ```
 
 
-<!--
-
-## High-level languages vs Low-level languages
-
-This book will definitely help you, on your journey to learn Zig. But there is
-a limit on how much a book can do. So you will need extra resources, and more
-strategies if you want to trully be good at Zig.
-
-You will need more resources, not because Zig is necessarily a hard language to learn, but
-because it is a low-level language. I'm emphasizing that, because not many people think much about
-the consequences of this fact. As I sad earlier, Zig is a very simple language, with very
-simple syntax. But because it is a low-level language, you will have
-to write (at least) as twice amount of Zig code to do a similar job that you would do on a high-level
-language, such as Python or Javascript.
-
-In other words, with a low-level language you get much more control and power, but
-you also get a lot more responsibilities. You have to be much more explicit and
-include much more details in your code to make it work properly. This is an intrinsic
-characteristic present in all low-level languages, such as C, C++ and Rust.
-
-Another side of the problem with low-level languages is that they require a different set of skills and knowledges from you,
-and this creates a skill (or knowledge) gap for a lot of professionals.
-I mean, high-level languages are so much easier, that you, as a professional, can work
-and focus on other things, or other aspects of your profession that might be equally important to your career,
-such as: doing a graduate course, or learning more about business strategy, product development, and
-soft skills (such as communication skills, personal development).
-
-Just as a simple example, a part of the readers of this book probably work with Websites and APIs in the Web,
-using either Javascript, Python or PHP. These high-level languages include multiple layers of abstractions in them,
-which will help you to work quicker and with ease. As a consequence, dealing with APIs in these languages is much simpler.
-Because you don't have to learn all of these very specific terms and technical knowledge about
-how HTTP actually works at the lowest level. All you really need to know, is which library to use,
-and how to assemble the parts that make a HTTP Request.
-
-In contrast, when working with a low-level language, most of the times you have to implement
-a HTTP Server from scratch, or, to use a library that helps you get there, but doesn't 
-include a high amount of abstractions. As a result of that, you need to learn a lot of
-details about how HTTP actually works at the lowest level. You will probably need to learn: 1) some details about
-the HTTP Protocol specification; 2) a lot of technical terms about web sockets (such as "listen", "bind socket", "accept connection");
-3) how to create TCP connections using IP addresses; 4) learn about the difference between IPv4 and IPv6.
-In essence, when you work with a low-level language, you have to know much more details about everything you do.
-
-Another topic that makes low-level languages much harder to learn than high-level languages is compilation.
-In low-level languages, you have to use a compiler to compile your source code into binary executables or 
-libraries. But compiling the same source code in multiple platforms, for multiple targets, is actually
-incredibly hard, and a real challenge in our modern world.
-Differences between the manufacturing and architecture of each computer, or, the differences between
-the operational system used, make this really hard on low-level languages, specially in C and C++.
-
-This compilation problem arises very quickly when we are developing big libraries (or applications)
-in C or C++ that are, at the same time, cross-platform and highly optimized.
-As I described at @sec-project-files, this is the whole reason why we created a whole set of separate tools named "build systems".
-To abstract some of these barriers that exists in the compilation process at low-level languages.
-
--->
-
-
 
 ## How to learn Zig?
 
@@ -972,6 +915,91 @@ try stdout.print("{any}\n", .{c});
 ```
 
 
+## Type inference {#sec-type-inference}
+
+Zig is kind of a strongly typed language. I say "kind of" because there are situations
+where you don't have to explicitly write the type of every single object in your source code,
+as you would expect from a traditional strongly typed language, such as C and C++.
+
+In some situations, the `zig` compiler can use type inference to solves the data types for you, easing some of
+the burden that you carry as a developer.
+The most commom way this happens is through function arguments that receives struct objects
+as input.
+
+In general, type inference in Zig is done by using the dot character (`.`).
+Everytime you see a dot character written before a struct literal, or before a enum value, or something like that,
+you know that this dot character is playing a special party in this place. More specifically, it is
+telling the `zig` compiler something on the lines of: "Hey! Can you infer the type of this
+value for me? Please!". In other words, this dot character is playing a role similar to the `auto` keyword in C++.
+
+I give you some examples of this at @sec-anonymous-struct-literals, where we present anonymous struct literals.
+Because anonymous struct literals are, essentially, struct literals that use type inference to
+infer the exact type of this particular struct literal.
+This type inference is done by looking for some minimal hint of the correct data type to be used.
+You could say that the `zig` compiler looks for any neighbouring type annotation that might tell him what would be the correct type.
+
+Another commom place where we use type inference in Zig is at switch statements (which we talk about at @sec-switch).
+Take a look at this `fence()` function, which comes from the [`atomic.zig` module](https://github.com/ziglang/zig/blob/master/lib/std/atomic.zig)[^fence-fn]
+from the Zig Standard Library.
+
+[^fence-fn]: <https://github.com/ziglang/zig/blob/master/lib/std/atomic.zig>.
+
+There are a lot of things in this function that we haven't talked about yet, such as:
+what `comptime` means? `inline`? `extern`? What is this star symbol before `Self`?
+Let's just ignore all of these things, and focus solely on the switch statement
+that is inside this function.
+
+We can see that this switch statement uses the `order` object as input. This `order`
+object is one of the inputs of this `fence()` function, and we can see in the type annotation,
+that this object is of type `AtomicOrder`. We can also see a bunch of values inside the
+switch statements that begins with a dot character, such as `.release` and `.acquire`.
+
+Because these weird values contain a dot character before them, we are asking the `zig`
+compiler to infer the types of these values inside the switch statement. Then, the `zig`
+compiler is looking into the current context where these values are being used, and it is
+trying to infer the types of these values.
+
+Since they are being used inside a switch statement, the `zig` compiler looks into the type
+of the input object given to the switch statement, which is the `order` object in this case.
+Because this object have type `AtomicOrder`, the `zig` compiler infers that these values
+are data members from this type `AtomicOrder`.
+
+```{zig}
+#| eval: false
+pub inline fn fence(self: *Self, comptime order: AtomicOrder) void {
+    // LLVM's ThreadSanitizer doesn't support the normal fences so we specialize for it.
+    if (builtin.sanitize_thread) {
+        const tsan = struct {
+            extern "c" fn __tsan_acquire(addr: *anyopaque) void;
+            extern "c" fn __tsan_release(addr: *anyopaque) void;
+        };
+
+        const addr: *anyopaque = self;
+        return switch (order) {
+            .unordered, .monotonic => @compileError(@tagName(order) ++ " only applies to atomic loads and stores"),
+            .acquire => tsan.__tsan_acquire(addr),
+            .release => tsan.__tsan_release(addr),
+            .acq_rel, .seq_cst => {
+                tsan.__tsan_acquire(addr);
+                tsan.__tsan_release(addr);
+            },
+        };
+    }
+
+    return @fence(order);
+}
+```
+
+This is how basic type inference is done in Zig. If we didn't use the dot character before
+the values inside this switch statement, then, we would be forced to write explicitly
+the types of these values. For example, instead of writing `.release` we would have to
+write `AtomicOrder.release`. We would have to do this for every single value
+in this switch statement, and this is kind of painful. That is why type inference
+is commonly used on switch statements in Zig.
+
+
+
+
 ## Control flow {#sec-zig-control-flow}
 
 Sometimes, you need to make decisions in your program. Maybe you need to decide
@@ -1032,6 +1060,128 @@ if (x > 10) {
 }
 ```
 
+
+
+### Swith statements {#sec-switch}
+
+Switch statements are also available in Zig.
+A switch statement in Zig have a similar syntax to a switch statement in Rust.
+As you would expect, to write a switch statement in Zig we use the `switch` keyword.
+We provide the value that we want to "switch over" inside a
+pair of parentheses. Then, we list the possible combinations (or "branchs")
+inside a pair of curly braces.
+
+Let's take a look at the code example below. You can see in this example that,
+I'm creating an enum type called `Role`. We talk more about enums at @sec-enum.
+But in essence, this `Role` type is listing different types of roles in a fictituous
+company, like `SE` for Software Engineer, `DE` for Data Engineer, `PM` for Product Manager,
+etc.
+
+Notice that we are using the value from the `role` object in the
+switch statement, to discover which exact area we need to store in the `area` variable object.
+Also notice that we are using type inference inside the switch statement, with the dot character,
+as we described at @sec-type-inference.
+This makes the `zig` compiler infer the correct data type of the values (`PM`, `SE`, etc.) for us.
+
+Also notice that, we are grouping multiple values in the same branch of switch statement.
+We just separate each possible value with a comma. So, for example, if `role` contains either `DE` or `DA`,
+the `area` variable would contain the value `"Data & Analytics"`, instead of `"Platform"`.
+
+```{zig}
+#| auto_main: false
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+const Role = enum {
+    SE, DPE, DE, DA, PM, PO, KS
+};
+
+pub fn main() !void {
+    var area: []const u8 = undefined;
+    const role = Role.SE;
+    switch (role) {
+        .PM, .SE, .DPE, .PO => {
+            area = "Platform";
+        },
+        .DE, .DA => {
+            area = "Data & Analytics";
+        },
+        .KS => {
+            area = "Sales";
+        },
+    }
+    try stdout.print("{s}\n", .{area});
+}
+```
+
+Now, one very important aspect about this switch statement presented
+in the code example above, is that it exhaust all existing possibilities.
+In other words, all possible values that could be found inside the `order`
+object are explicitly handled in this switch statement.
+
+Since the `role` object have type `Role`, the only possible values to
+be found inside this object are `PM`, `SE`, `DPE`, `PO`, `DE`, `DA` and `KS`.
+There is no other possible value to be stored in this `role` object.
+This what "exhaust all existing possibilities" means. The switch statement covers
+every possible case.
+
+In Zig, switch statements must exhaust all existing possibilities. You cannot write
+a switch statement, and leave an edge case with no expliciting action to be taken.
+This is a similar behaviour to switch statements in Rust, which also have to
+handle all possible cases.
+
+Take a look at the `dump_hex_fallible()` function below as an example. This function
+also comes from the Zig Standard Library, but this time, it comes from the [`debug.zig` module](https://github.com/ziglang/zig/blob/master/lib/std/debug.zig)[^debug-mod].
+There are multiple lines in this function, but I omitted them to focus solely on the
+switch statement found in this function. Notice that this switch statement have four
+possible cases, or four explicit branches. Also, notice that we used an `else` branch
+in this case. Whenever you have multiple possible cases in your switch statement
+which you want to apply the same exact action, you can use an `else` branch to do that.
+
+[^debug-mod]: <https://github.com/ziglang/zig/blob/master/lib/std/debug.zig>
+
+```{zig}
+#| eval: false
+pub fn dump_hex_fallible(bytes: []const u8) !void {
+    // Many lines ...
+    switch (byte) {
+        '\n' => try writer.writeAll("␊"),
+        '\r' => try writer.writeAll("␍"),
+        '\t' => try writer.writeAll("␉"),
+        else => try writer.writeByte('.'),
+    }
+}
+```
+
+Many users would also use an `else` branch to handle a "not supported" case.
+That is, a case that cannot be properly handled by your code, or, just a case that
+should not be "fixed". So many programmers use an `else` branch to panic (or raise an error) to stop
+the current execution.
+
+Take the code example below as an example. We can see that, we are handling the cases
+for the `level` object being either 1, 2, or 3. All other possible cases are not supported by default,
+and, as consequence, we raise an runtime error in these cases, through the `@panic()` built-in function.
+
+Also notice that, we are assigning the result of the switch statement to a new object called `category`.
+This is another thing that you can do with switch statements in Zig. If the branchs in this switch
+statement output some value as result, you can store the result value of the switch statement into
+a new variable.
+
+```{zig}
+#| eval: false
+const level: u8 = 4;
+const category = switch (level) {
+    1, 2 => "beginner",
+    3 => "professional",
+    else => {
+        @panic("Not supported level!");
+    },
+};
+try stdout.print("{s}\n", .{category});
+```
+
+```
+thread 13103 panic: Not supported level!
+```
 
 
 ### For loops
@@ -1274,7 +1424,7 @@ not be authorized to call this method directly in my code.
 
 
 
-## Anonymous struct literals
+## Anonymous struct literals {#sec-anonymous-struct-literals}
 
 You can declare a struct object as a literal value. When we do that, we normally specify the
 data type of this struct literal by writing it's data type just before the opening curly braces.

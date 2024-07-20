@@ -2,6 +2,22 @@ library(knitr)
 library(readr)
 library(stringr)
 
+find_in_path_ <- function() {
+  cat("Zig not found through `which`. Trying to find it through PATH...\n", file = stderr())
+  path <- Sys.getenv("PATH")
+  path_dirs <- str_split_1(path, ":")
+  for (dir in path_dirs) {
+    execs <- fs::dir_ls(dir, type = "file")
+    zig_found <- str_detect(execs, "zig$")
+    if (any(zig_found)) {
+      message <- sprintf("Zig found at %s\n", execs[zig_found])
+      cat(message, file = stderr())
+      return(as.character(execs[zig_found]))
+    }
+  }
+  
+  return(NULL)
+}
 
 find_zig_ <- function() {
   possible_paths <- c(
@@ -15,6 +31,8 @@ find_zig_ <- function() {
       return(path)
     }
   }
+  
+  find_in_path_()
 }
 
 
