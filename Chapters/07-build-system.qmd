@@ -674,7 +674,7 @@ you can use the `zig` compiler to build C projects. This C compiler is available
 through the `cc` command of the `zig` compiler.
 
 As an example, let's use the famous [FreeType library](https://freetype.org/)[^freetype].
-FreeType is one of the most widely used pieces of software.
+FreeType is one of the most widely used pieces of software in the world.
 It is a C library designed to produce high-quality fonts. But it is also
 heavily used in the industry to natively render text and fonts
 in the screen of your computer.
@@ -692,9 +692,12 @@ After you download the source code of FreeType from the official website[^freety
 you can start writing the `build.zig` module. We begin by defining the target object
 that defines the binary file that we want to compile.
 
-Since FreeType is a C library, I link it against `libc` through the `linkLibC()` method.
-Just as an example, I will build FreeType as a static library. That is why I use
-the `addStaticLibrary()` method below to create the target object to build the library.
+As an example, I will build the project as a static library file using the `addStaticLibrary()` method
+to create the target object.
+Also, since FreeType is a C library, I will also link the library
+against `libc` through the `linkLibC()` method, to garantee that any use
+of the C Standard Library is covered in the compilation process.
+
 
 ```{zig}
 #| eval: false
@@ -710,7 +713,13 @@ lib.linkLibC();
 
 ### Creating C compiler flags
 
-You can list the C compiler flags to be used in the compilation process
+Compiler flags are also known as "compiler options" by many programmers,
+or also, as "command options" in the GCC official documentation.
+It's fair to also call them as the "command-line arguments" of the C compiler.
+In general, we use compiler flags to turn on (or turn off) some features from the compiler,
+or to tweak the compilation process to fit the needs of our project.
+
+In build scripts written in Zig, we normally list the C compiler flags to be used in the compilation process
 in a simple array, like in the example below.
 
 ```{zig}
@@ -722,23 +731,22 @@ const c_flags = [_][]const u8{
 };
 ```
 
-In theory, there is nothing stopping you from using this array to also add include paths (with the `-I` flag),
-to the compilation process. But there is a formal way in Zig to include these paths, which is
-discussed at @sec-include-paths.
+In theory, there is nothing stopping you from using this array to add "include paths" (with the `-I` flag)
+or "library paths" (with the `-L` flag) to the compilation process. But there are formal ways in Zig to
+add these types of paths in the compilation process. Both are discussed at @sec-include-paths
+and @sec-library-paths.
 
-In Zig, we add C flags to the build process
-together with the C files that we want to compile, using the
-`addCSourceFile()` and `addCSourceFiles()` methods.
-So in the example above, we have just declared the C flags that we want to use.
-But we haven't added them to the build process yet.
-To do that, we first need to list the C files to be compiled.
+Anyway, in Zig, we add C flags to the build process together with the C files that we want to compile, using the
+`addCSourceFile()` and `addCSourceFiles()` methods. In the example above, we have just declared
+the C flags that we want to use. But we haven't added them to the build process yet.
+To do that, we also need to list the C files to be compiled.
 
 ### Listing your C files
 
-The C files that contains "cross-platform" code are listed in the `c_source_files`
-object below. These are the C files that are included by default in every platform supported by the library.
-Since the amount of C files in the FreeType library is big, I omitted
-the rest of the files in the code example below, for brevity purposes.
+The C files that contains "cross-platform" source code are listed in the `c_source_files`
+object below. These are the C files that are included by default in every platform
+supported by the FreeType library. Now, since the amount of C files in the FreeType library is big,
+I have omitted the rest of the files in the code example below, for brevity purposes.
 
 ```{zig}
 #| eval: false
@@ -749,9 +757,10 @@ const c_source_files = [_][]const u8{
 };
 ```
 
-Now, there are some C files that are platform-specific, meaning that, they are only
-included in the build process on specific target platforms. The objects that list
-these C files are exposed in the code example below.
+Now, in addition to "cross-platform" source code, we also have some C files in the FreeType project
+that are platform-specific, meaning that, they contain source code that can obly be compiled in specific platforms,
+and, as a result, they are only included in the build process on these specific target platforms.
+The objects that list these C files are exposed in the code example below.
 
 ```{zig}
 #| eval: false
@@ -769,16 +778,16 @@ Now that we declared both the files that we want to include and the C compiler f
 we can add them to the target object that describes the FreeType library, by using the
 `addCSourceFile()` and `addCSourceFiles()` methods.
 
-Both of these functions are methods from a `Compile` object (i.e. target object).
+Both of these functions are methods from a `Compile` object (i.e. a target object).
 The `addCSourceFile()` method is capable of adding a single C file to the target object,
 while the `addCSourceFiles()` method is used to add multiple C files in a single command.
 You might prefer to use `addCSourceFile()` when you need to use different compiler flags
 on specific C files in your project. But, if you can use the same compiler flags
-across all files, you will probably find `addCSourceFiles()` a better choice.
+across all C files, then, you will probably find `addCSourceFiles()` a better choice.
 
 Notice that we are using the `addCSourceFiles()` method in the example below,
 to add both the C files and the C compiler flags. Also notice that we
-are using the `os.tag` that we learned at @sec-detect-os, to add the platform-specific
+are using the `os.tag` that we learned about at @sec-detect-os, to add the platform-specific
 C files.
 
 ```{zig}
@@ -808,8 +817,8 @@ switch (builtin.target.os.tag) {
 
 ### Defining C Macros
 
-C Macros are commonly defined through the `-D` flag
-from a C compiler.
+C Macros are an essential part of the C programming language,
+and they are commonly defined through the `-D` flag from a C compiler.
 In Zig, you can define a C Macro to be used in your build process
 by using the `defineCMacro()` method from the target object that
 defines the binary file that you are building.
@@ -831,7 +840,7 @@ lib.defineCMacro("FT2_BUILD_LIBRARY", "TRUE");
 ```
 
 
-### Adding library paths
+### Adding library paths {#sec-library-paths}
 
 Library paths are paths in your computer where the C compiler will look (or search) for
 library files to link against your source code. In other words, when you use a library in your
@@ -862,12 +871,19 @@ lib.addLibraryPath(lib_path);
 
 ### Adding include paths {#sec-include-paths}
 
+The preprocessor search path is a popular concept from the
+C community, but it is also known by many C programmers as "include paths", because
+the paths in this "search path" relate to the `#include` statements found in the C files.
+
 Include paths are similar to library paths. They are a set of pre-defined places in your computer where
 the C compiler will look for files during the compilation process. But instead of looking for
 library files, the include paths are places where the compiler looks for header files included
 in your C source code.
+This is why many C programmers prefer to call these paths as the "preprocessor search path".
+Because header files are processed during the preprocessor stage of the compilation
+process.
 
-Every header file that you include in your C source code, through a `#include` statements needs to
+So, every header file that you include in your C source code, through a `#include` statements needs to
 be found somewhere, and the C compiler will search for this header file across the paths listed in this "include paths" set.
 Include paths are added to the compilation process through the `-I` flag.
 
