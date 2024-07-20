@@ -189,7 +189,15 @@ This means that, our socket object will reside on the same computer that we are 
 By convention, the IP address that identifies the "locahost", which is the current machine we
 are using, is the IP `127.0.0.1`. So, that is the IP
 address we are going to use in our server. I can declare it in Zig
-by using an array of 4 integers, like this: `[4]u8{ 127, 0, 0, 1 }`.
+by using an array of 4 integers, like this:
+
+```{zig}
+#| auto_main: true
+const localhost = [4]u8{
+    127, 0, 0, 1
+};
+_ = localhost;
+```
 
 Now, we need to decide which port number to use. By convention, there are some
 port numbers that are reserved, meaning that, we cannot use them for our own
@@ -248,9 +256,9 @@ pub const Socket = struct {
 
 ### Listening and receiving connections
 
-Notice in the example below that, we stored the `Socket` struct
+Remember that we stored the `Socket` struct
 declaration that we built at @sec-create-socket inside a Zig module named `config.zig`.
-That is why I imported this module into our main module (`main.zig`) in the example below, as the `SocketConf` object,
+This is why I imported this module into our main module (`main.zig`) in the example below, as the `SocketConf` object,
 to access the `Socket` struct.
 
 Once we created our socket object, we can focus now on making this socket object to
@@ -260,8 +268,8 @@ we call the `accept()` method over the result.
 
 The `listen()` method from the `Address` object produces a server object,
 which is an object that will stay open and running indefinitely, waiting
-to receive an incoming connection. Therefore, if you run the Zig
-code below, by calling the `run` command from the `zig` compiler,
+to receive an incoming connection. Therefore, if you try to run the code
+example below, by calling the `run` command from the `zig` compiler,
 you will notice that the programs keeps running indefinitely,
 without a clear end.
 
@@ -275,7 +283,6 @@ On the other side, the `accept()` method is the function that establish the conn
 when someone try to connect to the socket. This means that, the `accept()` method
 returns a new connection object as a result. And you can use this connection object
 to read or write messages from or to the client.
-
 For now, we are not doing anything with this connection object.
 But we are going to use it on the next section.
 
@@ -297,14 +304,15 @@ pub fn main() !void {
 
 This code example allows one single connection. In other words, the
 server will wait for one incoming connection, and as soon as the
-server is done with the first connection it establishs, the
+server is done with the first connection that it establishs, the
 program ends, and the server stops.
 
 This is not the norm on the real world. Most people that write
 a HTTP server like this, usually put the `accept()` method
 inside a `while` (infinite) loop, where if a connection
-is created with accept, a new thread is created to deal with
-this new connection and the client.
+is created with `accept()`, a new thread of execution is created to deal with
+this new connection and the client. That is, real-world examples of HTTP Servers
+normally rely on parallel computing to work.
 
 With this design, the server simply accepts the connection,
 and the whole process of dealing with the client, and receiving
@@ -317,13 +325,12 @@ which is to wait indefinitely for a new connection to accept.
 Having this in mind, the code example exposed above, is a
 server that serves only a single client. Because the program
 terminates as soon as the connection is accepted.
-<<<<<<< HEAD
-=======
+
 
 
 ### Reading the message from the client
 
-Now that we have a connection established, through our connection
+Now that we have a connection established, i.e. the connection
 object that we created through the `accept()` function, we can now
 use this connection object to read any messages that the client
 send to our server. But we can also use it to send messages back
@@ -362,7 +369,7 @@ pub fn read_request(conn: Connection,
 
 This function accepts a slice object which behaves as a buffer.
 The `read_request()` function reads the contents of the message sent into
-the connection object, and saves this content into this buffer we provided
+the connection object, and saves this content into this buffer object that we provided
 as input.
 
 Notice that I'm using the connection object that we created to read
@@ -377,7 +384,6 @@ because this return value is not useful for us right now.
 
 ## Looking at the current state of the program
 
-You might have 
 
 I think it is a good time to see how our program is currently working. Shall we?
 So, the first thing I will do is to update the `main.zig` module in our small Zig project,
@@ -386,15 +392,15 @@ I will also add a print statement at the end of the `main()` function,
 just so that you can see what the HTTP Request we just loaded into the buffer object
 looks like.
 
-Also, I'm creating a buffer object, which will be
+Also, I'm creating the buffer object in the `main()` function, which will be
 responsible for storing the message sent by the client, and, I'm also
 using a `for` loop to initialize all fields of this buffer object to the number zero.
 This is important to make sure that we don't have uninitialized memory in
-this object. Because uninitialized may cause undefined behaviour in our program.
+this object. Because uninitialized memory may cause undefined behaviour in our program.
 
-Since the `read_request()` receives the buffer object as a slice object (`[]u8`),
-I am using the syntax `array[0..array.len]` to get a slice of this `buffer` object
-to provide as input to the function.
+Since the `read_request()` receives as input the buffer object as a slice object (`[]u8`),
+I am using the syntax `array[0..array.len]` to get access to a slice of this `buffer` object,
+and provide it as input to the function.
 
 ```{zig}
 #| eval: false
@@ -438,7 +444,7 @@ is now waiting for an incoming connection.
 ![A screenshot of running the program](./../Figures/print-zigrun1.png){#fig-print-zigrun1}
 
 
-Well, we can finally try to connect to this server. There are several ways we can do this.
+Well, we can finally try to connect to this server, and there are several ways we can do this.
 For example, we could use the following Python script:
 
 ```python
@@ -446,16 +452,21 @@ import requests
 requests.get("http://127.0.0.1:3490")
 ```
 
-Or, you could also open any web browser of your preference, and type
-the URL `localhost:3490`. OBS: localhost is the same thing as the
+Or, we could also open any web browser of our preference, and type
+the URL `localhost:3490`. OBS: `localhost` is the same thing as the
 IP `127.0.0.1`. When you press enter, and your web browser go
 to this address, first, the browser will probably print a message
 saying that "this page isn't working", and, then, it will
 probably change to a new message saying that "the site can't be
-reached". You get these "error messages" in the browser, because
-it got no response back from the server (we are not sending a HTTP Response yet).
+reached".
 
-But that is okay. We achieved the result we want,
+You get these "error messages" in the web browser, because
+it got no response back from the server. In other words, when the web
+browser connected to our server, it did send the HTTP Request through the established connection.
+Then, the web browser was expecting to receive a HTTP Response back, but
+it got no response from the server (we didn't implemented the HTTP Response logic yet).
+
+But that is okay. We achieved the result that we wanted for now,
 which is to connect to the server, and see the HTTP Request
 that was sent by the web browser (or by the Python script)
 to the server.
@@ -465,7 +476,7 @@ when you executed the program, you will see that the
 program finished it's execution, and, a new message is
 printed in the console, which is the actual HTTP Request
 message that was sent by the web browser to the server.
-You can see that at @fig-print-zigrun2.
+You can see this message at @fig-print-zigrun2.
 
 ![A screenshot of the HTTP Request sent by the web browser](./../Figures/print-zigrun2.png){#fig-print-zigrun2}
 
