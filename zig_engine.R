@@ -8,7 +8,7 @@ find_in_path_ <- function() {
   path_dirs <- str_split_1(path, ":")
   for (dir in path_dirs) {
     execs <- fs::dir_ls(dir, type = "file")
-    zig_found <- str_detect(execs, "zig$")
+    zig_found <- str_detect(execs, "/zig$")
     if (any(zig_found)) {
       message <- sprintf("Zig found at %s\n", execs[zig_found])
       cat(message, file = stderr())
