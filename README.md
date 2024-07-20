@@ -20,7 +20,11 @@ This book depends on the three main pieces of software:
 3. The [Quarto publishing system](https://quarto.org), which provides the useful tools to compile the book, creating internal links, references, a chapters structure, the HTML content of the book, etc.
 
 So, you first need to install these three pieces of software in your current machine.
-After that, you should run the `dependencies.R` R script, to install
+You can find instructions on how to install these pieces of software by clicking in the above hyperlinks.
+
+### Install R packages
+
+After you installed the three pieces of software listed above, you should run the `dependencies.R` R script, to install
 some R packages that are used across the book. Just run
 the command below in your terminal, and you should be fine.
 
@@ -28,12 +32,34 @@ the command below in your terminal, and you should be fine.
 Rscript dependencies.R
 ```
 
+### Render the book
+
 After that, you should be able to build the book by simply executing
 the following command in the terminal.
 
 ```bash
 quarto render
 ```
+
+### How the Zig compiler is found
+
+Some R code (`zig_engine.R`) is used to collect the Zig code examples
+found across the book, and send them to the Zig compiler, so that they
+can be compiled and executed.
+
+But in order to do that, this R code needs to find the Zig compiler installed
+in your machine. This search process through the Zig compiler is done in two stages.
+First, it uses the [`Sys.which()` function](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/Sys.which)
+to find the path to the Zig compiler in your computer, which is just a R interface to the `which` command line tool.
+
+This is a fast and easy approach, but, it doesn't work in all situations, specially if
+your Zig compiler is not installed in a "standard location" in your computer. That is
+why, a second strategy is applied, which is to search through the PATH environment variable.
+
+If gets the value of your PATH environment variable, and iterates through the directories listed
+in this variable, trying to find the Zig compiler in one of them. This approach is much
+slower than the first one, but is more garanteed to work.
+
 
 
 ## License
