@@ -48,7 +48,7 @@ found across the book, and send them to the Zig compiler, so that they
 can be compiled and executed.
 
 But in order to do that, this R code needs to find the Zig compiler installed
-in your machine. This search process through the Zig compiler is done in two stages.
+in your machine. This search process is done in two stages.
 First, it uses the [`Sys.which()` function](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/Sys.which)
 to find the path to the Zig compiler in your computer, which is just a R interface to the `which` command line tool.
 
