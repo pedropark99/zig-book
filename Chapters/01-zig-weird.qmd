@@ -915,6 +915,53 @@ try stdout.print("{any}\n", .{c});
 ```
 
 
+## Blocks and scopes
+
+Blocks are created in Zig by a pair of curly braces. A block is essentially a group of
+expressions contained inside of a pair of curly braces. All of these expressions that
+are contained inside of this pair of curly braces belongs to the same scope.
+
+The objects that you define inside the same block belongs to the same
+scope, and, therefore, are accessible from within this exact scope. But at the same time,
+these objects are not accessible outside of this scope.
+So, you could say that blocks are used to limit the scope of the objects that you create in
+your source code, or, they are used to specify where in your source code
+you can access object `x` or object `y`, etc.
+
+So, a block is just a group of expressions contained inside a pair of curly braces.
+And every block have it's own scope separated from the others.
+The body of a function is a classic example of a block. If statements, for and while loops,
+struct definitions are also examples of blocks. This means that, every if statement, or for loop,
+etc., that you create in your source code have it's own separate scope.
+
+That is why you can't access the objects that you defined inside
+of your for loop (or if statement) in a outer scope, i.e. a scope outside of the for loop.
+Because you are trying to access an object that belongs to a scope that is different
+than your current scope.
+
+
+You can create blocks within blocks, with multiple levels of nesting.
+You can also (if you want to) give a label to a particular block, with the colon character (`:`).
+Just write `label:` before you open the pair of curly braces that delimits your block. When you label a block
+in Zig, you can use the `break` keyword to return a value from this block, like as if it
+was a function's body. You just write the `break` keyword, followed by the label in the format `:label`,
+and the expression that defines the value that you want to return.
+
+Like in the example below, where we are returning the value from the `y` object
+from the block `add_one`, and saving the result inside the `x` object.
+
+```{zig}
+var y: i32 = 123;
+const x = add_one: {
+    y += 1;
+    break :add_one y;
+};
+if (x == 124 and y == 124) {
+    try stdout.print("Hey!", .{});
+}
+```
+
+
 ## Type inference {#sec-type-inference}
 
 Zig is kind of a strongly typed language. I say "kind of" because there are situations
@@ -1182,6 +1229,35 @@ try stdout.print("{s}\n", .{category});
 ```
 thread 13103 panic: Not supported level!
 ```
+
+Furthermore, you can also use ranges of values in switch statements.
+That is, you can create a branch in your switch statement that is used
+whenever the input value is contained in a range. These range
+expressions are created with the operator `...`. Is important
+to emphasize that the ranges created by this operator are
+inclusive on both ends.
+
+For example, I could easily change the code example above to support all
+levels between 0 and 100. Like this:
+
+```{zig}
+#| eval: false
+const level: u8 = 4;
+const category = switch (level) {
+    0...25 => "beginner",
+    26...75 => "intermediary",
+    76...100 => "professional",
+    else => {
+        @panic("Not supported level!");
+    },
+};
+try stdout.print("{s}\n", .{category});
+```
+
+This is neat, and it works with character ranges too. That is, I could
+simply write `'a'...'z'`, to match any character value that is a
+lowercase letter, and it would work fine.
+
 
 
 ### For loops
