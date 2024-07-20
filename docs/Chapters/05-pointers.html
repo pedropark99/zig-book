@@ -409,9 +409,10 @@ div.csl-indent {
 </section>
 <section id="optional-pointers" class="level3" data-number="5.4.2">
 <h3 data-number="5.4.2" class="anchored" data-anchor-id="optional-pointers"><span class="header-section-number">5.4.2</span> Optional pointers</h3>
-<p>You can also mark a pointer object as an optional pointer, meaning that, this pointer points to either a null value, or, a value that is not null. In other words, by marking a pointer as optional, you get a pointer that behaves like a pointer in C.</p>
+<p>You can also mark a pointer object as an optional pointer, meaning that, this pointer points to either a null value, or, a value that is not null. In other words, by marking a pointer in Zig as optional, you get a pointer in Zig that behaves like a pointer in C.</p>
 <p>When you mark a pointer as optional, the data type of this pointer object becomes <code>?*const T</code> or <code>?*T</code>, depending if the value pointed by the pointer is a constant value or not. The <code>?</code> identifies the object as optional, and the <code>*</code> identifies it as a pointer object.</p>
 <p>In the example below, we are creating a variable object named <code>num</code>, and an optional pointer object named <code>ptr</code>. Notice that the data type of the object <code>ptr</code> indicates that it is either a null value, or a pointer to an <code>i32</code> value. Also, notice that the pointer object (<code>ptr</code>) can be marked as optional, even if the object <code>num</code> is not optional.</p>
+<p>What this code tells us is that, the <code>num</code> variable will never contain a null value. This variable will always contain a valid <code>i32</code> value. But in contrast, the <code>ptr</code> object might contain either a null value, or, a pointer to an <code>i32</code> value.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> num: <span class="dt">i32</span> = <span class="dv">5</span>;</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ptr: ?*<span class="dt">i32</span> = &amp;num;</span>
@@ -435,8 +436,7 @@ div.csl-indent {
 <li>the <code>orelse</code> keyword.</li>
 <li>unwrap the optional value with the <code>?</code> method.</li>
 </ul>
-<p>When you use an if statement, you use a pair of pipes to unwrap the optional value, and use this “unwrapped object” inside the if block.</p>
-<p>Using the example below as a reference, if the object <code>num</code> is null, then, the code inside the if statement is not executed. Otherwise, the if statement will unwrap the object <code>num</code> into the <code>not_null_num</code> object. This <code>not_null_num</code> object is garanteed to be not null inside the scope of the if statement.</p>
+<p>When you use an if statement, you use a pair of pipes to unwrap the optional value, and use this “unwrapped object” inside the if block. Using the example below as a reference, if the object <code>num</code> is null, then, the code inside the if statement is not executed. Otherwise, the if statement will unwrap the object <code>num</code> into the <code>not_null_num</code> object. This <code>not_null_num</code> object is garanteed to be not null inside the scope of the if statement.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num: ?<span class="dt">i32</span> = <span class="dv">5</span>;</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> (num) |not_null_num| <span class="op">{</span></span>
@@ -448,8 +448,8 @@ div.csl-indent {
 <pre><code>5</code></pre>
 </div>
 </div>
-<p>Now, the <code>orelse</code> keyword have a syntax similar to a <code>try</code> and <code>catch</code> pattern. On the left side of <code>orelse</code>, you provide the expression that might result in a null value, and on the right side of <code>orelse</code> you provide another expression that will not result in a null value.</p>
-<p>The idea behind the <code>orelse</code> keyword is, if the expression on the left side result in a not-null value, then, this not-null value is used. However, if this expression on the left side result in a null value, then, the value of the expression on the right side is used instead.</p>
+<p>Now, the <code>orelse</code> keyword behaves like a binary operator. You connect two expressions with this keyword. On the left side of <code>orelse</code>, you provide the expression that might result in a null value, and on the right side of <code>orelse</code> you provide another expression that will not result in a null value.</p>
+<p>The idea behind the <code>orelse</code> keyword is: if the expression on the left side result in a not-null value, then, this not-null value is used. However, if this expression on the left side result in a null value, then, the value of the expression on the right side is used instead.</p>
 <p>Looking at the example below, since the <code>x</code> object is currently null, the <code>orelse</code> decided to use the alternative value, which is the number 15.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> x: ?<span class="dt">i32</span> = <span class="cn">null</span>;</span>
