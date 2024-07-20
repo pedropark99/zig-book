@@ -17,7 +17,7 @@ This book depends on the three main pieces of software:
 
 1. The [Zig compiler](https://ziglang.org/download/), which is responsible for compiling most of the code examples exposed in the book.
 2. The [R programming language](https://cran.r-project.org/), which provides some useful tools to collect the code examples exposed across the book, and send them to the zig compiler to be compiled and executed, and also, collect the results back to include them in the book.
-3. The [Quarto publishing system](https://quarto.org), which provides the useful tools to compile the book, creating internal links, references, a chapters structure, the HTML content of the book, etc.
+3. The [Quarto publishing system](https://quarto.org/docs/get-started/), which provides the useful tools to compile the book, creating internal links, references, a chapters structure, the HTML content of the book, etc.
 
 So, you first need to install these three pieces of software in your current machine.
 You can find instructions on how to install these pieces of software by clicking in the above hyperlinks.
@@ -34,7 +34,8 @@ Rscript dependencies.R
 
 ### Render the book
 
-After that, you should be able to build the book by simply executing
+If you installed Quarto correctly in your computer
+, you should be able to build the book by simply executing
 the following command in the terminal.
 
 ```bash
