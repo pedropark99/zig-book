@@ -54,7 +54,27 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="../site_libs/quarto-nav/quarto-nav.js"></script>
@@ -221,7 +241,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#the-try-catch-pattern" id="toc-the-try-catch-pattern" class="nav-link active" data-scroll-target="#the-try-catch-pattern"><span class="header-section-number">9.1</span> The <em>try catch</em> pattern</a></li>
+  <li><a href="#learning-more-about-errors-in-zig" id="toc-learning-more-about-errors-in-zig" class="nav-link active" data-scroll-target="#learning-more-about-errors-in-zig"><span class="header-section-number">9.1</span> Learning more about errors in Zig</a>
+  <ul class="collapse">
+  <li><a href="#returning-errors-from-functions" id="toc-returning-errors-from-functions" class="nav-link" data-scroll-target="#returning-errors-from-functions"><span class="header-section-number">9.1.1</span> Returning errors from functions</a></li>
+  <li><a href="#error-unions" id="toc-error-unions" class="nav-link" data-scroll-target="#error-unions"><span class="header-section-number">9.1.2</span> Error unions</a></li>
+  </ul></li>
+  <li><a href="#the-try-catch-pattern" id="toc-the-try-catch-pattern" class="nav-link" data-scroll-target="#the-try-catch-pattern"><span class="header-section-number">9.2</span> The <em>try catch</em> pattern</a></li>
   </ul>
 </nav>
     </div>
@@ -247,18 +272,94 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>In this chapter, I want to discuss how error handling is done in Zig. Not every low-level language have an explicit system to handle errors. In C for example, we don’t have either <em>try catch</em> patterns or <em>exceptions</em>.</p>
-<p>In C we normally check for errors by looking at the return value of the function calls, and see if there is an “error status code” or a valid value returned from the function.</p>
-<section id="the-try-catch-pattern" class="level2" data-number="9.1">
-<h2 data-number="9.1" class="anchored" data-anchor-id="the-try-catch-pattern"><span class="header-section-number">9.1</span> The <em>try catch</em> pattern</h2>
-<p>In Zig, we use a <em>try catch</em> pattern to handle errors, using the keywords <code>try</code> and <code>catch</code>. We already learned about the <code>try</code> keyword at <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>. We use the <code>try</code> keyword whenever the expression that we are executing might return error.</p>
+<p>In this chapter, I want to discuss how error handling is done in Zig. Not every low-level language have an explicit system to handle errors. In C for example, we normally check for errors by looking at the return value of the function calls, and see if there is an “error status code” or a valid value returned from the function.</p>
+<p>But, in Zig, we use a <em>try catch</em> pattern to handle errors, using the keywords <code>try</code> and <code>catch</code>. If you remember of the previous section, we already learned about the <code>try</code> keyword at <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>. We use the <code>try</code> keyword whenever the expression that we are executing might return an error. But we still haven’t learned about the <code>catch</code> keyword yet. So let’s get into business, shall we?</p>
+<section id="learning-more-about-errors-in-zig" class="level2" data-number="9.1">
+<h2 data-number="9.1" class="anchored" data-anchor-id="learning-more-about-errors-in-zig"><span class="header-section-number">9.1</span> Learning more about errors in Zig</h2>
+<p>Before we get into <code>try</code> and <code>catch</code>, we need to learn more about errors in Zig. Errors are values in Zig <span class="citation" data-cites="zigoverview">(<a href="../references.html#ref-zigoverview" role="doc-biblioref">Zig Software Foundation 2024</a>)</span>. In other words, they are like any integer (or a string) value that you create in your code. You can pass error values as inputs to functions, and you can cast them into a different error value.</p>
+<p>Although they are normal values as any other, you cannot ignore error values in your code. Meaning that, if an error value appears somewhere in your source code, this error value must be explicitly handled in some way. This also means that you cannot discard error values, by assigning them to a underscore, as you would do with normal values and objects.</p>
+<p>Take the source code below as an example. Here we are trying to open a file that does not exist in my computer, and as a result, an obvious error of <code>FileNotFound</code> is returned from the <code>openFile()</code> function. But because I’m assigning the result of this function to an underscore, I end up trying to discard an error value.</p>
+<p>The <code>zig</code> compiler detects this mistake, and raises an error telling me that I’m trying to discard an error value. It also adds a note message that suggests the use of <code>try</code>, <code>catch</code> or an if statement to explicitly handle this error value.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dir = std.fs.cwd();</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>_ = dir.openFile(<span class="st">"doesnt_exist.txt"</span>, .<span class="op">{}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>t.zig:8:17: error: error union is discarded
+t.zig:8:17: note: consider using 'try', 'catch', or 'if'</code></pre>
+<section id="returning-errors-from-functions" class="level3" data-number="9.1.1">
+<h3 data-number="9.1.1" class="anchored" data-anchor-id="returning-errors-from-functions"><span class="header-section-number">9.1.1</span> Returning errors from functions</h3>
+<p>As we described at <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>, when we have a function that might return an error value, this function normally includes an exclamation mark (<code>!</code>) in it’s return type annotation. The presence of this exclamation mark indicates that this function might return an erro value as result, and, as consequence, you should always handle explicitly the case of this function returning an error value.</p>
+<p>The <code>print_name()</code> function below might return an error in the <code>stdout.print()</code> function call, and, as a consequence, it’s return type <code>!void</code> includes an exclamation mark in it, warning us that this function might fail.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> print_name() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdout = std.getStdOut().writer();</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"My name is Pedro!"</span>, .<span class="op">{}</span>);</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In the example above, we are using the exclamation mark, to tell the <code>zig</code> compiler that this function might return some error. But which error exactly is returned from this function? For now, we are not especifying a specific error value. We only known for now that some error value (whatever it is) might be returned.</p>
+<p>But in fact, you can (if you want to) specify clearly which exact error values might be returned from your function. There are lot of examples of this in the Zig Standard Library. Take this <code>fill()</code> function from the <code>http.Client</code> module as an example. This function returns either a error value of type <code>ReadError</code>, or <code>void</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> fill(conn: *Connection) ReadError!<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// The body of this function ...</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This idea of specifying the exact error values that you expect to be returned from the function is interesting. Because they automatically become a type of documentation of your function, and also, it allows the <code>zig</code> compiler to perform extra checks over your code. Because it can check if there is any other type of error value that is being generated inside your function, and, that it is not being accounted for in this return type annotation.</p>
+<p>Anyway, so, you can list the types of errors that can be returned from the function by listing them on the left side of the exclamation mark. So the syntax format become:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">error</span>-value&gt;!&lt;valid-value&gt;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="error-unions" class="level3" data-number="9.1.2">
+<h3 data-number="9.1.2" class="anchored" data-anchor-id="error-unions"><span class="header-section-number">9.1.2</span> Error unions</h3>
+<p>But what about when we have a single function that might return different types of errors? When you have such a function, you can list all of these different types of errors that can be returned from this function, through a structure in Zig that we call of <em>error union</em>.</p>
+<p>An error union is a literally an union that contains error values in it. Not all programming languages have a notion of an union object. But in summary, an union is just a list of the options that an object can be. For example, a union of <code>x</code>, <code>y</code> and <code>z</code>, means that, an object of this union can either be a <code>x</code>, <code>y</code> or a <code>z</code> object.</p>
+<p>We are going to talk in more depth about unions later. But you can write an error union by writing the keyword <code>error</code> before a pair of curly braces, and you list the error values that can be returned from the function inside this pair of curly braces.</p>
+<p>Take the <code>resolvePath()</code> function below as an example, which comes from the <code>introspect.zig</code> module of the Zig Standard Library. We can see in the return type annotation, that this function might return three different types of error values. This is an example of an error union.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> resolvePath(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    ally: mem.Allocator,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    p: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>) <span class="kw">error</span><span class="op">{</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    OutOfMemory,</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    CurrentWorkingDirectoryUnlinked,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    Unexpected,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>![]<span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// The body of the function ...</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This is a valid way of annotating the return value of a Zig function. But, if you navigate through the modules that composes the Zig Standard Library, you will notice that, for the majority of cases, the programmers prefer to give a descriptive name to this error union, and then, use this name (or this “label”) of the error union in the return type annotation, instead of using the error union directly.</p>
+<p>We can see that in the <code>ReadError</code> error union defined in the <code>http.Client</code> module. You can see that, we are grouping all of these errors into a single object, called <code>ReadError</code>, and then, we use this object into the return type of the function. Like the <code>fill()</code> function that we showed ealier, or, the <code>readvDirect()</code> function from the same module.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">const</span> ReadError = <span class="kw">error</span><span class="op">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    TlsFailure,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    TlsAlert,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    ConnectionTimedOut,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    ConnectionResetByPeer,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    UnexpectedReadFailure,</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    EndOfStream,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">// Some lines of code</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> readvDirect(</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        conn: *Connection,</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>        buffers: []std.posix.iovec</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    ) ReadError!<span class="dt">usize</span> <span class="op">{</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">// The body of the function ...</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="the-try-catch-pattern" class="level2" data-number="9.2">
+<h2 data-number="9.2" class="anchored" data-anchor-id="the-try-catch-pattern"><span class="header-section-number">9.2</span> The <em>try catch</em> pattern</h2>
 <p>If you remember of what we learned in this section, when we say that an expression might return an error, we are basically referring to an expression that have a return type in the format <code>!T</code>. The <code>!</code> indicates that this expression returns either an error or a value of type <code>T</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> x = <span class="dv">5</span>;</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>_ = x;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> x = <span class="dv">5</span>;</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>_ = x;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-zigoverview" class="csl-entry" role="listitem">
+Zig Software Foundation. 2024. <span>“In-Depth Overview.”</span> Zig Software Foundation. <a href="https://ziglang.org/learn/overview/">https://ziglang.org/learn/overview/</a>.
+</div>
+</div>
 </section>
 
 </main> <!-- /main -->
