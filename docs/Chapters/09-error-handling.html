@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.554">
+<meta name="generator" content="quarto-1.4.549">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -245,6 +245,7 @@ div.csl-indent {
   <ul class="collapse">
   <li><a href="#returning-errors-from-functions" id="toc-returning-errors-from-functions" class="nav-link" data-scroll-target="#returning-errors-from-functions"><span class="header-section-number">9.1.1</span> Returning errors from functions</a></li>
   <li><a href="#error-sets" id="toc-error-sets" class="nav-link" data-scroll-target="#error-sets"><span class="header-section-number">9.1.2</span> Error sets</a></li>
+  <li><a href="#casting-error-values" id="toc-casting-error-values" class="nav-link" data-scroll-target="#casting-error-values"><span class="header-section-number">9.1.3</span> Casting error values</a></li>
   </ul></li>
   <li><a href="#the-try-catch-pattern" id="toc-the-try-catch-pattern" class="nav-link" data-scroll-target="#the-try-catch-pattern"><span class="header-section-number">9.2</span> The <em>try catch</em> pattern</a></li>
   <li><a href="#sec-unions" id="toc-sec-unions" class="nav-link" data-scroll-target="#sec-unions"><span class="header-section-number">9.3</span> Union objects in Zig</a></li>
@@ -274,11 +275,12 @@ div.csl-indent {
 
 
 <p>In this chapter, I want to discuss how error handling is done in Zig. Not every low-level language have an explicit system to handle errors. In C for example, we normally check for errors by looking at the return value of the function calls, and see if there is an “error status code” or a valid value returned from the function.</p>
-<p>But, in Zig, we use a <em>try catch</em> pattern to handle errors, using the keywords <code>try</code> and <code>catch</code>. If you remember of the previous section, we already learned about the <code>try</code> keyword at <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>. We use the <code>try</code> keyword whenever the expression that we are executing might return an error. But we still haven’t learned about the <code>catch</code> keyword yet. So let’s get into business, shall we?</p>
+<p>But, in Zig, we use a <em>try catch</em> pattern to handle errors, using the keywords <code>try</code> and <code>catch</code>. If you remember of the previous section, we already learned about the <code>try</code> keyword at <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>. We use the <code>try</code> keyword whenever the expression that we are executing might return an error. But we still haven’t learned about the <code>catch</code> keyword yet.</p>
 <section id="learning-more-about-errors-in-zig" class="level2" data-number="9.1">
 <h2 data-number="9.1" class="anchored" data-anchor-id="learning-more-about-errors-in-zig"><span class="header-section-number">9.1</span> Learning more about errors in Zig</h2>
-<p>Before we get into <code>try</code> and <code>catch</code>, we need to learn more about errors in Zig. Errors are values in Zig <span class="citation" data-cites="zigoverview">(<a href="../references.html#ref-zigoverview" role="doc-biblioref">Zig Software Foundation 2024</a>)</span>. In other words, they are like any integer (or a string) value that you create in your code. You can pass error values as inputs to functions, and you can cast them into a different error value.</p>
-<p>Although they are normal values as any other, you cannot ignore error values in your code. Meaning that, if an error value appears somewhere in your source code, this error value must be explicitly handled in some way. This also means that you cannot discard error values, by assigning them to a underscore, as you would do with normal values and objects.</p>
+<p>Before we get into <code>try</code> and <code>catch</code>, we need to learn more about errors in Zig. An error is an actual value in Zig <span class="citation" data-cites="zigoverview">(<a href="../references.html#ref-zigoverview" role="doc-biblioref">Zig Software Foundation 2024</a>)</span>. In other words, they are like any integer (or a string) value that you create in your code. You can pass error values as inputs to functions, and you can cast them into a different type of error, or, a different type of value.</p>
+<p>This have some similarities with exceptions in Python. Because in Python, when an exception happens in your program, you can use an <code>except</code> block to access this exception value, and pass it to functions as an input, like you would do in Zig by passing error values to functions.</p>
+<p>Although they are normal values as any other, you cannot ignore error values in your Zig code. Meaning that, if an error value appears somewhere in your source code, this error value must be explicitly handled in some way. This also means that you cannot discard error values, by assigning them to a underscore, as you would do with normal values and objects.</p>
 <p>Take the source code below as an example. Here we are trying to open a file that does not exist in my computer, and as a result, an obvious error of <code>FileNotFound</code> is returned from the <code>openFile()</code> function. But because I’m assigning the result of this function to an underscore, I end up trying to discard an error value.</p>
 <p>The <code>zig</code> compiler detects this mistake, and raises an error telling me that I’m trying to discard an error value. It also adds a note message that suggests the use of <code>try</code>, <code>catch</code> or an if statement to explicitly handle this error value.</p>
 <div class="cell">
@@ -289,30 +291,30 @@ div.csl-indent {
 t.zig:8:17: note: consider using 'try', 'catch', or 'if'</code></pre>
 <section id="returning-errors-from-functions" class="level3" data-number="9.1.1">
 <h3 data-number="9.1.1" class="anchored" data-anchor-id="returning-errors-from-functions"><span class="header-section-number">9.1.1</span> Returning errors from functions</h3>
-<p>As we described at <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>, when we have a function that might return an error value, this function normally includes an exclamation mark (<code>!</code>) in it’s return type annotation. The presence of this exclamation mark indicates that this function might return an erro value as result, and, as consequence, you should always handle explicitly the case of this function returning an error value.</p>
-<p>The <code>print_name()</code> function below might return an error in the <code>stdout.print()</code> function call, and, as a consequence, it’s return type <code>!void</code> includes an exclamation mark in it, warning us that this function might fail.</p>
+<p>As we described at <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>, when we have a function that might return an error value, this function normally includes an exclamation mark (<code>!</code>) in it’s return type annotation. The presence of this exclamation mark indicates that this function might return an error value as result, and, the <code>zig</code> compiler forces you to always handle explicitly the case of this function returning an error value.</p>
+<p>Take a look at the <code>print_name()</code> function below. This function might return an error in the <code>stdout.print()</code> function call, and, as a consequence, it’s return type (<code>!void</code>) includes an exclamation mark in it, warning us that this function might fail.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> print_name() !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdout = std.getStdOut().writer();</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"My name is Pedro!"</span>, .<span class="op">{}</span>);</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>In the example above, we are using the exclamation mark, to tell the <code>zig</code> compiler that this function might return some error. But which error exactly is returned from this function? For now, we are not especifying a specific error value. We only known for now that some error value (whatever it is) might be returned.</p>
+<p>In the example above, we are using the exclamation mark, to tell the <code>zig</code> compiler that this function might return some error. But which error exactly is returned from this function? For now, we are not specifying a specific error value. We only known for now that some error value (whatever it is) might be returned.</p>
 <p>But in fact, you can (if you want to) specify clearly which exact error values might be returned from your function. There are lot of examples of this in the Zig Standard Library. Take this <code>fill()</code> function from the <code>http.Client</code> module as an example. This function returns either a error value of type <code>ReadError</code>, or <code>void</code>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> fill(conn: *Connection) ReadError!<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// The body of this function ...</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>This idea of specifying the exact error values that you expect to be returned from the function is interesting. Because they automatically become a type of documentation of your function, and also, it allows the <code>zig</code> compiler to perform extra checks over your code. Because it can check if there is any other type of error value that is being generated inside your function, and, that it is not being accounted for in this return type annotation.</p>
+<p>This idea of specifying the exact error values that you expect to be returned from the function is interesting. Because they automatically become some sort of documentation of your function, and also, it allows the <code>zig</code> compiler to perform extra checks over your code. Because it can check if there is any other type of error value that is being generated inside your function, and, that it is not being accounted for in this return type annotation.</p>
 <p>Anyway, so, you can list the types of errors that can be returned from the function by listing them on the left side of the exclamation mark. So the syntax format become:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">error</span>-value&gt;!&lt;valid-value&gt;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<pre><code>&lt;error-value&gt;!&lt;valid-value&gt;</code></pre>
 </section>
 <section id="error-sets" class="level3" data-number="9.1.2">
 <h3 data-number="9.1.2" class="anchored" data-anchor-id="error-sets"><span class="header-section-number">9.1.2</span> Error sets</h3>
 <p>But what about when we have a single function that might return different types of errors? When you have such a function, you can list all of these different types of errors that can be returned from this function, through a structure in Zig that we call of <em>error set</em>.</p>
 <p>An error set is a special type of an union object. It essentially is an union that contains error values in it. Not all programming languages have a notion of an “union object”. But in summary, an union is just a list of the options that an object can be. For example, a union of <code>x</code>, <code>y</code> and <code>z</code>, means that, an object of this union can either be a <code>x</code>, <code>y</code> or a <code>z</code> object.</p>
-<p>We are going to talk in more depth about unions later at <a href="#sec-unions" class="quarto-xref"><span>Section 9.3</span></a>. But you can write an error set by writing the keyword <code>error</code> before a pair of curly braces, and you list the error values that can be returned from the function inside this pair of curly braces.</p>
+<p>We are going to talk in more depth about unions later at <a href="#sec-unions" class="quarto-xref"><span>Section 9.3</span></a>. But you can write an error set by writing the keyword <code>error</code> before a pair of curly braces, then you list the error values that can be returned from the function inside this pair of curly braces.</p>
 <p>Take the <code>resolvePath()</code> function below as an example, which comes from the <code>introspect.zig</code> module of the Zig Standard Library. We can see in the return type annotation, that this function might return three different types of error values. This is an example of an error set.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> resolvePath(</span>
@@ -348,13 +350,30 @@ t.zig:8:17: note: consider using 'try', 'catch', or 'if'</code></pre>
 </div>
 <p>So, an error set is just a convenient way of grouping a set of possible error values into a single object, or a single type of an error value.</p>
 </section>
+<section id="casting-error-values" class="level3" data-number="9.1.3">
+<h3 data-number="9.1.3" class="anchored" data-anchor-id="casting-error-values"><span class="header-section-number">9.1.3</span> Casting error values</h3>
+</section>
 </section>
 <section id="the-try-catch-pattern" class="level2" data-number="9.2">
 <h2 data-number="9.2" class="anchored" data-anchor-id="the-try-catch-pattern"><span class="header-section-number">9.2</span> The <em>try catch</em> pattern</h2>
-<p>If you remember of what we learned in this section, when we say that an expression might return an error, we are basically referring to an expression that have a return type in the format <code>!T</code>. The <code>!</code> indicates that this expression returns either an error or a value of type <code>T</code>.</p>
+<p>As we described on the previous sections, when we say that an expression might return an error, we are basically referring to an expression that have a return type in the format <code>!T</code>. The <code>!</code> indicates that this expression returns either an error value, or a value of type <code>T</code>.</p>
+<p>At <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>, I presented the <code>try</code> keyword, and I did tell you which situations we use this keyword. But I actually did not talked yet about what exactly this keyword does to your code, or, in other words, I have not explained yet what <code>try</code> means in your code.</p>
+<p>In essence, when you use the <code>try</code> keyword in an expression, you are telling the <code>zig</code> compiler the following: “Hey! Execute this expression for me, and, if this expression return an error, please, return this error for me and stop the execution of my program. But if this expression return a valid value, then, return this value, and move on”.</p>
+<p>If you think about this statement, you can reach to the conclusion that the <code>try</code> keyword is essentially, a strategy to enter in panic mode, and stop the execution of your program in case an error occurs. That is exactly it. With the <code>try</code> keyword, you are telling the <code>zig</code> compiler, that stopping the execution of your program is the most reasonable strategy to take if an error occurs in that particular expression.</p>
+<p>Ok, now that we understand properly what <code>try</code> means, let’s discuss <code>catch</code> now. One important detail here, is that you can use <code>try</code> or <code>catch</code> to handle your errors, but you <strong>cannot use <code>try</code> and <code>catch</code> together</strong>. In other words, <code>try</code> and <code>catch</code> are different and completely separate strategies in the Zig language.</p>
+<p>This is uncommon, and different than what happens in other languages. Most programming languages that adopts the <em>try catch</em> pattern (such as C++, R, Python, Javascript, etc.), normally use these two keywords in conjunction to form the complete logic to properly handle the errors. Anyway, Zig tries a different approach in the <em>try catch</em> pattern.</p>
+<p>So, we learned already about what <code>try</code> do, and we also known that both <code>try</code> and <code>catch</code> should be used alone, separate from each other. But what exactly <code>catch</code> do in Zig? With <code>catch</code>, we can construct a logic to handle the error value, in case it happens in the current expression.</p>
+<p>Take as example, the code example below. Once again, we go back to the previous example where we were trying to open a file that doesn’t exist in my computer, but this time, I use <code>catch</code> to actually implement a logic to handle the error, instead of just stopping the execution right away.</p>
+<p>More specifically, in this example, I’m using a logger object to record some logs into the system, before I return the error, and stops the execution of the program. For example, this could be some part of the code of a complex system that I do not full control over, and I want to record these logs before the program crashes, so that I can debug it latter (e.g.&nbsp;maybe I cannot compile the full program, and properly debug it with a debugger. So, these logs might be a valid strategy to surpass this barrier).</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> x = <span class="dv">5</span>;</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>_ = x;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dir = std.fs.cwd();</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file = dir.openFile(</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"doesnt_exist.txt"</span>, .<span class="op">{}</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>) <span class="kw">catch</span> |err| <span class="op">{</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    logger.record_context();</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    logger.log_error(err);</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> err;</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="sec-unions" class="level2" data-number="9.3">
@@ -599,24 +618,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     // clear code selection
     e.clearSelection();
   });
-    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
-    var mailtoRegex = new RegExp(/^mailto:/);
-      var filterRegex = new RegExp('/' + window.location.host + '/');
-    var isInternal = (href) => {
-        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
-    }
-    // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
-    for (var i=0; i<links.length; i++) {
-      const link = links[i];
-      if (!isInternal(link.href)) {
-        // undo the damage that might have been done by quarto-nav.js in the case of
-        // links that we want to consider external
-        if (link.dataset.originalHref !== undefined) {
-          link.href = link.dataset.originalHref;
-        }
-      }
-    }
   function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
     const config = {
       allowHTML: true,
@@ -651,11 +652,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
-      if (note) {
-        return note.innerHTML;
-      } else {
-        return "";
-      }
+      return note.innerHTML;
     });
   }
   const xrefs = window.document.querySelectorAll('a.quarto-xref');
@@ -931,7 +928,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../Chapters/07-build-system.html" class="pagination-link" aria-label="Build System in Zig">
+      <a href="../Chapters/07-build-system.html" class="pagination-link  aria-label=" &lt;span="" system="" in="" zig&lt;="" span&gt;"="">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Build System in Zig</span></span>
       </a>          
   </div>
