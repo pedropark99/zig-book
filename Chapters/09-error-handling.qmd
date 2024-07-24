@@ -29,15 +29,14 @@ If you remember of the previous section,
 we already learned about the `try` keyword at @sec-main-file.
 We use the `try` keyword whenever the expression that we are executing
 might return an error.
-But we still haven't learned about the `catch` keyword yet. So let's 
-get into business, shall we?
+But we still haven't learned about the `catch` keyword yet.
 
 
 ## Learning more about errors in Zig
 
 Before we get into `try` and `catch`, we need to learn more about errors in Zig.
-Errors are values in Zig [@zigoverview]. In other words, they are like any integer (or a string) value that you create in your code.
-You can pass error values as inputs to functions, and you can cast them into a different error value.
+An error is an actual value in Zig [@zigoverview]. In other words, they are like any integer (or a string) value that you create in your code.
+You can pass error values as inputs to functions, and you can cast them into a different type of error, or, a different type of value.
 
 
 Although they are normal values as any other, you cannot ignore error values in your code. Meaning that, if an error
@@ -73,12 +72,11 @@ t.zig:8:17: note: consider using 'try', 'catch', or 'if'
 As we described at @sec-main-file, when we have a function that might return an error
 value, this function normally includes an exclamation mark (`!`) in it's return type
 annotation. The presence of this exclamation mark indicates that this function might
-return an erro value as result, and, as consequence, you should always handle explicitly
+return an error value as result, and, the `zig` compiler forces you to always handle explicitly
 the case of this function returning an error value.
 
-
-The `print_name()` function below might return an error in the `stdout.print()` function call,
-and, as a consequence, it's return type `!void` includes an exclamation mark in it, warning us 
+Take a look at the `print_name()` function below. This function might return an error in the `stdout.print()` function call,
+and, as a consequence, it's return type (`!void`) includes an exclamation mark in it, warning us 
 that this function might fail.
 
 ```{zig}
@@ -91,7 +89,7 @@ fn print_name() !void {
 
 In the example above, we are using the exclamation mark, to tell the `zig` compiler
 that this function might return some error. But which error exactly is returned from
-this function? For now, we are not especifying a specific error value. We only
+this function? For now, we are not specifying a specific error value. We only
 known for now that some error value (whatever it is) might be returned.
 
 But in fact, you can (if you want to) specify clearly which exact error values
@@ -108,7 +106,7 @@ pub fn fill(conn: *Connection) ReadError!void {
 ```
 
 This idea of specifying the exact error values that you expect to be returned
-from the function is interesting. Because they automatically become a type of documentation
+from the function is interesting. Because they automatically become some sort of documentation
 of your function, and also, it allows the `zig` compiler to perform extra checks over
 your code. Because it can check if there is any other type of error value
 that is being generated inside your function, and, that it is not being accounted
@@ -118,7 +116,7 @@ Anyway, so, you can list the types of errors that can be returned from the funct
 by listing them on the left side of the exclamation mark. So the syntax format
 become:
 
-```zig
+```
 <error-value>!<valid-value>
 ```
 
@@ -138,7 +136,7 @@ an object of this union can either be a `x`, `y` or a `z` object.
 
 We are going to talk in more depth about unions later at @sec-unions.
 But you can write an error set by writing the keyword `error` before
-a pair of curly braces, and you list the error values that can be
+a pair of curly braces, then you list the error values that can be
 returned from the function inside this pair of curly braces.
 
 Take the `resolvePath()` function below as an example, which comes from the
