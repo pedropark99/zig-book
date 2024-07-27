@@ -25,21 +25,19 @@ a valid value returned from the function.
 
 But, in Zig, we use a *try catch* pattern to handle errors,
 using the keywords `try` and `catch`.
-If you remember of the previous section,
-we already learned about the `try` keyword at @sec-main-file.
-We use the `try` keyword whenever the expression that we are executing
-might return an error.
-But we still haven't learned about the `catch` keyword yet.
+We already learned about the `try` keyword at @sec-main-file.
+But we still haven't learned about the `catch` keyword.
 
 
 ## Learning more about errors in Zig
 
-Before we get into `try` and `catch`, we need to learn more about errors in Zig.
+Before we get into `try` and `catch`, we need to learn more about what errors in Zig are.
 An error is an actual value in Zig [@zigoverview]. In other words, they are like any integer (or a string) value that you create in your code.
-You can pass error values as inputs to functions, and you can cast them into a different type of error, or, a different type of value.
+In Zig, you can take the error values produced in your code, and pass them as inputs to functions.
+You can also cast them into a different type of error value.
 
 This have some similarities with exceptions in Python. Because in Python, when an exception happens
-in your program, you can use an `except` block to access this exception value,
+inside a `try` block, you can use an `except` block to access this exception value,
 and pass it to functions as an input, like you would do in Zig by passing error values to functions.
 
 
@@ -56,7 +54,8 @@ trying to discard an error value.
 The `zig` compiler detects this mistake, and raises an
 error telling me that I'm trying to discard an error value.
 It also adds a note message that suggests the use of `try`,
-`catch` or an if statement to explicitly handle this error value.
+`catch` or an if statement to explicitly handle this error value
+This note is remembering you that every error value must be explicitly handled.
 
 
 ```{zig}
@@ -80,8 +79,8 @@ return an error value as result, and, the `zig` compiler forces you to always ha
 the case of this function returning an error value.
 
 Take a look at the `print_name()` function below. This function might return an error in the `stdout.print()` function call,
-and, as a consequence, it's return type (`!void`) includes an exclamation mark in it, warning us 
-that this function might fail.
+and, as a consequence, it's return type (`!void`) includes an exclamation mark in it,
+which warns us that this function might fail.
 
 ```{zig}
 #| eval: false
@@ -91,13 +90,13 @@ fn print_name() !void {
 }
 ```
 
-In the example above, we are using the exclamation mark, to tell the `zig` compiler
+In the example above, we are using the exclamation mark to tell the `zig` compiler
 that this function might return some error. But which error exactly is returned from
 this function? For now, we are not specifying a specific error value. We only
 known for now that some error value (whatever it is) might be returned.
 
 But in fact, you can (if you want to) specify clearly which exact error values
-might be returned from your function. There are lot of examples of
+might be returned from this function. There are lot of examples of
 this in the Zig Standard Library. Take this `fill()` function from
 the `http.Client` module as an example. This function returns
 either a error value of type `ReadError`, or `void`.
@@ -111,14 +110,14 @@ pub fn fill(conn: *Connection) ReadError!void {
 
 This idea of specifying the exact error values that you expect to be returned
 from the function is interesting. Because they automatically become some sort of documentation
-of your function, and also, it allows the `zig` compiler to perform extra checks over
+of your function, and also, it allows the `zig` compiler to perform some extra checks over
 your code. Because it can check if there is any other type of error value
 that is being generated inside your function, and, that it is not being accounted
 for in this return type annotation.
 
-Anyway, so, you can list the types of errors that can be returned from the function
-by listing them on the left side of the exclamation mark. So the syntax format
-become:
+Anyway, you can list the types of errors that can be returned from the function
+by listing them on the left side of the exclamation mark. While the valid values
+stay on the right side of the exclamation mark. So the syntax format become:
 
 ```
 <error-value>!<valid-value>
@@ -135,10 +134,10 @@ An error set is a special type of an union object.
 It essentially is an union that contains error values in it.
 Not all programming languages have a notion of an "union object".
 But in summary, an union is just a list of the options that
-an object can be. For example, a union of `x`, `y` and `z`, means that,
-an object of this union can either be a `x`, `y` or a `z` object.
+an object can be. For example, a union of `x`, `y` and `z`, means that
+an object can be either of type `x`, or type `y` or type `z`.
 
-We are going to talk in more depth about unions later at @sec-unions.
+We are going to talk in more depth about unions at @sec-unions.
 But you can write an error set by writing the keyword `error` before
 a pair of curly braces, then you list the error values that can be
 returned from the function inside this pair of curly braces.
@@ -211,13 +210,13 @@ possible error values into a single object, or a single type of an error value.
 ## The *try catch* pattern
 
 
-As we described on the previous sections, when we say that an expression might
+As we described on previous sections, when we say that an expression might
 return an error, we are basically referring to an expression that have
 a return type in the format `!T`.
 The `!` indicates that this expression returns either an error value, or a value of type `T`.
 
-At @sec-main-file, I presented the `try` keyword, and I did tell you which situations we use
-this keyword. But I actually did not talked yet about what exactly this keyword does to your code,
+At @sec-main-file, I presented the `try` keyword, and I did tell you how we use
+this keyword. But I did not talked about yet what exactly this keyword does to your code,
 or, in other words, I have not explained yet what `try` means in your code.
 
 In essence, when you use the `try` keyword in an expression, you are telling
@@ -226,8 +225,7 @@ and, if this expression return an error, please, return this error for me
 and stop the execution of my program. But if this expression return a valid
 value, then, return this value, and move on".
 
-If you think about this statement, you can reach to the conclusion that the
-`try` keyword is essentially, a strategy to enter in panic mode, and stop
+In other words, the `try` keyword is essentially, a strategy to enter in panic mode, and stop
 the execution of your program in case an error occurs. That is exactly it.
 With the `try` keyword, you are telling the `zig` compiler, that stopping the execution
 of your program is the most reasonable strategy to take if an error occurs
@@ -244,20 +242,20 @@ these two keywords in conjunction to form the complete logic to
 properly handle the errors.
 Anyway, Zig tries a different approach in the *try catch* pattern.
 
-So, we learned already about what `try` do, and we also known that both
+So, we learned already about what `try` means, and we also known that both
 `try` and `catch` should be used alone, separate from each other. But
 what exactly `catch` do in Zig? With `catch`, we can construct a
 logic to handle the error value, in case it happens in the current expression.
 
-Take as example, the code example below. Once again, we go back to the previous
+Look at the code example below. Once again, we go back to the previous
 example where we were trying to open a file that doesn't exist in my computer,
 but this time, I use `catch` to actually implement a logic to handle the error, instead of
 just stopping the execution right away.
 
 More specifically, in this example, I'm using a logger object to record some logs into
 the system, before I return the error, and stops the execution of the program. For example,
-this could be some part of the code of a complex system that I do not full control over,
-and I want to record these logs before the program crashes, so that I can debug it latter
+this could be some part of the codebase of a complex system that I do not have full control over,
+and I want to record these logs before the program crashes, so that I can debug it later
 (e.g. maybe I cannot compile the full program, and properly debug it with a debugger. So, these logs might
 be a valid strategy to surpass this barrier).
 
@@ -276,11 +274,16 @@ const file = dir.openFile(
 
 
 Therefore, we use `catch` to create a block of expressions that will handle the error.
-Instead of writing the keyword before the expression that might return the error,
+I can return the error value from this block of expressions, like I did in the above example,
+which, will make the program enter in panic mode, and, stop the execution.
+But I could also, return a valid value from this block of code, which would
+be stored in the `file` object.
+
+Notice that, instead of writing the keyword before the expression that might return the error,
 like we do with `try`,
 we write `catch` after the expression. We can open the pair of pipes (`|`),
 which captures the error value returned by the expression, and makes
-this error value in the scope of the `catch` block as the object named `err`.
+this error value available in the scope of the `catch` block as the object named `err`.
 In other words, because I wrote `|err|` in the code, I can access the error value
 returned by the expression, by using the `err` object.
 
