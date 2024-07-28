@@ -73,14 +73,6 @@ The bulletpoints below summarises the base64 scale:
 
 
 
-Everytime that the base64 algorithm needs to fill some gap (which always occur at the end of
-the input string) with a group of 6 bits filled with only zeros (`000000`), this group is automatically
-mapped to the character `=`. Because this group of 6 bits is meaningless, they represent nothing,
-they are just filling the gap. As a result, the base64 algorithm maps this meaningless group
-to the character `=`, which represents the end of meaningful characters in the sequence.
-This characteristic is explained in more details at @sec-base64-encoder-algo.
-
-
 
 ### Creating the scale as a lookup table {#sec-base64-table}
 
@@ -96,8 +88,9 @@ from the array where you stored all the possible characters in the base64 scale.
 directly from memory.
 
 We can start building a Zig struct to store our base64 decoder/encoder logic.
-We start with the `Base64` struct below. You can see that, for now, we only have an `init()` function,
-to create a new instance of a `Base64` object, and, a `_char_at()` function, which is a
+We start with the `Base64` struct below. You can see that, for now, we only have one single data member in this
+struct, i.e. the member `_table`, which represents our lookup table. We also have an `init()` method,
+to create a new instance of a `Base64` object, and, a `_char_at()` method, which is a
 "get chat at index ..." type of function.
 
 
@@ -123,7 +116,7 @@ const Base64 = struct {
 ```
 
 
-In other words, the `_char_at()` function is responsible for getting the character in the lookup table (i.e. the `_table` variable) that
+In other words, the `_char_at()` method is responsible for getting the character in the lookup table (i.e. the `_table` struct data member) that
 corresponds to a particular index in the "base64 scale". So, in the example below, we know that
 the character that corresponds to the index 28 in the "base64 scale" is the character "c".
 
@@ -149,7 +142,7 @@ The algorithm behind a base64 encoder usually works on a window of 3 bytes. Beca
 8 bits, so, 3 bytes forms a set of $8 \times 3 = 24$ bits. This is desirable for the base64 algorithm, because
 24 bits is divisble by 6, which form a set of 4 groups of 6 bits each.
 
-So the base64 algorithm work by converting 3 bytes at a time
+So the base64 algorithm works by converting 3 bytes at a time
 into 4 characters in the base64 scale. It keeps iterating through the input string,
 3 bytes at a time, and converting them into the base64 scale, producing 4 characters
 per iteration. It keeps iterating, and producing these "new characters"
@@ -158,42 +151,41 @@ until it hits the end of the input string.
 Now you may think, what if you have a particular string that have a number of bytes
 that is not divisible by 3? What happens? For example, if you have a string
 that contains only two characters/bytes, such as "Hi". How the
-algorithm behaves in such situation? You find the answer at @fig-base64-algo1.
+algorithm would behave in such situation? You find the answer at @fig-base64-algo1.
 You can see at @fig-base64-algo1 that the string "Hi", when converted to base64,
 becomes the string "SGk=":
 
 ![The logic behind a base64 encoder](./../Figures/base64-encoder-flow.png){#fig-base64-algo1}
 
-In the example of the string "Hi" we have 2 bytes, or, 16 bits in total. So, we lack a full byte (8 bits)
-to complete the window of 24 bits that the base64 algorithm likes to work on. In essence,
-everytime that the algorithm does not meet this requirement, it simply add extra zeros
-until it fills the space that it needs.
+Taking the string "Hi" as an example, we have 2 bytes, or, 16 bits in total. So, we lack a full byte (8 bits)
+to complete the window of 24 bits that the base64 algorithm likes to work on. The first thing that
+the algorithm does, is to check how to divide the input bytes into groups of 6 bits.
 
+If the algorithm notice that there is a group of 6 bits that, have some bits in it, but, at the same time, it is not full
+(in other words, $0 < nbits < 6$, being $nbits$ the number of bits), meaning that, it lacks
+some bits to fill the 6-bits requirement, the algorithm simply add extra zeros in this group
+to fill the space that it needs.
 That is why at @fig-base64-algo1, on the third group after the 6-bit transformation,
-2 extra zeros were added to fill the gap in this group, and also, the fourth group (which is the last 6-bit group)
-is entirely made by zeros that were added by the algorithm.
+2 extra zeros were added to fill the gap in this group.
 
-So every time that the base64 algorithm can't produce a full group of 6 bits, it
-simply fills the gap in this group with zeros, until it get's the 6 bits that it needs.
+So, when we have a 6-bit group that is not completely full, like the third group, extra zeros
+are added to fill the gap. But what about when an entire 6-bit group is empty, or, it 
+simply doesn't exist? This is the case of the fourth 6-bit group exposed at
+@fig-base64-algo1.
 
-Is worth mentioning that, everytime that the algorithm produces a group of 6 bits that
-is entirely composed by these extra zeros added by the algorithm, then, this group of 6 bits is automatically mapped to
-the character `=` (equal sign). However, notice that a group of 6-bit entirely made by **extra zeros**,
-is different than a group of 6-bit entirely made by **zeros**.
+This fourth group is necessary, because the algorithm works on 4 groups of 6 bits.
+But the input string does not have enough bytes to create a fourth 6-bit group.
+Every time that this happens, where a entire group of 6 bits is empty,
+this group becomes a "padding group". Every "padding group" is mapped to
+the character `=` (equal sign), which represents "null", or, the end
+of meaninful characters in the sequence.
+Hence, everytime that the algorithm produces a "padding group", this group is mapped to `=`.
 
-In other words, if the algorithm produces a 6-bit group made by zeros, without
-needing to include extra-zeros to fill any gap, then, this "group of zeros" is interpreted as is. In binary,
-the 6-bit group `000000` simply means zero. So, if we give the index zero to the function `_char_at()`,
-this zero index is mapped to the first character in the base64 scale, which is "A".
-
-So be aware of this important distinction. A group of "extra-zeros" that are "filling the gap"
-is different than a group of actual zeros that were calculated by the 6-bit transformation.
-As an example, if you give the string "0" as input to a base64 encoder, this string is
+As another example, if you give the string "0" as input to a base64 encoder, this string is
 translated into the base64 sequence "MA==".
-
 The character "0" is, in binary, the sequence `00110000`[^zero-note]. So, with the 6-bit transformation
 exposed at @fig-base64-algo1, this single character would produce these two 6-bit groups: `001100`, `000000`.
-The other two 6-bit groups are entirely made by extra-zeros, and that is why the last
+The remaining two 6-bit groups become "padding groups". That is why the last
 two characters in the output sequence (MA==) are `==`.
 
 
@@ -779,7 +771,7 @@ So, the steps to produce the 3 bytes in the output are:
 
 
 Before we continue, let's try to visualize how these transformations make the original bytes that we had
-before the encoding process. First, think back at the 6-bit transformation performed by the encoder exposed at #sec-encoder-logic.
+before the encoding process. First, think back at the 6-bit transformation performed by the encoder exposed at @sec-encoder-logic.
 The first byte in the output of the encoder is produced by moving the bits in the first byte of the input two positions to the right.
 
 So, if for example the first byte in the input of the encoder was the sequence `ABCDEFGH`, then, the first byte in the output of the encoder would be
