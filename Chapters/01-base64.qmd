@@ -159,11 +159,10 @@ becomes the string "SGk=":
 
 Taking the string "Hi" as an example, we have 2 bytes, or, 16 bits in total. So, we lack a full byte (8 bits)
 to complete the window of 24 bits that the base64 algorithm likes to work on. The first thing that
-the algorithm does, is to check how to divide the input bytes into groups of 6 bits. This is the first
-concern of the algorithm. It needs to know how the input bytes will be divided into groups of 6 bits.
+the algorithm does, is to check how to divide the input bytes into groups of 6 bits.
 
-If the algorithm notice that there is a group of 6 bits that have some bits in it, but is not full
-(in other words, the number of bits in this group is greater than zero, but less than six), meaning that, it lacks
+If the algorithm notice that there is a group of 6 bits that, have some bits in it, but, at the same time, it is not full
+(in other words, $0 < nbits < 6$, being $nbits$ the number of bits), meaning that, it lacks
 some bits to fill the 6-bits requirement, the algorithm simply add extra zeros in this group
 to fill the space that it needs.
 That is why at @fig-base64-algo1, on the third group after the 6-bit transformation,
@@ -174,16 +173,15 @@ are added to fill the gap. But what about when an entire 6-bit group is empty, o
 simply doesn't exist? This is the case of the fourth 6-bit group exposed at
 @fig-base64-algo1.
 
-This group is necessary, because the algorithm works on 4 groups of 6 bits.
+This fourth group is necessary, because the algorithm works on 4 groups of 6 bits.
 But the input string does not have enough bytes to create a fourth 6-bit group.
 Every time that this happens, where a entire group of 6 bits is empty,
 this group becomes a "padding group". Every "padding group" is mapped to
 the character `=` (equal sign), which represents "null", or, the end
 of meaninful characters in the sequence.
+Hence, everytime that the algorithm produces a "padding group", this group is mapped to `=`.
 
-
-Therefore, everytime that the algorithm produces a "padding group", this group is mapped to `=`.
-As an example, if you give the string "0" as input to a base64 encoder, this string is
+As another example, if you give the string "0" as input to a base64 encoder, this string is
 translated into the base64 sequence "MA==".
 The character "0" is, in binary, the sequence `00110000`[^zero-note]. So, with the 6-bit transformation
 exposed at @fig-base64-algo1, this single character would produce these two 6-bit groups: `001100`, `000000`.
