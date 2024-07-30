@@ -1265,6 +1265,47 @@ lowercase letter, and it would work fine.
 
 
 
+### The `defer` keyword {#sec-defer}
+
+With the `defer` keyword you can execute expressions at the end of the current scope.
+Take the `foo()` function below as an example. When we execute this function, the expression
+that prints the message "Exiting function ..." get's executed only at
+the end of the function scope.
+
+```{zig}
+#| auto_main: false
+#| echo: true
+#| results: "hide"
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+fn foo() !void {
+    defer std.debug.print(
+        "Exiting function ...\n", .{}
+    );
+    try stdout.print("Adding some numbers ...\n", .{});
+    const x = 2 + 2; _ = x;
+    try stdout.print("Multiplying ...\n", .{});
+    const y = 2 * 8; _ = y;
+}
+
+pub fn main() !void {
+    try foo();
+}
+```
+
+```
+Adding some numbers ...
+Multiplying ...
+Exiting function ...
+```
+
+It doesn't matter how the function exits (i.e. because
+of an error, or, because of an return statement, or whatever),
+just remember, this expression get's executed when the function exits.
+
+
+
+
 ### For loops
 
 A loop allows you to execute the same lines of code multiple times,
@@ -1434,12 +1475,8 @@ This is just a naming convention that you will find across the entire Zig standa
 So, in Zig, the `init()` method of a struct is normally the constructor method of the class represented by this struct.
 While the `deinit()` method is the method used for destroying an existing instance of that struct.
 
-Both the `init()` and `deinit()` methods are used extensively in Zig code, and you will see both of them at @sec-arena-allocator. In this section,
-I present the `ArenaAllocator()`, which is a special type of allocator object that receives a second (child)
-allocator object at instantiation. We use the `init()` method to create a new `ArenaAllocator()` object,
-then, on the next line, we also used the `deinit()` method in conjunction with the `defer` keyword, to destroy this arena allocator object at the end
-of the current scope.
-
+The `init()` and `deinit()` methods are both used extensively in Zig code, and you will see both of
+them being used when we talk about allocators at @sec-allocators.
 But, as another example, let's build a simple `User` struct to represent an user of some sort of system.
 If you look at the `User` struct below, you can see the `struct` keyword, and inside of a
 pair of curly braces, we write the struct's body.
