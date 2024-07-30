@@ -125,6 +125,35 @@ div.csl-indent {
   }
 }</script>
 
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -247,8 +276,14 @@ div.csl-indent {
   <li><a href="#error-sets" id="toc-error-sets" class="nav-link" data-scroll-target="#error-sets"><span class="header-section-number">9.1.2</span> Error sets</a></li>
   <li><a href="#casting-error-values" id="toc-casting-error-values" class="nav-link" data-scroll-target="#casting-error-values"><span class="header-section-number">9.1.3</span> Casting error values</a></li>
   </ul></li>
-  <li><a href="#the-try-catch-pattern" id="toc-the-try-catch-pattern" class="nav-link" data-scroll-target="#the-try-catch-pattern"><span class="header-section-number">9.2</span> The <em>try catch</em> pattern</a></li>
-  <li><a href="#sec-unions" id="toc-sec-unions" class="nav-link" data-scroll-target="#sec-unions"><span class="header-section-number">9.3</span> Union objects in Zig</a></li>
+  <li><a href="#how-to-handle-errors" id="toc-how-to-handle-errors" class="nav-link" data-scroll-target="#how-to-handle-errors"><span class="header-section-number">9.2</span> How to handle errors</a>
+  <ul class="collapse">
+  <li><a href="#what-try-means" id="toc-what-try-means" class="nav-link" data-scroll-target="#what-try-means"><span class="header-section-number">9.2.1</span> What <code>try</code> means?</a></li>
+  <li><a href="#the-catch-keyword" id="toc-the-catch-keyword" class="nav-link" data-scroll-target="#the-catch-keyword"><span class="header-section-number">9.2.2</span> The <code>catch</code> keyword</a></li>
+  <li><a href="#using-if-statements" id="toc-using-if-statements" class="nav-link" data-scroll-target="#using-if-statements"><span class="header-section-number">9.2.3</span> Using if statements</a></li>
+  <li><a href="#the-errdefer-keyword" id="toc-the-errdefer-keyword" class="nav-link" data-scroll-target="#the-errdefer-keyword"><span class="header-section-number">9.2.4</span> The <code>errdefer</code> keyword</a></li>
+  </ul></li>
+  <li><a href="#sec-unions" id="toc-sec-unions" class="nav-link" data-scroll-target="#sec-unions"><span class="header-section-number">9.3</span> Union type in Zig</a></li>
   </ul>
 </nav>
     </div>
@@ -274,15 +309,14 @@ div.csl-indent {
 </header>
 
 
-<p>In this chapter, I want to discuss how error handling is done in Zig. Not every low-level language have an explicit system to handle errors. In C for example, we normally check for errors by looking at the return value of the function calls, and see if there is an “error status code” or a valid value returned from the function.</p>
-<p>But, in Zig, we use a <em>try catch</em> pattern to handle errors, using the keywords <code>try</code> and <code>catch</code>. We already learned about the <code>try</code> keyword at <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>. But we still haven’t learned about the <code>catch</code> keyword.</p>
+<p>In this chapter, I want to discuss how error handling is done in Zig. We already briefly learned about one of the available strategies to handle errors in Zig, which is the <code>try</code> keyword presented at <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>. But we still haven’t learned about the other methods, such as the <code>catch</code> keyword. I also want to discuss in this chapter how enum types are created in Zig.</p>
 <section id="learning-more-about-errors-in-zig" class="level2" data-number="9.1">
 <h2 data-number="9.1" class="anchored" data-anchor-id="learning-more-about-errors-in-zig"><span class="header-section-number">9.1</span> Learning more about errors in Zig</h2>
-<p>Before we get into <code>try</code> and <code>catch</code>, we need to learn more about what errors in Zig are. An error is actually a value in Zig <span class="citation" data-cites="zigoverview">(<a href="../references.html#ref-zigoverview" role="doc-biblioref">Zig Software Foundation 2024</a>)</span>. In other words, when an error occurs inside your Zig program, it means that somewhere in your Zig codebase, an error value is being generated. An error value is similar to any integer value that you create in your Zig code. You can take an error value produced in your code, and pass it as input to a function. You can also cast it into a different type of error value.</p>
-<p>This have some similarities with exceptions in C++ and Python. Because in C++ and Python, when an exception happens inside a <code>try</code> block, you can use a <code>catch</code> block (in C++) or an <code>except</code> block (in Python) to capture the exception value produced in the <code>try</code> block, and pass it to functions as an input.</p>
-<p>Although they are normal values as any other, you cannot ignore error values in your Zig code. Meaning that, if an error value appears somewhere in your source code, this error value must be explicitly handled in some way. This also means that you cannot discard error values, by assigning them to a underscore, as you would do with normal values and objects.</p>
-<p>Take the source code below as an example. Here we are trying to open a file that does not exist in my computer, and as a result, an obvious error of <code>FileNotFound</code> is returned from the <code>openFile()</code> function. But because I’m assigning the result of this function to an underscore, I end up trying to discard an error value.</p>
-<p>The <code>zig</code> compiler detects this mistake, and raises an error telling me that I’m trying to discard an error value. It also adds a note message that suggests the use of <code>try</code>, <code>catch</code> or an if statement to explicitly handle this error value This note is remembering you that every error value must be explicitly handled.</p>
+<p>Before we get into how error handling is done, we need to learn more about what errors are in Zig. An error is actually a value in Zig <span class="citation" data-cites="zigoverview">(<a href="../references.html#ref-zigoverview" role="doc-biblioref">Zig Software Foundation 2024a</a>)</span>. In other words, when an error occurs inside your Zig program, it means that somewhere in your Zig codebase, an error value is being generated. An error value is similar to any integer value that you create in your Zig code. You can take an error value and pass it as input to a function, and you can also cast (or coerce) it into a different type of error value.</p>
+<p>This have some similarities with exceptions in C++ and Python. Because in C++ and Python, when an exception happens inside a <code>try</code> block, you can use a <code>catch</code> block (in C++) or an <code>except</code> block (in Python) to capture the exception produced in the <code>try</code> block, and pass it to functions as an input.</p>
+<p>Although they are normal values as any other, you cannot ignore error values in your Zig code. Meaning that, if an error value appears somewhere in your source code, this error value must be explicitly handled in some way. This also means that you cannot discard error values by assigning them to a underscore, as you could do with normal values and objects.</p>
+<p>Take the source code below as an example. Here we are trying to open a file that does not exist in my computer, and as a result, an obvious error value of <code>FileNotFound</code> is returned from the <code>openFile()</code> function. But because I’m assigning the result of this function to an underscore, I end up trying to discard an error value.</p>
+<p>The <code>zig</code> compiler detects this mistake, and raises a compile error telling me that I’m trying to discard an error value. It also adds a note message that suggests the use of <code>try</code>, <code>catch</code> or an if statement to explicitly handle this error value This note is reinforcing that every possible error value must be explicitly handled in Zig.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dir = std.fs.cwd();</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>_ = dir.openFile(<span class="st">"doesnt_exist.txt"</span>, .<span class="op">{}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -292,7 +326,7 @@ t.zig:8:17: note: consider using 'try', 'catch', or 'if'</code></pre>
 <section id="returning-errors-from-functions" class="level3" data-number="9.1.1">
 <h3 data-number="9.1.1" class="anchored" data-anchor-id="returning-errors-from-functions"><span class="header-section-number">9.1.1</span> Returning errors from functions</h3>
 <p>As we described at <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>, when we have a function that might return an error value, this function normally includes an exclamation mark (<code>!</code>) in it’s return type annotation. The presence of this exclamation mark indicates that this function might return an error value as result, and, the <code>zig</code> compiler forces you to always handle explicitly the case of this function returning an error value.</p>
-<p>Take a look at the <code>print_name()</code> function below. This function might return an error in the <code>stdout.print()</code> function call, and, as a consequence, it’s return type (<code>!void</code>) includes an exclamation mark in it, which warns us that this function might fail.</p>
+<p>Take a look at the <code>print_name()</code> function below. This function might return an error in the <code>stdout.print()</code> function call, and, as a consequence, it’s return type (<code>!void</code>) includes an exclamation mark in it.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> print_name() !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdout = std.getStdOut().writer();</span>
@@ -313,9 +347,9 @@ t.zig:8:17: note: consider using 'try', 'catch', or 'if'</code></pre>
 <section id="error-sets" class="level3" data-number="9.1.2">
 <h3 data-number="9.1.2" class="anchored" data-anchor-id="error-sets"><span class="header-section-number">9.1.2</span> Error sets</h3>
 <p>But what about when we have a single function that might return different types of errors? When you have such a function, you can list all of these different types of errors that can be returned from this function, through a structure in Zig that we call of <em>error set</em>.</p>
-<p>An error set is a special type of an union object. It essentially is an union that contains error values in it. Not all programming languages have a notion of an “union object”. But in summary, an union is just a list of the options that an object can be. For example, a union of <code>x</code>, <code>y</code> and <code>z</code>, means that an object can be either of type <code>x</code>, or type <code>y</code> or type <code>z</code>.</p>
+<p>An error set is a special case of an union type. It essentially is an union that contains error values in it. Not all programming languages have a notion of an “union object”. But in summary, an union is just a list of the options that an object can be. For example, a union of <code>x</code>, <code>y</code> and <code>z</code>, means that an object can be either of type <code>x</code>, or type <code>y</code> or type <code>z</code>.</p>
 <p>We are going to talk in more depth about unions at <a href="#sec-unions" class="quarto-xref"><span>Section 9.3</span></a>. But you can write an error set by writing the keyword <code>error</code> before a pair of curly braces, then you list the error values that can be returned from the function inside this pair of curly braces.</p>
-<p>Take the <code>resolvePath()</code> function below as an example, which comes from the <code>introspect.zig</code> module of the Zig Standard Library. We can see in the return type annotation, that this function might return three different types of error values. This is an example of an error set.</p>
+<p>Take the <code>resolvePath()</code> function below as an example, which comes from the <code>introspect.zig</code> module of the Zig Standard Library. We can see in it’s return type annotation, that this function return either: 1) a valid slice of <code>u8</code> values (<code>[]u8</code>); or, 2) one of the three different types of error values listed inside the error set (<code>OutOfMemory</code>, <code>Unexpected</code>, etc.). This is an example of use of an error set.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> resolvePath(</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    ally: mem.Allocator,</span>
@@ -352,41 +386,195 @@ t.zig:8:17: note: consider using 'try', 'catch', or 'if'</code></pre>
 </section>
 <section id="casting-error-values" class="level3" data-number="9.1.3">
 <h3 data-number="9.1.3" class="anchored" data-anchor-id="casting-error-values"><span class="header-section-number">9.1.3</span> Casting error values</h3>
+<p>Let’s suppose you have two different error sets, named <code>A</code> and <code>B</code>. If error set <code>A</code> is a superset of error set <code>B</code>, then, you can cast (or coerce) error values from <code>B</code> into error values of <code>A</code>.</p>
+<p>Error sets are just a set of error values. So, if the error set <code>A</code> contains all error values from the error set <code>B</code>, then <code>A</code> becomes a superset of <code>B</code>. You could also say that the error set <code>B</code> is a subset of error set <code>A</code>.</p>
+<p>The example below demonstrates this idea. Because <code>A</code> contains all values from <code>B</code>, <code>A</code> is a superset of <code>B</code>. In math notation, we would say that <span class="math inline">\(A \supset B\)</span>. As a consequence, we can give an error value from <code>B</code> as input to the <code>cast()</code> function, and, implicitly cast this input into the same error value, but from the <code>A</code> set.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> A = <span class="kw">error</span><span class="op">{</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    ConnectionTimeoutError,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    DatabaseNotFound,</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    OutOfMemory,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    InvalidToken,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> B = <span class="kw">error</span> <span class="op">{</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    OutOfMemory,</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> cast(err: B) A <span class="op">{</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> err;</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"coerce error value"</span> <span class="op">{</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> error_value = cast(B.OutOfMemory);</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expect(</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>        error_value == A.OutOfMemory</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 </section>
 </section>
-<section id="the-try-catch-pattern" class="level2" data-number="9.2">
-<h2 data-number="9.2" class="anchored" data-anchor-id="the-try-catch-pattern"><span class="header-section-number">9.2</span> The <em>try catch</em> pattern</h2>
-<p>As we described on previous sections, when we say that an expression might return an error, we are basically referring to an expression that have a return type in the format <code>!T</code>. The <code>!</code> indicates that this expression returns either an error value, or a value of type <code>T</code>.</p>
-<p>At <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>, I presented the <code>try</code> keyword, and I did tell you how we use this keyword. But I did not talked about yet what exactly this keyword does to your code, or, in other words, I have not explained yet what <code>try</code> means in your code.</p>
+<section id="how-to-handle-errors" class="level2" data-number="9.2">
+<h2 data-number="9.2" class="anchored" data-anchor-id="how-to-handle-errors"><span class="header-section-number">9.2</span> How to handle errors</h2>
+<p>Now that we learned more about what errors are in Zig, let’s discuss the available strategies to handle these errors, which are:</p>
+<ul>
+<li><code>try</code> keyword;</li>
+<li><code>catch</code> keyword;</li>
+<li>an if statement;</li>
+<li><code>errdefer</code> keyword;</li>
+</ul>
+<section id="what-try-means" class="level3" data-number="9.2.1">
+<h3 data-number="9.2.1" class="anchored" data-anchor-id="what-try-means"><span class="header-section-number">9.2.1</span> What <code>try</code> means?</h3>
+<p>As I described over the previous sections, when we say that an expression might return an error, we are basically referring to an expression that have a return type in the format <code>!T</code>. The <code>!</code> indicates that this expression returns either an error value, or a value of type <code>T</code>.</p>
+<p>At <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>, I presented the <code>try</code> keyword and where to use it. But I did not talked about what exactly this keyword does to your code, or, in other words, I have not explained yet what <code>try</code> means in your code.</p>
 <p>In essence, when you use the <code>try</code> keyword in an expression, you are telling the <code>zig</code> compiler the following: “Hey! Execute this expression for me, and, if this expression return an error, please, return this error for me and stop the execution of my program. But if this expression return a valid value, then, return this value, and move on”.</p>
-<p>In other words, the <code>try</code> keyword is essentially, a strategy to enter in panic mode, and stop the execution of your program in case an error occurs. That is exactly it. With the <code>try</code> keyword, you are telling the <code>zig</code> compiler, that stopping the execution of your program is the most reasonable strategy to take if an error occurs in that particular expression.</p>
+<p>In other words, the <code>try</code> keyword is essentially, a strategy to enter in panic mode, and stop the execution of your program in case an error occurs. With the <code>try</code> keyword, you are telling the <code>zig</code> compiler, that stopping the execution of your program is the most reasonable strategy to take if an error occurs in that particular expression.</p>
+</section>
+<section id="the-catch-keyword" class="level3" data-number="9.2.2">
+<h3 data-number="9.2.2" class="anchored" data-anchor-id="the-catch-keyword"><span class="header-section-number">9.2.2</span> The <code>catch</code> keyword</h3>
 <p>Ok, now that we understand properly what <code>try</code> means, let’s discuss <code>catch</code> now. One important detail here, is that you can use <code>try</code> or <code>catch</code> to handle your errors, but you <strong>cannot use <code>try</code> and <code>catch</code> together</strong>. In other words, <code>try</code> and <code>catch</code> are different and completely separate strategies in the Zig language.</p>
 <p>This is uncommon, and different than what happens in other languages. Most programming languages that adopts the <em>try catch</em> pattern (such as C++, R, Python, Javascript, etc.), normally use these two keywords in conjunction to form the complete logic to properly handle the errors. Anyway, Zig tries a different approach in the <em>try catch</em> pattern.</p>
-<p>So, we learned already about what <code>try</code> means, and we also known that both <code>try</code> and <code>catch</code> should be used alone, separate from each other. But what exactly <code>catch</code> do in Zig? With <code>catch</code>, we can construct a logic to handle the error value, in case it happens in the current expression.</p>
+<p>So, we learned already about what <code>try</code> means, and we also known that both <code>try</code> and <code>catch</code> should be used alone, separate from each other. But what exactly <code>catch</code> do in Zig? With <code>catch</code>, we can construct a block of logic to handle the error value, in case it happens in the current expression.</p>
 <p>Look at the code example below. Once again, we go back to the previous example where we were trying to open a file that doesn’t exist in my computer, but this time, I use <code>catch</code> to actually implement a logic to handle the error, instead of just stopping the execution right away.</p>
 <p>More specifically, in this example, I’m using a logger object to record some logs into the system, before I return the error, and stops the execution of the program. For example, this could be some part of the codebase of a complex system that I do not have full control over, and I want to record these logs before the program crashes, so that I can debug it later (e.g.&nbsp;maybe I cannot compile the full program, and properly debug it with a debugger. So, these logs might be a valid strategy to surpass this barrier).</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dir = std.fs.cwd();</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file = dir.openFile(</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"doesnt_exist.txt"</span>, .<span class="op">{}</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>) <span class="kw">catch</span> |err| <span class="op">{</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    logger.record_context();</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    logger.log_error(err);</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> err;</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dir = std.fs.cwd();</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file = dir.openFile(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"doesnt_exist.txt"</span>, .<span class="op">{}</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>) <span class="kw">catch</span> |err| <span class="op">{</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    logger.record_context();</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    logger.log_error(err);</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> err;</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Therefore, we use <code>catch</code> to create a block of expressions that will handle the error. I can return the error value from this block of expressions, like I did in the above example, which, will make the program enter in panic mode, and, stop the execution. But I could also, return a valid value from this block of code, which would be stored in the <code>file</code> object.</p>
 <p>Notice that, instead of writing the keyword before the expression that might return the error, like we do with <code>try</code>, we write <code>catch</code> after the expression. We can open the pair of pipes (<code>|</code>), which captures the error value returned by the expression, and makes this error value available in the scope of the <code>catch</code> block as the object named <code>err</code>. In other words, because I wrote <code>|err|</code> in the code, I can access the error value returned by the expression, by using the <code>err</code> object.</p>
 <p>Although this being the most common use of <code>catch</code>, you can also use this keyword to handle the error in a “default value” style. That is, if the expression returns an error, we use the default value instead. Otherwise, we use the valid value returned by the expression.</p>
+<p>The Zig official language reference, provides a great example of this “default value” strategy with <code>catch</code>. This example is reproduced below. Notice that we are trying to parse some unsigned integer from a string object named <code>str</code>. In other words, this function is trying to transform an object of type <code>[]const u8</code> (i.e.&nbsp;an array of characters, a string, etc.) into an object of type <code>u64</code>.</p>
+<p>But this parsing process done by the function <code>parseU64()</code> may fail, resulting in a runtime error. The <code>catch</code> keyword used in this example provides an alternative value (13) to be used in case this <code>parseU64()</code> function raises an error. So, the expression below essentially means: “Hey! Please, parse this string into a <code>u64</code> for me, and store the results into the object <code>number</code>. But, if an error occurs, then, return the value <code>13</code> instead”.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> number = parseU64(str, <span class="dv">10</span>) <span class="kw">catch</span> <span class="dv">13</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>So, at the end of this process, the object <code>number</code> will contain either a <code>u64</code> integer that was parsed succesfully from the input string <code>str</code>, or, if an error in the parsing process occurs, it will contain the <code>u64</code> value <code>13</code> that was provided by the <code>catch</code> keyword as the “default”, or, the “alternative” value.</p>
+</section>
+<section id="using-if-statements" class="level3" data-number="9.2.3">
+<h3 data-number="9.2.3" class="anchored" data-anchor-id="using-if-statements"><span class="header-section-number">9.2.3</span> Using if statements</h3>
+<p>Now, you can also use if statements to handle errors in your Zig code. In the example below, I’m reproducing the previous example, where we try to parse an integer value from an input string with a function named <code>parseU64()</code>.</p>
+<p>We execute the expression inside the “if”. If this expression returns an error value, the “if branch” (or, the “true branch”) of the if statement is not executed. But if this expression returns a valid value instead, then, this value is unwrapped into the <code>number</code> object.</p>
+<p>This means that, if the <code>parseU64()</code> expression returns a valid value, this value becomes available inside the scope of this “if branch” (i.e.&nbsp;the “true branch”) through the object that we listed inside the pair of pipe charactes (<code>|</code>), which is the object <code>number</code>.</p>
+<p>If an error occurs, we can use an “else branch” (or the “false branch”) of the if statement to handle the error. In the example below, we are using the <code>else</code> in the if statement to unwrap the error value (that was returned by <code>parseU64()</code>) into the <code>err</code> object, and handle the error.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> (parseU64(str, <span class="dv">10</span>)) |number| <span class="op">{</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// do something with `number` here</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> <span class="kw">else</span> |err| <span class="op">{</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">// handle the error value.</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now, if the expression that you are executing returns different types of error values, and you want to take a different action in each of these types of error values, the <code>catch</code> keyword becomes limited.</p>
+<p>For this type of situation, the official documentation of the language suggests the use of a switch statement with an if statement <span class="citation" data-cites="zigdocs">(<a href="../references.html#ref-zigdocs" role="doc-biblioref">Zig Software Foundation 2024b</a>)</span>. The basic idea is, to use the if statement to execute the expression, and use the “else branch” to pass the error value to a switch statement, where you define a different action for each type of error value that might be returned by the expression executed in the if statement.</p>
+<p>The example below demonstrates this idea. We first try to add (or register) a set of tasks to a queue. If this “registration process” occurs well, we then try to distribute these tasks across the workers of our system. But if this “registration process” returns an error value, we then use a switch statement in the “else branch” to handle each possible error value.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> (add_tasks_to_queue(&amp;queue, tasks)) |_| <span class="op">{</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    distribute_tasks(&amp;queue);</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> <span class="kw">else</span> |err| <span class="kw">switch</span> (err) <span class="op">{</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">error</span>.InvalidTaskName =&gt; <span class="op">{</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>        <span class="co">// do something</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>,</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">error</span>.TimeoutTooBig =&gt; <span class="op">{</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        <span class="co">// do something</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>,</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">error</span>.QueueNotFound =&gt; <span class="op">{</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>        <span class="co">// do somethimg</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>,</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">// and all the other error options ...</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="the-errdefer-keyword" class="level3" data-number="9.2.4">
+<h3 data-number="9.2.4" class="anchored" data-anchor-id="the-errdefer-keyword"><span class="header-section-number">9.2.4</span> The <code>errdefer</code> keyword</h3>
+<p>A commom pattern in C programs in general, is to clean resources when an error occurs during the execution of the program. In other words, one commom way to handle errors, is to perform “cleanup actions” before we exit our program. This garantees that a runtime error does not make our program to leak resources of the system.</p>
+<p>The <code>errdefer</code> keyword is a tool to perform such “cleanup actions” in hostile situations. This keyword is commonly used to clean (or to free) allocated resources, before the execution of our program get’s stopped because of an error value being generated.</p>
+<p>The basic idea is to provide an expression to the <code>errdefer</code> keyword. Then, <code>errdefer</code> executes this expression if, and only if, an error occurs during the execution of the current scope. In the example below, we are using an allocator object (that we presented at <a href="01-memory.html#sec-allocators" class="quarto-xref"><span>Section 2.2</span></a>) to create a new <code>User</code> object. If we are succesfull in creating and registering this new user, this <code>create_user()</code> function will return this new <code>User</code> object as it’s return value.</p>
+<p>However, if for some reason, an error value is generated by some expression that is after the <code>errdefer</code> line, for example, in the <code>db.add(user)</code> expression, the expression registered by <code>errdefer</code> get’s executed before the error value is returned from the function, and before the program enters in panic mode and stops the current execution.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> create_user(db: Database, allocator: Allocator) !User <span class="op">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> user = <span class="kw">try</span> allocator.create(User);</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">errdefer</span> allocator.destroy(user);</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Register new user in the Database.</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> db.register_user(user);</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> user;</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>By using <code>errdefer</code> to destroy the <code>user</code> object that we have just created, we garantee that the memory allocated for this <code>user</code> object get’s freed, before the execution of the program stops.</p>
+<p>Because if the expression <code>try db.add(user)</code> returns an error value, the execution of our program stops, and we loose all references and control over the memory that we have allocated for the <code>user</code> object. As a result, if we do not free the memory associated with the <code>user</code> object before the program stops, we cannot free this memory anymore. We simply loose our chance to do the right thing. That is why <code>errdefer</code> is essential in this situation.</p>
+<p>Having all this in mind, the <code>errdefer</code> keyword is different but also similar to the <code>defer</code> keyword. The only difference between the two is when the provided expression get’s executed. The <code>defer</code> keyword always execute the provided expression at the end of the current scope, while <code>errdefer</code> executes the provided expression when an error occurs in the current scope.</p>
+</section>
 </section>
 <section id="sec-unions" class="level2" data-number="9.3">
-<h2 data-number="9.3" class="anchored" data-anchor-id="sec-unions"><span class="header-section-number">9.3</span> Union objects in Zig</h2>
-<p>Unions in Zig are equivalent to <a href="https://docs.python.org/3/library/typing.html#typing.Union"><code>typing.Union</code> in Python</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> for example. An union object is just a list of possible data types that an object can have.</p>
+<h2 data-number="9.3" class="anchored" data-anchor-id="sec-unions"><span class="header-section-number">9.3</span> Union type in Zig</h2>
+<p>An union type defines a set of types that an object can be. It is like a list of options. Each option is a type that an object can assume. Therefore, unions in Zig have the same meaning, or, the same role as unions in C. They are used for the same purpose. You could also say that unions in Zig produces a similar effect to <a href="https://docs.python.org/3/library/typing.html#typing.Union"><code>typing.Union</code> in Python</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
+<p>For example, you might be creating an API that sends data to a data lake, hosted in some private cloud infrastructure. Suppose you created different structs in your codebase, to store the necessary information that you need, in order to connect to the services of each mainstream data lake service (Amazon S3, Azure Blob, etc.).</p>
+<p>Now, suppose you also have a function named <code>send_event()</code> that receives an event as input, and, a target data lake, and it sends the input event to the data lake specified in the target data lake argument. But this target data lake could be any of the three mainstream data lakes services (Amazon S3, Azure Blob, etc.). Here is where an union can help you.</p>
+<p>The union <code>LakeTarget</code> defined below allows the <code>lake_target</code> argument of <code>send_event()</code> to be either an object of type <code>AzureBlob</code>, or type <code>AmazonS3</code>, or type <code>GoogleGCP</code>. This union allows the <code>send_event()</code> function to receive an object of any of these three types as input in the <code>lake_target</code> argument.</p>
+<p>Remember that each of these three types (<code>AmazonS3</code>, <code>GoogleGCP</code> and <code>AzureBlob</code>) are separate structs that we defined in our source code. So, at first glance, they are separate data types in our source code. But is the <code>union</code> keyword that unifies them into a single data type called <code>LakeTarget</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> LakeTarget = <span class="kw">union</span> <span class="op">{</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    azure: AzureBlob,</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    amazon: AmazonS3,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    google: GoogleGCP,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> send_event(</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    event: Event,</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    lake_target: LakeTarget</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>) -&gt; <span class="dt">bool</span> <span class="op">{</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">// body of the function ...</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>An union definition is composed by a list of data members. Each data member is of a specific data type. In the example above, the <code>LakeTarget</code> union have three data members (<code>azure</code>, <code>amazon</code>, <code>google</code>). When you instantiate an object that uses an union type, you can only use one of it’s data members in this instantiation.</p>
+<p>You could also interpret this as: only one data member of an union type can be activated at a time, the other data members remain deactivated and unaccessible. For example, if you create a <code>LakeTarget</code> object that uses the <code>azure</code> data member, you can no longer use or access the data members <code>google</code> or <code>amazon</code>. It is like if these other data members didn’t exist at all in the <code>LakeTarget</code> type.</p>
+<p>You can see this logic in the example below. Notice that, we first instantiate the union object using the <code>azure</code> data member. As a result, this <code>target</code> object contains only the <code>azure</code> data member inside of it. Only this data member is active in this object. That is why the last line in this code example is invalid. Because we are trying to instantiate the data member <code>google</code>, which is currently inactive for this <code>target</code> object, and as a result, the program enters in panic mode warning us about this mistake through a loud error message.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> target = LakeTarget <span class="op">{</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    .azure = AzureBlob.init()</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co">// Only the `azure` data member exist inside</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co">// the `target` object, and, as a result, this</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co">// line below is invalid:</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>target.google = GoogleGCP.init();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>thread 2177312 panic: access of union field 'google' while
+    field 'azure' is active:
+    target.google = GoogleGCP.init();
+          ^</code></pre>
+<p>So, when you instantiate an union object, you must choose one of the data types (or, one of the data members) listed in the union type. In the example above, I choose to use the <code>azure</code> data member, and, as a result, all other data members were automatically deactivated, and you can no longer use them after you instantiate the object.</p>
+<p>You can activate another data member by completely redefining the entire enum object. In the example below, I initially use the <code>azure</code> data member. But then, I redefine the <code>target</code> object to use a new <code>LakeTarget</code> object, which uses this time the <code>google</code> data member.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> target = LakeTarget <span class="op">{</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    .azure = AzureBlob.init()</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>target = LakeTarget <span class="op">{</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    .google = GoogleGCP.init()</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>An curious fact about union types, is that, at first, you cannot use them in switch statements (that we preseted at <a href="01-zig-weird.html#sec-switch" class="quarto-xref"><span>Section 1.9.2</span></a>). In other words, if you have an object of type <code>LakeTarget</code> for example, you cannot give this object to a switch statement as input.</p>
+<p>But what if you really need to do so? What if you actually need to provide an “union object” to a switch statement? The answer to this question relies on another special type in Zig, which are the <em>tagged unions</em>. To create a tagged union, all you have to do is to add an enum type into your union declaration.</p>
+<p>As an example of a tagged union in Zig, take the <code>Registry</code> type exposed below. This type comes from the <a href="https://github.com/ziglang/zig/blob/30b4a87db711c368853b3eff8e214ab681810ef9/tools/spirv/grammar.zig"><code>grammar.zig</code> module</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> from the Zig repository. This union type lists different types of registries. But notice this time, the use of <code>(enum)</code> after the <code>union</code> keyword. This is what makes this union type a tagged union. Also, by being a tagged union, an object of this <code>Registry</code> type can be used as input in a switch statement. This is all you have to do. Just add <code>(enum)</code> to your <code>union</code> declaration, and you can use it in switch statements.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">const</span> Registry = <span class="kw">union</span>(<span class="kw">enum</span>) <span class="op">{</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    core: CoreRegistry,</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    extension: ExtensionRegistry,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
 <div id="ref-zigoverview" class="csl-entry" role="listitem">
-Zig Software Foundation. 2024. <span>“In-Depth Overview.”</span> Zig Software Foundation. <a href="https://ziglang.org/learn/overview/">https://ziglang.org/learn/overview/</a>.
+Zig Software Foundation. 2024a. <span>“In-Depth Overview.”</span> Zig Software Foundation. <a href="https://ziglang.org/learn/overview/">https://ziglang.org/learn/overview/</a>.
+</div>
+<div id="ref-zigdocs" class="csl-entry" role="listitem">
+———. 2024b. <span>“Language Reference.”</span> Zig Software Foundation. <a href="https://ziglang.org/documentation/master/">https://ziglang.org/documentation/master/</a>.
 </div>
 </div>
 </section>
@@ -394,6 +582,7 @@ Zig Software Foundation. 2024. <span>“In-Depth Overview.”</span> Zig Softwar
 <hr>
 <ol>
 <li id="fn1"><p><a href="https://docs.python.org/3/library/typing.html#typing.Union" class="uri">https://docs.python.org/3/library/typing.html#typing.Union</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p><a href="https://github.com/ziglang/zig/blob/30b4a87db711c368853b3eff8e214ab681810ef9/tools/spirv/grammar.zig" class="uri">https://github.com/ziglang/zig/blob/30b4a87db711c368853b3eff8e214ab681810ef9/tools/spirv/grammar.zig</a>.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
