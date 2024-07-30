@@ -474,7 +474,6 @@ fn create_user(db: Database, allocator: Allocator) !User {
 By using `errdefer` to destroy the `user` object that we have just created,
 we garantee that the memory allocated for this `user` object
 get's freed, before the execution of the program stops.
-
 Because if the expression `try db.add(user)` returns an error value,
 the execution of our program stops, and we loose all references and control over the memory
 that we have allocated for the `user` object.
@@ -482,11 +481,46 @@ As a result, if we do not free the memory associated with the `user` object befo
 we cannot free this memory anymore. We simply loose our chance to do the right thing.
 That is why `errdefer` is essential in this situation.
 
-Having all this in mind, the `errdefer` keyword is different but also similar
-to the `defer` keyword. The only difference between the two is when the provided expression
-get's executed. The `defer` keyword always execute the provided expression at the end of the
-current scope, while `errdefer` executes the provided expression when an error occurs in the
+Just to make very clear the differences between `defer` (which I described at @sec-defer)
+and `errdefer`, it might be worth to discuss the subject a bit further.
+You might still have the question "why use `errdefer` if we can use `defer` instead?"
+in your mind.
+
+Although being similar, the key difference between `errdefer` and `defer` keyword
+is when the provided expression get's executed.
+The `defer` keyword always execute the provided expression at the end of the
+current scope, no matter how your code exits this scope.
+In contrast, `errdefer` executes the provided expression only when an error occurs in the
 current scope.
+
+This becomes important if a resource that you allocate in the
+current scope get's freed later in your code, in a different scope.
+The `create_user()` functions is an example of this. If you think
+closely about this function, you will notice that this function returns
+the `user` object as the result.
+
+In other words, the allocated memory for the `user` object does not get
+freed inside the `create_user()`, if the function returns succesfully.
+So, if an error does not occur inside this function, the `user` object
+is returned from the function, and probably, the code that runs after
+this `create_user()` function will be responsible for freeying
+the memory of the `user` object.
+
+But what if an error do occur inside the `create_user()`? What happens then?
+This would mean that the execution of your code would stop in this `create_user()`
+function, and, as a consequence, the code that runs after this `create_user()`
+function would simply not run, and, as a result, the memory of the `user` object
+would not be freed before your program stops.
+
+This is the perfect scenario for `errdefer`. We use this keyword to garantee
+that our program will free the allocated memory for the `user` object,
+even if an error occurs inside the `create_user()` function.
+
+If you allocate and free some memory for an object in the same scope, then,
+just use `defer` and be happy, `errdefer` have no use for you in such situation.
+But if you allocate some memory in a scope A, but you only free this memory
+later, in a scope B for example, then, `errdefer` becomes useful to avoid leaking memory
+in sketchy situations.
 
 
 
