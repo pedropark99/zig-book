@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.549">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>An Introduction to Zig - 2&nbsp; Structs, Modules and Control Flow</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../Chapters/01-memory.html" rel="next">
+<link href="../Chapters/01-zig-weird.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/03-structs.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Structs, Modules and Control Flow</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">An Introduction to Zig</a> 
+        <div class="sidebar-tools-main">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Welcome</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-zig-weird.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Introducing Zig</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/03-structs.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Structs, Modules and Control Flow</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-memory.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Memory and Allocators</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-base64.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Building a base64 encoder/decoder</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/02-debugging.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Debugging Zig applications</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/05-pointers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Pointers and Optionals</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/04-http-server.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Building a HTTP Server from scratch</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/03-unittests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/07-build-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Build System</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/09-error-handling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Error handling and unions</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-zig-control-flow" id="toc-sec-zig-control-flow" class="nav-link active" data-scroll-target="#sec-zig-control-flow"><span class="header-section-number">2.1</span> Control flow</a>
+  <ul class="collapse">
+  <li><a href="#ifelse-statements" id="toc-ifelse-statements" class="nav-link" data-scroll-target="#ifelse-statements"><span class="header-section-number">2.1.1</span> If/else statements</a></li>
+  <li><a href="#sec-switch" id="toc-sec-switch" class="nav-link" data-scroll-target="#sec-switch"><span class="header-section-number">2.1.2</span> Swith statements</a></li>
+  <li><a href="#sec-defer" id="toc-sec-defer" class="nav-link" data-scroll-target="#sec-defer"><span class="header-section-number">2.1.3</span> The <code>defer</code> keyword</a></li>
+  <li><a href="#for-loops" id="toc-for-loops" class="nav-link" data-scroll-target="#for-loops"><span class="header-section-number">2.1.4</span> For loops</a></li>
+  <li><a href="#while-loops" id="toc-while-loops" class="nav-link" data-scroll-target="#while-loops"><span class="header-section-number">2.1.5</span> While loops</a></li>
+  <li><a href="#using-break-and-continue" id="toc-using-break-and-continue" class="nav-link" data-scroll-target="#using-break-and-continue"><span class="header-section-number">2.1.6</span> Using <code>break</code> and <code>continue</code></a></li>
+  </ul></li>
+  <li><a href="#sec-structs-and-oop" id="toc-sec-structs-and-oop" class="nav-link" data-scroll-target="#sec-structs-and-oop"><span class="header-section-number">2.2</span> Structs and OOP</a></li>
+  <li><a href="#sec-anonymous-struct-literals" id="toc-sec-anonymous-struct-literals" class="nav-link" data-scroll-target="#sec-anonymous-struct-literals"><span class="header-section-number">2.3</span> Anonymous struct literals</a></li>
+  <li><a href="#sec-type-inference" id="toc-sec-type-inference" class="nav-link" data-scroll-target="#sec-type-inference"><span class="header-section-number">2.4</span> Type inference</a></li>
+  <li><a href="#modules" id="toc-modules" class="nav-link" data-scroll-target="#modules"><span class="header-section-number">2.5</span> Modules</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Structs, Modules and Control Flow</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>I introduced a lot of the Zig’s syntax to you in the last chapter, specially at <a href="01-zig-weird.html#sec-root-file" class="quarto-xref"><span>Section 1.2.2</span></a> and <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>. But we still need to discuss about some other very important elements of the language that you will use constantly on your day-to-day routine.</p>
+<p>We begin this chapter by talking about the different keywords and structures in Zig related to control flow (e.g.&nbsp;loops and if statements). Then, we talk about structs and how they can be used to do some basic Object-Oriented (OOP) patterns in Zig. We also talk about type inference, which help us to write less code and achieve the same results. Finally, we end this chapter by discussing modules, and how they relate to structs.</p>
+<section id="sec-zig-control-flow" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="sec-zig-control-flow"><span class="header-section-number">2.1</span> Control flow</h2>
+<p>Sometimes, you need to make decisions in your program. Maybe you need to decide wether to execute or not a specific piece of code. Or maybe, you need to apply the same operation over a sequence of values. These kinds of tasks, involve using structures that are capable of changing the “control flow” of our program.</p>
+<p>In computer science, the term “control flow” usually refers to the order in which expressions (or commands) are evaluated in a given language or program. But this term is also used to refer to structures that are capable of changing this “evaluation order” of the commands executed by a given language/program.</p>
+<p>These structures are better known by a set of terms, such as: loops, if/else statements, switch statements, among others. So, loops and if/else statements are examples of structures that can change the “control flow” of our program. The keywords <code>continue</code> and <code>break</code> are also examples of symbols that can change the order of evaluation, since they can move our program to the next iteration of a loop, or make the loop stop completely.</p>
+<section id="ifelse-statements" class="level3" data-number="2.1.1">
+<h3 data-number="2.1.1" class="anchored" data-anchor-id="ifelse-statements"><span class="header-section-number">2.1.1</span> If/else statements</h3>
+<p>An if/else statement performs an “conditional flow operation”. A conditional flow control (or choice control) allows you to execute or ignore a certain block of commands based on a logical condition. Many programmers and computer science professionals also use the term “branching” in this case. In essence, we use if/else statements to use the result of a logical test to decide whether or not to execute a given block of commands.</p>
+<p>In Zig, we write if/else statements by using the keywords <code>if</code> and <code>else</code>. We start with the <code>if</code> keyword followed by a logical test inside a pair of parentheses, and then, a pair of curly braces with contains the lines of code to be executed in case the logical test returns the value <code>true</code>.</p>
+<p>After that, you can optionally add an <code>else</code> statement. Just add the <code>else</code> keyword followed by a pair of curly braces, with the lines of code to executed in case the logical test defined in the <code>if</code> returns <code>false</code>.</p>
+<p>In the example below, we are testing if the object <code>x</code> contains a number that is greater than 10. Judging by the output printed to the console, we know that this logical test returned <code>false</code>. Because the output in the console is compatible with the line of code present in the <code>else</code> branch of the if/else statement.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> x = <span class="dv">5</span>;</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> (x &gt; <span class="dv">10</span>) <span class="op">{</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">"x &gt; 10!</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{}</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">"x &lt;= 10!</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{}</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>x &lt;= 10!</code></pre>
+</div>
+</div>
+</section>
+<section id="sec-switch" class="level3" data-number="2.1.2">
+<h3 data-number="2.1.2" class="anchored" data-anchor-id="sec-switch"><span class="header-section-number">2.1.2</span> Swith statements</h3>
+<p>Switch statements are also available in Zig. A switch statement in Zig have a similar syntax to a switch statement in Rust. As you would expect, to write a switch statement in Zig we use the <code>switch</code> keyword. We provide the value that we want to “switch over” inside a pair of parentheses. Then, we list the possible combinations (or “branchs”) inside a pair of curly braces.</p>
+<p>Let’s take a look at the code example below. You can see in this example that, I’m creating an enum type called <code>Role</code>. We talk more about enums at <a href="04-http-server.html#sec-enum" class="quarto-xref"><span>Section 7.6</span></a>. But in essence, this <code>Role</code> type is listing different types of roles in a fictitious company, like <code>SE</code> for Software Engineer, <code>DE</code> for Data Engineer, <code>PM</code> for Product Manager, etc.</p>
+<p>Notice that we are using the value from the <code>role</code> object in the switch statement, to discover which exact area we need to store in the <code>area</code> variable object. Also notice that we are using type inference inside the switch statement, with the dot character, as we described at <a href="#sec-type-inference" class="quarto-xref"><span>Section 2.4</span></a>. This makes the <code>zig</code> compiler infer the correct data type of the values (<code>PM</code>, <code>SE</code>, etc.) for us.</p>
+<p>Also notice that, we are grouping multiple values in the same branch of the switch statement. We just separate each possible value with a comma. So, for example, if <code>role</code> contains either <code>DE</code> or <code>DA</code>, the <code>area</code> variable would contain the value <code>"Data &amp; Analytics"</code>, instead of <code>"Platform"</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Role = <span class="kw">enum</span> <span class="op">{</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    SE, DPE, DE, DA, PM, PO, KS</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> area: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> role = Role.SE;</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">switch</span> (role) <span class="op">{</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>        .PM, .SE, .DPE, .PO =&gt; <span class="op">{</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>            area = <span class="st">"Platform"</span>;</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>        .DE, .DA =&gt; <span class="op">{</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>            area = <span class="st">"Data &amp; Analytics"</span>;</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>,</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>        .KS =&gt; <span class="op">{</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>            area = <span class="st">"Sales"</span>;</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>,</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>area<span class="op">}</span>);</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Platform</code></pre>
+</div>
+</div>
+<p>Now, one very important aspect about this switch statement presented in the code example above, is that it exhaust all existing possibilities. In other words, all possible values that could be found inside the <code>order</code> object are explicitly handled in this switch statement.</p>
+<p>Since the <code>role</code> object have type <code>Role</code>, the only possible values to be found inside this object are <code>PM</code>, <code>SE</code>, <code>DPE</code>, <code>PO</code>, <code>DE</code>, <code>DA</code> and <code>KS</code>. There is no other possible value to be stored in this <code>role</code> object. This what “exhaust all existing possibilities” means. The switch statement covers every possible case.</p>
+<p>In Zig, switch statements must exhaust all existing possibilities. You cannot write a switch statement, and leave an edge case with no expliciting action to be taken. This is a similar behaviour to switch statements in Rust, which also have to handle all possible cases.</p>
+<p>Take a look at the <code>dump_hex_fallible()</code> function below as an example. This function also comes from the Zig Standard Library, but this time, it comes from the <a href="https://github.com/ziglang/zig/blob/master/lib/std/debug.zig"><code>debug.zig</code> module</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. There are multiple lines in this function, but I omitted them to focus solely on the switch statement found in this function. Notice that this switch statement have four possible cases, or four explicit branches. Also, notice that we used an <code>else</code> branch in this case. Whenever you have multiple possible cases in your switch statement which you want to apply the same exact action, you can use an <code>else</code> branch to do that.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> dump_hex_fallible(bytes: []<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Many lines ...</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">switch</span> (byte) <span class="op">{</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="ch">'\n'</span> =&gt; <span class="kw">try</span> writer.writeAll(<span class="st">"␊"</span>),</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        <span class="ch">'\r'</span> =&gt; <span class="kw">try</span> writer.writeAll(<span class="st">"␍"</span>),</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        <span class="ch">'\t'</span> =&gt; <span class="kw">try</span> writer.writeAll(<span class="st">"␉"</span>),</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">else</span> =&gt; <span class="kw">try</span> writer.writeByte(<span class="ch">'.'</span>),</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Many users would also use an <code>else</code> branch to handle a “not supported” case. That is, a case that cannot be properly handled by your code, or, just a case that should not be “fixed”. So many programmers use an <code>else</code> branch to panic (or raise an error) to stop the current execution.</p>
+<p>Take the code example below as an example. We can see that, we are handling the cases for the <code>level</code> object being either 1, 2, or 3. All other possible cases are not supported by default, and, as consequence, we raise an runtime error in these cases, through the <code>@panic()</code> built-in function.</p>
+<p>Also notice that, we are assigning the result of the switch statement to a new object called <code>category</code>. This is another thing that you can do with switch statements in Zig. If the branchs in this switch statement output some value as result, you can store the result value of the switch statement into a new object.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> level: <span class="dt">u8</span> = <span class="dv">4</span>;</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> category = <span class="kw">switch</span> (level) <span class="op">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span>, <span class="dv">2</span> =&gt; <span class="st">"beginner"</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="dv">3</span> =&gt; <span class="st">"professional"</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">else</span> =&gt; <span class="op">{</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        <span class="bu">@panic</span>(<span class="st">"Not supported level!"</span>);</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>category<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>thread 13103 panic: Not supported level!
+t.zig:9:13: 0x1033c58 in main (switch2)
+            @panic("Not supported level!");
+            ^</code></pre>
+<p>Furthermore, you can also use ranges of values in switch statements. That is, you can create a branch in your switch statement that is used whenever the input value is contained in a range. These range expressions are created with the operator <code>...</code>. Is important to emphasize that the ranges created by this operator are inclusive on both ends.</p>
+<p>For example, I could easily change the code example above to support all levels between 0 and 100. Like this:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> level: <span class="dt">u8</span> = <span class="dv">4</span>;</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> category = <span class="kw">switch</span> (level) <span class="op">{</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="dv">0</span>...<span class="dv">25</span> =&gt; <span class="st">"beginner"</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="dv">26</span>...<span class="dv">75</span> =&gt; <span class="st">"intermediary"</span>,</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="dv">76</span>...<span class="dv">100</span> =&gt; <span class="st">"professional"</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">else</span> =&gt; <span class="op">{</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        <span class="bu">@panic</span>(<span class="st">"Not supported level!"</span>);</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>,</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>category<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>beginner</code></pre>
+</div>
+</div>
+<p>This is neat, and it works with character ranges too. That is, I could simply write <code>'a'...'z'</code>, to match any character value that is a lowercase letter, and it would work fine.</p>
+</section>
+<section id="sec-defer" class="level3" data-number="2.1.3">
+<h3 data-number="2.1.3" class="anchored" data-anchor-id="sec-defer"><span class="header-section-number">2.1.3</span> The <code>defer</code> keyword</h3>
+<p>With the <code>defer</code> keyword you can execute expressions at the end of the current scope. Take the <code>foo()</code> function below as an example. When we execute this function, the expression that prints the message “Exiting function …” get’s executed only at the end of the function scope.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> foo() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> std.debug.print(</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Exiting function ...</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{}</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Adding some numbers ...</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{}</span>);</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x = <span class="dv">2</span> + <span class="dv">2</span>; _ = x;</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Multiplying ...</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{}</span>);</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> y = <span class="dv">2</span> * <span class="dv">8</span>; _ = y;</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> foo();</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Adding some numbers ...
+Multiplying ...
+Exiting function ...</code></pre>
+<p>It doesn’t matter how the function exits (i.e.&nbsp;because of an error, or, because of an return statement, or whatever), just remember, this expression get’s executed when the function exits.</p>
+</section>
+<section id="for-loops" class="level3" data-number="2.1.4">
+<h3 data-number="2.1.4" class="anchored" data-anchor-id="for-loops"><span class="header-section-number">2.1.4</span> For loops</h3>
+<p>A loop allows you to execute the same lines of code multiple times, thus, creating a “repetition space” in the execution flow of your program. Loops are particularly useful when we want to replicate the same function (or the same set of commands) over several different inputs.</p>
+<p>There are different types of loops available in Zig. But the most essential of them all is probably the <em>for loop</em>. A for loop is used to apply the same piece of code over the elements of a slice or an array.</p>
+<p>For loops in Zig have a slightly different syntax that you are probably used to see in other languages. You start with the <code>for</code> keyword, then, you list the items that you want to iterate over inside a pair of parentheses. Then, inside of a pair of pipes (<code>|</code>) you should declare an identifier that will serve as your iterator, or, the “repetition index of the loop”.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (items) |value| <span class="op">{</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// code to execute</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Instead of using a <code>(value in items)</code> syntax, in Zig, for loops use the syntax <code>(items) |value|</code>. In the example below, you can see that we are looping through the items of the array stored at the object <code>name</code>, and printing to the console the decimal representation of each character in this array.</p>
+<p>If we wanted, we could also iterate through a slice (or a portion) of the array, instead of iterating through the entire array stored in the <code>name</code> object. Just use a range selector to select the section you want. For example, I could provide the expression <code>name[0..3]</code> to the for loop, to iterate just through the first 3 elements in the array.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> name = [_]<span class="dt">u8</span><span class="op">{</span><span class="ch">'P'</span>,<span class="ch">'e'</span>,<span class="ch">'d'</span>,<span class="ch">'r'</span>,<span class="ch">'o'</span><span class="op">}</span>;</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (name) |char| <span class="op">{</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d} | "</span>, .<span class="op">{</span>char<span class="op">}</span>);</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>80 | 101 | 100 | 114 | 111 | </code></pre>
+</div>
+</div>
+<p>In the above example we are using the value itself of each element in the array as our iterator. But there are many situations where we need to use an index instead of the actual values of the items.</p>
+<p>You can do that by providing a second set of items to iterate over. More precisely, you provide the range selector <code>0..</code> to the for loop. So, yes, you can use two different iterators at the same time in a for loop in Zig.</p>
+<p>But remember from <a href="01-zig-weird.html#sec-assignments" class="quarto-xref"><span>Section 1.4</span></a> that, every object you create in Zig must be used in some way. So if you declare two iterators in your for loop, you must use both iterators inside the for loop body. But if you want to use just the index iterator, and not use the “value iterator”, then, you can discard the value iterator by maching the value items to the underscore character, like in the example below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (name, <span class="dv">0</span>..) |_, i| <span class="op">{</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d} | "</span>, .<span class="op">{</span>i<span class="op">}</span>);</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>0 | 1 | 2 | 3 | 4 |</code></pre>
+</section>
+<section id="while-loops" class="level3" data-number="2.1.5">
+<h3 data-number="2.1.5" class="anchored" data-anchor-id="while-loops"><span class="header-section-number">2.1.5</span> While loops</h3>
+<p>A while loop is created from the <code>while</code> keyword. A <code>for</code> loop iterates through the items of an array, but a <code>while</code> loop will loop continuously, and infinitely, until a logical test (specified by you) becomes false.</p>
+<p>You start with the <code>while</code> keyword, then, you define a logical expression inside a pair of parentheses, and the body of the loop is provided inside a pair of curly braces, like in the example below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> i: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">while</span> (i &lt; <span class="dv">5</span>) <span class="op">{</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d} | "</span>, .<span class="op">{</span>i<span class="op">}</span>);</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    i += <span class="dv">1</span>;</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>1 | 2 | 3 | 4 | </code></pre>
+</div>
+</div>
+</section>
+<section id="using-break-and-continue" class="level3" data-number="2.1.6">
+<h3 data-number="2.1.6" class="anchored" data-anchor-id="using-break-and-continue"><span class="header-section-number">2.1.6</span> Using <code>break</code> and <code>continue</code></h3>
+<p>In Zig, you can explicitly stop the execution of a loop, or, jump to the next iteration of the loop, using the keywords <code>break</code> and <code>continue</code>, respectively. The <code>while</code> loop present in the example below, is at first sight, an infinite loop. Because the logical value inside the parenthese will always be equal to <code>true</code>. What makes this <code>while</code> loop stop when the <code>i</code> object reaches the count 10? Is the <code>break</code> keyword!</p>
+<p>Inside the while loop, we have an if statement that is constantly checking if the <code>i</code> variable is equal to 10. Since we are increasing the value of this <code>i</code> variable at each iteration of the while loop. At some point, this <code>i</code> variable will be equal to 10, and when it does, the if statement will execute the <code>break</code> expression, and, as a result, the execution of the while loop is stopped.</p>
+<p>Notice the <code>expect()</code> function from the Zig standard library after the while loop. This <code>expect()</code> function is an “assert” type of function. This function checks if the logical test provided is equal to true. If this logical test is false, the function raises an assertion error. But it is equal to true, then, the function will do nothing.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> i: <span class="dt">usize</span> = <span class="dv">0</span>;</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">while</span> (<span class="cn">true</span>) <span class="op">{</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (i == <span class="dv">10</span>) <span class="op">{</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">break</span>;</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    i += <span class="dv">1</span>;</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> std.testing.expect(i == <span class="dv">10</span>);</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"Everything worked!"</span>, .<span class="op">{}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Everything worked!</code></pre>
+</div>
+</div>
+<p>Since this code example was executed succesfully by the <code>zig</code> compiler, without raising any errors, then, we known that, after the execution of while loop, the <code>i</code> variable is equal to 10. Because if it wasn’t equal to 10, then, an error would be raised by <code>expect()</code>.</p>
+<p>Now, in the next example, we have an use case for the <code>continue</code> keyword. The if statement is constantly checking if the current index is a multiple of 2. If it is, then we jump to the next iteration of the loop directly. But it the current index is not a multiple of 2, then, the loop will simply print this index to the console.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ns = [_]<span class="dt">u8</span><span class="op">{</span><span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span><span class="op">}</span>;</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (ns) |i| <span class="op">{</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> ((i % <span class="dv">2</span>) == <span class="dv">0</span>) <span class="op">{</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">continue</span>;</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d} | "</span>, .<span class="op">{</span>i<span class="op">}</span>);</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>1 | 3 | 5 | </code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="sec-structs-and-oop" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="sec-structs-and-oop"><span class="header-section-number">2.2</span> Structs and OOP</h2>
+<p>Zig is a language more closely related to C (which is a procedural language), than it is to C++ or Java (which are object-oriented languages). Because of that, you do not have advanced OOP (Object-Oriented Programming) patterns available in Zig, such as classes, interfaces or class inheritance. Nonetheless, OOP in Zig is still possible by using struct definitions.</p>
+<p>With struct definitions, you can create (or define) a new data type in Zig. These struct definitions work the same way as they work in C. You give a name to this new struct (or, to this new data type you are creating), then, you list the data members of this new struct. You can also register functions inside this struct, and they become the methods of this particular struct (or data type), so that, every object that you create with this new type, will always have these methods available and associated with them.</p>
+<p>In C++, when we create a new class, we normally have a constructor method (or, a constructor function) to construct or to instantiate every object of this particular class, and you also have a destructor method (or a destructor function) that is the function responsible for destroying every object of this class.</p>
+<p>In Zig, we normally declare the constructor and the destructor methods of our structs, by declaring an <code>init()</code> and a <code>deinit()</code> methods inside the struct. This is just a naming convention that you will find across the entire Zig standard library. So, in Zig, the <code>init()</code> method of a struct is normally the constructor method of the class represented by this struct. While the <code>deinit()</code> method is the method used for destroying an existing instance of that struct.</p>
+<p>The <code>init()</code> and <code>deinit()</code> methods are both used extensively in Zig code, and you will see both of them being used when we talk about allocators at <a href="01-memory.html#sec-allocators" class="quarto-xref"><span>Section 3.2</span></a>. But, as another example, let’s build a simple <code>User</code> struct to represent an user of some sort of system. If you look at the <code>User</code> struct below, you can see the <code>struct</code> keyword, and inside of a pair of curly braces, we write the struct’s body.</p>
+<p>Notice the data members of this struct, <code>id</code>, <code>name</code> and <code>email</code>. Every data member have it’s type explicitly annotated, with the colon character (<code>:</code>) syntax that we described earlier at <a href="01-zig-weird.html#sec-root-file" class="quarto-xref"><span>Section 1.2.2</span></a>. But also notice that every line in the struct body that describes a data member, ends with a comma character (<code>,</code>). So every time you declare a data member in your Zig code, always end the line with a comma character, instead of ending it with the traditional semicolon character (<code>;</code>).</p>
+<p>Next, also notice in this example, that we registrated an <code>init()</code> function as a method of this <code>User</code> struct. This <code>init()</code> method is the constructor method that you use to instantiate every new <code>User</code> object. That is why this <code>init()</code> function return an <code>User</code> object as result.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> User = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    id: <span class="dt">u64</span>,</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    name: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    email: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(id: <span class="dt">u64</span>,</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>                name: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>                email: []<span class="kw">const</span> <span class="dt">u8</span>) User <span class="op">{</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> User <span class="op">{</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>            .id = id,</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>            .name = name,</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>            .email = email</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> print_name(self: User) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>self.name<span class="op">}</span>);</span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> u = User.init(<span class="dv">1</span>, <span class="st">"pedro"</span>, <span class="st">"email@gmail.com"</span>);</span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> u.print_name();</span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>pedro</code></pre>
+</div>
+</div>
+<p>The <code>pub</code> keyword plays an important role in struct declarations, and OOP in Zig. Every method that you declare in your struct that is marked with the keyword <code>pub</code>, becomes a public method of this particular struct.</p>
+<p>So every method that you create in your struct, is, at first, a private method of that struct. Meaning that, this method can only be called from within this struct. But, if you mark this method as public, with the keyword <code>pub</code>, then, you can call the method directly from the <code>User</code> object you have in your code.</p>
+<p>In other words, the functions marked by the keyword <code>pub</code> are members of the public API of that struct. For example, if I did not marked the <code>print_name()</code> method as public, then, I could not execute the line <code>u.print_name()</code>. Because I would not be authorized to call this method directly in my code.</p>
+</section>
+<section id="sec-anonymous-struct-literals" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="sec-anonymous-struct-literals"><span class="header-section-number">2.3</span> Anonymous struct literals</h2>
+<p>You can declare a struct object as a literal value. When we do that, we normally specify the data type of this struct literal by writing it’s data type just before the opening curly braces. For example, I could write a struct literal of type <code>User</code> that we defined in the previous section like this:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> eu = User <span class="op">{</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>    .id = <span class="dv">1</span>,</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"Pedro"</span>,</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>    .email = <span class="st">"someemail@gmail.com"</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>_ = eu;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>However, in Zig, we can also write an anonymous struct literal. That is, you can write a struct literal, but not especify explicitly the type of this particular struct. An anonymous struct is written by using the syntax <code>.{}</code>. So, we essentially replaced the explicit type of the struct literal with a dot character (<code>.</code>).</p>
+<p>As we described at <a href="#sec-type-inference" class="quarto-xref"><span>Section 2.4</span></a>, when you put a dot before a struct literal, the type of this struct literal is automatically inferred by the <code>zig</code> compiler. In essence, the <code>zig</code> compiler will look for some hint of what is the type of that struct. It can be the type annotation of an function argument, or the return type annotation of the function that you are using, or the type annotation of a variable. If the compiler do find such type annotation, then, it will use this type in your literal struct.</p>
+<p>Anonymous structs are very commom to use in function arguments in Zig. One example that you have seen already constantly, is the <code>print()</code> function from the <code>stdout</code> object. This function takes two arguments. The first argument, is a template string, which should contain string format specifiers in it, which tells how the values provided in the second argument should be printed into the message.</p>
+<p>While the second argument is a struct literal that lists the values to be printed into the template message specified in the first argument. You normally want to use an anonymous struct literal here, so that, the <code>zig</code> compiler do the job of specifying the type of this particular anonymous struct for you.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Hello, {s}!</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="st">"world"</span><span class="op">}</span>);</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Hello, world!</code></pre>
+</div>
+</div>
+</section>
+<section id="sec-type-inference" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="sec-type-inference"><span class="header-section-number">2.4</span> Type inference</h2>
+<p>Zig is kind of a strongly typed language. I say “kind of” because there are situations where you don’t have to explicitly write the type of every single object in your source code, as you would expect from a traditional strongly typed language, such as C and C++.</p>
+<p>In some situations, the <code>zig</code> compiler can use type inference to solves the data types for you, easing some of the burden that you carry as a developer. The most commom way this happens is through function arguments that receives struct objects as input.</p>
+<p>In general, type inference in Zig is done by using the dot character (<code>.</code>). Everytime you see a dot character written before a struct literal, or before a enum value, or something like that, you know that this dot character is playing a special party in this place. More specifically, it is telling the <code>zig</code> compiler something on the lines of: “Hey! Can you infer the type of this value for me? Please!”. In other words, this dot character is playing a role similar to the <code>auto</code> keyword in C++.</p>
+<p>I give you some examples of this at <a href="#sec-anonymous-struct-literals" class="quarto-xref"><span>Section 2.3</span></a>, where we present anonymous struct literals. Anonymous struct literals are, essentially, struct literals that use type inference to infer the exact type of this particular struct literal. This type inference is done by looking for some minimal hint of the correct data type to be used. You could say that the <code>zig</code> compiler looks for any neighbouring type annotation that might tell him what would be the correct type.</p>
+<p>Another commom place where we use type inference in Zig is at switch statements (which we talk about at <a href="#sec-switch" class="quarto-xref"><span>Section 2.1.2</span></a>). So I also gave some other examples of type inference at <a href="#sec-switch" class="quarto-xref"><span>Section 2.1.2</span></a>, where we were inferring the data types of enum values listed inside of switch statements (e.g.&nbsp;<code>.DE</code>). But as another example, take a look at this <code>fence()</code> function reproduced below, which comes from the <a href="https://github.com/ziglang/zig/blob/master/lib/std/atomic.zig"><code>atomic.zig</code> module</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> of the Zig Standard Library.</p>
+<p>There are a lot of things in this function that we haven’t talked about yet, such as: what <code>comptime</code> means? <code>inline</code>? <code>extern</code>? What is this star symbol before <code>Self</code>? Let’s just ignore all of these things, and focus solely on the switch statement that is inside this function.</p>
+<p>We can see that this switch statement uses the <code>order</code> object as input. This <code>order</code> object is one of the inputs of this <code>fence()</code> function, and we can see in the type annotation, that this object is of type <code>AtomicOrder</code>. We can also see a bunch of values inside the switch statements that begins with a dot character, such as <code>.release</code> and <code>.acquire</code>.</p>
+<p>Because these weird values contain a dot character before them, we are asking the <code>zig</code> compiler to infer the types of these values inside the switch statement. Then, the <code>zig</code> compiler is looking into the current context where these values are being used, and it is trying to infer the types of these values.</p>
+<p>Since they are being used inside a switch statement, the <code>zig</code> compiler looks into the type of the input object given to the switch statement, which is the <code>order</code> object in this case. Because this object have type <code>AtomicOrder</code>, the <code>zig</code> compiler infers that these values are data members from this type <code>AtomicOrder</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">inline</span> <span class="kw">fn</span> fence(self: *Self, <span class="kw">comptime</span> order: AtomicOrder) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// LLVM's ThreadSanitizer doesn't support the normal fences so we specialize for it.</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (builtin.sanitize_thread) <span class="op">{</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> tsan = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_acquire(addr: *anyopaque) <span class="dt">void</span>;</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_release(addr: *anyopaque) <span class="dt">void</span>;</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> addr: *anyopaque = self;</span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">switch</span> (order) <span class="op">{</span></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>            .unordered, .monotonic =&gt; <span class="bu">@compileError</span>(<span class="bu">@tagName</span>(order) ++ <span class="st">" only applies to atomic loads and stores"</span>),</span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>            .acquire =&gt; tsan.__tsan_acquire(addr),</span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>            .release =&gt; tsan.__tsan_release(addr),</span>
+<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a>            .acq_rel, .seq_cst =&gt; <span class="op">{</span></span>
+<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_acquire(addr);</span>
+<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_release(addr);</span>
+<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>,</span>
+<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb28-19"><a href="#cb28-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb28-20"><a href="#cb28-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-21"><a href="#cb28-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="bu">@fence</span>(order);</span>
+<span id="cb28-22"><a href="#cb28-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This is how basic type inference is done in Zig. If we didn’t use the dot character before the values inside this switch statement, then, we would be forced to write explicitly the data types of these values. For example, instead of writing <code>.release</code> we would have to write <code>AtomicOrder.release</code>. We would have to do this for every single value in this switch statement, and this is a lot of work. That is why type inference is commonly used on switch statements in Zig.</p>
+</section>
+<section id="modules" class="level2" data-number="2.5">
+<h2 data-number="2.5" class="anchored" data-anchor-id="modules"><span class="header-section-number">2.5</span> Modules</h2>
+<p>We already talked about what modules are, and also, how to import other modules into you current module through <em>import statements</em>, so that you can use functionality from these other modules in your current module. But in this section, I just want to make it clear that modules are actually structs in Zig.</p>
+<p>In other words, every Zig module (i.e.&nbsp;a <code>.zig</code> file) that you write in your project is internally stored as a struct object. Take the line exposed below as an example. In this line we are importing the Zig Standard Library into our current module.</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>When we want to access the functions and objects from the standard library, we are basically accessing the data members of the struct stored in the <code>std</code> object. That is why we use the same syntax that we use in normal structs, with the dot operator (<code>.</code>) to access the data members and methods of the struct.</p>
+<p>When this “import statement” get’s executed, the result of this expression is a struct object that contains the Zig Standard Library modules, global variables, functions, etc. And this struct object get’s saved (or stored) inside the constant object named <code>std</code>.</p>
+<p>Take the <a href="https://github.com/kprotty/zap/blob/blog/src/thread_pool.zig"><code>thread_pool.zig</code> module from the project <code>zap</code></a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> as an example. This module is written as if it was a big struct. That is why we have a top-level and public <code>init()</code> method written in this module. The idea is that all top-level functions written in this module are methods from the struct, and all top-level objects and struct declarations are data members of this struct. The module is the struct itself.</p>
+<p>So you would import and use this module by doing something like this:</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ThreadPool = <span class="bu">@import</span>(<span class="st">"thread_pool.zig"</span>);</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_cpus = std.Thread.getCpuCount()</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> <span class="bu">@panic</span>(<span class="st">"failed to get cpu core count"</span>);</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_threads = std.math.cast(<span class="dt">u16</span>, num_cpus)</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> std.math.maxInt(<span class="dt">u16</span>);</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pool = ThreadPool.init(</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> .max_threads = num_threads <span class="op">}</span></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+
+
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p><a href="https://github.com/ziglang/zig/blob/master/lib/std/debug.zig" class="uri">https://github.com/ziglang/zig/blob/master/lib/std/debug.zig</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p><a href="https://github.com/ziglang/zig/blob/master/lib/std/atomic.zig" class="uri">https://github.com/ziglang/zig/blob/master/lib/std/atomic.zig</a>.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p><a href="https://github.com/kprotty/zap/blob/blog/src/thread_pool.zig" class="uri">https://github.com/kprotty/zap/blob/blog/src/thread_pool.zig</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../Chapters/01-zig-weird.html" class="pagination-link  aria-label=" &lt;span="" zig&lt;="" span&gt;"="">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Introducing Zig</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../Chapters/01-memory.html" class="pagination-link" aria-label="<span class='chapter-number'>3</span>&nbsp; <span class='chapter-title'>Memory and Allocators</span>">
+        <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Memory and Allocators</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
