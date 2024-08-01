@@ -279,7 +279,8 @@ div.csl-indent {
   <li><a href="#a-better-look-at-the-object-type" id="toc-a-better-look-at-the-object-type" class="nav-link" data-scroll-target="#a-better-look-at-the-object-type"><span class="header-section-number">1.8.2</span> A better look at the object type</a></li>
   <li><a href="#byte-vs-unicode-points" id="toc-byte-vs-unicode-points" class="nav-link" data-scroll-target="#byte-vs-unicode-points"><span class="header-section-number">1.8.3</span> Byte vs unicode points</a></li>
   </ul></li>
-  <li><a href="#other-parts-of-zig" id="toc-other-parts-of-zig" class="nav-link" data-scroll-target="#other-parts-of-zig"><span class="header-section-number">1.9</span> Other parts of Zig</a></li>
+  <li><a href="#safety-in-zig" id="toc-safety-in-zig" class="nav-link" data-scroll-target="#safety-in-zig"><span class="header-section-number">1.9</span> Safety in Zig</a></li>
+  <li><a href="#other-parts-of-zig" id="toc-other-parts-of-zig" class="nav-link" data-scroll-target="#other-parts-of-zig"><span class="header-section-number">1.10</span> Other parts of Zig</a></li>
   </ul>
 </nav>
     </div>
@@ -825,8 +826,31 @@ got codepoint E383AA
 got codepoint E382AB</code></pre>
 </section>
 </section>
-<section id="other-parts-of-zig" class="level2" data-number="1.9">
-<h2 data-number="1.9" class="anchored" data-anchor-id="other-parts-of-zig"><span class="header-section-number">1.9</span> Other parts of Zig</h2>
+<section id="safety-in-zig" class="level2" data-number="1.9">
+<h2 data-number="1.9" class="anchored" data-anchor-id="safety-in-zig"><span class="header-section-number">1.9</span> Safety in Zig</h2>
+<p>A general trend in modern low-level programming languages is safety. As our modern world become more interconnected with techology and computers, the data produced by all of this technology becomes one of the most important (and also, one of the most dangerous) assets that we have.</p>
+<p>This is probably the main reason why modern low-level programming languages have been giving great attention to safety, specially memory safety, because memory corruption is still the main target for hackers to exploit. The reality is that we don’t have an easy solution for this problem. For now, we only have techniques and strategies that mitigates these problems.</p>
+<p>As Richard Feldman explains on his <a href="https://www.youtube.com/watch?v=jIZpKpLCOiU&amp;ab_channel=GOTOConferences">most recent GOTO conference talk</a><a href="#fn18" class="footnote-ref" id="fnref18" role="doc-noteref"><sup>18</sup></a> , we haven’t figured it out yet a way to achieve <strong>true safety in technology</strong>. In other words, we haven’t found a way to build software that won’t be exploited with 100% certainty. We can greatly reduce the risks of our software being exploited, by ensuring memory safety for example. But this is not enough to achieve “true safety” territory.</p>
+<p>Because even if you write your program in a “safe language”, hackers can still exploit failures in the operational system where your program is running (e.g.&nbsp;maybe the system where your code is running have a “backdoor exploit” that can still affect your code in unexpected ways), or also, they can exploit the features from the architecture of your computer. A recently found exploit that involves memory invalidation through a feature of “memory tags” present in ARM chips is an example of that <span class="citation" data-cites="exploit1">(<a href="../references.html#ref-exploit1" role="doc-biblioref">Kim et al. 2024</a>)</span>.</p>
+<p>The question is: what Zig and other languages have been doing to mitigate this problem? If we take Rust as an example, Rust is, for the most part<a href="#fn19" class="footnote-ref" id="fnref19" role="doc-noteref"><sup>19</sup></a>, a memory safe language by enforcing specific rules to the developer. In other words, the key feature of Rust, the <em>borrow checker</em>, forces you to follow a specific logic when you are writing your Rust code, and the Rust compiler will always complain everytime you try to go out of this pattern.</p>
+<p>In contrast, the Zig language is not a memory safe language by default. Instead of forcing the developer to follow a specific rule, the Zig language achieves memory safety by offering tools that the developer can use for this purpose. In other words, the <code>zig</code> compiler does not obligates you to use such tools. But there is often no reason to not use these tools in your Zig code, so you often achieve a similar level of memory safety of Rust in Zig by simply using these tools.</p>
+<p>The tools listed below are related to memory safety in Zig. That is, they help you to achieve memory safety in your Zig code:</p>
+<ul>
+<li><code>defer</code> allows you to keep free operations phisically close to allocations. This helps you to avoid memory leaks, “use after free”, and also “double-free” problems. Furthermore, it also keeps free operations logically tied to the end of the current scope, which greatly reduces the mental overhead about object lifetime.</li>
+<li><code>errdefer</code> helps you to garantee that your program frees the allocated memory, even if a runtime error occurs.</li>
+<li>pointers and object are non-nullable by default. This helps you to avoid memory problems that might arise from de-referencing null pointers.</li>
+<li>Zig offers some native types of allocators (called “testing allocators”) that can detect memory leaks and double-frees. These types of allocators are widely used on unit tests, so they make your unit tests a weapon that you can use to detect memory problems in your code.</li>
+<li>arrays and slices in Zig have their lengths embedded in the object itself, which makes the <code>zig</code> compiler very effective on detecting “index out-of-range” type of errors, and avoiding buffer overflows.</li>
+</ul>
+<p>Despite these features that Zig offers that are related to memory safety issues, the language also have some rules that help you to achieve another type of safety, which is more related to program logic safety. These rules are:</p>
+<ul>
+<li>pointers and objects are non-nullable by default. Which eliminates an edge case that might break the logic of your program.</li>
+<li>switch statements must exaust all possible options.</li>
+<li>the <code>zig</code> compiler forces you to handle every possible error.</li>
+</ul>
+</section>
+<section id="other-parts-of-zig" class="level2" data-number="1.10">
+<h2 data-number="1.10" class="anchored" data-anchor-id="other-parts-of-zig"><span class="header-section-number">1.10</span> Other parts of Zig</h2>
 <p>We already learned a lot about Zig’s syntax, and also, some pretty technical details about it. Just as a quick recap:</p>
 <ul>
 <li>We talked about how functions are written in Zig at <a href="#sec-root-file" class="quarto-xref"><span>Section 1.2.2</span></a> and <a href="#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>.</li>
@@ -849,6 +873,9 @@ got codepoint E382AB</code></pre>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-exploit1" class="csl-entry" role="listitem">
+Kim, Juhee, Jinbum Park, Sihyeon Roh, Jaeyoung Chung, Youngjoo Lee, Taesoo Kim, and Byoungyoung Lee. 2024. <span>“TikTag: Breaking ARM’s Memory Tagging Extension with Speculative Execution.”</span> <a href="https://arxiv.org/abs/2406.08719">https://arxiv.org/abs/2406.08719</a>.
+</div>
 <div id="ref-zigguide" class="csl-entry" role="listitem">
 Sobeston. 2024. <span>“Zig Guide.”</span> <a href="https://zig.guide/">https://zig.guide/</a>.
 </div>
@@ -874,6 +901,8 @@ Sobeston. 2024. <span>“Zig Guide.”</span> <a href="https://zig.guide/">https
 <li id="fn15"><p><a href="https://ziglang.org/documentation/master/#Primitive-Types" class="uri">https://ziglang.org/documentation/master/#Primitive-Types</a>.<a href="#fnref15" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn16"><p><a href="https://www.gnu.org/software/libiconv/" class="uri">https://www.gnu.org/software/libiconv/</a><a href="#fnref16" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn17"><p><a href="https://cplusplus.com/reference/cstdio/printf/" class="uri">https://cplusplus.com/reference/cstdio/printf/</a><a href="#fnref17" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn18"><p><a href="https://www.youtube.com/watch?v=jIZpKpLCOiU&amp;ab_channel=GOTOConferences" class="uri">https://www.youtube.com/watch?v=jIZpKpLCOiU&amp;ab_channel=GOTOConferences</a><a href="#fnref18" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn19"><p>Actually, a lot of existing Rust code is still memory unsafe, because they communicate with external libraries through FFI (<em>foreign function interface</em>), which disables the borrow-checker features through the <code>unsafe</code> keyword.<a href="#fnref19" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
