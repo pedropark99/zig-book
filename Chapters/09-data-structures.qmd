@@ -1,8 +1,103 @@
+---
+engine: knitr
+knitr: true
+syntax-definition: "../Assets/zig.xml"
+---
+
+```{r}
+#| include: false
+source("../zig_engine.R")
+knitr::opts_chunk$set(
+    auto_main = FALSE,
+    build_type = "lib"
+)
+```
 
 
 
-# Introduction
+# Data Structures
 
-In this chapter, we are going to discuss some Data Structures available from
-the Zig Standard Library, specially `ArrayList` and also `HashMap`. We also
-are going to talk about generics with linked lists.
+In this chapter, we are going to discuss some Data Structures that are available from
+the Zig Standard Library, specially `ArrayList` and also `HashMap`. I'm also want
+to talk about one of the key features of Zig in this chapter, which is `comptime`, and
+how we can use it to create generics in Zig.
+
+
+## Dynamic Arrays
+
+In high level languages, arrays are usually dynamic. They easily grow
+in size when they have to, and you don't need to worry about it.
+In contrast, arrays in low level languages are usually static by default.
+This is the reality of C, C++, Rust and also Zig. Static arrays were presented at
+@sec-arrays, but in this section, we are going to talk about dynamic arrays.
+
+Dynamic arrays are simply arrays that can grow in size during the runtime
+of your program. Most low level languages offer some implementation of
+a dynamic array in their standard library. C++ have `std::vector`, Rust have `Vec`,
+and Zig have `std.ArrayList`.
+
+The `std.ArrayList` struct provides a contiguous and growable array for you.
+It works like any other dinamic array, it allocates a contiguous block of memory, and when this block have no space left,
+`ArrayList` allocates another contiguous and bigger block of memory, copies the
+elements to this new location, and erases (or frees) the previous block of memory.
+
+In order to use `ArrayList`, you must provide an allocator object to it.
+Remember, Zig does not have a default memory allocator. All memory
+allocations must be done by allocator objects that you define, that
+you have control over. In our example here, I'm going to use
+a general purpose allocator, but you can use any other allocator
+of your preference.
+
+You can initialize an `ArrayList` object, by either using the `init()` method
+or the `initCapacity()`.
+The former method receives the allocator object
+as input, while the latter method
+receives the allocator object, and also, a capacity number as inputs.
+With the latter method, you not only initialize the struct, but you
+also set the starting capacity of the allocated array.
+
+The capacity of the array determines the size of the array, or, in other words,
+how many elements this array can hold (or store).
+Since we are talking about a dynamic array, the capacity of the array might change
+during the runtime of your program.
+
+```{zig}
+#| auto_main: true
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
+var buffer = try std.ArrayList(u8)
+    .initCapacity(allocator, 100);
+defer buffer.deinit();
+```
+
+Using the `initCapacity()` method is the preferred way to initialize your dynamic array.
+Because reallocations, or, in other words, the process of expanding the size of the array,
+have a high cost. You should take any possible opportunity to avoid reallocations in
+your array. If know how much space your array needs to occupy at the beginning or the runtime
+of your program, you should always use `initCapacity()` to create your dynamic array.
+
+In the example above, the `buffer` object starts as an array of 100 elements. If this
+`buffer` object needs to create more space to accomodate more elements during the runtime of your program, the `ArrayList`
+internals will perform the necessary actions for you automatically.
+Also notice the `deinit()` method being used to destroy the `buffer` object at the
+end of the current scope, by freeing all the memory that was allocated for the dynamic
+array stored in this `buffer` object.
+
+Now that we created our dynamic array, we can start to use it. You can append (a.k.a "add")
+new elements to this array by using the `append()` method. This method works the same way
+as the `append()` method from a Python list, or, the `emplace_back()` method from `std::vector` of C++.
+You provide a single value to this method, and the method appends this value to the array.
+
+You can also use the `appendSlice()` method to append multiple elements at once. You provide
+a slice (slices were described at @sec-arrays) to this method, and the method adds all elements present
+in this slice to your dynamic array.
+
+```{zig}
+#| eval: false
+try buffer.append('H');
+try buffer.append('e');
+try buffer.append('l');
+try buffer.append('l');
+try buffer.append('o');
+try buffer.appendSlice(" World!");
+```
