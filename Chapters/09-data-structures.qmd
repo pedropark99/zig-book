@@ -41,25 +41,90 @@ It works like any other dinamic array, it allocates a contiguous block of memory
 `ArrayList` allocates another contiguous and bigger block of memory, copies the
 elements to this new location, and erases (or frees) the previous block of memory.
 
+
+### Capacity vs Length
+
+When we talk about dynamic arrays, we have two similar concepts that
+are very essential to how a dynamic array works behind the hood.
+These concepts are *capacity* and *length*. In some contexts, specially
+in C++, *length* is also called of *size*.
+
+Although they look similar, these concepts represent different things
+in the context of dynamic arrays. *Capacity* is the number of items (or elements)
+that your dynamic array can currently hold without the need to allocate more memory.
+
+In contrast, the *length* refers to how many elements in the array
+are currently being used, or, in other words, how many elements in this array
+that you assigned a value to. Every dynamic array works around
+a block of allocated memory that represents an array with total capacity of $n$ elements,
+but only a portion of these $n$ elements are being used. This portion
+of $n$ is the *length* of the array. So every time you append a new value
+to the array, you are incrementing it's *length* by one.
+
+This means that a dynamic array usually works with an extra margin, or, an extra space
+which is currently empty, but it is waiting and ready to be used. This "extra space"
+is essentially the difference between *capacity* and *length*. *Capacity* represents
+the total number of elements that the array can hold without the need to re-allocate
+or re-expand the array, while the *length* represents how much of this capacity
+is currently being used to hold/store values.
+
+When *length* and *capacity* are equal, it means that the array have no space left.
+We reached the roof of our capacity, and because of that, if we want to store more values
+in this array, we need to expand it. We need to get a bigger space that can hold more values
+that we currently have.
+
+A dynamic array works by expanding the underlying array, whenever the *length* becomes equal
+to the *capacity* of the array. It basically allocates a new contiguos block of memory that is bigger
+than the previous one, then, it copies all values that are currently being stored to this new
+location (i.e. this new block of memory), then, it frees the previous block of
+memory. At the end of this process, the new underlying array have a bigger *capacity*, and, therefore,
+the *length* becomes once again smaller than the *capacity* of the array.
+
+This is the cycle of an dynamic array. Notice that, throughout all of this cycle, the *capacity* is always
+either equal to or smaller than the *length* of the array. If youh have an `ArrayList` object, let's suppose
+you named it of `buffer`, you can check the current capacity of your array by accessing the `capacity`
+attribute of your `ArrayList` object, while the current *length* of it is available through the `items.len`
+attribute of your `ArrayList` object.
+
+
+```{zig}
+#| eval: false
+// Check capacity
+buffer.capacity;
+// Check length
+buffer.items.len;
+```
+
+### Creating an `ArrayList` object
+
 In order to use `ArrayList`, you must provide an allocator object to it.
-Remember, Zig does not have a default memory allocator. All memory
+Remember, Zig does not have a default memory allocator. And as I described at @sec-allocators, all memory
 allocations must be done by allocator objects that you define, that
 you have control over. In our example here, I'm going to use
 a general purpose allocator, but you can use any other allocator
 of your preference.
 
-You can initialize an `ArrayList` object, by either using the `init()` method
-or the `initCapacity()`.
-The former method receives the allocator object
-as input, while the latter method
-receives the allocator object, and also, a capacity number as inputs.
+When you initialize an `ArrayList` object, you must provide the data type of the elements of
+the array. In other words, this defines the type of data that this array (or container) will
+store. Therefore, if I provide the `u8` type to it, then, I will create a dynamic
+array of `u8` values. However, if I provide a struct that I defined instead, like the struct `User`
+from @sec-structs-and-oop, then, a dynamic array of `User` values
+will be created. In the example below, with the expression `ArrayList(u8)` we
+are creating a dynamic array of `u8` values.
+
+After you provide the data type of the elements of the array, you can initialize
+an `ArrayList` object by either using the `init()` or the `initCapacity()` method.
+The former method receives only the allocator object
+as input, while the latter method receives both the allocator object and a capacity number as inputs.
 With the latter method, you not only initialize the struct, but you
 also set the starting capacity of the allocated array.
 
-The capacity of the array determines the size of the array, or, in other words,
-how many elements this array can hold (or store).
-Since we are talking about a dynamic array, the capacity of the array might change
-during the runtime of your program.
+Using the `initCapacity()` method is the preferred way to initialize your dynamic array.
+Because reallocations, or, in other words, the process of expanding the capacity of the array,
+is always a high cost operation. You should take any possible opportunity to avoid reallocations in
+your array. If you know how much space your array needs to occupy at the beginning,
+you should always use `initCapacity()` to create your dynamic array.
+
 
 ```{zig}
 #| auto_main: true
@@ -70,11 +135,6 @@ var buffer = try std.ArrayList(u8)
 defer buffer.deinit();
 ```
 
-Using the `initCapacity()` method is the preferred way to initialize your dynamic array.
-Because reallocations, or, in other words, the process of expanding the size of the array,
-have a high cost. You should take any possible opportunity to avoid reallocations in
-your array. If know how much space your array needs to occupy at the beginning or the runtime
-of your program, you should always use `initCapacity()` to create your dynamic array.
 
 In the example above, the `buffer` object starts as an array of 100 elements. If this
 `buffer` object needs to create more space to accomodate more elements during the runtime of your program, the `ArrayList`
@@ -82,6 +142,9 @@ internals will perform the necessary actions for you automatically.
 Also notice the `deinit()` method being used to destroy the `buffer` object at the
 end of the current scope, by freeing all the memory that was allocated for the dynamic
 array stored in this `buffer` object.
+
+
+### Adding new elements to the array
 
 Now that we created our dynamic array, we can start to use it. You can append (a.k.a "add")
 new elements to this array by using the `append()` method. This method works the same way
@@ -101,3 +164,95 @@ try buffer.append('l');
 try buffer.append('o');
 try buffer.appendSlice(" World!");
 ```
+
+### Removing elements from the array
+
+You can use the `pop()` method to "pop" or remove
+the last element in the array. Is worth noting that this method
+do not change the capacity of the array. It just deletes or erases
+the last value stored in the array.
+
+Also, this method returns as result the value deleted. That is, you can
+use this method to both get the last value in the array, and also, remove
+it from the array. It is a "get and remove value" type of method.
+
+```{zig}
+#| eval: false
+const exclamation_mark = buffer.pop();
+```
+
+Now, if you want to remove specific elements from specific positions
+of your array, you can use the `orderedRemove()` method from your
+`ArrayList` object. With this method, you can provide an index as input,
+then, the method will delete the value that is at this index in the array.
+This effectively reduces the *length* of the array everytime you execute
+an `orderedRemove()` operation.
+
+In the example below, we first create an `ArrayList` object, and we fill it
+with numbers. Then, we use `orderedRemove()` a first time to remove the value at
+index 3 in the array (which is the 4th element in the array). Then,
+we use the method a second time to remove the new value that was moved
+to the index 3.
+
+Also, notice that we are assigning the result of `orderedRemove()` to the
+underscore character. So we are discarding the result value of this method.
+As the result value, the `orderedRemove()` method returns the value that
+got deleted, in a similar style to the `pop()` method.
+
+
+```{zig}
+#| auto_main: true
+#| eval: false
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
+var buffer = try std.ArrayList(u8)
+    .initCapacity(allocator, 100);
+defer buffer.deinit();
+
+for (0..10) |i| {
+    const index: u8 = @intCast(i);
+    try buffer.append(index);
+}
+
+std.debug.print(
+    "{any}\n", .{buffer.items}
+);
+std.debug.print(
+    "==========================\n",
+    .{}
+);
+_ = buffer.orderedRemove(3);
+_ = buffer.orderedRemove(3);
+
+std.debug.print(
+    "{any}\n", .{buffer.items}
+);
+std.debug.print(
+    "{any}\n", .{buffer.items.len}
+);
+```
+
+```
+{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }
+==========================
+{ 0, 1, 2, 5, 6, 7, 8, 9 }
+8
+```
+
+
+
+### Conclusion
+
+If you feel the lack of some other method, I recommend
+you to read the [official documentation for the `ArrayListAligned`](https://ziglang.org/documentation/master/std/#std.array_list.ArrayListAligned)[^zig-array]
+struct, which describes most of the methods available
+through the `ArrayList` object.
+
+You will notice that there is a lot other methods in this page that
+I did not described here, and I recommend you to explore these methods,
+and understand how they work.
+
+[^zig-array]: <https://ziglang.org/documentation/master/std/#std.array_list.ArrayListAligned>
+
+
+
