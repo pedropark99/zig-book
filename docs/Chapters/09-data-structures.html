@@ -268,7 +268,8 @@ window.Quarto = {
   <li><a href="#creating-an-arraylist-object" id="toc-creating-an-arraylist-object" class="nav-link" data-scroll-target="#creating-an-arraylist-object"><span class="header-section-number">11.1.2</span> Creating an <code>ArrayList</code> object</a></li>
   <li><a href="#adding-new-elements-to-the-array" id="toc-adding-new-elements-to-the-array" class="nav-link" data-scroll-target="#adding-new-elements-to-the-array"><span class="header-section-number">11.1.3</span> Adding new elements to the array</a></li>
   <li><a href="#removing-elements-from-the-array" id="toc-removing-elements-from-the-array" class="nav-link" data-scroll-target="#removing-elements-from-the-array"><span class="header-section-number">11.1.4</span> Removing elements from the array</a></li>
-  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">11.1.5</span> Conclusion</a></li>
+  <li><a href="#inserting-elements-at-specific-indexes" id="toc-inserting-elements-at-specific-indexes" class="nav-link" data-scroll-target="#inserting-elements-at-specific-indexes"><span class="header-section-number">11.1.5</span> Inserting elements at specific indexes</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">11.1.6</span> Conclusion</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -305,11 +306,11 @@ window.Quarto = {
 <h3 data-number="11.1.1" class="anchored" data-anchor-id="capacity-vs-length"><span class="header-section-number">11.1.1</span> Capacity vs Length</h3>
 <p>When we talk about dynamic arrays, we have two similar concepts that are very essential to how a dynamic array works behind the hood. These concepts are <em>capacity</em> and <em>length</em>. In some contexts, specially in C++, <em>length</em> is also called of <em>size</em>.</p>
 <p>Although they look similar, these concepts represent different things in the context of dynamic arrays. <em>Capacity</em> is the number of items (or elements) that your dynamic array can currently hold without the need to allocate more memory.</p>
-<p>In contrast, the <em>length</em> refers to how many elements in the array are currently being used, or, in other words, how many elements in this array that you assigned a value to. Every dynamic array works around a block of allocated memory that represents an array with total capacity of <span class="math inline">\(n\)</span> elements, but only a portion of these <span class="math inline">\(n\)</span> elements are being used. This portion of <span class="math inline">\(n\)</span> is the <em>length</em> of the array. So every time you append a new value to the array, you are incrementing it’s <em>length</em> by one.</p>
+<p>In contrast, the <em>length</em> refers to how many elements in the array are currently being used, or, in other words, how many elements in this array that you assigned a value to. Every dynamic array works around a block of allocated memory that represents an array with total capacity of <span class="math inline">\(n\)</span> elements, but only a portion of these <span class="math inline">\(n\)</span> elements are being used most of the time. This portion of <span class="math inline">\(n\)</span> is the <em>length</em> of the array. So every time you append a new value to the array, you are incrementing it’s <em>length</em> by one.</p>
 <p>This means that a dynamic array usually works with an extra margin, or, an extra space which is currently empty, but it is waiting and ready to be used. This “extra space” is essentially the difference between <em>capacity</em> and <em>length</em>. <em>Capacity</em> represents the total number of elements that the array can hold without the need to re-allocate or re-expand the array, while the <em>length</em> represents how much of this capacity is currently being used to hold/store values.</p>
 <p>When <em>length</em> and <em>capacity</em> are equal, it means that the array have no space left. We reached the roof of our capacity, and because of that, if we want to store more values in this array, we need to expand it. We need to get a bigger space that can hold more values that we currently have.</p>
 <p>A dynamic array works by expanding the underlying array, whenever the <em>length</em> becomes equal to the <em>capacity</em> of the array. It basically allocates a new contiguos block of memory that is bigger than the previous one, then, it copies all values that are currently being stored to this new location (i.e.&nbsp;this new block of memory), then, it frees the previous block of memory. At the end of this process, the new underlying array have a bigger <em>capacity</em>, and, therefore, the <em>length</em> becomes once again smaller than the <em>capacity</em> of the array.</p>
-<p>This is the cycle of an dynamic array. Notice that, throughout all of this cycle, the <em>capacity</em> is always either equal to or smaller than the <em>length</em> of the array. If youh have an <code>ArrayList</code> object, let’s suppose you named it of <code>buffer</code>, you can check the current capacity of your array by accessing the <code>capacity</code> attribute of your <code>ArrayList</code> object, while the current <em>length</em> of it is available through the <code>items.len</code> attribute of your <code>ArrayList</code> object.</p>
+<p>This is the cycle of an dynamic array. Notice that, throughout this cycle, the <em>capacity</em> is always either equal to or higher than the <em>length</em> of the array. If youh have an <code>ArrayList</code> object, let’s suppose you named it of <code>buffer</code>, you can check the current capacity of your array by accessing the <code>capacity</code> attribute of your <code>ArrayList</code> object, while the current <em>length</em> of it is available through the <code>items.len</code> attribute of your <code>ArrayList</code> object.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Check capacity</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>buffer.capacity;</span>
@@ -334,8 +335,8 @@ window.Quarto = {
 </section>
 <section id="adding-new-elements-to-the-array" class="level3" data-number="11.1.3">
 <h3 data-number="11.1.3" class="anchored" data-anchor-id="adding-new-elements-to-the-array"><span class="header-section-number">11.1.3</span> Adding new elements to the array</h3>
-<p>Now that we created our dynamic array, we can start to use it. You can append (a.k.a “add”) new elements to this array by using the <code>append()</code> method. This method works the same way as the <code>append()</code> method from a Python list, or, the <code>emplace_back()</code> method from <code>std::vector</code> of C++. You provide a single value to this method, and the method appends this value to the array.</p>
-<p>You can also use the <code>appendSlice()</code> method to append multiple elements at once. You provide a slice (slices were described at <a href="01-zig-weird.html#sec-arrays" class="quarto-xref"><span>Section 1.6</span></a>) to this method, and the method adds all elements present in this slice to your dynamic array.</p>
+<p>Now that we created our dynamic array, we can start to use it. You can append (a.k.a “add”) new values to this array by using the <code>append()</code> method. This method works the same way as the <code>append()</code> method from a Python list, or, the <code>emplace_back()</code> method from <code>std::vector</code> of C++. You provide a single value to this method, and the method appends this value to the array.</p>
+<p>You can also use the <code>appendSlice()</code> method to append multiple values at once. You provide a slice (slices were described at <a href="01-zig-weird.html#sec-arrays" class="quarto-xref"><span>Section 1.6</span></a>) to this method, and the method adds all values present in this slice to your dynamic array.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.append(<span class="ch">'H'</span>);</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.append(<span class="ch">'e'</span>);</span>
@@ -348,12 +349,12 @@ window.Quarto = {
 <section id="removing-elements-from-the-array" class="level3" data-number="11.1.4">
 <h3 data-number="11.1.4" class="anchored" data-anchor-id="removing-elements-from-the-array"><span class="header-section-number">11.1.4</span> Removing elements from the array</h3>
 <p>You can use the <code>pop()</code> method to “pop” or remove the last element in the array. Is worth noting that this method do not change the capacity of the array. It just deletes or erases the last value stored in the array.</p>
-<p>Also, this method returns as result the value deleted. That is, you can use this method to both get the last value in the array, and also, remove it from the array. It is a “get and remove value” type of method.</p>
+<p>Also, this method returns as result the value that got deleted. That is, you can use this method to both get the last value in the array, and also, remove it from the array. It is a “get and remove value” type of method.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> exclamation_mark = buffer.pop();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Now, if you want to remove specific elements from specific positions of your array, you can use the <code>orderedRemove()</code> method from your <code>ArrayList</code> object. With this method, you can provide an index as input, then, the method will delete the value that is at this index in the array. This effectively reduces the <em>length</em> of the array everytime you execute an <code>orderedRemove()</code> operation.</p>
-<p>In the example below, we first create an <code>ArrayList</code> object, and we fill it with numbers. Then, we use <code>orderedRemove()</code> a first time to remove the value at index 3 in the array (which is the 4th element in the array). Then, we use the method a second time to remove the new value that was moved to the index 3.</p>
+<p>In the example below, we first create an <code>ArrayList</code> object, and we fill it with numbers. Then, we use <code>orderedRemove()</code> to remove the value at index 3 in the array, two consecutive times.</p>
 <p>Also, notice that we are assigning the result of <code>orderedRemove()</code> to the underscore character. So we are discarding the result value of this method. As the result value, the <code>orderedRemove()</code> method returns the value that got deleted, in a similar style to the <code>pop()</code> method.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
@@ -370,27 +371,44 @@ window.Quarto = {
 <span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>std.debug.print(</span>
 <span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer.items<span class="op">}</span></span>
 <span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>);</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>std.debug.print(</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">"==========================</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{}</span></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>);</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>_ = buffer.orderedRemove(<span class="dv">3</span>);</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>_ = buffer.orderedRemove(<span class="dv">3</span>);</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>std.debug.print(</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    <span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer.items<span class="op">}</span></span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>);</span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>std.debug.print(</span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    <span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer.items.len<span class="op">}</span></span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>_ = buffer.orderedRemove(<span class="dv">3</span>);</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>_ = buffer.orderedRemove(<span class="dv">3</span>);</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>std.debug.print(</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer.items<span class="op">}</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>std.debug.print(</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer.items.len<span class="op">}</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }
-==========================
 { 0, 1, 2, 5, 6, 7, 8, 9 }
 8</code></pre>
+<p>One key characteristic about <code>orderedRemove()</code> is that it preserves the order of the values in the array. So, it deletes the value that you asked it to remove, but it also makes sure that the order of the values that remain in the array stay the same as before.</p>
+<p>Now, if you don’t care about the order of the values, for example, maybe you want to treat your dynamic array as a set of values, like the <code>std::unordered_set</code> structure from C++, you can use the <code>swapRemove()</code> method instead. This method works similarly to the <code>orderedRemove()</code> method. You give an index to this method, then, it deletes the value that is at this index in the array. But this method does not preserve the original order of the values that remain in the array. As a result, <code>swapRemove()</code> is, in general, faster than <code>orderedRemove()</code>.</p>
 </section>
-<section id="conclusion" class="level3" data-number="11.1.5">
-<h3 data-number="11.1.5" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">11.1.5</span> Conclusion</h3>
+<section id="inserting-elements-at-specific-indexes" class="level3" data-number="11.1.5">
+<h3 data-number="11.1.5" class="anchored" data-anchor-id="inserting-elements-at-specific-indexes"><span class="header-section-number">11.1.5</span> Inserting elements at specific indexes</h3>
+<p>When you need to insert values in the middle of your array, instead of just appending them to the end of the array, you need to use the <code>insert()</code> and <code>insertSlice()</code> methods, instead of the <code>append()</code> and <code>appendSlice()</code> methods.</p>
+<p>These two methods work very similarly to <code>insert()</code> and <code>insert_range()</code> from the C++ vector class. You provide an index to these methods, and they insert the values that you provide at that index in the array.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffer = <span class="kw">try</span> std.ArrayList(<span class="dt">u8</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    .initCapacity(allocator, <span class="dv">10</span>);</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> buffer.deinit();</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.appendSlice(<span class="st">"My Pedro"</span>);</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.insert(<span class="dv">4</span>, <span class="ch">'3'</span>);</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.insertSlice(<span class="dv">2</span>, <span class="st">" name"</span>);</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (buffer.items) |char| <span class="op">{</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{c}"</span>, .<span class="op">{</span>char<span class="op">}</span>);</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>My name P3edro</code></pre>
+</section>
+<section id="conclusion" class="level3" data-number="11.1.6">
+<h3 data-number="11.1.6" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">11.1.6</span> Conclusion</h3>
 <p>If you feel the lack of some other method, I recommend you to read the <a href="https://ziglang.org/documentation/master/std/#std.array_list.ArrayListAligned">official documentation for the <code>ArrayListAligned</code></a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> struct, which describes most of the methods available through the <code>ArrayList</code> object.</p>
 <p>You will notice that there is a lot other methods in this page that I did not described here, and I recommend you to explore these methods, and understand how they work.</p>
 

@@ -57,7 +57,7 @@ In contrast, the *length* refers to how many elements in the array
 are currently being used, or, in other words, how many elements in this array
 that you assigned a value to. Every dynamic array works around
 a block of allocated memory that represents an array with total capacity of $n$ elements,
-but only a portion of these $n$ elements are being used. This portion
+but only a portion of these $n$ elements are being used most of the time. This portion
 of $n$ is the *length* of the array. So every time you append a new value
 to the array, you are incrementing it's *length* by one.
 
@@ -80,8 +80,8 @@ location (i.e. this new block of memory), then, it frees the previous block of
 memory. At the end of this process, the new underlying array have a bigger *capacity*, and, therefore,
 the *length* becomes once again smaller than the *capacity* of the array.
 
-This is the cycle of an dynamic array. Notice that, throughout all of this cycle, the *capacity* is always
-either equal to or smaller than the *length* of the array. If youh have an `ArrayList` object, let's suppose
+This is the cycle of an dynamic array. Notice that, throughout this cycle, the *capacity* is always
+either equal to or higher than the *length* of the array. If youh have an `ArrayList` object, let's suppose
 you named it of `buffer`, you can check the current capacity of your array by accessing the `capacity`
 attribute of your `ArrayList` object, while the current *length* of it is available through the `items.len`
 attribute of your `ArrayList` object.
@@ -147,12 +147,12 @@ array stored in this `buffer` object.
 ### Adding new elements to the array
 
 Now that we created our dynamic array, we can start to use it. You can append (a.k.a "add")
-new elements to this array by using the `append()` method. This method works the same way
+new values to this array by using the `append()` method. This method works the same way
 as the `append()` method from a Python list, or, the `emplace_back()` method from `std::vector` of C++.
 You provide a single value to this method, and the method appends this value to the array.
 
-You can also use the `appendSlice()` method to append multiple elements at once. You provide
-a slice (slices were described at @sec-arrays) to this method, and the method adds all elements present
+You can also use the `appendSlice()` method to append multiple values at once. You provide
+a slice (slices were described at @sec-arrays) to this method, and the method adds all values present
 in this slice to your dynamic array.
 
 ```{zig}
@@ -172,7 +172,7 @@ the last element in the array. Is worth noting that this method
 do not change the capacity of the array. It just deletes or erases
 the last value stored in the array.
 
-Also, this method returns as result the value deleted. That is, you can
+Also, this method returns as result the value that got deleted. That is, you can
 use this method to both get the last value in the array, and also, remove
 it from the array. It is a "get and remove value" type of method.
 
@@ -189,10 +189,8 @@ This effectively reduces the *length* of the array everytime you execute
 an `orderedRemove()` operation.
 
 In the example below, we first create an `ArrayList` object, and we fill it
-with numbers. Then, we use `orderedRemove()` a first time to remove the value at
-index 3 in the array (which is the 4th element in the array). Then,
-we use the method a second time to remove the new value that was moved
-to the index 3.
+with numbers. Then, we use `orderedRemove()` to remove the value at
+index 3 in the array, two consecutive times.
 
 Also, notice that we are assigning the result of `orderedRemove()` to the
 underscore character. So we are discarding the result value of this method.
@@ -202,7 +200,7 @@ got deleted, in a similar style to the `pop()` method.
 
 ```{zig}
 #| auto_main: true
-#| eval: false
+#| eval: true
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 var buffer = try std.ArrayList(u8)
@@ -217,10 +215,6 @@ for (0..10) |i| {
 std.debug.print(
     "{any}\n", .{buffer.items}
 );
-std.debug.print(
-    "==========================\n",
-    .{}
-);
 _ = buffer.orderedRemove(3);
 _ = buffer.orderedRemove(3);
 
@@ -234,18 +228,54 @@ std.debug.print(
 
 ```
 { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }
-==========================
 { 0, 1, 2, 5, 6, 7, 8, 9 }
 8
 ```
 
+One key characteristic about `orderedRemove()` is that it preserves the order
+of the values in the array. So, it deletes the value that you asked it to
+remove, but it also makes sure that the order of the values that remain in the array
+stay the same as before.
+
+Now, if you don't care about the order of the values, for example, maybe you want to treat
+your dynamic array as a set of values, like the `std::unordered_set`
+structure from C++, you can use the `swapRemove()` method instead. This method
+works similarly to the `orderedRemove()` method. You give an index to this
+method, then, it deletes the value that is at this index in the array.
+But this method does not preserve the original order of the values that remain
+in the array. As a result, `swapRemove()` is, in general, faster than `orderedRemove()`.
+
 
 ### Inserting elements at specific indexes
 
-`insert()` and `insertSlice()`.
+When you need to insert values in the middle of your array,
+instead of just appending them to the end of the array, you need to use
+the `insert()` and `insertSlice()` methods, instead of
+the `append()` and `appendSlice()` methods.
 
+These two methods work very similarly to `insert()` and `insert_range()`
+from the C++ vector class. You provide an index to these methods,
+and they insert the values that you provide at that index in the array.
 
+```{zig}
+#| auto_main: true
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
+var buffer = try std.ArrayList(u8)
+    .initCapacity(allocator, 10);
+defer buffer.deinit();
 
+try buffer.appendSlice("My Pedro");
+try buffer.insert(4, '3');
+try buffer.insertSlice(2, " name");
+for (buffer.items) |char| {
+    try stdout.print("{c}", .{char});
+}
+```
+
+```
+My name P3edro
+```
 
 
 ### Conclusion
