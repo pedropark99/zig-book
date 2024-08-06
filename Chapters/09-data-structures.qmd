@@ -165,7 +165,7 @@ try buffer.append('o');
 try buffer.appendSlice(" World!");
 ```
 
-### Removing elements from the array
+### Removing elements from the array {#sec-dynamic-array-remove}
 
 You can use the `pop()` method to "pop" or remove
 the last element in the array. Is worth noting that this method
@@ -361,7 +361,7 @@ in this book, because it is not our main scope here. But you can find a good des
 some of the most commom techniques at the Wikipedia page of hashtables [@wikipedia_hashtables].
 
 
-### Hashtables in Zig
+### Hashtables in Zig {#sec-hashmap}
 
 The Zig Standard Library provides different implementations of a hashtable,
 like the struct `HashMap`. Each implementation have it's own cons and pros, which we will
@@ -542,5 +542,68 @@ Key: 50050
 Key: 57709
 ```
 
+
+### The `ArrayHashMap` hashtable
+
+If you need to iterate through the elements of your hashtable constantly,
+you might want to use the `ArrayHashMap` struct for your specific case,
+instead of going with the usual and general-purpose `HashMap` struct.
+
+The `ArrayHashMap` struct creates a hashtable that is faster to iterate over.
+That is why this specific type of hashtable might be valuable to you.
+Some other properties of a `ArrayHashMap` hashtable are:
+
+- the order of insertion is preserved. So the order of the values you find while iterating through this hashtable
+are actually the order in which these values were inserted in the hashtable.
+
+- the key-value pairs are stored sequentially, one after another.
+
+
+You can create an `ArrayHashMap` object by using, once again, a helper function that
+chooses automatically for you a hash function implementation. This is the
+`AutoArrayHashMap()` function, which works very similarly to the `AutoHashMap()`
+function that we presented at @sec-hashmap.
+
+You provide two data types to this function. The data type of the keys that will be
+used in this hashtable, and the data type of the values that will be stored in
+this hashtable.
+
+An `ArrayHashMap` object have essentially the exact same methods from the `HashMap` struct.
+So you can insert new values into the hashtable by using the `put()` method, you can look (or get)
+a value from the hashtable by using the `get()` method. But the `remove()` method is not available
+in this specific type of hashtable.
+
+In order to delete values from the hashtable, you would use the same methods that you find in
+an `ArrayList` object, i.e. a dynamic array. I presented these methods at @sec-dynamic-array-remove,
+which are the `swapRemove()` and `orderedRemove()` methods. These methods have here the same meaning, or,
+the same effect that they have in an `ArrayList` object.
+
+This means that, with `swapRemove()` you remove the value from the hashtable, but you do not preserve
+the order in which the values were inserted into the structure. While `orderedRemove()` is capable
+of retaining the insertion order of these values.
+
+But instead of providing an index as input to `swapRemove()` or `orderedRemove()`, like I described
+at @sec-dynamic-array-remove, these methods here in an `ArrayHashMap` take a key as input, like
+the `remove()` method from a `HashMap` object. If you want to provide an index as input, instead
+of a key, you should use the `swapRemoveAt()` and `orderedRemoveAt()` methods.
+
+
+```{zig}
+var hash_table = AutoArrayHashMap(u32, u16)
+    .init(allocator);
+defer hash_table.deinit();
+```
+
+
+
+### The `StringHashMap` hashtable
+
+
+
+
+## Understanding `comptime` in Zig
+
+
+## Linked lists
 
 
