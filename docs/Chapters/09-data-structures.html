@@ -54,7 +54,27 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="../site_libs/quarto-nav/quarto-nav.js"></script>
@@ -271,6 +291,11 @@ window.Quarto = {
   <li><a href="#inserting-elements-at-specific-indexes" id="toc-inserting-elements-at-specific-indexes" class="nav-link" data-scroll-target="#inserting-elements-at-specific-indexes"><span class="header-section-number">11.1.5</span> Inserting elements at specific indexes</a></li>
   <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">11.1.6</span> Conclusion</a></li>
   </ul></li>
+  <li><a href="#maps-or-hashtables" id="toc-maps-or-hashtables" class="nav-link" data-scroll-target="#maps-or-hashtables"><span class="header-section-number">11.2</span> Maps or HashTables</a>
+  <ul class="collapse">
+  <li><a href="#what-is-a-hashtable" id="toc-what-is-a-hashtable" class="nav-link" data-scroll-target="#what-is-a-hashtable"><span class="header-section-number">11.2.1</span> What is a hashtable?</a></li>
+  <li><a href="#hashtables-in-zig" id="toc-hashtables-in-zig" class="nav-link" data-scroll-target="#hashtables-in-zig"><span class="header-section-number">11.2.2</span> Hashtables in Zig</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -411,8 +436,88 @@ window.Quarto = {
 <h3 data-number="11.1.6" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">11.1.6</span> Conclusion</h3>
 <p>If you feel the lack of some other method, I recommend you to read the <a href="https://ziglang.org/documentation/master/std/#std.array_list.ArrayListAligned">official documentation for the <code>ArrayListAligned</code></a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> struct, which describes most of the methods available through the <code>ArrayList</code> object.</p>
 <p>You will notice that there is a lot other methods in this page that I did not described here, and I recommend you to explore these methods, and understand how they work.</p>
+</section>
+</section>
+<section id="maps-or-hashtables" class="level2" data-number="11.2">
+<h2 data-number="11.2" class="anchored" data-anchor-id="maps-or-hashtables"><span class="header-section-number">11.2</span> Maps or HashTables</h2>
+<p>Some professionals know this type of data structure by different terms, like “map”, “hashmap” or “associative arrays”. But most professionals know this structure by the name <em>hashtable</em>. Every programming language normally have some implementation of a hashtable in their stardard libraries. Python have <code>dict()</code>, C++ have <code>std::map</code> and <code>std::unordered_map</code>, Rust have <code>HashMap</code>, Javascript have <code>Object()</code> and <code>Map()</code>, C# have <code>Hashtable()</code>, etc.</p>
+<section id="what-is-a-hashtable" class="level3" data-number="11.2.1">
+<h3 data-number="11.2.1" class="anchored" data-anchor-id="what-is-a-hashtable"><span class="header-section-number">11.2.1</span> What is a hashtable?</h3>
+<p>A hashtable is a data structure based on key-value pairs. You provide a key and a value to this structure, then, the hashtable will store the input value at a location that can be identified by the input key that you provided. It does that by using an underlying array and a hash function. These two components are essential to how a hashtable works.</p>
+<p>Under the hood, the hashtable contains an array. This array is where the values are stored, and the elements of this array are usually called of <em>buckets</em>. So the values that you provide to the hashtable are stored inside buckets, and you access each bucket by using an index.</p>
+<p>When you provide a key to a hashtable, it passes this key to the hash function. This hash function uses some sort of hashing algorithm to transform this key into an index. This index is actually an array index. It is a position in the underlying array of the hashtable. This is how a key identifies a specific position (or location) inside the hashtable structure.</p>
+<p>So you provide a key to the hashtable, and this key identifies an specific location inside the hastable, then, the hashtable takes the input value that you provided, and stores this value in the location identified by the input key that you provided. You could say that the key maps to the value stored in the hashtable. You find the value, by using the key that identifies the location where the value is stored. The <a href="#fig-hashtable" class="quarto-xref">Figure&nbsp;<span>11.1</span></a> presents this process visually.</p>
+<div id="fig-hashtable" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-hashtable-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="./../Figures/hashtable.svg" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-hashtable-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11.1: A diagram of a Hashtable. Source: Wikipedia, the free encyclopedia.
+</figcaption>
+</figure>
+</div>
+<p>The operation described in the previous paragraph is normally called an <em>insertion</em> operation. Because you are inserting new values into the hashtable. But there are other types of operations in hashtables such as <em>delete</em> and <em>lookup</em>. Delete is self describing, it is when you delete (or remove) a value from the hashtable. While lookup corresponds to when you retrieve (or look at) a value that is stored in the hashtable, by using the key that identifies the location where this value is stored.</p>
+<p>Sometimes, instead of storing the values directly, the underlying array of the hashtable might be an array of pointers, i.e.&nbsp;the buckets of the array stores pointers that points to the value, or also, may be an array of linked lists. These cases are commom on hashtables that allows duplicate keys, or, in other words, on hashtables that effectively handle “collisions” that may arise from the hash function.</p>
+<p>Duplicate keys, or this “collision” thing that I’m talking about, is when you have two different keys that points to the same location (i.e.&nbsp;to the same index) in the underlying array of the hashtable. This might happen depending on the characteristics of the hash function that is being used in the hashtable. Some implementations of the hashtable will actively deal with collisions, meaning that, they will handle this case in some way. For example, the hashtable might transform all buckets into linked lists. Because with a liked list you can store multiple values into a single bucket.</p>
+<p>There are different techniques to handle collisions in hashtables, which I will not describe in this book, because it is not our main scope here. But you can find a good description of some of the most commom techniques at the Wikipedia page of hashtables <span class="citation" data-cites="wikipedia_hashtables">(<a href="../references.html#ref-wikipedia_hashtables" role="doc-biblioref">Wikipedia 2024</a>)</span>.</p>
+</section>
+<section id="hashtables-in-zig" class="level3" data-number="11.2.2">
+<h3 data-number="11.2.2" class="anchored" data-anchor-id="hashtables-in-zig"><span class="header-section-number">11.2.2</span> Hashtables in Zig</h3>
+<p>The Zig Standard Library provides different implementations of a hashtable, like the struct <code>HashMap</code>. Each implementation have it’s own cons and pros, which we will discuss later on, and all of them are available through the <code>std.hash_map</code> module.</p>
+<p>The <code>HashMap</code> struct is a general-purpose hashtable, which have very fast operations (lookup, insertion, delete), and also, quite high load factors for low memory usage. You can create and provide a context object to the <code>HashMap</code> constructor. This context object allows you to tailor the behaviour of the hashtable itself, because you can provide a hash function implementation to be used by the hashtable through this context object.</p>
+<p>But let’s not worry about this context object now, because it is meant to be used by “experts in the field of hashtables”. Since we are most likely not experts in this field, we are going to take the easy way to create a hashtable. Which is by using the <code>AutoHashMap()</code> function.</p>
+<p>This <code>AutoHashMap()</code> function is essentially a “create a hashtable object that uses the default settings” type of function. It chooses a context object, and, therefore, a hash function implementation, automatically for you. This function receives two data types as input, the first data type is the data type of the keys that will be used in this hashtable, while the second data type is the data type of that data that will be stored inside the hashtable, that is, the data type of the values to be stored.</p>
+<p>In the example below, we are providing the data type <code>u32</code> in the first argument, and <code>u16</code> in the second argument of this function. It means that we are going to use <code>u32</code> values as keys in this hashtable, while <code>u16</code> values are the actual values that are going to be stored into this hashtable. At the end of this process, the <code>hash_table</code> object contains a <code>HashMap</code> object as output that uses the default context, and the default load factor.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> AutoHashMap = std.hash_map.AutoHashMap;</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> hash_table = AutoHashMap(<span class="dt">u32</span>, <span class="dt">u16</span>).init(allocator);</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> hash_table.deinit();</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> hash_table.put(<span class="dv">54321</span>, <span class="dv">89</span>);</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> hash_table.put(<span class="dv">50050</span>, <span class="dv">55</span>);</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> hash_table.put(<span class="dv">57709</span>, <span class="dv">41</span>);</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    std.debug.print(</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">"N of values stored: {d}</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>        .<span class="op">{</span>hash_table.count()<span class="op">}</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    std.debug.print(</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Value at key 50050: {d}</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>        .<span class="op">{</span>hash_table.get(<span class="dv">50050</span>).?<span class="op">}</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (hash_table.remove(<span class="dv">57709</span>)) <span class="op">{</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>        std.debug.print(</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Value at key 57709 succesfully removed!</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>            .<span class="op">{}</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    std.debug.print(</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>        <span class="st">"N of values stored: {d}</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>        .<span class="op">{</span>hash_table.count()<span class="op">}</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>N of values stored: 3
+Value at key 50050: 55
+Value at key 57709 succesfully removed!
+N of values stored: 2</code></pre>
+<p>You can add/put new values into the hashtable by using the <code>put()</code> method. The first argument is the key to be used, and the second argument is the actual value that you want to store inside the hashtable. In the example below, we first add the value 89 using the key 54321, next, we add the value 55 using the key 50050, etc.</p>
+<p>Notice that we used the method <code>count()</code> to see how many values are currently stored in the hashtable. After that, we also used the <code>get()</code> method to access (or look) at the value stored in the position identified by the key 500050. The output of this <code>get()</code> method is an optional value, and that is why we use the <code>?</code> method at the end to get access to the actual value.</p>
+<p>Also notice that we can remove (or delete) values from a hashtables by using the <code>remove()</code> method. You provide the key that identifies the value that you want to delete, then, the method will delete this value and return a <code>true</code> value as output. This <code>true</code> value essentially tells us that the method succesfully deleted the value.</p>
+<p>But this delete operation might not be always successful. For example, you might provide the wrong key to this method. I mean, maybe you provide (either intentionally or unintentionally) a key that points to an empty bucket, i.e.&nbsp;a bucket that still doesn’t have a value in it. In this case, the <code>remove()</code> method would return a <code>false</code> value.</p>
 
 
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-wikipedia_hashtables" class="csl-entry" role="listitem">
+Wikipedia. 2024. <span>“Hash Tables.”</span> Wikipedia. <a href="https://en.wikipedia.org/wiki/Hash_table">https://en.wikipedia.org/wiki/Hash_table</a>.
+</div>
+</div>
 </section>
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">

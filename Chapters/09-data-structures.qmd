@@ -295,25 +295,178 @@ and understand how they work.
 
 ## Maps or HashTables
 
-Some professionals know this type of data structure by different terms, like "map" or "associative arrays". But most professionals
-know this structure by *hashtable*.
-The Zig Standard Library provides different implementations of a hashtable data structure
-at the module `std.hash_map`. Each implementation have it's own cons and pros, which we will
-discuss later on.
-
+Some professionals know this type of data structure by different terms, like "map", "hashmap" or "associative arrays". But most professionals
+know this structure by the name *hashtable*.
 Every programming language normally have some implementation of a hashtable in their
 stardard libraries. Python have `dict()`, C++ have `std::map` and `std::unordered_map`, Rust
 have `HashMap`, Javascript have `Object()` and `Map()`,
 C# have `Hashtable()`, etc.
 
+
+
 ### What is a hashtable?
 
-A hashtable is a data structure that stores values by using a key. In other words, it is
-a structure based on key-value pairs. In more details, a hashtable use a hash function
-to compute an index. This index is actually an array index, it points to an
-element in an array. Inside this array element you find the stored value.
+A hashtable is a data structure based on key-value pairs.
+You provide a key and a value to this structure, then, the hashtable will store
+the input value at a location that can be identified by the input
+key that you provided.
+It does that by using an underlying array and a hash function.
+These two components are essential to how a hashtable works.
 
-The struct `HashMap` from this module provides a general-purpose hashtable,
-which have very fast operations (lookup, insertion, deletion), and also,
-quite high load factors for low memory usage.
+Under the hood, the hashtable contains an array. This array is where the values
+are stored, and the elements of this array are usually called of *buckets*.
+So the values that you provide to the hashtable are stored inside buckets,
+and you access each bucket by using an index.
+
+When you provide a key to a hashtable, it passes this key to the
+hash function. This hash function uses some sort of hashing algorithm to transform
+this key into an index. This index is actually an array index. It is a position
+in the underlying array of the hashtable.
+This is how a key identifies a specific position (or location) inside the hashtable
+structure.
+
+So you provide a key to the hashtable, and this key identifies an specific location
+inside the hastable, then, the hashtable takes the input value that you provided,
+and stores this value in the location identified by the input key that you provided.
+You could say that the key maps to the value stored in the hashtable. You find
+the value, by using the key that identifies the location where the value is stored.
+The @fig-hashtable presents this process visually.
+
+
+![A diagram of a Hashtable. Source: Wikipedia, the free encyclopedia.](./../Figures/hashtable.svg){#fig-hashtable}
+
+
+The operation described in the previous paragraph is normally called an *insertion* operation.
+Because you are inserting new values into the hashtable.
+But there are other types of operations in hashtables such as *delete* and *lookup*.
+Delete is self describing, it is when you delete (or remove) a value from the hashtable.
+While lookup corresponds to when you retrieve (or look at) a value that is stored in
+the hashtable, by using the key that identifies the location where this value is stored.
+
+Sometimes, instead of storing the values directly, the underlying array of the hashtable might be an array of pointers,
+i.e. the buckets of the array stores pointers that points to the value,
+or also, may be an array of linked lists.
+These cases are commom on hashtables that allows duplicate keys, or, in other words,
+on hashtables that effectively handle "collisions" that may arise from the hash function.
+
+Duplicate keys, or this "collision" thing that I'm talking about, is when you have two different keys that points to the same location (i.e. to the same index)
+in the underlying array of the hashtable. This might happen depending on the characteristics of the hash function
+that is being used in the hashtable. Some implementations of the hashtable will actively deal with collisions,
+meaning that, they will handle this case in some way. For example, the hashtable
+might transform all buckets into linked lists. Because with a liked list you can store
+multiple values into a single bucket.
+
+There are different techniques to handle collisions in hashtables, which I will not describe
+in this book, because it is not our main scope here. But you can find a good description of
+some of the most commom techniques at the Wikipedia page of hashtables [@wikipedia_hashtables].
+
+
+### Hashtables in Zig
+
+The Zig Standard Library provides different implementations of a hashtable,
+like the struct `HashMap`. Each implementation have it's own cons and pros, which we will
+discuss later on, and all of them are available through the `std.hash_map` module.
+
+The `HashMap` struct is a general-purpose hashtable,
+which have very fast operations (lookup, insertion, delete), and also,
+quite high load factors for low memory usage. You can create and provide a context object
+to the `HashMap` constructor. This context object allows you to tailor
+the behaviour of the hashtable itself, because you can
+provide a hash function implementation to be used by the hashtable
+through this context object.
+
+But let's not worry about this context object now, because it is meant to be used
+by "experts in the field of hashtables". Since we are most likely not
+experts in this field, we are going to take the easy way to create
+a hashtable. Which is by using the `AutoHashMap()` function.
+
+
+This `AutoHashMap()` function is essentially a "create a hashtable object that uses the default settings"
+type of function. It chooses a context object, and, therefore, a hash function implementation,
+automatically for you. This function receives two data types as input, the first data type is the data type of the keys
+that will be used in this hashtable, while the second data type is the data type of that data that will be
+stored inside the hashtable, that is, the data type of the values to be stored.
+
+In the example below, we are providing the data type `u32` in the first argument, and `u16` in the second argument of this
+function. It means that we are going to use `u32` values as keys in this hashtable, while `u16` values are the actual values
+that are going to be stored into this hashtable.
+At the end of this process, the `hash_table` object contains a `HashMap` object as output
+that uses the default context, and the default load factor.
+
+
+```{zig}
+#| auto_main: false
+const std = @import("std");
+const AutoHashMap = std.hash_map.AutoHashMap;
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    var hash_table = AutoHashMap(u32, u16).init(allocator);
+    defer hash_table.deinit();
+
+    try hash_table.put(54321, 89);
+    try hash_table.put(50050, 55);
+    try hash_table.put(57709, 41);
+    std.debug.print(
+        "N of values stored: {d}\n",
+        .{hash_table.count()}
+    );
+    std.debug.print(
+        "Value at key 50050: {d}\n",
+        .{hash_table.get(50050).?}
+    );
+
+    if (hash_table.remove(57709)) {
+        std.debug.print(
+            "Value at key 57709 succesfully removed!\n",
+            .{}
+        );
+    }
+    std.debug.print(
+        "N of values stored: {d}\n",
+        .{hash_table.count()}
+    );
+}
+```
+
+```
+N of values stored: 3
+Value at key 50050: 55
+Value at key 57709 succesfully removed!
+N of values stored: 2
+```
+
+You can add/put new values into the hashtable by using the `put()` method. The first argument
+is the key to be used, and the second argument is the actual value that you want to store inside
+the hashtable. In the example below, we first add the value 89 using the key 54321, next, we add
+the value 55 using the key 50050, etc.
+
+Notice that we used the method `count()` to see how many values are currently stored in the
+hashtable. After that, we also used the `get()` method to access (or look) at the value stored in
+the position identified by the key 500050. The output of this `get()` method is an optional value,
+and that is why we use the `?` method at the end to get access to the actual value.
+
+Also notice that we can remove (or delete) values from a hashtables by using the `remove()` method.
+You provide the key that identifies the value that you want to delete, then, the method will
+delete this value and return a `true` value as output. This `true` value essentially tells us
+that the method succesfully deleted the value.
+
+But this delete operation might not be always successful. For example, you might provide the wrong
+key to this method. I mean, maybe you provide
+(either intentionally or unintentionally) a key that points to an empty bucket,
+i.e. a bucket that still doesn't have a value in it.
+In this case, the `remove()` method would return a `false` value.
+
+
+### Fetch operations
+
+A `HashMap` object also offers a set of "fetch operations", a fetch operation
+returns as output the key-value pair that you are performing the action over. These fetch operations
+are performed by the methods `fetchPut()` and `fetchRemove()`. As their name suggests, they
+are used to insert and to delete values from the hashtable.
+
+But when you use these methods, they not only insert or delete the value, but they also return
+as output a key-value pair containing the key and the value that were used in this operation.
+For example, if you run
 
