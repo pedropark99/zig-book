@@ -295,6 +295,7 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#what-is-a-hashtable" id="toc-what-is-a-hashtable" class="nav-link" data-scroll-target="#what-is-a-hashtable"><span class="header-section-number">11.2.1</span> What is a hashtable?</a></li>
   <li><a href="#hashtables-in-zig" id="toc-hashtables-in-zig" class="nav-link" data-scroll-target="#hashtables-in-zig"><span class="header-section-number">11.2.2</span> Hashtables in Zig</a></li>
+  <li><a href="#iterating-through-the-hashtable" id="toc-iterating-through-the-hashtable" class="nav-link" data-scroll-target="#iterating-through-the-hashtable"><span class="header-section-number">11.2.3</span> Iterating through the hashtable</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -511,6 +512,39 @@ N of values stored: 2</code></pre>
 <p>Notice that we used the method <code>count()</code> to see how many values are currently stored in the hashtable. After that, we also used the <code>get()</code> method to access (or look) at the value stored in the position identified by the key 500050. The output of this <code>get()</code> method is an optional value, and that is why we use the <code>?</code> method at the end to get access to the actual value.</p>
 <p>Also notice that we can remove (or delete) values from a hashtables by using the <code>remove()</code> method. You provide the key that identifies the value that you want to delete, then, the method will delete this value and return a <code>true</code> value as output. This <code>true</code> value essentially tells us that the method succesfully deleted the value.</p>
 <p>But this delete operation might not be always successful. For example, you might provide the wrong key to this method. I mean, maybe you provide (either intentionally or unintentionally) a key that points to an empty bucket, i.e.&nbsp;a bucket that still doesn’t have a value in it. In this case, the <code>remove()</code> method would return a <code>false</code> value.</p>
+</section>
+<section id="iterating-through-the-hashtable" class="level3" data-number="11.2.3">
+<h3 data-number="11.2.3" class="anchored" data-anchor-id="iterating-through-the-hashtable"><span class="header-section-number">11.2.3</span> Iterating through the hashtable</h3>
+<p>Iterating through the keys and values that are currently being stored in the hashtable is a very commom need. You can do that in Zig by using an iterator object that can iterate through the elements of you hashtable object.</p>
+<p>This iterator object works like any other iterator object that you would find in languages such as C++ and Rust. It is basically a pointer object that points to some value in the container, and has a <code>next()</code> method that you can use to navigate (or iterate) through the next values in the container.</p>
+<p>You can create such iterator object by using the <code>iterator()</code> method of the hashtable object. This method returns an iterator object, from which you can use the <code>next()</code> method in conjunction with a while loop to iterate through the elements of your hashtable. The <code>next()</code> method returns an optional <code>Entry</code> value, and therefore, you must unwrap this optional value to get the actual <code>Entry</code> value from which you can access the key and also the value identified by this key.</p>
+<p>With this <code>Entry</code> value at hand, you can access the key of this current entry by using the <code>key_ptr</code> attribute and dereferencing the pointer that lives inside of it, while the value identified by this key is accessed through the <code>value_ptr</code> attribute instead, which is also a pointer to be dereferenced. The code example below demonstrates the use of this elements:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> AutoHashMap = std.hash_map.AutoHashMap;</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> hash_table = AutoHashMap(<span class="dt">u32</span>, <span class="dt">u16</span>).init(allocator);</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> hash_table.deinit();</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> hash_table.put(<span class="dv">54321</span>, <span class="dv">89</span>);</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> hash_table.put(<span class="dv">50050</span>, <span class="dv">55</span>);</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> hash_table.put(<span class="dv">57709</span>, <span class="dv">41</span>);</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> it = hash_table.iterator();</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (it.next()) |kv| <span class="op">{</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>        <span class="co">// Access the current key</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>        std.debug.print(<span class="st">"Key: {d} | "</span>, .<span class="op">{</span>kv.key_ptr.*<span class="op">}</span>);</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>        <span class="co">// Access the current value</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>        std.debug.print(<span class="st">"Value: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>kv.value_ptr.*<span class="op">}</span>);</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Key: 54321 | Value: 89
+Key: 50050 | Value: 55
+Key: 57709 | Value: 41</code></pre>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">

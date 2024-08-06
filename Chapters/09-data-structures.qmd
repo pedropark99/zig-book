@@ -459,3 +459,62 @@ i.e. a bucket that still doesn't have a value in it.
 In this case, the `remove()` method would return a `false` value.
 
 
+
+### Iterating through the hashtable
+
+Iterating through the keys and values that are currently being stored in
+the hashtable is a very commom need.
+You can do that in Zig by using an iterator object that can iterate
+through the elements of you hashtable object.
+
+This iterator object works like any other iterator object that you would
+find in languages such as C++ and Rust. It is basically a pointer object
+that points to some value in the container, and has a `next()` method
+that you can use to navigate (or iterate) through the next values in the
+container.
+
+You can create such iterator object by using the `iterator()` method of the hashtable object.
+This method returns an iterator object, from which you can use the `next()` method in conjunction
+with a while loop to iterate through the elements of your hashtable. The `next()` method returns an optional
+`Entry` value, and therefore, you must unwrap this optional value to get the actual `Entry` value
+from which you can access the key and also the value identified by this key.
+
+With this `Entry` value at hand, you can access the key of this current entry by using the `key_ptr`
+attribute and dereferencing the pointer that lives inside of it, while the value identified by this
+key is accessed through the `value_ptr` attribute instead, which is also a pointer to be dereferenced.
+The code example below demonstrates the use of this elements:
+
+
+```{zig}
+#| auto_main: false
+const std = @import("std");
+const AutoHashMap = std.hash_map.AutoHashMap;
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    var hash_table = AutoHashMap(u32, u16).init(allocator);
+    defer hash_table.deinit();
+
+    try hash_table.put(54321, 89);
+    try hash_table.put(50050, 55);
+    try hash_table.put(57709, 41);
+
+    var it = hash_table.iterator();
+    while (it.next()) |kv| {
+        // Access the current key
+        std.debug.print("Key: {d} | ", .{kv.key_ptr.*});
+        // Access the current value
+        std.debug.print("Value: {d}\n", .{kv.value_ptr.*});
+    }
+}
+```
+
+```
+Key: 54321 | Value: 89
+Key: 50050 | Value: 55
+Key: 57709 | Value: 41
+```
+
+
+
