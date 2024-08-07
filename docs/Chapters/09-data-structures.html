@@ -300,8 +300,12 @@ window.Quarto = {
   <li><a href="#sec-string-hash-map" id="toc-sec-string-hash-map" class="nav-link" data-scroll-target="#sec-string-hash-map"><span class="header-section-number">11.2.5</span> The <code>StringHashMap</code> hashtable</a></li>
   <li><a href="#the-stringarrayhashmap-hashtable" id="toc-the-stringarrayhashmap-hashtable" class="nav-link" data-scroll-target="#the-stringarrayhashmap-hashtable"><span class="header-section-number">11.2.6</span> The <code>StringArrayHashMap</code> hashtable</a></li>
   </ul></li>
-  <li><a href="#understanding-comptime-in-zig" id="toc-understanding-comptime-in-zig" class="nav-link" data-scroll-target="#understanding-comptime-in-zig"><span class="header-section-number">11.3</span> Understanding <code>comptime</code> in Zig</a></li>
-  <li><a href="#linked-lists" id="toc-linked-lists" class="nav-link" data-scroll-target="#linked-lists"><span class="header-section-number">11.4</span> Linked lists</a></li>
+  <li><a href="#understanding-comptime-in-zig" id="toc-understanding-comptime-in-zig" class="nav-link" data-scroll-target="#understanding-comptime-in-zig"><span class="header-section-number">11.3</span> Understanding <code>comptime</code> in Zig</a>
+  <ul class="collapse">
+  <li><a href="#applying-over-a-function-argument" id="toc-applying-over-a-function-argument" class="nav-link" data-scroll-target="#applying-over-a-function-argument"><span class="header-section-number">11.3.1</span> Applying over a function argument</a></li>
+  <li><a href="#applying-over-an-expression" id="toc-applying-over-an-expression" class="nav-link" data-scroll-target="#applying-over-an-expression"><span class="header-section-number">11.3.2</span> Applying over an expression</a></li>
+  </ul></li>
+  <li><a href="#sec-generics" id="toc-sec-generics" class="nav-link" data-scroll-target="#sec-generics"><span class="header-section-number">11.4</span> Generics with Linked Lists</a></li>
   </ul>
 </nav>
     </div>
@@ -523,7 +527,7 @@ N of values stored: 2</code></pre>
 <p>Iterating through the keys and values that are currently being stored in the hashtable is a very commom need. You can do that in Zig by using an iterator object that can iterate through the elements of you hashtable object.</p>
 <p>This iterator object works like any other iterator object that you would find in languages such as C++ and Rust. It is basically a pointer object that points to some value in the container, and has a <code>next()</code> method that you can use to navigate (or iterate) through the next values in the container.</p>
 <p>You can create such iterator object by using the <code>iterator()</code> method of the hashtable object. This method returns an iterator object, from which you can use the <code>next()</code> method in conjunction with a while loop to iterate through the elements of your hashtable. The <code>next()</code> method returns an optional <code>Entry</code> value, and therefore, you must unwrap this optional value to get the actual <code>Entry</code> value from which you can access the key and also the value identified by this key.</p>
-<p>With this <code>Entry</code> value at hand, you can access the key of this current entry by using the <code>key_ptr</code> attribute and dereferencing the pointer that lives inside of it, while the value identified by this key is accessed through the <code>value_ptr</code> attribute instead, which is also a pointer to be dereferenced. The code example below demonstrates the use of this elements:</p>
+<p>With this <code>Entry</code> value at hand, you can access the key of this current entry by using the <code>key_ptr</code> attribute and dereferencing the pointer that lives inside of it, while the value identified by this key is accessed through the <code>value_ptr</code> attribute instead, which is also a pointer to be dereferenced. The code example below demonstrates the use of these elements:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> AutoHashMap = std.hash_map.AutoHashMap;</span>
@@ -632,14 +636,98 @@ Key: Matheus | Age: 21</code></pre>
 </section>
 <section id="understanding-comptime-in-zig" class="level2" data-number="11.3">
 <h2 data-number="11.3" class="anchored" data-anchor-id="understanding-comptime-in-zig"><span class="header-section-number">11.3</span> Understanding <code>comptime</code> in Zig</h2>
+<p>One of the key features of Zig is <code>comptime</code>. This keyword introduces a whole new concept and paradigm, that is tightly connected with the compilation process. At <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a> we described the importance and the role that “compile-time vs runtime” plays into Zig. At that section, we learned that the rules applied to a value/object change a lot depending on whether this value is known at compile-time, or just at runtime.</p>
+<p>The <code>comptime</code> keyword is strongly related to these two spaces of time in the compilation process, i.e.&nbsp;the compile-time and the runtime. Let’s quickly recap the differences. Compile-time is the period of time when your Zig source code is being compiled by the <code>zig</code> compiler, while the runtime is the period of time when your Zig program is being executed, i.e.&nbsp;when we execute the binary files outputted by the <code>zig</code> compiler.</p>
+<p>There are three ways in which you can apply the <code>comptime</code> keyword, which are:</p>
+<ul>
+<li>apply <code>comptime</code> on a function argument.</li>
+<li>apply <code>comptime</code> on an object.</li>
+<li>apply <code>comptime</code> on a block of expressions.</li>
+</ul>
+<section id="applying-over-a-function-argument" class="level3" data-number="11.3.1">
+<h3 data-number="11.3.1" class="anchored" data-anchor-id="applying-over-a-function-argument"><span class="header-section-number">11.3.1</span> Applying over a function argument</h3>
+<p>When you apply the <code>comptime</code> on a function argument you are saying to the <code>zig</code> compiler that the value assigned to that particular argument of the function must be known at compile-time. We explained in details at <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a> what exactly “value known at compile-time” means, so, in case you have doubts about this idea, comeback to that section.</p>
+<p>Now let’s think about the consequences of this idea. First of all, we are imposing a limit, or, a requirement to that particular function argument. If the programmer accidentally tries to give a value to this function argument that is not known at compile time, the <code>zig</code> compiler will notice this problem, and as a consequence, it will raise a compilation error saying that it cannot compile your program. Because you are providing a value that is “runtime known” to a function argument that must be “compile-time known”.</p>
+<p>Take a look at this very simple example below, where we define a <code>double()</code> function, that simply doubles the input value named <code>num</code>. Notice that, we use the <code>comptime</code> keyword before the name of the function argument. This keyword is marking the function argument <code>num</code> as a “comptime argument”.</p>
+<p>That is a function argument whose value must be compile-time known. This is why the expression <code>double(5678)</code> is valid, and no compilation errors are raised. Because the value <code>5678</code> is compile-time known, so this is the expected behaviour for this function.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> double(<span class="kw">comptime</span> num: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> num * <span class="dv">2</span>;</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"test comptime"</span> <span class="op">{</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    _ = double(<span class="dv">5678</span>);</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>But what if we provide a number that is not compile-time known to this function? For example, we might provide a different input value to this function depending on the target OS of our compilation process. The code example delow demonstrates such case.</p>
+<p>Because the value of the object <code>n</code> is determined at runtime, we cannot provide this object as input to the <code>double()</code> function. The <code>zig</code> compiler will not allow it, because we marked the <code>num</code> argument as a “comptime argument”. That is why the <code>zig</code> compiler raises the compile-time error exposed below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> builtin = <span class="bu">@import</span>(<span class="st">"builtin"</span>);</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> double(<span class="kw">comptime</span> num: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> num * <span class="dv">2</span>;</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"test comptime"</span> <span class="op">{</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> n: <span class="dt">u32</span> = <span class="cn">undefined</span>;</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (builtin.target.os.tag == .windows) <span class="op">{</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>        n = <span class="dv">1234</span>;</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>        n = <span class="dv">5678</span>;</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    _ = double(n);</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>t.zig:12:16: error: runtime-known argument passed to comptime parameter</code></pre>
+<p>Comptime arguments are frequently used on functions that return some sort of generic structure. In fact, <code>comptime</code> is the essence (or the basis) to make generics in Zig. We are going to talk more about generics at <a href="#sec-generics" class="quarto-xref"><span>Section 11.4</span></a>.</p>
+<p>For now, let’s take a look at this code example from <span class="citation" data-cites="karlseguin_generics">Seguin (<a href="../references.html#ref-karlseguin_generics" role="doc-biblioref">2024</a>)</span>. You can see that this <code>IntArray()</code> function have one argument named <code>length</code>. This argument is marked as comptime, and receives a value of type <code>usize</code> as input. So the value given to this argument must be compile-time known. We can also see that this function returns an array of <code>i64</code> values as output.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> IntArray(<span class="kw">comptime</span> length: <span class="dt">usize</span>) <span class="dt">type</span> <span class="op">{</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> [length]<span class="dt">i64</span>;</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now, the key component of this function is the <code>length</code> argument. This argument is used to determine the size of the array that is produced by the function. Let’s think about the consequences of that. If the size of the array is dependent on the value assigned to the <code>length</code> argument, this means that the data type of the output of the function depends on the value of this <code>length</code> argument.</p>
+<p>Let this statement sink for a bit in your mind. As I described at <a href="01-zig-weird.html#sec-root-file" class="quarto-xref"><span>Section 1.2.2</span></a>, Zig is a strongly-typed language, specially on function declarations. So every time we write a function in Zig, we have to annotate the data type of the value returned by the function. But how can we do that, if this data type depends on the value given to the argument of the function?</p>
+<p>Think about this for a second. If <code>length</code> is equal to 3 for example, then, the return type of the function is <code>[3]i64</code>. But if <code>length</code> is equal to 40, then, the return type becomes <code>[40]i64</code>. At this point the <code>zig</code> compiler would be confused, and raise a compilation error, saying something like this:</p>
+<blockquote class="blockquote">
+<p>Hey! You have annotated that this function should return a <code>[3]i64</code> value, but I am seeing a <code>[40]i64</code> value instead! This doesn’t look right!</p>
+</blockquote>
+<p>So how can you solve this problem? How do we overcome this barrier? This is when the <code>type</code> keyword comes in. This <code>type</code> keyword is basically saying to the <code>zig</code> compiler that this function will return some type, but it doesn’t know yet what exactly type that is. We will talk more about this at <a href="#sec-generics" class="quarto-xref"><span>Section 11.4</span></a>.</p>
 </section>
-<section id="linked-lists" class="level2" data-number="11.4">
-<h2 data-number="11.4" class="anchored" data-anchor-id="linked-lists"><span class="header-section-number">11.4</span> Linked lists</h2>
+<section id="applying-over-an-expression" class="level3" data-number="11.3.2">
+<h3 data-number="11.3.2" class="anchored" data-anchor-id="applying-over-an-expression"><span class="header-section-number">11.3.2</span> Applying over an expression</h3>
+<p>When you apply the <code>comptime</code> keyword over an expression, then, it is garanteed that the <code>zig</code> compiler will execute this expression at compile-time. If for some reason, this expression cannot be executed at compile-time (e.g.&nbsp;for example, maybe this expression depends on a value that is only known at runtime), then, the <code>zig</code> compiler will raise a compilation error.</p>
+<p>Take this example from the official documentation of Zig <span class="citation" data-cites="zigdocs">(<a href="../references.html#ref-zigdocs" role="doc-biblioref">Zig Software Foundation 2024</a>)</span>. We are executing the same <code>fibonacci()</code> function both at runtime, and, at compile-time. The function is by default executed at runtime, but because we use the <code>comptime</code> keyword at the second “try expression”, this expression is executed at compile-time.</p>
+<p>This might be a bit confusing for some people. Yes! When I say that this expression is executed at compile-time, I mean that this expression is compiled and executed while the <code>zig</code> compiler is compiling your Zig source code.</p>
+<p>If you think hard enough about how the C and C++ macros work, you can reach the conclusion that they are also executed at compile-time. Because C and C++ macros are just simple text replacements operations, that are performed at compile-time to form the final version of the C or C++ source code that get’s sent to the compiler.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expect = <span class="bu">@import</span>(<span class="st">"std"</span>).testing.expect;</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> fibonacci(index: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (index &lt; <span class="dv">2</span>) <span class="kw">return</span> index;</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> fibonacci(index - <span class="dv">1</span>) + fibonacci(index - <span class="dv">2</span>);</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"fibonacci"</span> <span class="op">{</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// test fibonacci at run-time</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect(fibonacci(<span class="dv">7</span>) == <span class="dv">13</span>);</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">// test fibonacci at compile-time</span></span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> <span class="kw">comptime</span> expect(fibonacci(<span class="dv">7</span>) == <span class="dv">13</span>);</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>A lot of your Zig source code might be potentially executed at compile-time, because the <code>zig</code> compiler can figure it out the result value of some types of expressions. Specially if these expressions involves only compile-time known values. We have talked about this at <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a>.</p>
+<p>But when you use the <code>comptime</code> keyword on an expression, there is no “it might be executed at compile-time” anymore. With the <code>comptime</code> keyword you are ordering the <code>zig</code> compiler to execute this expression at compile-time. You are imposing this rule, it is garanteed that the compiler will always execute it at compile-time. Or it at least, the compiler will try to execute it. If the compiler cannot execute the expression for whatever reason, the compiler will raise a compilation error.</p>
+</section>
+</section>
+<section id="sec-generics" class="level2" data-number="11.4">
+<h2 data-number="11.4" class="anchored" data-anchor-id="sec-generics"><span class="header-section-number">11.4</span> Generics with Linked Lists</h2>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-karlseguin_generics" class="csl-entry" role="listitem">
+Seguin, Karl. 2024. <span>“Generics.”</span> <a href="https://www.openmymind.net/learning_zig/generics/">https://www.openmymind.net/learning_zig/generics/</a>.
+</div>
 <div id="ref-wikipedia_hashtables" class="csl-entry" role="listitem">
 Wikipedia. 2024. <span>“Hash Tables.”</span> Wikipedia. <a href="https://en.wikipedia.org/wiki/Hash_table">https://en.wikipedia.org/wiki/Hash_table</a>.
+</div>
+<div id="ref-zigdocs" class="csl-entry" role="listitem">
+Zig Software Foundation. 2024. <span>“Language Reference.”</span> Zig Software Foundation. <a href="https://ziglang.org/documentation/master/">https://ziglang.org/documentation/master/</a>.
 </div>
 </div>
 </section>

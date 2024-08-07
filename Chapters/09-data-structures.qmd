@@ -482,7 +482,7 @@ from which you can access the key and also the value identified by this key.
 With this `Entry` value at hand, you can access the key of this current entry by using the `key_ptr`
 attribute and dereferencing the pointer that lives inside of it, while the value identified by this
 key is accessed through the `value_ptr` attribute instead, which is also a pointer to be dereferenced.
-The code example below demonstrates the use of this elements:
+The code example below demonstrates the use of these elements:
 
 
 ```{zig}
@@ -700,11 +700,186 @@ var ages = std.StringArrayHashMap(u8).init(allocator);
 
 
 
-
-
 ## Understanding `comptime` in Zig
 
+One of the key features of Zig is `comptime`. This keyword introduces a whole
+new concept and paradigm, that is tightly connected with the compilation process.
+At @sec-compile-time we described the importance and the role that "compile-time vs runtime"
+plays into Zig. At that section, we learned that the rules applied to a value/object change
+a lot depending on whether this value is known at compile-time, or just at runtime.
 
-## Linked lists
+The `comptime` keyword is strongly related to these two spaces of time in the compilation process,
+i.e. the compile-time and the runtime. Let's quickly recap the differences. Compile-time is the period of time when your
+Zig source code is being compiled by the `zig` compiler, while the runtime is
+the period of time when your Zig program is being executed, i.e. when we execute
+the binary files outputted by the `zig` compiler.
+
+There are three ways in which you can apply the `comptime` keyword, which are:
+
+- apply `comptime` on a function argument.
+- apply `comptime` on an object.
+- apply `comptime` on a block of expressions.
+
+
+
+### Applying over a function argument
+
+When you apply the `comptime` on a function argument you are saying to the `zig` compiler
+that the value assigned to that particular argument of the function must be known at compile-time.
+We explained in details at @sec-compile-time what exactly "value known at compile-time" means, so,
+in case you have doubts about this idea, comeback to that section.
+
+Now let's think about the consequences of this idea. First of all, we are imposing a limit, or, a requirement
+to that particular function argument. If the programmer accidentally tries to give a value to this
+function argument that is not known at compile time, the `zig` compiler will notice this problem, and
+as a consequence, it will raise a compilation error saying that it cannot compile your program. Because
+you are providing a value that is "runtime known" to a function argument that must be "compile-time known".
+
+Take a look at this very simple example below, where we define a `double()` function, that simply
+doubles the input value named `num`. Notice that, we use the `comptime` keyword before the name
+of the function argument. This keyword is marking the function argument `num` as a "comptime argument".
+
+That is a function argument whose value must be compile-time known. This is why the expression `double(5678)`
+is valid, and no compilation errors are raised.
+Because the value `5678` is compile-time known, so this is the expected behaviour for this function.
+
+```{zig}
+#| auto_main: false
+#| build_type: "test"
+fn double(comptime num: u32) u32 {
+    return num * 2;
+}
+test "test comptime" {
+    _ = double(5678);
+}
+```
+
+But what if we provide a number that is not compile-time known to this function?
+For example, we might provide a different input value to this function depending
+on the target OS of our compilation process. The code example delow demonstrates such case.
+
+Because the value of the object `n` is determined at runtime, we cannot provide this object
+as input to the `double()` function. The `zig` compiler will not allow it, because we marked
+the `num` argument as a "comptime argument". That is why the `zig` compiler raises
+the compile-time error exposed below:
+
+```{zig}
+#| auto_main: false
+#| build_type: "test"
+const builtin = @import("builtin");
+fn double(comptime num: u32) u32 {
+    return num * 2;
+}
+test "test comptime" {
+    var n: u32 = undefined;
+    if (builtin.target.os.tag == .windows) {
+        n = 1234;
+    } else {
+        n = 5678;
+    }
+    _ = double(n);
+}
+```
+
+```
+t.zig:12:16: error: runtime-known argument passed to comptime parameter
+```
+
+Comptime arguments are frequently used on functions that return some sort
+of generic structure. In fact, `comptime` is the essence (or the basis) to make generics in Zig.
+We are going to talk more about generics at @sec-generics.
+
+For now, let's take a look at this code example from @karlseguin_generics. You
+can see that this `IntArray()` function have one argument named `length`.
+This argument is marked as comptime, and receives a value of type `usize` as input. So the value given to this argument
+must be compile-time known.
+We can also see that this function returns an array of `i64` values as output.
+
+```{zig}
+#| eval: false
+fn IntArray(comptime length: usize) type {
+    return [length]i64;
+}
+```
+
+Now, the key component of this function is the `length` argument. This argument
+is used to determine the size of the array that is produced by the function. Let's
+think about the consequences of that. If the size of the array is dependent on
+the value assigned to the `length` argument, this means that the data type of the
+output of the function depends on the value of this `length` argument.
+
+Let this statement sink for a bit in your mind. As I described at @sec-root-file,
+Zig is a strongly-typed language, specially on function declarations.
+So every time we write a function in Zig, we have to annotate the data type of
+the value returned by the function. But how can we do that, if this data type
+depends on the value given to the argument of the function?
+
+Think about this for a second. If `length` is equal to 3 for example, then, the
+return type of the function is `[3]i64`. But if `length` is equal to 40, then,
+the return type becomes `[40]i64`. At this point the `zig` compiler would be confused,
+and raise a compilation error, saying something like this:
+
+> Hey! You have annotated that this function should return a `[3]i64` value, but I am seeing a `[40]i64` value instead! This doesn't look right!
+
+So how can you solve this problem? How do we overcome this barrier? This is when
+the `type` keyword comes in. This `type` keyword is basically saying to the
+`zig` compiler that this function will return some type, but it doesn't know yet
+what exactly type that is. We will talk more about this at @sec-generics.
+
+
+
+### Applying over an expression
+
+When you apply the `comptime` keyword over an expression, then, it is garanteed that the `zig` compiler will
+execute this expression at compile-time. If for some reason, this expression cannot be executed at compile-time
+(e.g. for example, maybe this expression depends on a value that is only known at runtime), then, the `zig` compiler
+will raise a compilation error.
+
+Take this example from the official documentation of Zig [@zigdocs]. We
+are executing the same `fibonacci()` function both at runtime, and, at compile-time.
+The function is by default executed at runtime, but because we use the `comptime`
+keyword at the second "try expression", this expression is executed at compile-time.
+
+This might be a bit confusing for some people. Yes! When I say that this expression
+is executed at compile-time, I mean that this expression is compiled and executed
+while the `zig` compiler is compiling your Zig source code.
+
+If you think hard enough about how the C and C++ macros work, you can reach the conclusion
+that they are also executed at compile-time. Because C and C++ macros are
+just simple text replacements operations, that are performed at compile-time to form the final version
+of the C or C++ source code that get's sent to the compiler.
+
+```{zig}
+#| auto_main: false
+#| build_type: "test"
+const expect = @import("std").testing.expect;
+fn fibonacci(index: u32) u32 {
+    if (index < 2) return index;
+    return fibonacci(index - 1) + fibonacci(index - 2);
+}
+
+test "fibonacci" {
+    // test fibonacci at run-time
+    try expect(fibonacci(7) == 13);
+    // test fibonacci at compile-time
+    try comptime expect(fibonacci(7) == 13);
+}
+```
+
+A lot of your Zig source code might be potentially executed at compile-time,
+because the `zig` compiler can figure it out the result value of some types of expressions.
+Specially if these expressions involves only compile-time known values.
+We have talked about this at @sec-compile-time.
+
+But when you use the `comptime` keyword on an expression, there is no "it might be executed
+at compile-time" anymore. With the `comptime` keyword you are ordering the `zig` compiler
+to execute this expression at compile-time. You are imposing this rule, it is garanteed
+that the compiler will always execute it at compile-time. Or it at least, the compiler
+will try to execute it. If the compiler cannot execute the expression for whatever reason,
+the compiler will raise a compilation error.
+
+
+
+## Generics with Linked Lists {#sec-generics}
 
 
