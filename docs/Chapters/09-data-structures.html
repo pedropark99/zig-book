@@ -296,8 +296,12 @@ window.Quarto = {
   <li><a href="#what-is-a-hashtable" id="toc-what-is-a-hashtable" class="nav-link" data-scroll-target="#what-is-a-hashtable"><span class="header-section-number">11.2.1</span> What is a hashtable?</a></li>
   <li><a href="#sec-hashmap" id="toc-sec-hashmap" class="nav-link" data-scroll-target="#sec-hashmap"><span class="header-section-number">11.2.2</span> Hashtables in Zig</a></li>
   <li><a href="#iterating-through-the-hashtable" id="toc-iterating-through-the-hashtable" class="nav-link" data-scroll-target="#iterating-through-the-hashtable"><span class="header-section-number">11.2.3</span> Iterating through the hashtable</a></li>
-  <li><a href="#the-arrayhashmap-struct" id="toc-the-arrayhashmap-struct" class="nav-link" data-scroll-target="#the-arrayhashmap-struct"><span class="header-section-number">11.2.4</span> The <code>ArrayHashMap</code> struct</a></li>
+  <li><a href="#sec-array-map" id="toc-sec-array-map" class="nav-link" data-scroll-target="#sec-array-map"><span class="header-section-number">11.2.4</span> The <code>ArrayHashMap</code> hashtable</a></li>
+  <li><a href="#sec-string-hash-map" id="toc-sec-string-hash-map" class="nav-link" data-scroll-target="#sec-string-hash-map"><span class="header-section-number">11.2.5</span> The <code>StringHashMap</code> hashtable</a></li>
+  <li><a href="#the-stringarrayhashmap-hashtable" id="toc-the-stringarrayhashmap-hashtable" class="nav-link" data-scroll-target="#the-stringarrayhashmap-hashtable"><span class="header-section-number">11.2.6</span> The <code>StringArrayHashMap</code> hashtable</a></li>
   </ul></li>
+  <li><a href="#understanding-comptime-in-zig" id="toc-understanding-comptime-in-zig" class="nav-link" data-scroll-target="#understanding-comptime-in-zig"><span class="header-section-number">11.3</span> Understanding <code>comptime</code> in Zig</a></li>
+  <li><a href="#linked-lists" id="toc-linked-lists" class="nav-link" data-scroll-target="#linked-lists"><span class="header-section-number">11.4</span> Linked lists</a></li>
   </ul>
 </nav>
     </div>
@@ -558,8 +562,8 @@ Key: 57709 | Value: 41</code></pre>
 Key: 50050
 Key: 57709</code></pre>
 </section>
-<section id="the-arrayhashmap-struct" class="level3" data-number="11.2.4">
-<h3 data-number="11.2.4" class="anchored" data-anchor-id="the-arrayhashmap-struct"><span class="header-section-number">11.2.4</span> The <code>ArrayHashMap</code> struct</h3>
+<section id="sec-array-map" class="level3" data-number="11.2.4">
+<h3 data-number="11.2.4" class="anchored" data-anchor-id="sec-array-map"><span class="header-section-number">11.2.4</span> The <code>ArrayHashMap</code> hashtable</h3>
 <p>If you need to iterate through the elements of your hashtable constantly, you might want to use the <code>ArrayHashMap</code> struct for your specific case, instead of going with the usual and general-purpose <code>HashMap</code> struct.</p>
 <p>The <code>ArrayHashMap</code> struct creates a hashtable that is faster to iterate over. That is why this specific type of hashtable might be valuable to you. Some other properties of a <code>ArrayHashMap</code> hashtable are:</p>
 <ul>
@@ -577,6 +581,60 @@ Key: 57709</code></pre>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    .init(allocator);</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> hash_table.deinit();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
+<section id="sec-string-hash-map" class="level3" data-number="11.2.5">
+<h3 data-number="11.2.5" class="anchored" data-anchor-id="sec-string-hash-map"><span class="header-section-number">11.2.5</span> The <code>StringHashMap</code> hashtable</h3>
+<p>One thing that you will notice in the other two types of hashtables that I presented in the last sections, is that neither of them accepts a slice data type in their keys. What this means is that you cannot use a slice value to represent a key in these types of hashtable.</p>
+<p>The most obvious consequence of this, is that you cannot use strings as keys in these hashtables. But is extremely commom to use string values as keys in hashtables.</p>
+<p>Take this very simple Javascript code snippet as an example. We are creating a simple hashtable object named <code>people</code>. Then, we add a new entry to this hashtable, which is identified by the string <code>'Pedro'</code>. This string is the key in this case, while the object containing different personal information such as age, height and city, is the value to be stored in the hashtable.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> people <span class="op">=</span> <span class="kw">new</span> <span class="bu">Object</span>()<span class="op">;</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>people[<span class="st">'Pedro'</span>] <span class="op">=</span> {</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'age'</span><span class="op">:</span> <span class="dv">25</span><span class="op">,</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">'height'</span><span class="op">:</span> <span class="fl">1.67</span><span class="op">,</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">'city'</span><span class="op">:</span> <span class="st">'Belo Horizonte'</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This pattern of using strings as keys is very commom in all sorts of situations. That is why the Zig Standard Library offers a specific type of hashtable for this purpose, which is created through the <code>StringHashMap()</code> function. This function creates a hashtable that uses strings as keys. The only input of this function is the data type of the values that will be stored into this hashtable.</p>
+<p>In the example below, I’m creating a hashtable to store the ages of different people. The keys to be used in this hashtable are the names of each person, while the value stored in the hashtable is the age of the person identified by the key.</p>
+<p>That is why I provide the <code>u8</code> data type (which is the data type used by the age values) as input to this <code>StringHashMap()</code> function. As the result, it creates a hashtable that uses string values as keys, and, that stores <code>u8</code> values in it. Notice that an allocator object is provided at the <code>init()</code> method of the resulting object from the <code>StringHashMap()</code> function.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> ages = std.StringHashMap(<span class="dt">u8</span>).init(allocator);</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> ages.deinit();</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> ages.put(<span class="st">"Pedro"</span>, <span class="dv">25</span>);</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> ages.put(<span class="st">"Matheus"</span>, <span class="dv">21</span>);</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> ages.put(<span class="st">"Abgail"</span>, <span class="dv">42</span>);</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> it = ages.iterator();</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (it.next()) |kv| <span class="op">{</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>        std.debug.print(<span class="st">"Key: {s} | "</span>, .<span class="op">{</span>kv.key_ptr.*<span class="op">}</span>);</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>        std.debug.print(<span class="st">"Age: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>kv.value_ptr.*<span class="op">}</span>);</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Key: Pedro | Age: 25
+Key: Abgail | Age: 42
+Key: Matheus | Age: 21</code></pre>
+</section>
+<section id="the-stringarrayhashmap-hashtable" class="level3" data-number="11.2.6">
+<h3 data-number="11.2.6" class="anchored" data-anchor-id="the-stringarrayhashmap-hashtable"><span class="header-section-number">11.2.6</span> The <code>StringArrayHashMap</code> hashtable</h3>
+<p>The Zig Standard Library also provides a type of hashtable that mix the cons and pros of the types of hashtables that were presented on the previous two sections. That is, a hashtable that uses strings as keys, but also have the advantages from the <code>ArrayHashMap</code> struct. In other words, you can have a hashtable that is fast to iterate over, that preserves insertion order, and also, that uses strings as keys.</p>
+<p>You can create such type of hashtable by using the <code>StringArrayHashMap()</code> function. This function accepts a data type as input, which is the data type of the values that are going to be stored inside this hashtable, in the same style as the function presented at <a href="#sec-string-hash-map" class="quarto-xref"><span>Section 11.2.5</span></a>.</p>
+<p>You can insert new values into this hashtable by using the same <code>put()</code> method that I presented at <a href="#sec-string-hash-map" class="quarto-xref"><span>Section 11.2.5</span></a>. And you can also get values from the hashtable by using the same <code>get()</code> method that I exposed on previous sections. Like it’s <code>ArrayHashMap</code> brother, to delete values from this specific type of hashtable, we also use the <code>orderedRemove()</code> and <code>swapRemove()</code> methods, with the same effects that I described at <a href="#sec-array-map" class="quarto-xref"><span>Section 11.2.4</span></a>.</p>
+<p>If we take the code example that was exposed at <a href="#sec-string-hash-map" class="quarto-xref"><span>Section 11.2.5</span></a>, we can achieve the exact same result with <code>StringArrayHashMap()</code>. All we have to do is to change the use of <code>StringHashMap()</code> to <code>StringArrayHashMap()</code> at the fifth line in this code example. It would change to this:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> ages = std.StringArrayHashMap(<span class="dt">u8</span>).init(allocator);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="understanding-comptime-in-zig" class="level2" data-number="11.3">
+<h2 data-number="11.3" class="anchored" data-anchor-id="understanding-comptime-in-zig"><span class="header-section-number">11.3</span> Understanding <code>comptime</code> in Zig</h2>
+</section>
+<section id="linked-lists" class="level2" data-number="11.4">
+<h2 data-number="11.4" class="anchored" data-anchor-id="linked-lists"><span class="header-section-number">11.4</span> Linked lists</h2>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
@@ -584,7 +642,6 @@ Key: 57709</code></pre>
 Wikipedia. 2024. <span>“Hash Tables.”</span> Wikipedia. <a href="https://en.wikipedia.org/wiki/Hash_table">https://en.wikipedia.org/wiki/Hash_table</a>.
 </div>
 </div>
-</section>
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>

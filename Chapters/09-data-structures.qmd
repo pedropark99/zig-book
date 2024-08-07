@@ -530,6 +530,7 @@ The code example below demonstrates what would this be for a key iterator,
 but you can replicate the same logic to a value iterator.
 
 ```{zig}
+#| eval: false
 var kit = hash_table.keyIterator();
 while (kit.next()) |key| {
     std.debug.print("Key: {d}\n", .{key.*});
@@ -543,7 +544,7 @@ Key: 57709
 ```
 
 
-### The `ArrayHashMap` hashtable
+### The `ArrayHashMap` hashtable {#sec-array-map}
 
 If you need to iterate through the elements of your hashtable constantly,
 you might want to use the `ArrayHashMap` struct for your specific case,
@@ -596,7 +597,106 @@ defer hash_table.deinit();
 
 
 
-### The `StringHashMap` hashtable
+### The `StringHashMap` hashtable {#sec-string-hash-map}
+
+One thing that you will notice in the other two types of hashtables that I
+presented in the last sections, is that neither of them accepts a slice data type
+in their keys.
+What this means is that you cannot use a slice value to represent a key in
+these types of hashtable.
+
+The most obvious consequence of this, is that you cannot use strings as keys
+in these hashtables. But is extremely commom to use string values as keys
+in hashtables.
+
+Take this very simple Javascript code snippet as an example. We are creating
+a simple hashtable object named `people`. Then, we add a new entry to this
+hashtable, which is identified by the string `'Pedro'`. This string is the
+key in this case, while the object containing different personal information such as
+age, height and city, is the value to be stored in the hashtable.
+
+```js
+var people = new Object();
+people['Pedro'] = {
+    'age': 25,
+    'height': 1.67,
+    'city': 'Belo Horizonte'
+};
+```
+
+This pattern of using strings as keys is very commom in
+all sorts of situations. That is why the Zig Standard Library offers a
+specific type of hashtable for this purpose, which is created through the `StringHashMap()` function.
+This function creates a hashtable that uses strings as keys. The only input of this
+function is the data type of the values that will be stored into this hashtable.
+
+In the example below, I'm creating a hashtable to store the ages of different people.
+The keys to be used in this hashtable are the names of each person, while the value stored in the
+hashtable is the age of the person identified by the key.
+
+That is why I provide the `u8` data type (which is the data type used by the age values) as input to this `StringHashMap()` function.
+As the result, it creates a hashtable that uses string values as keys, and, that stores
+`u8` values in it. Notice that an allocator object is provided at the `init()` method of the
+resulting object from the `StringHashMap()` function.
+
+```{zig}
+#| auto_main: false
+const std = @import("std");
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    var ages = std.StringHashMap(u8).init(allocator);
+    defer ages.deinit();
+
+    try ages.put("Pedro", 25);
+    try ages.put("Matheus", 21);
+    try ages.put("Abgail", 42);
+
+    var it = ages.iterator();
+    while (it.next()) |kv| {
+        std.debug.print("Key: {s} | ", .{kv.key_ptr.*});
+        std.debug.print("Age: {d}\n", .{kv.value_ptr.*});
+    }
+}
+```
+
+```
+Key: Pedro | Age: 25
+Key: Abgail | Age: 42
+Key: Matheus | Age: 21
+```
+
+
+### The `StringArrayHashMap` hashtable
+
+The Zig Standard Library also provides a type of hashtable that mix the cons and pros of the
+types of hashtables that were presented on the previous two sections. That is, a hashtable
+that uses strings as keys, but also have the advantages from the `ArrayHashMap` struct.
+In other words, you can have a hashtable that is fast to iterate over,
+that preserves insertion order, and also, that uses strings as keys.
+
+You can create such type of hashtable by using the `StringArrayHashMap()` function.
+This function accepts a data type as input, which is the data type of the values that are
+going to be stored inside this hashtable, in the same style as the function presented
+at @sec-string-hash-map.
+
+You can insert new values into this hashtable by using the same `put()` method that
+I presented at @sec-string-hash-map. And you can also get values from the hashtable
+by using the same `get()` method that I exposed on previous sections.
+Like it's `ArrayHashMap` brother, to delete values from this specific type of hashtable,
+we also use the `orderedRemove()` and `swapRemove()` methods, with the same effects that
+I described at @sec-array-map.
+
+If we take the code example that was exposed at @sec-string-hash-map, we can
+achieve the exact same result with `StringArrayHashMap()`. All we have to do
+is to change the use of `StringHashMap()` to `StringArrayHashMap()` at the
+fifth line in this code example. It would change to this:
+
+```{zig}
+#| eval: false
+var ages = std.StringArrayHashMap(u8).init(allocator);
+```
+
 
 
 
