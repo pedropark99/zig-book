@@ -304,6 +304,7 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#applying-over-a-function-argument" id="toc-applying-over-a-function-argument" class="nav-link" data-scroll-target="#applying-over-a-function-argument"><span class="header-section-number">11.3.1</span> Applying over a function argument</a></li>
   <li><a href="#applying-over-an-expression" id="toc-applying-over-an-expression" class="nav-link" data-scroll-target="#applying-over-an-expression"><span class="header-section-number">11.3.2</span> Applying over an expression</a></li>
+  <li><a href="#applying-over-a-block" id="toc-applying-over-a-block" class="nav-link" data-scroll-target="#applying-over-a-block"><span class="header-section-number">11.3.3</span> Applying over a block</a></li>
   </ul></li>
   <li><a href="#sec-generics" id="toc-sec-generics" class="nav-link" data-scroll-target="#sec-generics"><span class="header-section-number">11.4</span> Generics with Linked Lists</a></li>
   </ul>
@@ -687,7 +688,7 @@ Key: Matheus | Age: 21</code></pre>
 <p>Let this statement sink for a bit in your mind. As I described at <a href="01-zig-weird.html#sec-root-file" class="quarto-xref"><span>Section 1.2.2</span></a>, Zig is a strongly-typed language, specially on function declarations. So every time we write a function in Zig, we have to annotate the data type of the value returned by the function. But how can we do that, if this data type depends on the value given to the argument of the function?</p>
 <p>Think about this for a second. If <code>length</code> is equal to 3 for example, then, the return type of the function is <code>[3]i64</code>. But if <code>length</code> is equal to 40, then, the return type becomes <code>[40]i64</code>. At this point the <code>zig</code> compiler would be confused, and raise a compilation error, saying something like this:</p>
 <blockquote class="blockquote">
-<p>Hey! You have annotated that this function should return a <code>[3]i64</code> value, but I am seeing a <code>[40]i64</code> value instead! This doesn’t look right!</p>
+<p>Hey! You have annotated that this function should return a <code>[3]i64</code> value, but I got a <code>[40]i64</code> value instead! This doesn’t look right!</p>
 </blockquote>
 <p>So how can you solve this problem? How do we overcome this barrier? This is when the <code>type</code> keyword comes in. This <code>type</code> keyword is basically saying to the <code>zig</code> compiler that this function will return some type, but it doesn’t know yet what exactly type that is. We will talk more about this at <a href="#sec-generics" class="quarto-xref"><span>Section 11.4</span></a>.</p>
 </section>
@@ -713,6 +714,29 @@ Key: Matheus | Age: 21</code></pre>
 </div>
 <p>A lot of your Zig source code might be potentially executed at compile-time, because the <code>zig</code> compiler can figure it out the result value of some types of expressions. Specially if these expressions involves only compile-time known values. We have talked about this at <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a>.</p>
 <p>But when you use the <code>comptime</code> keyword on an expression, there is no “it might be executed at compile-time” anymore. With the <code>comptime</code> keyword you are ordering the <code>zig</code> compiler to execute this expression at compile-time. You are imposing this rule, it is garanteed that the compiler will always execute it at compile-time. Or it at least, the compiler will try to execute it. If the compiler cannot execute the expression for whatever reason, the compiler will raise a compilation error.</p>
+</section>
+<section id="applying-over-a-block" class="level3" data-number="11.3.3">
+<h3 data-number="11.3.3" class="anchored" data-anchor-id="applying-over-a-block"><span class="header-section-number">11.3.3</span> Applying over a block</h3>
+<p>Blocks were described at <a href="01-zig-weird.html#sec-blocks" class="quarto-xref"><span>Section 1.7</span></a>. When you apply the <code>comptime</code> keyword over a block of expressions, you get essentially the same effect when you apply this keyword to a single expression. That is, the entire block of expressions is executed at compile-time by the <code>zig</code> compiler.</p>
+<p>In the example below, we mark the block labeled of <code>blk</code> as a comptime block, and, therefore, the expressions inside this block are executed at compile-time.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expect = <span class="bu">@import</span>(<span class="st">"std"</span>).testing.expect;</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> fibonacci(index: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (index &lt; <span class="dv">2</span>) <span class="kw">return</span> index;</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> fibonacci(index - <span class="dv">1</span>) + fibonacci(index - <span class="dv">2</span>);</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"fibonacci in a block"</span> <span class="op">{</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x = <span class="kw">comptime</span> blk: <span class="op">{</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n1 = <span class="dv">5</span>;</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n2 = <span class="dv">2</span>;</span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n3 = n1 + n2;</span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> expect(fibonacci(n3) == <span class="dv">13</span>);</span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">break</span> :blk n3;</span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>;</span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>    _ = x;</span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 </section>
 </section>
 <section id="sec-generics" class="level2" data-number="11.4">

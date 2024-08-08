@@ -764,8 +764,7 @@ the `num` argument as a "comptime argument". That is why the `zig` compiler rais
 the compile-time error exposed below:
 
 ```{zig}
-#| auto_main: false
-#| build_type: "test"
+#| eval: false
 const builtin = @import("builtin");
 fn double(comptime num: u32) u32 {
     return num * 2;
@@ -819,7 +818,7 @@ return type of the function is `[3]i64`. But if `length` is equal to 40, then,
 the return type becomes `[40]i64`. At this point the `zig` compiler would be confused,
 and raise a compilation error, saying something like this:
 
-> Hey! You have annotated that this function should return a `[3]i64` value, but I am seeing a `[40]i64` value instead! This doesn't look right!
+> Hey! You have annotated that this function should return a `[3]i64` value, but I got a `[40]i64` value instead! This doesn't look right!
 
 So how can you solve this problem? How do we overcome this barrier? This is when
 the `type` keyword comes in. This `type` keyword is basically saying to the
@@ -879,6 +878,36 @@ will try to execute it. If the compiler cannot execute the expression for whatev
 the compiler will raise a compilation error.
 
 
+### Applying over a block
+
+Blocks were described at @sec-blocks. When you apply the `comptime` keyword over a
+block of expressions, you get essentially the same effect when you apply this keyword to
+a single expression. That is, the entire block of expressions is executed at
+compile-time by the `zig` compiler.
+
+In the example below, we mark the block labeled of `blk` as a comptime block,
+and, therefore, the expressions inside this block are executed at compile-time.
+
+```{zig}
+#| auto_main: false
+#| build_type: "test"
+const expect = @import("std").testing.expect;
+fn fibonacci(index: u32) u32 {
+    if (index < 2) return index;
+    return fibonacci(index - 1) + fibonacci(index - 2);
+}
+
+test "fibonacci in a block" {
+    const x = comptime blk: {
+        const n1 = 5;
+        const n2 = 2;
+        const n3 = n1 + n2;
+        try expect(fibonacci(n3) == 13);
+        break :blk n3;
+    };
+    _ = x;
+}
+```
 
 ## Generics with Linked Lists {#sec-generics}
 
