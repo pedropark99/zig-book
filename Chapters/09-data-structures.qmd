@@ -68,7 +68,14 @@ the total number of elements that the array can hold without the need to re-allo
 or re-expand the array, while the *length* represents how much of this capacity
 is currently being used to hold/store values.
 
-When *length* and *capacity* are equal, it means that the array have no space left.
+@fig-capacity-length presents this idea visually. Notice that, at first,
+the capacity of the array is greater than the length of the array.
+So, the dynamic array have extra space that is currently empty, but it
+is ready to receive a value to be stored.
+
+![Difference between capacity and length in a dynamic array](./../Figures/dynamic-array.png){#fig-capacity-length}
+
+We can also see at @fig-capacity-length that, when *length* and *capacity* are equal, it means that the array have no space left.
 We reached the roof of our capacity, and because of that, if we want to store more values
 in this array, we need to expand it. We need to get a bigger space that can hold more values
 that we currently have.
@@ -700,7 +707,7 @@ var ages = std.StringArrayHashMap(u8).init(allocator);
 
 
 
-## Understanding `comptime` in Zig
+## Understanding `comptime` in Zig {#sec-comptime}
 
 One of the key features of Zig is `comptime`. This keyword introduces a whole
 new concept and paradigm, that is tightly connected with the compilation process.
@@ -781,7 +788,7 @@ test "test comptime" {
 ```
 
 ```
-t.zig:12:16: error: runtime-known argument passed to comptime parameter
+t.zig:12:16: error: runtime-known argument passed to comptime parameter 
 ```
 
 Comptime arguments are frequently used on functions that return some sort
@@ -909,6 +916,128 @@ test "fibonacci in a block" {
 }
 ```
 
+
+
+
 ## Generics with Linked Lists {#sec-generics}
 
+First of all, what is a generic? Generic is the idea to allow a type
+(`f64`, `u8`, `u32`, `bool`, and also, user-defined types, like the `User` struct
+that we defined at @sec-structs-and-oop) to be a parameter to methods, classes and
+interfaces [@geeks_generics]. In other words, a generic is a class (or method) that can work
+with multiple data types.
+
+For example, in Java, generics are created through the operator `<>`. With this operator,
+a Java class is capable of taking a data type as input, and therefore, the class can fit
+it's features according to this input data type.
+As another example, generics in C++ are supported through the concept of templates.
+Class templates in C++ are generics.
+
+In Zig, generics are implemented through `comptime`. The `comptime` keyword
+allows us to collect a data type at compile time, and pass this data type as
+input to a piece of code.
+
+
+### A generic function {#sec-generic-fun}
+
+Take the `max()` function exposed below as a first example.
+This function is essentially a "generic function".
+In this function, we have a comptime function argument named `T`.
+Notice that this `T` argument have a data type of `type`. Weird right? This `type` keyword is the
+"father of all types", or, "the type of types" in Zig. Because we used this `type` keyword in the `T`
+argument, we are telling the `zig` compiler that this `T` argument will receive some data type
+as input.
+
+Also notice the use of the `comptime` keyword in this argument.
+As I described at @sec-comptime, every time you use this keyword in a function argument,
+this means that the value of this argument must be known at compile-time.
+This makes sense, right? Because there is no data type that you can make
+that is known only at runtime.
+
+Think about this. Every data type that you will ever write is always
+known at compile-time. Specially because data types are an essential
+information for the compiler to actually compile your source code.
+Having this in mind, makes sense to mark this argument as a comptime argument.
+
+
+```{zig}
+#| auto_main: false
+#| build_type: "test"
+fn max(comptime T: type, a: T, b: T) T {
+    return if (a > b) a else b;
+}
+```
+
+Also notice that the value of the `T` argument is actually used
+to define the data type of the other arguments of the function, `a` and `b`, and also at the
+return type annotation of the function.
+That is, the data type of these arguments (`a` and `b`), and, the return data type of the function itself,
+are determined by the input value given to the `T` argument.
+
+As a result, we have a generic function that works with different data types.
+For example, I can provide `u8` values to this `max()` function, and it will work as expected.
+But if I provide `f64` values instead, it will also work as expected.
+If I did not use a generic function, I would have to write a `max()`
+for each one of the data types that I wanted to use.
+This generic function provides a very useful shortcut for us.
+
+```{zig}
+#| auto_main: false
+#| build_type: "test"
+const std = @import("std");
+fn max(comptime T: type, a: T, b: T) T {
+    return if (a > b) a else b;
+}
+test "test max" {
+    const n1 = max(u8, 4, 10);
+    std.debug.print("Max n1: {d}\n", .{n1});
+    const n2 = max(f64, 89.24, 64.001);
+    std.debug.print("Max n2: {d}\n", .{n2});
+}
+```
+
+```
+Max n1: 10
+Max n2: 89.24
+```
+
+
+
+### A generic struct
+
+Now that we have seen an example of a generic function, let's take a look at a generic struct.
+Generic structs are the Zig way to replicate a generic class from Java,
+or, a class template from C++.
+
+To create a generic struct in Zig, we normally use a function that creates this generic struct object.
+In other words, this function behaves as a "constructor" for the generic struct object.
+To create such function, we need to add a comptime argument to this function that receives a data type
+as input. We already learned how to do this at the previous section (@sec-generic-fun).
+
+Just as a first example, look at this 
+
+```{zig}
+#| auto_main: false
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+fn Array(comptime T: type) type {
+    return struct {
+        items: []T,
+        size: usize,
+    };
+}
+
+pub fn main() !void {
+    var buffer: [5]u8 = undefined;
+    const ar = Array(u8){
+        .items = &buffer,
+        .size = 0
+    };
+    try stdout.print("{any}\n", .{@TypeOf(ar)});
+}
+```
+
+```
+generic_array.Array(u8)
+```
 

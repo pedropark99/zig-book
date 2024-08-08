@@ -300,13 +300,17 @@ window.Quarto = {
   <li><a href="#sec-string-hash-map" id="toc-sec-string-hash-map" class="nav-link" data-scroll-target="#sec-string-hash-map"><span class="header-section-number">11.2.5</span> The <code>StringHashMap</code> hashtable</a></li>
   <li><a href="#the-stringarrayhashmap-hashtable" id="toc-the-stringarrayhashmap-hashtable" class="nav-link" data-scroll-target="#the-stringarrayhashmap-hashtable"><span class="header-section-number">11.2.6</span> The <code>StringArrayHashMap</code> hashtable</a></li>
   </ul></li>
-  <li><a href="#understanding-comptime-in-zig" id="toc-understanding-comptime-in-zig" class="nav-link" data-scroll-target="#understanding-comptime-in-zig"><span class="header-section-number">11.3</span> Understanding <code>comptime</code> in Zig</a>
+  <li><a href="#sec-comptime" id="toc-sec-comptime" class="nav-link" data-scroll-target="#sec-comptime"><span class="header-section-number">11.3</span> Understanding <code>comptime</code> in Zig</a>
   <ul class="collapse">
   <li><a href="#applying-over-a-function-argument" id="toc-applying-over-a-function-argument" class="nav-link" data-scroll-target="#applying-over-a-function-argument"><span class="header-section-number">11.3.1</span> Applying over a function argument</a></li>
   <li><a href="#applying-over-an-expression" id="toc-applying-over-an-expression" class="nav-link" data-scroll-target="#applying-over-an-expression"><span class="header-section-number">11.3.2</span> Applying over an expression</a></li>
   <li><a href="#applying-over-a-block" id="toc-applying-over-a-block" class="nav-link" data-scroll-target="#applying-over-a-block"><span class="header-section-number">11.3.3</span> Applying over a block</a></li>
   </ul></li>
-  <li><a href="#sec-generics" id="toc-sec-generics" class="nav-link" data-scroll-target="#sec-generics"><span class="header-section-number">11.4</span> Generics with Linked Lists</a></li>
+  <li><a href="#sec-generics" id="toc-sec-generics" class="nav-link" data-scroll-target="#sec-generics"><span class="header-section-number">11.4</span> Generics with Linked Lists</a>
+  <ul class="collapse">
+  <li><a href="#sec-generic-fun" id="toc-sec-generic-fun" class="nav-link" data-scroll-target="#sec-generic-fun"><span class="header-section-number">11.4.1</span> A generic function</a></li>
+  <li><a href="#a-generic-struct" id="toc-a-generic-struct" class="nav-link" data-scroll-target="#a-generic-struct"><span class="header-section-number">11.4.2</span> A generic struct</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -344,7 +348,18 @@ window.Quarto = {
 <p>Although they look similar, these concepts represent different things in the context of dynamic arrays. <em>Capacity</em> is the number of items (or elements) that your dynamic array can currently hold without the need to allocate more memory.</p>
 <p>In contrast, the <em>length</em> refers to how many elements in the array are currently being used, or, in other words, how many elements in this array that you assigned a value to. Every dynamic array works around a block of allocated memory that represents an array with total capacity of <span class="math inline">\(n\)</span> elements, but only a portion of these <span class="math inline">\(n\)</span> elements are being used most of the time. This portion of <span class="math inline">\(n\)</span> is the <em>length</em> of the array. So every time you append a new value to the array, you are incrementing it’s <em>length</em> by one.</p>
 <p>This means that a dynamic array usually works with an extra margin, or, an extra space which is currently empty, but it is waiting and ready to be used. This “extra space” is essentially the difference between <em>capacity</em> and <em>length</em>. <em>Capacity</em> represents the total number of elements that the array can hold without the need to re-allocate or re-expand the array, while the <em>length</em> represents how much of this capacity is currently being used to hold/store values.</p>
-<p>When <em>length</em> and <em>capacity</em> are equal, it means that the array have no space left. We reached the roof of our capacity, and because of that, if we want to store more values in this array, we need to expand it. We need to get a bigger space that can hold more values that we currently have.</p>
+<p><a href="#fig-capacity-length" class="quarto-xref">Figure&nbsp;<span>11.1</span></a> presents this idea visually. Notice that, at first, the capacity of the array is greater than the length of the array. So, the dynamic array have extra space that is currently empty, but it is ready to receive a value to be stored.</p>
+<div id="fig-capacity-length" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-capacity-length-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="./../Figures/dynamic-array.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-capacity-length-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11.1: Difference between capacity and length in a dynamic array
+</figcaption>
+</figure>
+</div>
+<p>We can also see at <a href="#fig-capacity-length" class="quarto-xref">Figure&nbsp;<span>11.1</span></a> that, when <em>length</em> and <em>capacity</em> are equal, it means that the array have no space left. We reached the roof of our capacity, and because of that, if we want to store more values in this array, we need to expand it. We need to get a bigger space that can hold more values that we currently have.</p>
 <p>A dynamic array works by expanding the underlying array, whenever the <em>length</em> becomes equal to the <em>capacity</em> of the array. It basically allocates a new contiguos block of memory that is bigger than the previous one, then, it copies all values that are currently being stored to this new location (i.e.&nbsp;this new block of memory), then, it frees the previous block of memory. At the end of this process, the new underlying array have a bigger <em>capacity</em>, and, therefore, the <em>length</em> becomes once again smaller than the <em>capacity</em> of the array.</p>
 <p>This is the cycle of an dynamic array. Notice that, throughout this cycle, the <em>capacity</em> is always either equal to or higher than the <em>length</em> of the array. If youh have an <code>ArrayList</code> object, let’s suppose you named it of <code>buffer</code>, you can check the current capacity of your array by accessing the <code>capacity</code> attribute of your <code>ArrayList</code> object, while the current <em>length</em> of it is available through the <code>items.len</code> attribute of your <code>ArrayList</code> object.</p>
 <div class="cell">
@@ -457,14 +472,14 @@ window.Quarto = {
 <p>A hashtable is a data structure based on key-value pairs. You provide a key and a value to this structure, then, the hashtable will store the input value at a location that can be identified by the input key that you provided. It does that by using an underlying array and a hash function. These two components are essential to how a hashtable works.</p>
 <p>Under the hood, the hashtable contains an array. This array is where the values are stored, and the elements of this array are usually called of <em>buckets</em>. So the values that you provide to the hashtable are stored inside buckets, and you access each bucket by using an index.</p>
 <p>When you provide a key to a hashtable, it passes this key to the hash function. This hash function uses some sort of hashing algorithm to transform this key into an index. This index is actually an array index. It is a position in the underlying array of the hashtable. This is how a key identifies a specific position (or location) inside the hashtable structure.</p>
-<p>So you provide a key to the hashtable, and this key identifies an specific location inside the hastable, then, the hashtable takes the input value that you provided, and stores this value in the location identified by the input key that you provided. You could say that the key maps to the value stored in the hashtable. You find the value, by using the key that identifies the location where the value is stored. The <a href="#fig-hashtable" class="quarto-xref">Figure&nbsp;<span>11.1</span></a> presents this process visually.</p>
+<p>So you provide a key to the hashtable, and this key identifies an specific location inside the hastable, then, the hashtable takes the input value that you provided, and stores this value in the location identified by the input key that you provided. You could say that the key maps to the value stored in the hashtable. You find the value, by using the key that identifies the location where the value is stored. The <a href="#fig-hashtable" class="quarto-xref">Figure&nbsp;<span>11.2</span></a> presents this process visually.</p>
 <div id="fig-hashtable" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-hashtable-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="./../Figures/hashtable.svg" class="img-fluid figure-img">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-hashtable-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure&nbsp;11.1: A diagram of a Hashtable. Source: Wikipedia, the free encyclopedia.
+Figure&nbsp;11.2: A diagram of a Hashtable. Source: Wikipedia, the free encyclopedia.
 </figcaption>
 </figure>
 </div>
@@ -635,8 +650,8 @@ Key: Matheus | Age: 21</code></pre>
 </div>
 </section>
 </section>
-<section id="understanding-comptime-in-zig" class="level2" data-number="11.3">
-<h2 data-number="11.3" class="anchored" data-anchor-id="understanding-comptime-in-zig"><span class="header-section-number">11.3</span> Understanding <code>comptime</code> in Zig</h2>
+<section id="sec-comptime" class="level2" data-number="11.3">
+<h2 data-number="11.3" class="anchored" data-anchor-id="sec-comptime"><span class="header-section-number">11.3</span> Understanding <code>comptime</code> in Zig</h2>
 <p>One of the key features of Zig is <code>comptime</code>. This keyword introduces a whole new concept and paradigm, that is tightly connected with the compilation process. At <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a> we described the importance and the role that “compile-time vs runtime” plays into Zig. At that section, we learned that the rules applied to a value/object change a lot depending on whether this value is known at compile-time, or just at runtime.</p>
 <p>The <code>comptime</code> keyword is strongly related to these two spaces of time in the compilation process, i.e.&nbsp;the compile-time and the runtime. Let’s quickly recap the differences. Compile-time is the period of time when your Zig source code is being compiled by the <code>zig</code> compiler, while the runtime is the period of time when your Zig program is being executed, i.e.&nbsp;when we execute the binary files outputted by the <code>zig</code> compiler.</p>
 <p>There are three ways in which you can apply the <code>comptime</code> keyword, which are:</p>
@@ -676,7 +691,7 @@ Key: Matheus | Age: 21</code></pre>
 <span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    _ = double(n);</span>
 <span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<pre><code>t.zig:12:16: error: runtime-known argument passed to comptime parameter</code></pre>
+<pre><code>t.zig:12:16: error: runtime-known argument passed to comptime parameter </code></pre>
 <p>Comptime arguments are frequently used on functions that return some sort of generic structure. In fact, <code>comptime</code> is the essence (or the basis) to make generics in Zig. We are going to talk more about generics at <a href="#sec-generics" class="quarto-xref"><span>Section 11.4</span></a>.</p>
 <p>For now, let’s take a look at this code example from <span class="citation" data-cites="karlseguin_generics">Seguin (<a href="../references.html#ref-karlseguin_generics" role="doc-biblioref">2024</a>)</span>. You can see that this <code>IntArray()</code> function have one argument named <code>length</code>. This argument is marked as comptime, and receives a value of type <code>usize</code> as input. So the value given to this argument must be compile-time known. We can also see that this function returns an array of <code>i64</code> values as output.</p>
 <div class="cell">
@@ -741,9 +756,62 @@ Key: Matheus | Age: 21</code></pre>
 </section>
 <section id="sec-generics" class="level2" data-number="11.4">
 <h2 data-number="11.4" class="anchored" data-anchor-id="sec-generics"><span class="header-section-number">11.4</span> Generics with Linked Lists</h2>
+<p>First of all, what is a generic? Generic is the idea to allow a type (<code>f64</code>, <code>u8</code>, <code>u32</code>, <code>bool</code>, and also, user-defined types, like the <code>User</code> struct that we defined at <a href="03-structs.html#sec-structs-and-oop" class="quarto-xref"><span>Section 2.2</span></a>) to be a parameter to methods, classes and interfaces <span class="citation" data-cites="geeks_generics">(<a href="../references.html#ref-geeks_generics" role="doc-biblioref">Geeks for Geeks 2024</a>)</span>. In other words, a generic is a class (or method) that can work with multiple data types.</p>
+<p>For example, in Java, generics are created through the operator <code>&lt;&gt;</code>. With this operator, a Java class is capable of taking a data type as input, and therefore, the class can fit it’s features according to this input data type. As another example, generics in C++ are supported through the concept of templates. Class templates in C++ are generics.</p>
+<p>In Zig, generics are implemented through <code>comptime</code>. The <code>comptime</code> keyword allows us to collect a data type at compile time, and pass this data type as input to a piece of code.</p>
+<section id="sec-generic-fun" class="level3" data-number="11.4.1">
+<h3 data-number="11.4.1" class="anchored" data-anchor-id="sec-generic-fun"><span class="header-section-number">11.4.1</span> A generic function</h3>
+<p>Take the <code>max()</code> function exposed below as a first example. This function is essentially a “generic function”. In this function, we have a comptime function argument named <code>T</code>. Notice that this <code>T</code> argument have a data type of <code>type</code>. Weird right? This <code>type</code> keyword is the “father of all types”, or, “the type of types” in Zig. Because we used this <code>type</code> keyword in the <code>T</code> argument, we are telling the <code>zig</code> compiler that this <code>T</code> argument will receive some data type as input.</p>
+<p>Also notice the use of the <code>comptime</code> keyword in this argument. As I described at <a href="#sec-comptime" class="quarto-xref"><span>Section 11.3</span></a>, every time you use this keyword in a function argument, this means that the value of this argument must be known at compile-time. This makes sense, right? Because there is no data type that you can make that is known only at runtime.</p>
+<p>Think about this. Every data type that you will ever write is always known at compile-time. Specially because data types are an essential information for the compiler to actually compile your source code. Having this in mind, makes sense to mark this argument as a comptime argument.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> max(<span class="kw">comptime</span> T: <span class="dt">type</span>, a: T, b: T) T <span class="op">{</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">if</span> (a &gt; b) a <span class="kw">else</span> b;</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Also notice that the value of the <code>T</code> argument is actually used to define the data type of the other arguments of the function, <code>a</code> and <code>b</code>, and also at the return type annotation of the function. That is, the data type of these arguments (<code>a</code> and <code>b</code>), and, the return data type of the function itself, are determined by the input value given to the <code>T</code> argument.</p>
+<p>As a result, we have a generic function that works with different data types. For example, I can provide <code>u8</code> values to this <code>max()</code> function, and it will work as expected. But if I provide <code>f64</code> values instead, it will also work as expected. If I did not use a generic function, I would have to write a <code>max()</code> for each one of the data types that I wanted to use. This generic function provides a very useful shortcut for us.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> max(<span class="kw">comptime</span> T: <span class="dt">type</span>, a: T, b: T) T <span class="op">{</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">if</span> (a &gt; b) a <span class="kw">else</span> b;</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"test max"</span> <span class="op">{</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n1 = max(<span class="dt">u8</span>, <span class="dv">4</span>, <span class="dv">10</span>);</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Max n1: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n1<span class="op">}</span>);</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n2 = max(<span class="dt">f64</span>, <span class="fl">89.24</span>, <span class="fl">64.001</span>);</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Max n2: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n2<span class="op">}</span>);</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Max n1: 10
+Max n2: 89.24</code></pre>
+</section>
+<section id="a-generic-struct" class="level3" data-number="11.4.2">
+<h3 data-number="11.4.2" class="anchored" data-anchor-id="a-generic-struct"><span class="header-section-number">11.4.2</span> A generic struct</h3>
+<p>Now that we have seen an example of a generic function, let’s take a look at a generic struct. Generic structs are the Zig way to replicate a generic class from Java, or, a class template from C++.</p>
+<p>To create a generic struct in Zig, we normally use a function that creates this generic struct object. In other words, this function behaves as a “constructor” for the generic struct object. To create such function, we need to add a comptime argument to this function that receives a data type as input. We already learned how to do this at the previous section (<a href="#sec-generic-fun" class="quarto-xref"><span>Section 11.4.1</span></a>).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> Array(<span class="kw">comptime</span> T: <span class="dt">type</span>) <span class="dt">type</span> <span class="op">{</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>        items: []T,</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>        size: <span class="dt">usize</span>,</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>;</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">5</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> ar = Array(<span class="dt">u8</span>)<span class="op">{</span> .items = &amp;buffer, .size = <span class="dv">0</span> <span class="op">}</span>;</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(ar)<span class="op">}</span>);</span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-geeks_generics" class="csl-entry" role="listitem">
+Geeks for Geeks. 2024. <span>“Generics in c++.”</span> <span>Geeks for Geeks</span>. <a href="https://www.geeksforgeeks.org/generics-in-c/">https://www.geeksforgeeks.org/generics-in-c/</a>.
+</div>
 <div id="ref-karlseguin_generics" class="csl-entry" role="listitem">
 Seguin, Karl. 2024. <span>“Generics.”</span> <a href="https://www.openmymind.net/learning_zig/generics/">https://www.openmymind.net/learning_zig/generics/</a>.
 </div>
@@ -754,6 +822,7 @@ Wikipedia. 2024. <span>“Hash Tables.”</span> Wikipedia. <a href="https://en.
 Zig Software Foundation. 2024. <span>“Language Reference.”</span> Zig Software Foundation. <a href="https://ziglang.org/documentation/master/">https://ziglang.org/documentation/master/</a>.
 </div>
 </div>
+</section>
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>
