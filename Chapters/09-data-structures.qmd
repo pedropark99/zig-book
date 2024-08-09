@@ -707,337 +707,157 @@ var ages = std.StringArrayHashMap(u8).init(allocator);
 
 
 
-## Understanding `comptime` in Zig {#sec-comptime}
-
-One of the key features of Zig is `comptime`. This keyword introduces a whole
-new concept and paradigm, that is tightly connected with the compilation process.
-At @sec-compile-time we described the importance and the role that "compile-time vs runtime"
-plays into Zig. At that section, we learned that the rules applied to a value/object change
-a lot depending on whether this value is known at compile-time, or just at runtime.
-
-The `comptime` keyword is strongly related to these two spaces of time in the compilation process,
-i.e. the compile-time and the runtime. Let's quickly recap the differences. Compile-time is the period of time when your
-Zig source code is being compiled by the `zig` compiler, while the runtime is
-the period of time when your Zig program is being executed, i.e. when we execute
-the binary files outputted by the `zig` compiler.
-
-There are three ways in which you can apply the `comptime` keyword, which are:
-
-- apply `comptime` on a function argument.
-- apply `comptime` on an object.
-- apply `comptime` on a block of expressions.
-
-
-
-### Applying over a function argument
-
-When you apply the `comptime` on a function argument you are saying to the `zig` compiler
-that the value assigned to that particular argument of the function must be known at compile-time.
-We explained in details at @sec-compile-time what exactly "value known at compile-time" means, so,
-in case you have doubts about this idea, comeback to that section.
-
-Now let's think about the consequences of this idea. First of all, we are imposing a limit, or, a requirement
-to that particular function argument. If the programmer accidentally tries to give a value to this
-function argument that is not known at compile time, the `zig` compiler will notice this problem, and
-as a consequence, it will raise a compilation error saying that it cannot compile your program. Because
-you are providing a value that is "runtime known" to a function argument that must be "compile-time known".
-
-Take a look at this very simple example below, where we define a `double()` function, that simply
-doubles the input value named `num`. Notice that, we use the `comptime` keyword before the name
-of the function argument. This keyword is marking the function argument `num` as a "comptime argument".
-
-That is a function argument whose value must be compile-time known. This is why the expression `double(5678)`
-is valid, and no compilation errors are raised.
-Because the value `5678` is compile-time known, so this is the expected behaviour for this function.
-
-```{zig}
-#| auto_main: false
-#| build_type: "test"
-fn double(comptime num: u32) u32 {
-    return num * 2;
-}
-test "test comptime" {
-    _ = double(5678);
-}
-```
-
-But what if we provide a number that is not compile-time known to this function?
-For example, we might provide a different input value to this function depending
-on the target OS of our compilation process. The code example delow demonstrates such case.
-
-Because the value of the object `n` is determined at runtime, we cannot provide this object
-as input to the `double()` function. The `zig` compiler will not allow it, because we marked
-the `num` argument as a "comptime argument". That is why the `zig` compiler raises
-the compile-time error exposed below:
-
-```{zig}
-#| eval: false
-const builtin = @import("builtin");
-fn double(comptime num: u32) u32 {
-    return num * 2;
-}
-test "test comptime" {
-    var n: u32 = undefined;
-    if (builtin.target.os.tag == .windows) {
-        n = 1234;
-    } else {
-        n = 5678;
-    }
-    _ = double(n);
-}
-```
-
-```
-t.zig:12:16: error: runtime-known argument passed to comptime parameter 
-```
-
-Comptime arguments are frequently used on functions that return some sort
-of generic structure. In fact, `comptime` is the essence (or the basis) to make generics in Zig.
-We are going to talk more about generics at @sec-generics.
-
-For now, let's take a look at this code example from @karlseguin_generics. You
-can see that this `IntArray()` function have one argument named `length`.
-This argument is marked as comptime, and receives a value of type `usize` as input. So the value given to this argument
-must be compile-time known.
-We can also see that this function returns an array of `i64` values as output.
-
-```{zig}
-#| eval: false
-fn IntArray(comptime length: usize) type {
-    return [length]i64;
-}
-```
-
-Now, the key component of this function is the `length` argument. This argument
-is used to determine the size of the array that is produced by the function. Let's
-think about the consequences of that. If the size of the array is dependent on
-the value assigned to the `length` argument, this means that the data type of the
-output of the function depends on the value of this `length` argument.
-
-Let this statement sink for a bit in your mind. As I described at @sec-root-file,
-Zig is a strongly-typed language, specially on function declarations.
-So every time we write a function in Zig, we have to annotate the data type of
-the value returned by the function. But how can we do that, if this data type
-depends on the value given to the argument of the function?
-
-Think about this for a second. If `length` is equal to 3 for example, then, the
-return type of the function is `[3]i64`. But if `length` is equal to 40, then,
-the return type becomes `[40]i64`. At this point the `zig` compiler would be confused,
-and raise a compilation error, saying something like this:
-
-> Hey! You have annotated that this function should return a `[3]i64` value, but I got a `[40]i64` value instead! This doesn't look right!
-
-So how can you solve this problem? How do we overcome this barrier? This is when
-the `type` keyword comes in. This `type` keyword is basically saying to the
-`zig` compiler that this function will return some type, but it doesn't know yet
-what exactly type that is. We will talk more about this at @sec-generics.
-
-
-
-### Applying over an expression
-
-When you apply the `comptime` keyword over an expression, then, it is garanteed that the `zig` compiler will
-execute this expression at compile-time. If for some reason, this expression cannot be executed at compile-time
-(e.g. for example, maybe this expression depends on a value that is only known at runtime), then, the `zig` compiler
-will raise a compilation error.
-
-Take this example from the official documentation of Zig [@zigdocs]. We
-are executing the same `fibonacci()` function both at runtime, and, at compile-time.
-The function is by default executed at runtime, but because we use the `comptime`
-keyword at the second "try expression", this expression is executed at compile-time.
-
-This might be a bit confusing for some people. Yes! When I say that this expression
-is executed at compile-time, I mean that this expression is compiled and executed
-while the `zig` compiler is compiling your Zig source code.
-
-If you think hard enough about how the C and C++ macros work, you can reach the conclusion
-that they are also executed at compile-time. Because C and C++ macros are
-just simple text replacements operations, that are performed at compile-time to form the final version
-of the C or C++ source code that get's sent to the compiler.
-
-```{zig}
-#| auto_main: false
-#| build_type: "test"
-const expect = @import("std").testing.expect;
-fn fibonacci(index: u32) u32 {
-    if (index < 2) return index;
-    return fibonacci(index - 1) + fibonacci(index - 2);
-}
-
-test "fibonacci" {
-    // test fibonacci at run-time
-    try expect(fibonacci(7) == 13);
-    // test fibonacci at compile-time
-    try comptime expect(fibonacci(7) == 13);
-}
-```
-
-A lot of your Zig source code might be potentially executed at compile-time,
-because the `zig` compiler can figure it out the result value of some types of expressions.
-Specially if these expressions involves only compile-time known values.
-We have talked about this at @sec-compile-time.
-
-But when you use the `comptime` keyword on an expression, there is no "it might be executed
-at compile-time" anymore. With the `comptime` keyword you are ordering the `zig` compiler
-to execute this expression at compile-time. You are imposing this rule, it is garanteed
-that the compiler will always execute it at compile-time. Or it at least, the compiler
-will try to execute it. If the compiler cannot execute the expression for whatever reason,
-the compiler will raise a compilation error.
-
-
-### Applying over a block
-
-Blocks were described at @sec-blocks. When you apply the `comptime` keyword over a
-block of expressions, you get essentially the same effect when you apply this keyword to
-a single expression. That is, the entire block of expressions is executed at
-compile-time by the `zig` compiler.
-
-In the example below, we mark the block labeled of `blk` as a comptime block,
-and, therefore, the expressions inside this block are executed at compile-time.
-
-```{zig}
-#| auto_main: false
-#| build_type: "test"
-const expect = @import("std").testing.expect;
-fn fibonacci(index: u32) u32 {
-    if (index < 2) return index;
-    return fibonacci(index - 1) + fibonacci(index - 2);
-}
-
-test "fibonacci in a block" {
-    const x = comptime blk: {
-        const n1 = 5;
-        const n2 = 2;
-        const n3 = n1 + n2;
-        try expect(fibonacci(n3) == 13);
-        break :blk n3;
-    };
-    _ = x;
-}
-```
-
-
-
-
-## Generics with Linked Lists {#sec-generics}
-
-First of all, what is a generic? Generic is the idea to allow a type
-(`f64`, `u8`, `u32`, `bool`, and also, user-defined types, like the `User` struct
-that we defined at @sec-structs-and-oop) to be a parameter to methods, classes and
-interfaces [@geeks_generics]. In other words, a generic is a class (or method) that can work
-with multiple data types.
-
-For example, in Java, generics are created through the operator `<>`. With this operator,
-a Java class is capable of taking a data type as input, and therefore, the class can fit
-it's features according to this input data type.
-As another example, generics in C++ are supported through the concept of templates.
-Class templates in C++ are generics.
-
-In Zig, generics are implemented through `comptime`. The `comptime` keyword
-allows us to collect a data type at compile time, and pass this data type as
-input to a piece of code.
-
-
-### A generic function {#sec-generic-fun}
-
-Take the `max()` function exposed below as a first example.
-This function is essentially a "generic function".
-In this function, we have a comptime function argument named `T`.
-Notice that this `T` argument have a data type of `type`. Weird right? This `type` keyword is the
-"father of all types", or, "the type of types" in Zig. Because we used this `type` keyword in the `T`
-argument, we are telling the `zig` compiler that this `T` argument will receive some data type
-as input.
-
-Also notice the use of the `comptime` keyword in this argument.
-As I described at @sec-comptime, every time you use this keyword in a function argument,
-this means that the value of this argument must be known at compile-time.
-This makes sense, right? Because there is no data type that you can make
-that is known only at runtime.
-
-Think about this. Every data type that you will ever write is always
-known at compile-time. Specially because data types are an essential
-information for the compiler to actually compile your source code.
-Having this in mind, makes sense to mark this argument as a comptime argument.
-
-
-```{zig}
-#| auto_main: false
-#| build_type: "test"
-fn max(comptime T: type, a: T, b: T) T {
-    return if (a > b) a else b;
-}
-```
-
-Also notice that the value of the `T` argument is actually used
-to define the data type of the other arguments of the function, `a` and `b`, and also at the
-return type annotation of the function.
-That is, the data type of these arguments (`a` and `b`), and, the return data type of the function itself,
-are determined by the input value given to the `T` argument.
-
-As a result, we have a generic function that works with different data types.
-For example, I can provide `u8` values to this `max()` function, and it will work as expected.
-But if I provide `f64` values instead, it will also work as expected.
-If I did not use a generic function, I would have to write a `max()`
-for each one of the data types that I wanted to use.
-This generic function provides a very useful shortcut for us.
-
-```{zig}
-#| auto_main: false
-#| build_type: "test"
-const std = @import("std");
-fn max(comptime T: type, a: T, b: T) T {
-    return if (a > b) a else b;
-}
-test "test max" {
-    const n1 = max(u8, 4, 10);
-    std.debug.print("Max n1: {d}\n", .{n1});
-    const n2 = max(f64, 89.24, 64.001);
-    std.debug.print("Max n2: {d}\n", .{n2});
-}
-```
-
-```
-Max n1: 10
-Max n2: 89.24
-```
-
-
-
-### A generic struct
-
-Now that we have seen an example of a generic function, let's take a look at a generic struct.
-Generic structs are the Zig way to replicate a generic class from Java,
-or, a class template from C++.
-
-To create a generic struct in Zig, we normally use a function that creates this generic struct object.
-In other words, this function behaves as a "constructor" for the generic struct object.
-To create such function, we need to add a comptime argument to this function that receives a data type
-as input. We already learned how to do this at the previous section (@sec-generic-fun).
-
-Just as a first example, look at this 
+## Linked lists
+
+The Zig Standard Library provides implementation for both single and doubly linked lists.
+A linked list is a linear data structure that looks like a chain, or, a rope.
+The main advantage of this data structure is that you normally have fast
+insertion and deletion operations. But, as a disadvantage, iterating through
+this data structure is usually not so fast as iterating through an array.
+
+The idea behind a linked list is basically build a structure that concists of a series of nodes
+connected to each other by pointers. This means that linked lists are usually not contiguos
+in memory, because each node might be south in memory, but the next node might be north
+in memory, then the next node might be left in memory, anyway, you get it, they can be anywhere.
+
+At @fig-linked-list we can see a diagram of a singly linked list. Notice that we begin with
+a first node. This first node is usually called "the head of the linked list". Then, from this
+first node we uncover the remaining nodes in the structure, by following the locations pointed
+by the pointers.
+
+Every node have two things in it. It have the value that is stored in the current node
+, and also have a pointer. This pointer points to the next node in the list. If this pointer
+is null, then, it means that we reached the end of our linked list.
+
+![A diagram of a singly linked list.](./../Figures/linked-list.png){#fig-linked-list}
+
+
+At @fig-linked-list2 we can see a diagram of a doubly linked list. The only thing that really
+changes is that every node in the linked list have both a pointer to the previous node,
+and, a pointer to the next node. So every node have now two pointers in it. These are
+usually called the `prev` (for "previous") and `next` (for "next") pointers of the node.
+
+In the singly linked list example, we had only one single pointer in each node, and this singular
+pointer was always pointing to the next node in the sequence. In other words, singly linked lists
+normally have only the `next` pointer in them.
+
+![A diagram of a doubly linked list.](./../Figures/doubly-linked-list.png){#fig-linked-list2}
+
+
+
+Linked lists are available in Zig through the functions `SinglyLinkedList()` and
+`DoublyLinkedList()`, for "singly linked lists" and "doubly linked lists", respectively. These functions are
+actually generic functions, which we are going to talk more about at @sec-generic-fun.
+
+For now, just understand that, in order to create a linked list object,
+we begin by providing a data type to these functions. This data type defines
+the type of data that this linked list will store. In the example below,
+we are creating a singly linked list capable of storing `u32` values.
+So each node in this linked list will store a `u32` value.
+
+Both the `SinglyLinkedList()` and `DoublyLinkedList()` functions returns a type, i.e. a struct definition, as result. This means that
+the object `Lu32` is actually a type definition, or a struct definition. It defines
+the type "singly linked list of `u32` values".
+
+So now that we have the definition of the struct, we have to instantiate a `Lu32` object.
+We normally instantiate struct objects in Zig by using an `init()` method.
+But in this case, we are instantiating the struct directly, by using an empty
+`struct` literal, in the expression `Lu32{}`.
+
+In this example, we first create multiple node objects, and after we create them,
+we start to insert and connect these nodes to build the linked list, using the
+`prepend()` and `insertAfter()` methods. Notice that the `prepend()` method
+is a method from the linked list object, while the `insertAfter()` is a method
+present in the node objects.
+
+In essence, the `prepend()` method inserts a node at the beginning of the linked
+list. In other words, the node that you provide to this method, becomes the new
+"head node" of the linked list. It becomes the first node in the list (see @fig-linked-list).
+
+On the other side, the `insertAfter()` method is used to basically connect two nodes together.
+When you provide a node to this method, it creates a pointer to this input node,
+and stores this pointer in the current node, from which the method was called from.
+In other words, this method creates the pointer that connects these two nodes together
+and stores it in the `next` attribute of the current node.
+
+Since doubly linked list have both a `next` and a `prev` pointers in each node,
+referring to the next and previous nodes in the sequence, respectively,
+as I described at @fig-linked-list2, a node object created from
+a `DoublyLinkedList()` object would have both a
+`insertBefore()` (for `prev`) and a `insertAfter()` (for `next`) methods
+available.
+
+This means that, if we used a doubly linked list, we could use the `insertBefore()` method
+to store the pointer to the input node in the `prev` attribute. This would put the input
+node as the "previous node", or, the node before the current node. The `insertAfter()` method
+have "after" in it's name to indicate that this method puts the pointer created to the input
+node in the `next` attribute of the current node, and as the result, the input node becomes
+the "next node" of the current node.
+
+Since we are using a singly linked list in this example, we have only the `insertAfter()` method
+available in the node objects that we create from our `Lu32` type.
+
 
 ```{zig}
 #| auto_main: false
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-fn Array(comptime T: type) type {
-    return struct {
-        items: []T,
-        size: usize,
-    };
-}
+const SinglyLinkedList = std.SinglyLinkedList;
+const Lu32 = SinglyLinkedList(u32);
 
 pub fn main() !void {
-    var buffer: [5]u8 = undefined;
-    const ar = Array(u8){
-        .items = &buffer,
-        .size = 0
-    };
-    try stdout.print("{any}\n", .{@TypeOf(ar)});
+    var list = Lu32{};
+    var one = Lu32.Node{ .data = 1 };
+    var two = Lu32.Node{ .data = 2 };
+    var three = Lu32.Node{ .data = 3 };
+    var four = Lu32.Node{ .data = 4 };
+    var five = Lu32.Node{ .data = 5 };
+
+    list.prepend(&two); // {2}
+    two.insertAfter(&five); // {2, 5}
+    list.prepend(&one); // {1, 2, 5}
+    two.insertAfter(&three); // {1, 2, 3, 5}
+    three.insertAfter(&four); // {1, 2, 3, 4, 5}
 }
 ```
 
-```
-generic_array.Array(u8)
-```
+
+There are other methods available from the linked list object, depending if this object is
+a singly linked list or a doubly linked list, that might be very useful for you, like:
+
+- `remove()` to remove a specific node from the linked list.
+- `popFirst()` to remove the first node from the linked list.
+- if singly linked list, `len()` to count how many nodes there is in the linked list.
+- if doubly linked list, checkout the `len` attribute to see how many nodes there is in the linked list.
+- if singly linked list, `popFirst()` to remove the first node from the linked list.
+- if doubly linked list, `pop()` and `popFirst()` to remove the last and first nodes from the linked list, respectively.
+- if doubly linked list, `append()` to add a new node to end of the linked list (i.e. inverse of `prepend()`).
+
+
+
+
+
+
+## Conclusion
+
+There are many other data structures that I did not presented here.
+But you can check them out at the offical Zig Standard Library documentation page.
+Actually, when you get into the [homepage of the documentation](https://ziglang.org/documentation/master/std/#)[^home], the first thing
+that appears to you in this page, is a list of types and data structures.
+
+
+In this section you can see a list of the many different data structures available in
+the Zig Standard Library. There are some very specific structures in this list, like a
+[`BoundedArray` struct](https://ziglang.org/documentation/master/std/#std.bounded_array.BoundedArray)[^bounded]
+, but there is also some more general structures, such as a
+[`PriorityQueue` struct](https://ziglang.org/documentation/master/std/#std.priority_queue.PriorityQueue)[^priority].
+
+
+[^home]: <https://ziglang.org/documentation/master/std/#>
+[^priority]: <https://ziglang.org/documentation/master/std/#std.priority_queue.PriorityQueue>.
+[^bounded]: <https://ziglang.org/documentation/master/std/#std.bounded_array.BoundedArray>
+
+
+
+
+
 

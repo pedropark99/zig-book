@@ -84,7 +84,7 @@ div.csl-indent {
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../references.html" rel="next">
+<link href="../Chapters/10-stack-project.html" rel="next">
 <link href="../Chapters/09-error-handling.html" rel="prev">
 <script src="../site_libs/quarto-html/quarto.js"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
@@ -268,6 +268,12 @@ window.Quarto = {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../Chapters/10-stack-project.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Building a stack data structure</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../references.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">References</span></a>
   </div>
@@ -300,17 +306,8 @@ window.Quarto = {
   <li><a href="#sec-string-hash-map" id="toc-sec-string-hash-map" class="nav-link" data-scroll-target="#sec-string-hash-map"><span class="header-section-number">11.2.5</span> The <code>StringHashMap</code> hashtable</a></li>
   <li><a href="#the-stringarrayhashmap-hashtable" id="toc-the-stringarrayhashmap-hashtable" class="nav-link" data-scroll-target="#the-stringarrayhashmap-hashtable"><span class="header-section-number">11.2.6</span> The <code>StringArrayHashMap</code> hashtable</a></li>
   </ul></li>
-  <li><a href="#sec-comptime" id="toc-sec-comptime" class="nav-link" data-scroll-target="#sec-comptime"><span class="header-section-number">11.3</span> Understanding <code>comptime</code> in Zig</a>
-  <ul class="collapse">
-  <li><a href="#applying-over-a-function-argument" id="toc-applying-over-a-function-argument" class="nav-link" data-scroll-target="#applying-over-a-function-argument"><span class="header-section-number">11.3.1</span> Applying over a function argument</a></li>
-  <li><a href="#applying-over-an-expression" id="toc-applying-over-an-expression" class="nav-link" data-scroll-target="#applying-over-an-expression"><span class="header-section-number">11.3.2</span> Applying over an expression</a></li>
-  <li><a href="#applying-over-a-block" id="toc-applying-over-a-block" class="nav-link" data-scroll-target="#applying-over-a-block"><span class="header-section-number">11.3.3</span> Applying over a block</a></li>
-  </ul></li>
-  <li><a href="#sec-generics" id="toc-sec-generics" class="nav-link" data-scroll-target="#sec-generics"><span class="header-section-number">11.4</span> Generics with Linked Lists</a>
-  <ul class="collapse">
-  <li><a href="#sec-generic-fun" id="toc-sec-generic-fun" class="nav-link" data-scroll-target="#sec-generic-fun"><span class="header-section-number">11.4.1</span> A generic function</a></li>
-  <li><a href="#a-generic-struct" id="toc-a-generic-struct" class="nav-link" data-scroll-target="#a-generic-struct"><span class="header-section-number">11.4.2</span> A generic struct</a></li>
-  </ul></li>
+  <li><a href="#linked-lists" id="toc-linked-lists" class="nav-link" data-scroll-target="#linked-lists"><span class="header-section-number">11.3</span> Linked lists</a></li>
+  <li><a href="#conclusion-1" id="toc-conclusion-1" class="nav-link" data-scroll-target="#conclusion-1"><span class="header-section-number">11.4</span> Conclusion</a></li>
   </ul>
 </nav>
     </div>
@@ -650,184 +647,94 @@ Key: Matheus | Age: 21</code></pre>
 </div>
 </section>
 </section>
-<section id="sec-comptime" class="level2" data-number="11.3">
-<h2 data-number="11.3" class="anchored" data-anchor-id="sec-comptime"><span class="header-section-number">11.3</span> Understanding <code>comptime</code> in Zig</h2>
-<p>One of the key features of Zig is <code>comptime</code>. This keyword introduces a whole new concept and paradigm, that is tightly connected with the compilation process. At <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a> we described the importance and the role that “compile-time vs runtime” plays into Zig. At that section, we learned that the rules applied to a value/object change a lot depending on whether this value is known at compile-time, or just at runtime.</p>
-<p>The <code>comptime</code> keyword is strongly related to these two spaces of time in the compilation process, i.e.&nbsp;the compile-time and the runtime. Let’s quickly recap the differences. Compile-time is the period of time when your Zig source code is being compiled by the <code>zig</code> compiler, while the runtime is the period of time when your Zig program is being executed, i.e.&nbsp;when we execute the binary files outputted by the <code>zig</code> compiler.</p>
-<p>There are three ways in which you can apply the <code>comptime</code> keyword, which are:</p>
+<section id="linked-lists" class="level2" data-number="11.3">
+<h2 data-number="11.3" class="anchored" data-anchor-id="linked-lists"><span class="header-section-number">11.3</span> Linked lists</h2>
+<p>The Zig Standard Library provides implementation for both single and doubly linked lists. A linked list is a linear data structure that looks like a chain, or, a rope. The main advantage of this data structure is that you normally have fast insertion and deletion operations. But, as a disadvantage, iterating through this data structure is usually not so fast as iterating through an array.</p>
+<p>The idea behind a linked list is basically build a structure that concists of a series of nodes connected to each other by pointers. This means that linked lists are usually not contiguos in memory, because each node might be south in memory, but the next node might be north in memory, then the next node might be left in memory, anyway, you get it, they can be anywhere.</p>
+<p>At <a href="#fig-linked-list" class="quarto-xref">Figure&nbsp;<span>11.3</span></a> we can see a diagram of a singly linked list. Notice that we begin with a first node. This first node is usually called “the head of the linked list”. Then, from this first node we uncover the remaining nodes in the structure, by following the locations pointed by the pointers.</p>
+<p>Every node have two things in it. It have the value that is stored in the current node , and also have a pointer. This pointer points to the next node in the list. If this pointer is null, then, it means that we reached the end of our linked list.</p>
+<div id="fig-linked-list" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-linked-list-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="./../Figures/linked-list.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-linked-list-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11.3: A diagram of a singly linked list.
+</figcaption>
+</figure>
+</div>
+<p>At <a href="#fig-linked-list2" class="quarto-xref">Figure&nbsp;<span>11.4</span></a> we can see a diagram of a doubly linked list. The only thing that really changes is that every node in the linked list have both a pointer to the previous node, and, a pointer to the next node. So every node have now two pointers in it. These are usually called the <code>prev</code> (for “previous”) and <code>next</code> (for “next”) pointers of the node.</p>
+<p>In the singly linked list example, we had only one single pointer in each node, and this singular pointer was always pointing to the next node in the sequence. In other words, singly linked lists normally have only the <code>next</code> pointer in them.</p>
+<div id="fig-linked-list2" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-linked-list2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="./../Figures/doubly-linked-list.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-linked-list2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11.4: A diagram of a doubly linked list.
+</figcaption>
+</figure>
+</div>
+<p>Linked lists are available in Zig through the functions <code>SinglyLinkedList()</code> and <code>DoublyLinkedList()</code>, for “singly linked lists” and “doubly linked lists”, respectively. These functions are actually generic functions, which we are going to talk more about at <a href="10-stack-project.html#sec-generic-fun" class="quarto-xref"><span>Section 12.2.1</span></a>.</p>
+<p>For now, just understand that, in order to create a linked list object, we begin by providing a data type to these functions. This data type defines the type of data that this linked list will store. In the example below, we are creating a singly linked list capable of storing <code>u32</code> values. So each node in this linked list will store a <code>u32</code> value.</p>
+<p>Both the <code>SinglyLinkedList()</code> and <code>DoublyLinkedList()</code> functions returns a type, i.e.&nbsp;a struct definition, as result. This means that the object <code>Lu32</code> is actually a type definition, or a struct definition. It defines the type “singly linked list of <code>u32</code> values”.</p>
+<p>So now that we have the definition of the struct, we have to instantiate a <code>Lu32</code> object. We normally instantiate struct objects in Zig by using an <code>init()</code> method. But in this case, we are instantiating the struct directly, by using an empty <code>struct</code> literal, in the expression <code>Lu32{}</code>.</p>
+<p>In this example, we first create multiple node objects, and after we create them, we start to insert and connect these nodes to build the linked list, using the <code>prepend()</code> and <code>insertAfter()</code> methods. Notice that the <code>prepend()</code> method is a method from the linked list object, while the <code>insertAfter()</code> is a method present in the node objects.</p>
+<p>In essence, the <code>prepend()</code> method inserts a node at the beginning of the linked list. In other words, the node that you provide to this method, becomes the new “head node” of the linked list. It becomes the first node in the list (see <a href="#fig-linked-list" class="quarto-xref">Figure&nbsp;<span>11.3</span></a>).</p>
+<p>On the other side, the <code>insertAfter()</code> method is used to basically connect two nodes together. When you provide a node to this method, it creates a pointer to this input node, and stores this pointer in the current node, from which the method was called from. In other words, this method creates the pointer that connects these two nodes together and stores it in the <code>next</code> attribute of the current node.</p>
+<p>Since doubly linked list have both a <code>next</code> and a <code>prev</code> pointers in each node, referring to the next and previous nodes in the sequence, respectively, as I described at <a href="#fig-linked-list2" class="quarto-xref">Figure&nbsp;<span>11.4</span></a>, a node object created from a <code>DoublyLinkedList()</code> object would have both a <code>insertBefore()</code> (for <code>prev</code>) and a <code>insertAfter()</code> (for <code>next</code>) methods available.</p>
+<p>This means that, if we used a doubly linked list, we could use the <code>insertBefore()</code> method to store the pointer to the input node in the <code>prev</code> attribute. This would put the input node as the “previous node”, or, the node before the current node. The <code>insertAfter()</code> method have “after” in it’s name to indicate that this method puts the pointer created to the input node in the <code>next</code> attribute of the current node, and as the result, the input node becomes the “next node” of the current node.</p>
+<p>Since we are using a singly linked list in this example, we have only the <code>insertAfter()</code> method available in the node objects that we create from our <code>Lu32</code> type.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> SinglyLinkedList = std.SinglyLinkedList;</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Lu32 = SinglyLinkedList(<span class="dt">u32</span>);</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> list = Lu32<span class="op">{}</span>;</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> one = Lu32.Node<span class="op">{</span> .data = <span class="dv">1</span> <span class="op">}</span>;</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> two = Lu32.Node<span class="op">{</span> .data = <span class="dv">2</span> <span class="op">}</span>;</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> three = Lu32.Node<span class="op">{</span> .data = <span class="dv">3</span> <span class="op">}</span>;</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> four = Lu32.Node<span class="op">{</span> .data = <span class="dv">4</span> <span class="op">}</span>;</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> five = Lu32.Node<span class="op">{</span> .data = <span class="dv">5</span> <span class="op">}</span>;</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    list.prepend(&amp;two); <span class="co">// {2}</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>    two.insertAfter(&amp;five); <span class="co">// {2, 5}</span></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>    list.prepend(&amp;one); <span class="co">// {1, 2, 5}</span></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>    two.insertAfter(&amp;three); <span class="co">// {1, 2, 3, 5}</span></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>    three.insertAfter(&amp;four); <span class="co">// {1, 2, 3, 4, 5}</span></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>There are other methods available from the linked list object, depending if this object is a singly linked list or a doubly linked list, that might be very useful for you, like:</p>
 <ul>
-<li>apply <code>comptime</code> on a function argument.</li>
-<li>apply <code>comptime</code> on an object.</li>
-<li>apply <code>comptime</code> on a block of expressions.</li>
+<li><code>remove()</code> to remove a specific node from the linked list.</li>
+<li><code>popFirst()</code> to remove the first node from the linked list.</li>
+<li>if singly linked list, <code>len()</code> to count how many nodes there is in the linked list.</li>
+<li>if doubly linked list, checkout the <code>len</code> attribute to see how many nodes there is in the linked list.</li>
+<li>if singly linked list, <code>popFirst()</code> to remove the first node from the linked list.</li>
+<li>if doubly linked list, <code>pop()</code> and <code>popFirst()</code> to remove the last and first nodes from the linked list, respectively.</li>
+<li>if doubly linked list, <code>append()</code> to add a new node to end of the linked list (i.e.&nbsp;inverse of <code>prepend()</code>).</li>
 </ul>
-<section id="applying-over-a-function-argument" class="level3" data-number="11.3.1">
-<h3 data-number="11.3.1" class="anchored" data-anchor-id="applying-over-a-function-argument"><span class="header-section-number">11.3.1</span> Applying over a function argument</h3>
-<p>When you apply the <code>comptime</code> on a function argument you are saying to the <code>zig</code> compiler that the value assigned to that particular argument of the function must be known at compile-time. We explained in details at <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a> what exactly “value known at compile-time” means, so, in case you have doubts about this idea, comeback to that section.</p>
-<p>Now let’s think about the consequences of this idea. First of all, we are imposing a limit, or, a requirement to that particular function argument. If the programmer accidentally tries to give a value to this function argument that is not known at compile time, the <code>zig</code> compiler will notice this problem, and as a consequence, it will raise a compilation error saying that it cannot compile your program. Because you are providing a value that is “runtime known” to a function argument that must be “compile-time known”.</p>
-<p>Take a look at this very simple example below, where we define a <code>double()</code> function, that simply doubles the input value named <code>num</code>. Notice that, we use the <code>comptime</code> keyword before the name of the function argument. This keyword is marking the function argument <code>num</code> as a “comptime argument”.</p>
-<p>That is a function argument whose value must be compile-time known. This is why the expression <code>double(5678)</code> is valid, and no compilation errors are raised. Because the value <code>5678</code> is compile-time known, so this is the expected behaviour for this function.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> double(<span class="kw">comptime</span> num: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> num * <span class="dv">2</span>;</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"test comptime"</span> <span class="op">{</span></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    _ = double(<span class="dv">5678</span>);</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>But what if we provide a number that is not compile-time known to this function? For example, we might provide a different input value to this function depending on the target OS of our compilation process. The code example delow demonstrates such case.</p>
-<p>Because the value of the object <code>n</code> is determined at runtime, we cannot provide this object as input to the <code>double()</code> function. The <code>zig</code> compiler will not allow it, because we marked the <code>num</code> argument as a “comptime argument”. That is why the <code>zig</code> compiler raises the compile-time error exposed below:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> builtin = <span class="bu">@import</span>(<span class="st">"builtin"</span>);</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> double(<span class="kw">comptime</span> num: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> num * <span class="dv">2</span>;</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"test comptime"</span> <span class="op">{</span></span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> n: <span class="dt">u32</span> = <span class="cn">undefined</span>;</span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (builtin.target.os.tag == .windows) <span class="op">{</span></span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>        n = <span class="dv">1234</span>;</span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>        n = <span class="dv">5678</span>;</span>
-<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    _ = double(n);</span>
-<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>t.zig:12:16: error: runtime-known argument passed to comptime parameter </code></pre>
-<p>Comptime arguments are frequently used on functions that return some sort of generic structure. In fact, <code>comptime</code> is the essence (or the basis) to make generics in Zig. We are going to talk more about generics at <a href="#sec-generics" class="quarto-xref"><span>Section 11.4</span></a>.</p>
-<p>For now, let’s take a look at this code example from <span class="citation" data-cites="karlseguin_generics">Seguin (<a href="../references.html#ref-karlseguin_generics" role="doc-biblioref">2024</a>)</span>. You can see that this <code>IntArray()</code> function have one argument named <code>length</code>. This argument is marked as comptime, and receives a value of type <code>usize</code> as input. So the value given to this argument must be compile-time known. We can also see that this function returns an array of <code>i64</code> values as output.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> IntArray(<span class="kw">comptime</span> length: <span class="dt">usize</span>) <span class="dt">type</span> <span class="op">{</span></span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> [length]<span class="dt">i64</span>;</span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>Now, the key component of this function is the <code>length</code> argument. This argument is used to determine the size of the array that is produced by the function. Let’s think about the consequences of that. If the size of the array is dependent on the value assigned to the <code>length</code> argument, this means that the data type of the output of the function depends on the value of this <code>length</code> argument.</p>
-<p>Let this statement sink for a bit in your mind. As I described at <a href="01-zig-weird.html#sec-root-file" class="quarto-xref"><span>Section 1.2.2</span></a>, Zig is a strongly-typed language, specially on function declarations. So every time we write a function in Zig, we have to annotate the data type of the value returned by the function. But how can we do that, if this data type depends on the value given to the argument of the function?</p>
-<p>Think about this for a second. If <code>length</code> is equal to 3 for example, then, the return type of the function is <code>[3]i64</code>. But if <code>length</code> is equal to 40, then, the return type becomes <code>[40]i64</code>. At this point the <code>zig</code> compiler would be confused, and raise a compilation error, saying something like this:</p>
-<blockquote class="blockquote">
-<p>Hey! You have annotated that this function should return a <code>[3]i64</code> value, but I got a <code>[40]i64</code> value instead! This doesn’t look right!</p>
-</blockquote>
-<p>So how can you solve this problem? How do we overcome this barrier? This is when the <code>type</code> keyword comes in. This <code>type</code> keyword is basically saying to the <code>zig</code> compiler that this function will return some type, but it doesn’t know yet what exactly type that is. We will talk more about this at <a href="#sec-generics" class="quarto-xref"><span>Section 11.4</span></a>.</p>
 </section>
-<section id="applying-over-an-expression" class="level3" data-number="11.3.2">
-<h3 data-number="11.3.2" class="anchored" data-anchor-id="applying-over-an-expression"><span class="header-section-number">11.3.2</span> Applying over an expression</h3>
-<p>When you apply the <code>comptime</code> keyword over an expression, then, it is garanteed that the <code>zig</code> compiler will execute this expression at compile-time. If for some reason, this expression cannot be executed at compile-time (e.g.&nbsp;for example, maybe this expression depends on a value that is only known at runtime), then, the <code>zig</code> compiler will raise a compilation error.</p>
-<p>Take this example from the official documentation of Zig <span class="citation" data-cites="zigdocs">(<a href="../references.html#ref-zigdocs" role="doc-biblioref">Zig Software Foundation 2024</a>)</span>. We are executing the same <code>fibonacci()</code> function both at runtime, and, at compile-time. The function is by default executed at runtime, but because we use the <code>comptime</code> keyword at the second “try expression”, this expression is executed at compile-time.</p>
-<p>This might be a bit confusing for some people. Yes! When I say that this expression is executed at compile-time, I mean that this expression is compiled and executed while the <code>zig</code> compiler is compiling your Zig source code.</p>
-<p>If you think hard enough about how the C and C++ macros work, you can reach the conclusion that they are also executed at compile-time. Because C and C++ macros are just simple text replacements operations, that are performed at compile-time to form the final version of the C or C++ source code that get’s sent to the compiler.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expect = <span class="bu">@import</span>(<span class="st">"std"</span>).testing.expect;</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> fibonacci(index: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (index &lt; <span class="dv">2</span>) <span class="kw">return</span> index;</span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> fibonacci(index - <span class="dv">1</span>) + fibonacci(index - <span class="dv">2</span>);</span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"fibonacci"</span> <span class="op">{</span></span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// test fibonacci at run-time</span></span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect(fibonacci(<span class="dv">7</span>) == <span class="dv">13</span>);</span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">// test fibonacci at compile-time</span></span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> <span class="kw">comptime</span> expect(fibonacci(<span class="dv">7</span>) == <span class="dv">13</span>);</span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>A lot of your Zig source code might be potentially executed at compile-time, because the <code>zig</code> compiler can figure it out the result value of some types of expressions. Specially if these expressions involves only compile-time known values. We have talked about this at <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a>.</p>
-<p>But when you use the <code>comptime</code> keyword on an expression, there is no “it might be executed at compile-time” anymore. With the <code>comptime</code> keyword you are ordering the <code>zig</code> compiler to execute this expression at compile-time. You are imposing this rule, it is garanteed that the compiler will always execute it at compile-time. Or it at least, the compiler will try to execute it. If the compiler cannot execute the expression for whatever reason, the compiler will raise a compilation error.</p>
-</section>
-<section id="applying-over-a-block" class="level3" data-number="11.3.3">
-<h3 data-number="11.3.3" class="anchored" data-anchor-id="applying-over-a-block"><span class="header-section-number">11.3.3</span> Applying over a block</h3>
-<p>Blocks were described at <a href="01-zig-weird.html#sec-blocks" class="quarto-xref"><span>Section 1.7</span></a>. When you apply the <code>comptime</code> keyword over a block of expressions, you get essentially the same effect when you apply this keyword to a single expression. That is, the entire block of expressions is executed at compile-time by the <code>zig</code> compiler.</p>
-<p>In the example below, we mark the block labeled of <code>blk</code> as a comptime block, and, therefore, the expressions inside this block are executed at compile-time.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expect = <span class="bu">@import</span>(<span class="st">"std"</span>).testing.expect;</span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> fibonacci(index: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (index &lt; <span class="dv">2</span>) <span class="kw">return</span> index;</span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> fibonacci(index - <span class="dv">1</span>) + fibonacci(index - <span class="dv">2</span>);</span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"fibonacci in a block"</span> <span class="op">{</span></span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x = <span class="kw">comptime</span> blk: <span class="op">{</span></span>
-<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n1 = <span class="dv">5</span>;</span>
-<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n2 = <span class="dv">2</span>;</span>
-<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n3 = n1 + n2;</span>
-<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> expect(fibonacci(n3) == <span class="dv">13</span>);</span>
-<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">break</span> :blk n3;</span>
-<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>;</span>
-<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>    _ = x;</span>
-<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
-</section>
-<section id="sec-generics" class="level2" data-number="11.4">
-<h2 data-number="11.4" class="anchored" data-anchor-id="sec-generics"><span class="header-section-number">11.4</span> Generics with Linked Lists</h2>
-<p>First of all, what is a generic? Generic is the idea to allow a type (<code>f64</code>, <code>u8</code>, <code>u32</code>, <code>bool</code>, and also, user-defined types, like the <code>User</code> struct that we defined at <a href="03-structs.html#sec-structs-and-oop" class="quarto-xref"><span>Section 2.2</span></a>) to be a parameter to methods, classes and interfaces <span class="citation" data-cites="geeks_generics">(<a href="../references.html#ref-geeks_generics" role="doc-biblioref">Geeks for Geeks 2024</a>)</span>. In other words, a generic is a class (or method) that can work with multiple data types.</p>
-<p>For example, in Java, generics are created through the operator <code>&lt;&gt;</code>. With this operator, a Java class is capable of taking a data type as input, and therefore, the class can fit it’s features according to this input data type. As another example, generics in C++ are supported through the concept of templates. Class templates in C++ are generics.</p>
-<p>In Zig, generics are implemented through <code>comptime</code>. The <code>comptime</code> keyword allows us to collect a data type at compile time, and pass this data type as input to a piece of code.</p>
-<section id="sec-generic-fun" class="level3" data-number="11.4.1">
-<h3 data-number="11.4.1" class="anchored" data-anchor-id="sec-generic-fun"><span class="header-section-number">11.4.1</span> A generic function</h3>
-<p>Take the <code>max()</code> function exposed below as a first example. This function is essentially a “generic function”. In this function, we have a comptime function argument named <code>T</code>. Notice that this <code>T</code> argument have a data type of <code>type</code>. Weird right? This <code>type</code> keyword is the “father of all types”, or, “the type of types” in Zig. Because we used this <code>type</code> keyword in the <code>T</code> argument, we are telling the <code>zig</code> compiler that this <code>T</code> argument will receive some data type as input.</p>
-<p>Also notice the use of the <code>comptime</code> keyword in this argument. As I described at <a href="#sec-comptime" class="quarto-xref"><span>Section 11.3</span></a>, every time you use this keyword in a function argument, this means that the value of this argument must be known at compile-time. This makes sense, right? Because there is no data type that you can make that is known only at runtime.</p>
-<p>Think about this. Every data type that you will ever write is always known at compile-time. Specially because data types are an essential information for the compiler to actually compile your source code. Having this in mind, makes sense to mark this argument as a comptime argument.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> max(<span class="kw">comptime</span> T: <span class="dt">type</span>, a: T, b: T) T <span class="op">{</span></span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">if</span> (a &gt; b) a <span class="kw">else</span> b;</span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>Also notice that the value of the <code>T</code> argument is actually used to define the data type of the other arguments of the function, <code>a</code> and <code>b</code>, and also at the return type annotation of the function. That is, the data type of these arguments (<code>a</code> and <code>b</code>), and, the return data type of the function itself, are determined by the input value given to the <code>T</code> argument.</p>
-<p>As a result, we have a generic function that works with different data types. For example, I can provide <code>u8</code> values to this <code>max()</code> function, and it will work as expected. But if I provide <code>f64</code> values instead, it will also work as expected. If I did not use a generic function, I would have to write a <code>max()</code> for each one of the data types that I wanted to use. This generic function provides a very useful shortcut for us.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> max(<span class="kw">comptime</span> T: <span class="dt">type</span>, a: T, b: T) T <span class="op">{</span></span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">if</span> (a &gt; b) a <span class="kw">else</span> b;</span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"test max"</span> <span class="op">{</span></span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n1 = max(<span class="dt">u8</span>, <span class="dv">4</span>, <span class="dv">10</span>);</span>
-<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Max n1: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n1<span class="op">}</span>);</span>
-<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n2 = max(<span class="dt">f64</span>, <span class="fl">89.24</span>, <span class="fl">64.001</span>);</span>
-<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Max n2: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n2<span class="op">}</span>);</span>
-<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>Max n1: 10
-Max n2: 89.24</code></pre>
-</section>
-<section id="a-generic-struct" class="level3" data-number="11.4.2">
-<h3 data-number="11.4.2" class="anchored" data-anchor-id="a-generic-struct"><span class="header-section-number">11.4.2</span> A generic struct</h3>
-<p>Now that we have seen an example of a generic function, let’s take a look at a generic struct. Generic structs are the Zig way to replicate a generic class from Java, or, a class template from C++.</p>
-<p>To create a generic struct in Zig, we normally use a function that creates this generic struct object. In other words, this function behaves as a “constructor” for the generic struct object. To create such function, we need to add a comptime argument to this function that receives a data type as input. We already learned how to do this at the previous section (<a href="#sec-generic-fun" class="quarto-xref"><span>Section 11.4.1</span></a>).</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> Array(<span class="kw">comptime</span> T: <span class="dt">type</span>) <span class="dt">type</span> <span class="op">{</span></span>
-<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>        items: []T,</span>
-<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>        size: <span class="dt">usize</span>,</span>
-<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>;</span>
-<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">5</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> ar = Array(<span class="dt">u8</span>)<span class="op">{</span> .items = &amp;buffer, .size = <span class="dv">0</span> <span class="op">}</span>;</span>
-<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(ar)<span class="op">}</span>);</span>
-<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
+<section id="conclusion-1" class="level2" data-number="11.4">
+<h2 data-number="11.4" class="anchored" data-anchor-id="conclusion-1"><span class="header-section-number">11.4</span> Conclusion</h2>
+<p>There are many other data structures that I did not presented here. But you can check them out at the offical Zig Standard Library documentation page. Actually, when you get into the <a href="https://ziglang.org/documentation/master/std/#">homepage of the documentation</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>, the first thing that appears to you in this page, is a list of types and data structures.</p>
+<p>In this section you can see a list of the many different data structures available in the Zig Standard Library. There are some very specific structures in this list, like a <a href="https://ziglang.org/documentation/master/std/#std.bounded_array.BoundedArray"><code>BoundedArray</code> struct</a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> , but there is also some more general structures, such as a <a href="https://ziglang.org/documentation/master/std/#std.priority_queue.PriorityQueue"><code>PriorityQueue</code> struct</a><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>.</p>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
-<div id="ref-geeks_generics" class="csl-entry" role="listitem">
-Geeks for Geeks. 2024. <span>“Generics in c++.”</span> <span>Geeks for Geeks</span>. <a href="https://www.geeksforgeeks.org/generics-in-c/">https://www.geeksforgeeks.org/generics-in-c/</a>.
-</div>
-<div id="ref-karlseguin_generics" class="csl-entry" role="listitem">
-Seguin, Karl. 2024. <span>“Generics.”</span> <a href="https://www.openmymind.net/learning_zig/generics/">https://www.openmymind.net/learning_zig/generics/</a>.
-</div>
 <div id="ref-wikipedia_hashtables" class="csl-entry" role="listitem">
 Wikipedia. 2024. <span>“Hash Tables.”</span> Wikipedia. <a href="https://en.wikipedia.org/wiki/Hash_table">https://en.wikipedia.org/wiki/Hash_table</a>.
 </div>
-<div id="ref-zigdocs" class="csl-entry" role="listitem">
-Zig Software Foundation. 2024. <span>“Language Reference.”</span> Zig Software Foundation. <a href="https://ziglang.org/documentation/master/">https://ziglang.org/documentation/master/</a>.
 </div>
-</div>
-</section>
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>
 <ol>
 <li id="fn1"><p><a href="https://ziglang.org/documentation/master/std/#std.array_list.ArrayListAligned" class="uri">https://ziglang.org/documentation/master/std/#std.array_list.ArrayListAligned</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p><a href="https://ziglang.org/documentation/master/std/#" class="uri">https://ziglang.org/documentation/master/std/#</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p><a href="https://ziglang.org/documentation/master/std/#std.bounded_array.BoundedArray" class="uri">https://ziglang.org/documentation/master/std/#std.bounded_array.BoundedArray</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p><a href="https://ziglang.org/documentation/master/std/#std.priority_queue.PriorityQueue" class="uri">https://ziglang.org/documentation/master/std/#std.priority_queue.PriorityQueue</a>.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
@@ -1370,8 +1277,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../references.html" class="pagination-link" aria-label="References">
-        <span class="nav-page-text">References</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../Chapters/10-stack-project.html" class="pagination-link" aria-label="<span class='chapter-number'>12</span>&nbsp; <span class='chapter-title'>Building a stack data structure</span>">
+        <span class="nav-page-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Building a stack data structure</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
