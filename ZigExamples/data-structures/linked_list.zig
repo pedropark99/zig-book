@@ -11,12 +11,9 @@ fn LinkedList(comptime T: type) type {
         const self = @This();
         first: ?*Node = null,
 
-        pub fn insert(list: self, new_node: *Node) void {
-            var current_node = list.first.?;
-            while (current_node.next != new_node) {
-                current_node = current_node.next.?;
-            }
-            current_node.next = new_node;
+        pub fn insert(list: *self, new_node: *Node) void {
+            new_node.next = list.first;
+            list.first = new_node;
         }
     };
 }
