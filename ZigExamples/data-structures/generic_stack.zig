@@ -4,12 +4,12 @@ const Allocator = std.mem.Allocator;
 fn Stack(comptime T: type) type {
     return struct {
         items: []T,
-        capacity: u32,
-        length: u32,
+        capacity: usize,
+        length: usize,
         allocator: Allocator,
         const Self = @This();
 
-        pub fn init(allocator: Allocator, capacity: u32) !Stack(T) {
+        pub fn init(allocator: Allocator, capacity: usize) !Stack(T) {
             var buf = try allocator.alloc(T, capacity);
             @memset(buf[0..], 0);
             return .{

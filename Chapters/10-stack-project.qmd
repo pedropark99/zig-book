@@ -353,12 +353,10 @@ I think the best way to demonstrate how to create a generic data structure is to
 This where we go to our next small project in this book. This one is a very small project,
 which is to write a stack data structure.
 
-first. At first, this stack data
-structuree will store only `u32` values. But then, we are going to make it "generic".
 
 
 
-## What is a stack?
+## What is a stack? {#sec-what-stack}
 
 A stack data structure is a structure that follows a LIFO (*last in first out*) principle.
 Only two operations are normally supported in a stack data structure, which are `push` and `pop`.
@@ -383,7 +381,6 @@ This demonstrates the LIFO concept, because the first plate in the stack, which 
 in the bottom of the stack is the last plate to get out of the stack. Think about it. In order
 to remove this specific plate from the stack, we have to remove all plates in the
 stack. So every operation in the stack, either insertion or deletion, is always made at the top of the stack.
-
 The @fig-stack below exposes this logic visually:
 
 ![A diagram of a stack structure. Source: Wikipedia, the free encyclopedia.](./../Figures/lifo-stack.svg){#fig-stack}
@@ -454,12 +451,14 @@ we can start writing the logic responsible for performing a push operation.
 Remember, a push operation in a stack data structure is the operation
 responsible for adding a new value to the stack.
 
-So how can we add a new value to the `Stack` object that we have? The
-`push()` function exposed below is an answer to this question.
-This function is shlightly complex, so let's describe it, step by step.
+So how can we add a new value to the `Stack` object that we have?
+The `push()` function exposed below is an answer to this question.
+Remember from what we discussed at @sec-what-stack that values are always added to the top of the stack.
+This means that this `push()` function must always find the element in the underlying array of the stack,
+that currently represents the top position of the stack, and add this value there.
 
 First, we have an if statement in this function. This if statement is
-checking whether we need or not to expand the underlying array to store
+checking whether we need to expand the underlying array to store
 this new value that we are adding to the stack. In other words, maybe
 the underlying array does not have enough capacity to store this new
 value, and, in this case, we need to expand our array to get the capacity that we need.
@@ -487,8 +486,8 @@ of the values that are present at `self.items`.
 
 Now that we have secured a copy of our current values in the `new_buf` object, we
 can now free the memory currently allocated at `self.items`. After that, we just need
-to assign our new and bigger array to `self.items`. This is the end of the sequence
-of necessary steps to expand our array.
+to assign our new and bigger array to `self.items`. This is the sequence
+of steps necessary to expand our array.
 
 
 ```{zig}
@@ -514,18 +513,20 @@ pub fn push(self: *Stack, val: u32) !void {
 After we make sure that we have enough room to store this new value
 that we are adding to the stack, all we have to do is to assign
 this value to the top element in this stack, and, increase the
-value of the `length` attribute by one.
+value of the `length` attribute by one. We find the top element
+in the stack by using the `length` attribute.
 
 
 
 ### Implementing the `pop` operation
 
-Now, we need to implement the pop operation of our stack object.
-This is the easiest operation, and the pop method below summarises
+Now, we can implement the pop operation of our stack object.
+This is a much easier operation to implement, and the pop method below summarises
 all the logic that is needed.
 
-We just set the top element in the stack to zero, to indicate that
-this element is "empty", and, after that, we also need to decrease
+We just have to find the element in the underlying array that currently represents the top
+of the stack, and set this element to zero, to indicate that
+this element is "empty". After that, we also need to decrease
 the `length` attribute of the stack by one.
 
 If the current length of the stack is zero, it means that there is
@@ -578,6 +579,9 @@ Now that we have implemented the basic skeleton of our stack data structure,
 we can now focus on discussing how can we make it generic. How can we make
 this basic skeleton to work not only with `u32` values, but also, with any other
 data type we want?
+For example, we might need to create a stack object to store `User` values
+in it. How can we make this possible? The answer lies on the use of generics
+and `comptime`.
 
 As I described at @sec-generic-struct, the basic idea is to write a generic
 function that returns as result a struct definition as output.
@@ -588,14 +592,14 @@ stack data structure.
 
 ```{zig}
 #| eval: false
-fn Stack(comptime T: type, capacity: u32) type {
+fn Stack(comptime T: type) type {
     return struct {
         items: []T,
-        capacity: u32,
-        length: u32,
+        capacity: usize,
+        length: usize,
         allocator: Allocator,
 
-        pub fn init(allocator: Allocator) !Stack(T) {
+        pub fn init(allocator: Allocator, capacity: usize) !Stack(T) {
             var buf = try allocator.alloc(T, capacity);
             @memset(buf[0..], 0);
             return .{
