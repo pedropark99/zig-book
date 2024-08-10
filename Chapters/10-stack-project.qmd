@@ -329,7 +329,7 @@ Max n2: 89.24
 
 
 
-### A generic data structure
+### A generic data structure {#sec-generic-struct}
 
 Every data structure that you find in the Zig Standard Library (e.g. `ArrayList`, `HashMap`, etc.)
 is essentially a generic data structure.
@@ -576,8 +576,39 @@ pub fn deinit(self: *Stack) void {
 
 Now that we have implemented the basic skeleton of our stack data structure,
 we can now focus on discussing how can we make it generic. How can we make
-this basic skeleton to work not only with `u32` values, but with any other
+this basic skeleton to work not only with `u32` values, but also, with any other
 data type we want?
+
+As I described at @sec-generic-struct, the basic idea is to write a generic
+function that returns as result a struct definition as output.
+If we take only the section of our `Stack` struct with the `init()` method,
+the function below represents a generic function that creates a generic
+stack data structure.
+
+
+```{zig}
+#| eval: false
+fn Stack(comptime T: type, capacity: u32) type {
+    return struct {
+        items: []T,
+        capacity: u32,
+        length: u32,
+        allocator: Allocator,
+
+        pub fn init(allocator: Allocator) !Stack(T) {
+            var buf = try allocator.alloc(T, capacity);
+            @memset(buf[0..], 0);
+            return .{
+                .items = buf[0..],
+                .capacity = capacity,
+                .length = 0,
+                .allocator = allocator,
+            };
+        }
+    };
+}
+```
+
 
 
 

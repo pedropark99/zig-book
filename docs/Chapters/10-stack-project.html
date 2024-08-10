@@ -268,7 +268,7 @@ div.csl-indent {
   <li><a href="#sec-generics" id="toc-sec-generics" class="nav-link" data-scroll-target="#sec-generics"><span class="header-section-number">12.2</span> Introducing Generics</a>
   <ul class="collapse">
   <li><a href="#sec-generic-fun" id="toc-sec-generic-fun" class="nav-link" data-scroll-target="#sec-generic-fun"><span class="header-section-number">12.2.1</span> A generic function</a></li>
-  <li><a href="#a-generic-data-structure" id="toc-a-generic-data-structure" class="nav-link" data-scroll-target="#a-generic-data-structure"><span class="header-section-number">12.2.2</span> A generic data structure</a></li>
+  <li><a href="#sec-generic-struct" id="toc-sec-generic-struct" class="nav-link" data-scroll-target="#sec-generic-struct"><span class="header-section-number">12.2.2</span> A generic data structure</a></li>
   </ul></li>
   <li><a href="#what-is-a-stack" id="toc-what-is-a-stack" class="nav-link" data-scroll-target="#what-is-a-stack"><span class="header-section-number">12.3</span> What is a stack?</a></li>
   <li><a href="#writing-the-stack-data-structure" id="toc-writing-the-stack-data-structure" class="nav-link" data-scroll-target="#writing-the-stack-data-structure"><span class="header-section-number">12.4</span> Writing the stack data structure</a>
@@ -277,7 +277,8 @@ div.csl-indent {
   <li><a href="#implementing-the-pop-operation" id="toc-implementing-the-pop-operation" class="nav-link" data-scroll-target="#implementing-the-pop-operation"><span class="header-section-number">12.4.2</span> Implementing the <code>pop</code> operation</a></li>
   <li><a href="#implementing-the-deinit-method" id="toc-implementing-the-deinit-method" class="nav-link" data-scroll-target="#implementing-the-deinit-method"><span class="header-section-number">12.4.3</span> Implementing the <code>deinit</code> method</a></li>
   </ul></li>
-  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">12.5</span> Conclusion</a></li>
+  <li><a href="#making-it-generic" id="toc-making-it-generic" class="nav-link" data-scroll-target="#making-it-generic"><span class="header-section-number">12.5</span> Making it generic</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">12.6</span> Conclusion</a></li>
   </ul>
 </nav>
     </div>
@@ -442,8 +443,8 @@ div.csl-indent {
 <pre><code>Max n1: 10
 Max n2: 89.24</code></pre>
 </section>
-<section id="a-generic-data-structure" class="level3" data-number="12.2.2">
-<h3 data-number="12.2.2" class="anchored" data-anchor-id="a-generic-data-structure"><span class="header-section-number">12.2.2</span> A generic data structure</h3>
+<section id="sec-generic-struct" class="level3" data-number="12.2.2">
+<h3 data-number="12.2.2" class="anchored" data-anchor-id="sec-generic-struct"><span class="header-section-number">12.2.2</span> A generic data structure</h3>
 <p>Every data structure that you find in the Zig Standard Library (e.g.&nbsp;<code>ArrayList</code>, <code>HashMap</code>, etc.) is essentially a generic data structure. These data structures are generic in the sense that they work with any data type you want. You just say which is the data type of the values that are going to be stored in this data structure, and they just work as expected.</p>
 <p>A generic data structure in Zig is the way to replicate a generic class from Java, or, a class template from C++. But you may quest yourself: how do we build a generic data structure in Zig?</p>
 <p>The basic idea is to write a generic function that creates the data structure definition for the specific type we want. In other words, this generic function behaves as a “constructor”. The function outputs the <code>struct</code> definition that defines this data structure for a specific data type.</p>
@@ -556,8 +557,34 @@ Figure&nbsp;12.1: A diagram of a stack structure. Source: Wikipedia, the free en
 </div>
 </section>
 </section>
-<section id="conclusion" class="level2" data-number="12.5">
-<h2 data-number="12.5" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">12.5</span> Conclusion</h2>
+<section id="making-it-generic" class="level2" data-number="12.5">
+<h2 data-number="12.5" class="anchored" data-anchor-id="making-it-generic"><span class="header-section-number">12.5</span> Making it generic</h2>
+<p>Now that we have implemented the basic skeleton of our stack data structure, we can now focus on discussing how can we make it generic. How can we make this basic skeleton to work not only with <code>u32</code> values, but also, with any other data type we want?</p>
+<p>As I described at <a href="#sec-generic-struct" class="quarto-xref"><span>Section 12.2.2</span></a>, the basic idea is to write a generic function that returns as result a struct definition as output. If we take only the section of our <code>Stack</code> struct with the <code>init()</code> method, the function below represents a generic function that creates a generic stack data structure.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> Stack(<span class="kw">comptime</span> T: <span class="dt">type</span>, capacity: <span class="dt">u32</span>) <span class="dt">type</span> <span class="op">{</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>        items: []T,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>        capacity: <span class="dt">u32</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>        length: <span class="dt">u32</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        allocator: Allocator,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">pub</span> <span class="kw">fn</span> init(allocator: Allocator) !Stack(T) <span class="op">{</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>            <span class="kw">var</span> buf = <span class="kw">try</span> allocator.alloc(T, capacity);</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>            <span class="bu">@memset</span>(buf[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> .<span class="op">{</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>                .items = buf[<span class="dv">0</span>..],</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>                .capacity = capacity,</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                .length = <span class="dv">0</span>,</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                .allocator = allocator,</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>;</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>;</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="conclusion" class="level2" data-number="12.6">
+<h2 data-number="12.6" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">12.6</span> Conclusion</h2>
 <p>The full source code discussed in this chapter is freely available at the official repository for this book. Just checkout the <a href="https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/stack.zig"><code>stack.zig</code> module</a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> available inside the <code>ZigExamples</code> folder of the repository.</p>
 
 
