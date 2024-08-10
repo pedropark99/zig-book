@@ -426,11 +426,11 @@ const Allocator = std.mem.Allocator;
 
 const Stack = struct {
     items: []u32,
-    capacity: u32,
-    length: u32,
+    capacity: usize,
+    length: usize,
     allocator: Allocator,
 
-    pub fn init(allocator: Allocator, capacity: u32) !Stack {
+    pub fn init(allocator: Allocator, capacity: usize) !Stack {
         var buf = try allocator.alloc(u32, capacity);
         @memset(buf[0..], 0);
         return .{
@@ -585,9 +585,30 @@ and `comptime`.
 
 As I described at @sec-generic-struct, the basic idea is to write a generic
 function that returns as result a struct definition as output.
-If we take only the section of our `Stack` struct with the `init()` method,
-the function below represents a generic function that creates a generic
-stack data structure.
+In theory, we do not need much to transform our `Stack` struct into a generic
+data structure. All that we need to do, to make our `Stack` struct
+generic, is to transform the underlying array in the stack structure
+into a generic array.
+
+In other words, this underlying array needs to be a "chameleon". It needs to adapt,
+and transform it into an array of the data type that we give it to. For example, if we need to create
+a stack that will store `u8` values, then, this underlying array needs to be
+a `u8` array (i.e. `[]u8`). But if we need to store `User` values instead, then,
+this array needs to be a `User` array (i.e. `[]User`). Etc.
+
+We do that by using a generic function. Because a generic function can receive a data type
+as input, and we can pass this data type to the struct definition of our `Stack` object.
+Therefore, we can use the generic function to create a `Stack` object that can store
+the data type we want. If we want to create a stack structure that stores `User` values,
+we pass the `User` data type to this generic function, and it will create for us
+the struct definition that describes a `Stack` object that can store `User` values in it.
+
+Take the code example below as an example. I truncated some parts of the `Stack` struct
+for brevity reasons. But if a specific part of our `Stack` struct is not exposed here
+in this example, is because this part did not changed from the previous example.
+It remains the same.
+
+
 
 
 ```{zig}
@@ -598,6 +619,7 @@ fn Stack(comptime T: type) type {
         capacity: usize,
         length: usize,
         allocator: Allocator,
+        const Self = @This();
 
         pub fn init(allocator: Allocator, capacity: usize) !Stack(T) {
             var buf = try allocator.alloc(T, capacity);
@@ -609,21 +631,75 @@ fn Stack(comptime T: type) type {
                 .allocator = allocator,
             };
         }
+
+        pub fn push(self: *Self, val: T) !void {
+        // Truncate the rest of the struct
     };
 }
 ```
 
+Notice that we have created a function in this example named `Stack()`. This function
+takes a type as input, and passes this type to the struct definition of our
+`Stack` object. The data member `items` is now, an array of type `T`, which is the
+data type that we passed as input to the function. The function argument
+`val` in the `push()` function is now a value of type `T` too.
 
+Now we have finally a stack data structure that is generic. I mean, we probably still
+need to adjust the `@memset()` calls, to trully make it generic for any data type.
+But this version is good enough, and it really works well with any of the primitive data
+types of Zig.
+
+We can just provide a data type to this function, and it will create a definition of a
+`Stack` object that can store values of the data type that we provided. In the example below, we are creating
+the definition of a
+`Stack` object that can store `u8` values in it. This definition is stored at the `Stacku8` object.
+This `Stacku8` object becomes our new struct, it is the struct that we are going to use
+to create our `Stack` object.
+
+
+```{zig}
+#| eval: false
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
+const Stacku8 = Stack(u8);
+var stack = try Stacku8.init(allocator, 10);
+defer stack.deinit();
+try stack.push(1);
+try stack.push(2);
+try stack.push(3);
+try stack.push(4);
+try stack.push(5);
+try stack.push(6);
+
+std.debug.print("Stack len: {d}\n", .{stack.length});
+std.debug.print("Stack capacity: {d}\n", .{stack.capacity});
+
+stack.pop();
+std.debug.print("Stack len: {d}\n", .{stack.length});
+stack.pop();
+std.debug.print("Stack len: {d}\n", .{stack.length});
+std.debug.print("Stack state: {any}\n", .{stack.items});
+```
+
+```
+Stack len: 6
+Stack capacity: 10
+Stack len: 5
+Stack len: 4
+Stack state: { 1, 2, 3, 4, 0, 0, 0, 0, 0, 0 }
+```
 
 
 
 
 ## Conclusion
 
-The full source code discussed in this chapter is freely available at the official
-repository for this book. Just checkout the [`stack.zig` module](https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/stack.zig)[^zig-stack]
+The full source code of the stack structure discussed in this chapter is freely available at the official
+repository for this book. Just checkout the [`stack.zig`](https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/stack.zig)[^zig-stack]
+and the [`generic_stack.zig`](https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/generic_stack.zig)[^zig-stack2] modules
 available inside the `ZigExamples` folder of the repository.
 
 
 [^zig-stack]: <https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/stack.zig>
+[^zig-stack2]: <https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/generic_stack.zig>
 
