@@ -270,7 +270,7 @@ div.csl-indent {
   <li><a href="#sec-generic-fun" id="toc-sec-generic-fun" class="nav-link" data-scroll-target="#sec-generic-fun"><span class="header-section-number">12.2.1</span> A generic function</a></li>
   <li><a href="#sec-generic-struct" id="toc-sec-generic-struct" class="nav-link" data-scroll-target="#sec-generic-struct"><span class="header-section-number">12.2.2</span> A generic data structure</a></li>
   </ul></li>
-  <li><a href="#what-is-a-stack" id="toc-what-is-a-stack" class="nav-link" data-scroll-target="#what-is-a-stack"><span class="header-section-number">12.3</span> What is a stack?</a></li>
+  <li><a href="#sec-what-stack" id="toc-sec-what-stack" class="nav-link" data-scroll-target="#sec-what-stack"><span class="header-section-number">12.3</span> What is a stack?</a></li>
   <li><a href="#writing-the-stack-data-structure" id="toc-writing-the-stack-data-structure" class="nav-link" data-scroll-target="#writing-the-stack-data-structure"><span class="header-section-number">12.4</span> Writing the stack data structure</a>
   <ul class="collapse">
   <li><a href="#implementing-the-push-operation" id="toc-implementing-the-push-operation" class="nav-link" data-scroll-target="#implementing-the-push-operation"><span class="header-section-number">12.4.1</span> Implementing the <code>push</code> operation</a></li>
@@ -450,17 +450,15 @@ Max n2: 89.24</code></pre>
 <p>The basic idea is to write a generic function that creates the data structure definition for the specific type we want. In other words, this generic function behaves as a “constructor”. The function outputs the <code>struct</code> definition that defines this data structure for a specific data type.</p>
 <p>To create such function, we need to add a comptime argument to this function that receives a data type as input. We already learned how to do this at the previous section (<a href="#sec-generic-fun" class="quarto-xref"><span>Section 12.2.1</span></a>).</p>
 <p>I think the best way to demonstrate how to create a generic data structure is to actually write one. This where we go to our next small project in this book. This one is a very small project, which is to write a stack data structure.</p>
-<p>first. At first, this stack data structuree will store only <code>u32</code> values. But then, we are going to make it “generic”.</p>
 </section>
 </section>
-<section id="what-is-a-stack" class="level2" data-number="12.3">
-<h2 data-number="12.3" class="anchored" data-anchor-id="what-is-a-stack"><span class="header-section-number">12.3</span> What is a stack?</h2>
+<section id="sec-what-stack" class="level2" data-number="12.3">
+<h2 data-number="12.3" class="anchored" data-anchor-id="sec-what-stack"><span class="header-section-number">12.3</span> What is a stack?</h2>
 <p>A stack data structure is a structure that follows a LIFO (<em>last in first out</em>) principle. Only two operations are normally supported in a stack data structure, which are <code>push</code> and <code>pop</code>. The <code>push</code> operation is used to add new values to the stack, while <code>pop</code> is used to remove values from the stack.</p>
 <p>When people try to explain how the stack data structure works, the most common analogy that people use is a stack of plates. Imagine that you have a stack of plates, for example, a stack of 10 plates in your table. Each plate represents a value that is currently stored in this stack.</p>
 <p>Currently we have a stack with 10 different values, or 10 different plates. Now, imagine that you want to add a new plate (or a new value) to this stack, which translates to the <code>push</code> operation. You would add this plate (or this value) by just putting the new plate on the top of the stack. Then, you would increase the stack to 11 plates.</p>
 <p>But how would you remove plates (or remove values) from this stack (a.k.a. the <code>pop</code> operation) ? To do that, we would have to remove the plate on the top of the stack, and, as a result, we would have, once again, 10 plates in the stack.</p>
-<p>This demonstrates the LIFO concept, because the first plate in the stack, which is the plate in the bottom of the stack is the last plate to get out of the stack. Think about it. In order to remove this specific plate from the stack, we have to remove all plates in the stack. So every operation in the stack, either insertion or deletion, is always made at the top of the stack.</p>
-<p>The <a href="#fig-stack" class="quarto-xref">Figure&nbsp;<span>12.1</span></a> below exposes this logic visually:</p>
+<p>This demonstrates the LIFO concept, because the first plate in the stack, which is the plate in the bottom of the stack is the last plate to get out of the stack. Think about it. In order to remove this specific plate from the stack, we have to remove all plates in the stack. So every operation in the stack, either insertion or deletion, is always made at the top of the stack. The <a href="#fig-stack" class="quarto-xref">Figure&nbsp;<span>12.1</span></a> below exposes this logic visually:</p>
 <div id="fig-stack" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-stack-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -485,11 +483,11 @@ Figure&nbsp;12.1: A diagram of a stack structure. Source: Wikipedia, the free en
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Stack = <span class="kw">struct</span> <span class="op">{</span></span>
 <span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    items: []<span class="dt">u32</span>,</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    capacity: <span class="dt">u32</span>,</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    length: <span class="dt">u32</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    capacity: <span class="dt">usize</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    length: <span class="dt">usize</span>,</span>
 <span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    allocator: Allocator,</span>
 <span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(allocator: Allocator, capacity: <span class="dt">u32</span>) !Stack <span class="op">{</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(allocator: Allocator, capacity: <span class="dt">usize</span>) !Stack <span class="op">{</span></span>
 <span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">var</span> buf = <span class="kw">try</span> allocator.alloc(<span class="dt">u32</span>, capacity);</span>
 <span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>        <span class="bu">@memset</span>(buf[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
 <span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> .<span class="op">{</span></span>
@@ -504,13 +502,13 @@ Figure&nbsp;12.1: A diagram of a stack structure. Source: Wikipedia, the free en
 <section id="implementing-the-push-operation" class="level3" data-number="12.4.1">
 <h3 data-number="12.4.1" class="anchored" data-anchor-id="implementing-the-push-operation"><span class="header-section-number">12.4.1</span> Implementing the <code>push</code> operation</h3>
 <p>Now that we have written the basic logic to create a new <code>Stack</code> object, we can start writing the logic responsible for performing a push operation. Remember, a push operation in a stack data structure is the operation responsible for adding a new value to the stack.</p>
-<p>So how can we add a new value to the <code>Stack</code> object that we have? The <code>push()</code> function exposed below is an answer to this question. This function is shlightly complex, so let’s describe it, step by step.</p>
-<p>First, we have an if statement in this function. This if statement is checking whether we need or not to expand the underlying array to store this new value that we are adding to the stack. In other words, maybe the underlying array does not have enough capacity to store this new value, and, in this case, we need to expand our array to get the capacity that we need.</p>
+<p>So how can we add a new value to the <code>Stack</code> object that we have? The <code>push()</code> function exposed below is an answer to this question. Remember from what we discussed at <a href="#sec-what-stack" class="quarto-xref"><span>Section 12.3</span></a> that values are always added to the top of the stack. This means that this <code>push()</code> function must always find the element in the underlying array of the stack, that currently represents the top position of the stack, and add this value there.</p>
+<p>First, we have an if statement in this function. This if statement is checking whether we need to expand the underlying array to store this new value that we are adding to the stack. In other words, maybe the underlying array does not have enough capacity to store this new value, and, in this case, we need to expand our array to get the capacity that we need.</p>
 <p>So, if the logic test in this if statement returns true, it means that the array does not have enough capacity, and we need to expand it before we store this new value. So inside this if statement we are executing the necessary expressions to expand the underlying array.</p>
 <p>Notice that we use the allocator object to allocate a new array that is twice as bigger than the current array (<code>self.capacity * 2</code>). Then, we use <code>memset()</code> once again to set all fields in this array to zero, making sure that all memory is properly initialized.</p>
 <p>After that, we use a different built-in function named <code>@memcpy()</code>. This built-in function is equivalent to the <code>memcpy()</code> function from the C Standard Library<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. It is used to copy the values from one block of memory to another block of memory. In other words, you can use this function to copy the values from one array into another array.</p>
 <p>We are using this <code>@memcpy()</code> built-in function to copy the values that are currently in the underlying array of the stack object (<code>self.items</code>) into our new and bigger array that we have allocated (<code>new_buf</code>). After we execute this function, the <code>new_buf</code> contains a copy of the values that are present at <code>self.items</code>.</p>
-<p>Now that we have secured a copy of our current values in the <code>new_buf</code> object, we can now free the memory currently allocated at <code>self.items</code>. After that, we just need to assign our new and bigger array to <code>self.items</code>. This is the end of the sequence of necessary steps to expand our array.</p>
+<p>Now that we have secured a copy of our current values in the <code>new_buf</code> object, we can now free the memory currently allocated at <code>self.items</code>. After that, we just need to assign our new and bigger array to <code>self.items</code>. This is the sequence of steps necessary to expand our array.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> push(self: *Stack, val: <span class="dt">u32</span>) !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> ((self.length + <span class="dv">1</span>) &gt; self.capacity) <span class="op">{</span></span>
@@ -529,12 +527,12 @@ Figure&nbsp;12.1: A diagram of a stack structure. Source: Wikipedia, the free en
 <span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    self.length += <span class="dv">1</span>;</span>
 <span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>After we make sure that we have enough room to store this new value that we are adding to the stack, all we have to do is to assign this value to the top element in this stack, and, increase the value of the <code>length</code> attribute by one.</p>
+<p>After we make sure that we have enough room to store this new value that we are adding to the stack, all we have to do is to assign this value to the top element in this stack, and, increase the value of the <code>length</code> attribute by one. We find the top element in the stack by using the <code>length</code> attribute.</p>
 </section>
 <section id="implementing-the-pop-operation" class="level3" data-number="12.4.2">
 <h3 data-number="12.4.2" class="anchored" data-anchor-id="implementing-the-pop-operation"><span class="header-section-number">12.4.2</span> Implementing the <code>pop</code> operation</h3>
-<p>Now, we need to implement the pop operation of our stack object. This is the easiest operation, and the pop method below summarises all the logic that is needed.</p>
-<p>We just set the top element in the stack to zero, to indicate that this element is “empty”, and, after that, we also need to decrease the <code>length</code> attribute of the stack by one.</p>
+<p>Now, we can implement the pop operation of our stack object. This is a much easier operation to implement, and the pop method below summarises all the logic that is needed.</p>
+<p>We just have to find the element in the underlying array that currently represents the top of the stack, and set this element to zero, to indicate that this element is “empty”. After that, we also need to decrease the <code>length</code> attribute of the stack by one.</p>
 <p>If the current length of the stack is zero, it means that there is no values being stored in the stack currently. So, in this case, we could just return from the function and do nothing really. This is what the if statement inside this function is checking for.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> pop(self: *Stack) <span class="dt">void</span> <span class="op">{</span></span>
@@ -559,33 +557,70 @@ Figure&nbsp;12.1: A diagram of a stack structure. Source: Wikipedia, the free en
 </section>
 <section id="making-it-generic" class="level2" data-number="12.5">
 <h2 data-number="12.5" class="anchored" data-anchor-id="making-it-generic"><span class="header-section-number">12.5</span> Making it generic</h2>
-<p>Now that we have implemented the basic skeleton of our stack data structure, we can now focus on discussing how can we make it generic. How can we make this basic skeleton to work not only with <code>u32</code> values, but also, with any other data type we want?</p>
-<p>As I described at <a href="#sec-generic-struct" class="quarto-xref"><span>Section 12.2.2</span></a>, the basic idea is to write a generic function that returns as result a struct definition as output. If we take only the section of our <code>Stack</code> struct with the <code>init()</code> method, the function below represents a generic function that creates a generic stack data structure.</p>
+<p>Now that we have implemented the basic skeleton of our stack data structure, we can now focus on discussing how can we make it generic. How can we make this basic skeleton to work not only with <code>u32</code> values, but also, with any other data type we want? For example, we might need to create a stack object to store <code>User</code> values in it. How can we make this possible? The answer lies on the use of generics and <code>comptime</code>.</p>
+<p>As I described at <a href="#sec-generic-struct" class="quarto-xref"><span>Section 12.2.2</span></a>, the basic idea is to write a generic function that returns as result a struct definition as output. In theory, we do not need much to transform our <code>Stack</code> struct into a generic data structure. All that we need to do, to make our <code>Stack</code> struct generic, is to transform the underlying array in the stack structure into a generic array.</p>
+<p>In other words, this underlying array needs to be a “chameleon”. It needs to adapt, and transform it into an array of the data type that we give it to. For example, if we need to create a stack that will store <code>u8</code> values, then, this underlying array needs to be a <code>u8</code> array (i.e.&nbsp;<code>[]u8</code>). But if we need to store <code>User</code> values instead, then, this array needs to be a <code>User</code> array (i.e.&nbsp;<code>[]User</code>). Etc.</p>
+<p>We do that by using a generic function. Because a generic function can receive a data type as input, and we can pass this data type to the struct definition of our <code>Stack</code> object. Therefore, we can use the generic function to create a <code>Stack</code> object that can store the data type we want. If we want to create a stack structure that stores <code>User</code> values, we pass the <code>User</code> data type to this generic function, and it will create for us the struct definition that describes a <code>Stack</code> object that can store <code>User</code> values in it.</p>
+<p>Take the code example below as an example. I truncated some parts of the <code>Stack</code> struct for brevity reasons. But if a specific part of our <code>Stack</code> struct is not exposed here in this example, is because this part did not changed from the previous example. It remains the same.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> Stack(<span class="kw">comptime</span> T: <span class="dt">type</span>, capacity: <span class="dt">u32</span>) <span class="dt">type</span> <span class="op">{</span></span>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> Stack(<span class="kw">comptime</span> T: <span class="dt">type</span>) <span class="dt">type</span> <span class="op">{</span></span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">struct</span> <span class="op">{</span></span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>        items: []T,</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>        capacity: <span class="dt">u32</span>,</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>        length: <span class="dt">u32</span>,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>        capacity: <span class="dt">usize</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>        length: <span class="dt">usize</span>,</span>
 <span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        allocator: Allocator,</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">pub</span> <span class="kw">fn</span> init(allocator: Allocator) !Stack(T) <span class="op">{</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>            <span class="kw">var</span> buf = <span class="kw">try</span> allocator.alloc(T, capacity);</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>            <span class="bu">@memset</span>(buf[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> .<span class="op">{</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>                .items = buf[<span class="dv">0</span>..],</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>                .capacity = capacity,</span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                .length = <span class="dv">0</span>,</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                .allocator = allocator,</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>;</span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>;</span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> Self = <span class="bu">@This</span>();</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">pub</span> <span class="kw">fn</span> init(allocator: Allocator, capacity: <span class="dt">usize</span>) !Stack(T) <span class="op">{</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>            <span class="kw">var</span> buf = <span class="kw">try</span> allocator.alloc(T, capacity);</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>            <span class="bu">@memset</span>(buf[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> .<span class="op">{</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>                .items = buf[<span class="dv">0</span>..],</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                .capacity = capacity,</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                .length = <span class="dv">0</span>,</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>                .allocator = allocator,</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>;</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>        <span class="kw">pub</span> <span class="kw">fn</span> push(self: *Self, val: T) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>        <span class="co">// Truncate the rest of the struct</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>;</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>Notice that we have created a function in this example named <code>Stack()</code>. This function takes a type as input, and passes this type to the struct definition of our <code>Stack</code> object. The data member <code>items</code> is now, an array of type <code>T</code>, which is the data type that we passed as input to the function. The function argument <code>val</code> in the <code>push()</code> function is now a value of type <code>T</code> too.</p>
+<p>Now we have finally a stack data structure that is generic. I mean, we probably still need to adjust the <code>@memset()</code> calls, to trully make it generic for any data type. But this version is good enough, and it really works well with any of the primitive data types of Zig.</p>
+<p>We can just provide a data type to this function, and it will create a definition of a <code>Stack</code> object that can store values of the data type that we provided. In the example below, we are creating the definition of a <code>Stack</code> object that can store <code>u8</code> values in it. This definition is stored at the <code>Stacku8</code> object. This <code>Stacku8</code> object becomes our new struct, it is the struct that we are going to use to create our <code>Stack</code> object.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Stacku8 = Stack(<span class="dt">u8</span>);</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stack = <span class="kw">try</span> Stacku8.init(allocator, <span class="dv">10</span>);</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> stack.deinit();</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">1</span>);</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">2</span>);</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">3</span>);</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">4</span>);</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">5</span>);</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">6</span>);</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack len: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.length<span class="op">}</span>);</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack capacity: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.capacity<span class="op">}</span>);</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>stack.pop();</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack len: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.length<span class="op">}</span>);</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>stack.pop();</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack len: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.length<span class="op">}</span>);</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack state: {any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.items<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Stack len: 6
+Stack capacity: 10
+Stack len: 5
+Stack len: 4
+Stack state: { 1, 2, 3, 4, 0, 0, 0, 0, 0, 0 }</code></pre>
 </section>
 <section id="conclusion" class="level2" data-number="12.6">
 <h2 data-number="12.6" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">12.6</span> Conclusion</h2>
-<p>The full source code discussed in this chapter is freely available at the official repository for this book. Just checkout the <a href="https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/stack.zig"><code>stack.zig</code> module</a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> available inside the <code>ZigExamples</code> folder of the repository.</p>
+<p>The full source code of the stack structure discussed in this chapter is freely available at the official repository for this book. Just checkout the <a href="https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/stack.zig"><code>stack.zig</code></a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> for the <code>u32</code> version of our stack, and the <a href="https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/generic_stack.zig"><code>generic_stack.zig</code></a><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> for the generic version, available inside the <code>ZigExamples</code> folder of the repository.</p>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
@@ -606,6 +641,7 @@ Zig Software Foundation. 2024. <span>“Language Reference.”</span> Zig Softwa
 <li id="fn1"><p><a href="https://www.tutorialspoint.com/c_standard_library/c_function_memset.htm" class="uri">https://www.tutorialspoint.com/c_standard_library/c_function_memset.htm</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn2"><p><a href="https://www.tutorialspoint.com/c_standard_library/c_function_memcpy.htm" class="uri">https://www.tutorialspoint.com/c_standard_library/c_function_memcpy.htm</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn3"><p><a href="https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/stack.zig" class="uri">https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/stack.zig</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p><a href="https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/generic_stack.zig" class="uri">https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/generic_stack.zig</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
