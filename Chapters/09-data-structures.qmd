@@ -1,8 +1,863 @@
+---
+engine: knitr
+knitr: true
+syntax-definition: "../Assets/zig.xml"
+---
+
+```{r}
+#| include: false
+source("../zig_engine.R")
+knitr::opts_chunk$set(
+    auto_main = FALSE,
+    build_type = "lib"
+)
+```
 
 
 
-# Introduction
+# Data Structures
 
-In this chapter, we are going to discuss some Data Structures available from
-the Zig Standard Library, specially `ArrayList` and also `HashMap`. We also
-are going to talk about generics with linked lists.
+In this chapter, we are going to discuss some Data Structures that are available from
+the Zig Standard Library, specially `ArrayList` and also `HashMap`. I'm also want
+to talk about one of the key features of Zig in this chapter, which is `comptime`, and
+how we can use it to create generics in Zig.
+
+
+## Dynamic Arrays
+
+In high level languages, arrays are usually dynamic. They easily grow
+in size when they have to, and you don't need to worry about it.
+In contrast, arrays in low level languages are usually static by default.
+This is the reality of C, C++, Rust and also Zig. Static arrays were presented at
+@sec-arrays, but in this section, we are going to talk about dynamic arrays.
+
+Dynamic arrays are simply arrays that can grow in size during the runtime
+of your program. Most low level languages offer some implementation of
+a dynamic array in their standard library. C++ have `std::vector`, Rust have `Vec`,
+and Zig have `std.ArrayList`.
+
+The `std.ArrayList` struct provides a contiguous and growable array for you.
+It works like any other dinamic array, it allocates a contiguous block of memory, and when this block have no space left,
+`ArrayList` allocates another contiguous and bigger block of memory, copies the
+elements to this new location, and erases (or frees) the previous block of memory.
+
+
+### Capacity vs Length
+
+When we talk about dynamic arrays, we have two similar concepts that
+are very essential to how a dynamic array works behind the hood.
+These concepts are *capacity* and *length*. In some contexts, specially
+in C++, *length* is also called of *size*.
+
+Although they look similar, these concepts represent different things
+in the context of dynamic arrays. *Capacity* is the number of items (or elements)
+that your dynamic array can currently hold without the need to allocate more memory.
+
+In contrast, the *length* refers to how many elements in the array
+are currently being used, or, in other words, how many elements in this array
+that you assigned a value to. Every dynamic array works around
+a block of allocated memory that represents an array with total capacity of $n$ elements,
+but only a portion of these $n$ elements are being used most of the time. This portion
+of $n$ is the *length* of the array. So every time you append a new value
+to the array, you are incrementing it's *length* by one.
+
+This means that a dynamic array usually works with an extra margin, or, an extra space
+which is currently empty, but it is waiting and ready to be used. This "extra space"
+is essentially the difference between *capacity* and *length*. *Capacity* represents
+the total number of elements that the array can hold without the need to re-allocate
+or re-expand the array, while the *length* represents how much of this capacity
+is currently being used to hold/store values.
+
+@fig-capacity-length presents this idea visually. Notice that, at first,
+the capacity of the array is greater than the length of the array.
+So, the dynamic array have extra space that is currently empty, but it
+is ready to receive a value to be stored.
+
+![Difference between capacity and length in a dynamic array](./../Figures/dynamic-array.png){#fig-capacity-length}
+
+We can also see at @fig-capacity-length that, when *length* and *capacity* are equal, it means that the array have no space left.
+We reached the roof of our capacity, and because of that, if we want to store more values
+in this array, we need to expand it. We need to get a bigger space that can hold more values
+that we currently have.
+
+A dynamic array works by expanding the underlying array, whenever the *length* becomes equal
+to the *capacity* of the array. It basically allocates a new contiguos block of memory that is bigger
+than the previous one, then, it copies all values that are currently being stored to this new
+location (i.e. this new block of memory), then, it frees the previous block of
+memory. At the end of this process, the new underlying array have a bigger *capacity*, and, therefore,
+the *length* becomes once again smaller than the *capacity* of the array.
+
+This is the cycle of an dynamic array. Notice that, throughout this cycle, the *capacity* is always
+either equal to or higher than the *length* of the array. If youh have an `ArrayList` object, let's suppose
+you named it of `buffer`, you can check the current capacity of your array by accessing the `capacity`
+attribute of your `ArrayList` object, while the current *length* of it is available through the `items.len`
+attribute of your `ArrayList` object.
+
+
+```{zig}
+#| eval: false
+// Check capacity
+buffer.capacity;
+// Check length
+buffer.items.len;
+```
+
+### Creating an `ArrayList` object
+
+In order to use `ArrayList`, you must provide an allocator object to it.
+Remember, Zig does not have a default memory allocator. And as I described at @sec-allocators, all memory
+allocations must be done by allocator objects that you define, that
+you have control over. In our example here, I'm going to use
+a general purpose allocator, but you can use any other allocator
+of your preference.
+
+When you initialize an `ArrayList` object, you must provide the data type of the elements of
+the array. In other words, this defines the type of data that this array (or container) will
+store. Therefore, if I provide the `u8` type to it, then, I will create a dynamic
+array of `u8` values. However, if I provide a struct that I defined instead, like the struct `User`
+from @sec-structs-and-oop, then, a dynamic array of `User` values
+will be created. In the example below, with the expression `ArrayList(u8)` we
+are creating a dynamic array of `u8` values.
+
+After you provide the data type of the elements of the array, you can initialize
+an `ArrayList` object by either using the `init()` or the `initCapacity()` method.
+The former method receives only the allocator object
+as input, while the latter method receives both the allocator object and a capacity number as inputs.
+With the latter method, you not only initialize the struct, but you
+also set the starting capacity of the allocated array.
+
+Using the `initCapacity()` method is the preferred way to initialize your dynamic array.
+Because reallocations, or, in other words, the process of expanding the capacity of the array,
+is always a high cost operation. You should take any possible opportunity to avoid reallocations in
+your array. If you know how much space your array needs to occupy at the beginning,
+you should always use `initCapacity()` to create your dynamic array.
+
+
+```{zig}
+#| auto_main: true
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
+var buffer = try std.ArrayList(u8)
+    .initCapacity(allocator, 100);
+defer buffer.deinit();
+```
+
+
+In the example above, the `buffer` object starts as an array of 100 elements. If this
+`buffer` object needs to create more space to accomodate more elements during the runtime of your program, the `ArrayList`
+internals will perform the necessary actions for you automatically.
+Also notice the `deinit()` method being used to destroy the `buffer` object at the
+end of the current scope, by freeing all the memory that was allocated for the dynamic
+array stored in this `buffer` object.
+
+
+### Adding new elements to the array
+
+Now that we created our dynamic array, we can start to use it. You can append (a.k.a "add")
+new values to this array by using the `append()` method. This method works the same way
+as the `append()` method from a Python list, or, the `emplace_back()` method from `std::vector` of C++.
+You provide a single value to this method, and the method appends this value to the array.
+
+You can also use the `appendSlice()` method to append multiple values at once. You provide
+a slice (slices were described at @sec-arrays) to this method, and the method adds all values present
+in this slice to your dynamic array.
+
+```{zig}
+#| eval: false
+try buffer.append('H');
+try buffer.append('e');
+try buffer.append('l');
+try buffer.append('l');
+try buffer.append('o');
+try buffer.appendSlice(" World!");
+```
+
+### Removing elements from the array {#sec-dynamic-array-remove}
+
+You can use the `pop()` method to "pop" or remove
+the last element in the array. Is worth noting that this method
+do not change the capacity of the array. It just deletes or erases
+the last value stored in the array.
+
+Also, this method returns as result the value that got deleted. That is, you can
+use this method to both get the last value in the array, and also, remove
+it from the array. It is a "get and remove value" type of method.
+
+```{zig}
+#| eval: false
+const exclamation_mark = buffer.pop();
+```
+
+Now, if you want to remove specific elements from specific positions
+of your array, you can use the `orderedRemove()` method from your
+`ArrayList` object. With this method, you can provide an index as input,
+then, the method will delete the value that is at this index in the array.
+This effectively reduces the *length* of the array everytime you execute
+an `orderedRemove()` operation.
+
+In the example below, we first create an `ArrayList` object, and we fill it
+with numbers. Then, we use `orderedRemove()` to remove the value at
+index 3 in the array, two consecutive times.
+
+Also, notice that we are assigning the result of `orderedRemove()` to the
+underscore character. So we are discarding the result value of this method.
+As the result value, the `orderedRemove()` method returns the value that
+got deleted, in a similar style to the `pop()` method.
+
+
+```{zig}
+#| auto_main: true
+#| eval: true
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
+var buffer = try std.ArrayList(u8)
+    .initCapacity(allocator, 100);
+defer buffer.deinit();
+
+for (0..10) |i| {
+    const index: u8 = @intCast(i);
+    try buffer.append(index);
+}
+
+std.debug.print(
+    "{any}\n", .{buffer.items}
+);
+_ = buffer.orderedRemove(3);
+_ = buffer.orderedRemove(3);
+
+std.debug.print(
+    "{any}\n", .{buffer.items}
+);
+std.debug.print(
+    "{any}\n", .{buffer.items.len}
+);
+```
+
+```
+{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }
+{ 0, 1, 2, 5, 6, 7, 8, 9 }
+8
+```
+
+One key characteristic about `orderedRemove()` is that it preserves the order
+of the values in the array. So, it deletes the value that you asked it to
+remove, but it also makes sure that the order of the values that remain in the array
+stay the same as before.
+
+Now, if you don't care about the order of the values, for example, maybe you want to treat
+your dynamic array as a set of values, like the `std::unordered_set`
+structure from C++, you can use the `swapRemove()` method instead. This method
+works similarly to the `orderedRemove()` method. You give an index to this
+method, then, it deletes the value that is at this index in the array.
+But this method does not preserve the original order of the values that remain
+in the array. As a result, `swapRemove()` is, in general, faster than `orderedRemove()`.
+
+
+### Inserting elements at specific indexes
+
+When you need to insert values in the middle of your array,
+instead of just appending them to the end of the array, you need to use
+the `insert()` and `insertSlice()` methods, instead of
+the `append()` and `appendSlice()` methods.
+
+These two methods work very similarly to `insert()` and `insert_range()`
+from the C++ vector class. You provide an index to these methods,
+and they insert the values that you provide at that index in the array.
+
+```{zig}
+#| auto_main: true
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
+var buffer = try std.ArrayList(u8)
+    .initCapacity(allocator, 10);
+defer buffer.deinit();
+
+try buffer.appendSlice("My Pedro");
+try buffer.insert(4, '3');
+try buffer.insertSlice(2, " name");
+for (buffer.items) |char| {
+    try stdout.print("{c}", .{char});
+}
+```
+
+```
+My name P3edro
+```
+
+
+### Conclusion
+
+If you feel the lack of some other method, I recommend
+you to read the [official documentation for the `ArrayListAligned`](https://ziglang.org/documentation/master/std/#std.array_list.ArrayListAligned)[^zig-array2]
+struct, which describes most of the methods available
+through the `ArrayList` object.
+
+You will notice that there is a lot other methods in this page that
+I did not described here, and I recommend you to explore these methods,
+and understand how they work.
+
+[^zig-array2]: <https://ziglang.org/documentation/master/std/#std.array_list.ArrayListAligned>
+
+
+
+## Maps or HashTables
+
+Some professionals know this type of data structure by different terms, like "map", "hashmap" or "associative arrays". But most professionals
+know this structure by the name *hashtable*.
+Every programming language normally have some implementation of a hashtable in their
+stardard libraries. Python have `dict()`, C++ have `std::map` and `std::unordered_map`, Rust
+have `HashMap`, Javascript have `Object()` and `Map()`,
+C# have `Hashtable()`, etc.
+
+
+
+### What is a hashtable?
+
+A hashtable is a data structure based on key-value pairs.
+You provide a key and a value to this structure, then, the hashtable will store
+the input value at a location that can be identified by the input
+key that you provided.
+It does that by using an underlying array and a hash function.
+These two components are essential to how a hashtable works.
+
+Under the hood, the hashtable contains an array. This array is where the values
+are stored, and the elements of this array are usually called of *buckets*.
+So the values that you provide to the hashtable are stored inside buckets,
+and you access each bucket by using an index.
+
+When you provide a key to a hashtable, it passes this key to the
+hash function. This hash function uses some sort of hashing algorithm to transform
+this key into an index. This index is actually an array index. It is a position
+in the underlying array of the hashtable.
+This is how a key identifies a specific position (or location) inside the hashtable
+structure.
+
+So you provide a key to the hashtable, and this key identifies an specific location
+inside the hastable, then, the hashtable takes the input value that you provided,
+and stores this value in the location identified by the input key that you provided.
+You could say that the key maps to the value stored in the hashtable. You find
+the value, by using the key that identifies the location where the value is stored.
+The @fig-hashtable presents this process visually.
+
+
+![A diagram of a Hashtable. Source: Wikipedia, the free encyclopedia.](./../Figures/hashtable.svg){#fig-hashtable}
+
+
+The operation described in the previous paragraph is normally called an *insertion* operation.
+Because you are inserting new values into the hashtable.
+But there are other types of operations in hashtables such as *delete* and *lookup*.
+Delete is self describing, it is when you delete (or remove) a value from the hashtable.
+While lookup corresponds to when you retrieve (or look at) a value that is stored in
+the hashtable, by using the key that identifies the location where this value is stored.
+
+Sometimes, instead of storing the values directly, the underlying array of the hashtable might be an array of pointers,
+i.e. the buckets of the array stores pointers that points to the value,
+or also, may be an array of linked lists.
+These cases are commom on hashtables that allows duplicate keys, or, in other words,
+on hashtables that effectively handle "collisions" that may arise from the hash function.
+
+Duplicate keys, or this "collision" thing that I'm talking about, is when you have two different keys that points to the same location (i.e. to the same index)
+in the underlying array of the hashtable. This might happen depending on the characteristics of the hash function
+that is being used in the hashtable. Some implementations of the hashtable will actively deal with collisions,
+meaning that, they will handle this case in some way. For example, the hashtable
+might transform all buckets into linked lists. Because with a liked list you can store
+multiple values into a single bucket.
+
+There are different techniques to handle collisions in hashtables, which I will not describe
+in this book, because it is not our main scope here. But you can find a good description of
+some of the most commom techniques at the Wikipedia page of hashtables [@wikipedia_hashtables].
+
+
+### Hashtables in Zig {#sec-hashmap}
+
+The Zig Standard Library provides different implementations of a hashtable,
+like the struct `HashMap`. Each implementation have it's own cons and pros, which we will
+discuss later on, and all of them are available through the `std.hash_map` module.
+
+The `HashMap` struct is a general-purpose hashtable,
+which have very fast operations (lookup, insertion, delete), and also,
+quite high load factors for low memory usage. You can create and provide a context object
+to the `HashMap` constructor. This context object allows you to tailor
+the behaviour of the hashtable itself, because you can
+provide a hash function implementation to be used by the hashtable
+through this context object.
+
+But let's not worry about this context object now, because it is meant to be used
+by "experts in the field of hashtables". Since we are most likely not
+experts in this field, we are going to take the easy way to create
+a hashtable. Which is by using the `AutoHashMap()` function.
+
+
+This `AutoHashMap()` function is essentially a "create a hashtable object that uses the default settings"
+type of function. It chooses a context object, and, therefore, a hash function implementation,
+automatically for you. This function receives two data types as input, the first data type is the data type of the keys
+that will be used in this hashtable, while the second data type is the data type of that data that will be
+stored inside the hashtable, that is, the data type of the values to be stored.
+
+In the example below, we are providing the data type `u32` in the first argument, and `u16` in the second argument of this
+function. It means that we are going to use `u32` values as keys in this hashtable, while `u16` values are the actual values
+that are going to be stored into this hashtable.
+At the end of this process, the `hash_table` object contains a `HashMap` object as output
+that uses the default context, and the default load factor.
+
+
+```{zig}
+#| auto_main: false
+const std = @import("std");
+const AutoHashMap = std.hash_map.AutoHashMap;
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    var hash_table = AutoHashMap(u32, u16).init(allocator);
+    defer hash_table.deinit();
+
+    try hash_table.put(54321, 89);
+    try hash_table.put(50050, 55);
+    try hash_table.put(57709, 41);
+    std.debug.print(
+        "N of values stored: {d}\n",
+        .{hash_table.count()}
+    );
+    std.debug.print(
+        "Value at key 50050: {d}\n",
+        .{hash_table.get(50050).?}
+    );
+
+    if (hash_table.remove(57709)) {
+        std.debug.print(
+            "Value at key 57709 succesfully removed!\n",
+            .{}
+        );
+    }
+    std.debug.print(
+        "N of values stored: {d}\n",
+        .{hash_table.count()}
+    );
+}
+```
+
+```
+N of values stored: 3
+Value at key 50050: 55
+Value at key 57709 succesfully removed!
+N of values stored: 2
+```
+
+You can add/put new values into the hashtable by using the `put()` method. The first argument
+is the key to be used, and the second argument is the actual value that you want to store inside
+the hashtable. In the example below, we first add the value 89 using the key 54321, next, we add
+the value 55 using the key 50050, etc.
+
+Notice that we used the method `count()` to see how many values are currently stored in the
+hashtable. After that, we also used the `get()` method to access (or look) at the value stored in
+the position identified by the key 500050. The output of this `get()` method is an optional value,
+and that is why we use the `?` method at the end to get access to the actual value.
+
+Also notice that we can remove (or delete) values from a hashtables by using the `remove()` method.
+You provide the key that identifies the value that you want to delete, then, the method will
+delete this value and return a `true` value as output. This `true` value essentially tells us
+that the method succesfully deleted the value.
+
+But this delete operation might not be always successful. For example, you might provide the wrong
+key to this method. I mean, maybe you provide
+(either intentionally or unintentionally) a key that points to an empty bucket,
+i.e. a bucket that still doesn't have a value in it.
+In this case, the `remove()` method would return a `false` value.
+
+
+
+### Iterating through the hashtable
+
+Iterating through the keys and values that are currently being stored in
+the hashtable is a very commom need.
+You can do that in Zig by using an iterator object that can iterate
+through the elements of you hashtable object.
+
+This iterator object works like any other iterator object that you would
+find in languages such as C++ and Rust. It is basically a pointer object
+that points to some value in the container, and has a `next()` method
+that you can use to navigate (or iterate) through the next values in the
+container.
+
+You can create such iterator object by using the `iterator()` method of the hashtable object.
+This method returns an iterator object, from which you can use the `next()` method in conjunction
+with a while loop to iterate through the elements of your hashtable. The `next()` method returns an optional
+`Entry` value, and therefore, you must unwrap this optional value to get the actual `Entry` value
+from which you can access the key and also the value identified by this key.
+
+With this `Entry` value at hand, you can access the key of this current entry by using the `key_ptr`
+attribute and dereferencing the pointer that lives inside of it, while the value identified by this
+key is accessed through the `value_ptr` attribute instead, which is also a pointer to be dereferenced.
+The code example below demonstrates the use of these elements:
+
+
+```{zig}
+#| auto_main: false
+const std = @import("std");
+const AutoHashMap = std.hash_map.AutoHashMap;
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    var hash_table = AutoHashMap(u32, u16).init(allocator);
+    defer hash_table.deinit();
+
+    try hash_table.put(54321, 89);
+    try hash_table.put(50050, 55);
+    try hash_table.put(57709, 41);
+
+    var it = hash_table.iterator();
+    while (it.next()) |kv| {
+        // Access the current key
+        std.debug.print("Key: {d} | ", .{kv.key_ptr.*});
+        // Access the current value
+        std.debug.print("Value: {d}\n", .{kv.value_ptr.*});
+    }
+}
+```
+
+```
+Key: 54321 | Value: 89
+Key: 50050 | Value: 55
+Key: 57709 | Value: 41
+```
+
+
+If you want to iterate through only the values or the keys of your hashtable,
+you can create a key iterator or a value iterator object. These are also iterator
+objects, which have the same `next()` method that you can use to iterate through the
+sequence of values.
+
+Key iterators are created from the `keyIterator()` method of your
+hashtable object, while value iterators are created from the `valueIterator()` method.
+All you have to do is to unwrap the value from the `next()` method and deference it
+directly to access the key or value that you iterating over.
+The code example below demonstrates what would this be for a key iterator,
+but you can replicate the same logic to a value iterator.
+
+```{zig}
+#| eval: false
+var kit = hash_table.keyIterator();
+while (kit.next()) |key| {
+    std.debug.print("Key: {d}\n", .{key.*});
+}
+```
+
+```
+Key: 54321
+Key: 50050
+Key: 57709
+```
+
+
+### The `ArrayHashMap` hashtable {#sec-array-map}
+
+If you need to iterate through the elements of your hashtable constantly,
+you might want to use the `ArrayHashMap` struct for your specific case,
+instead of going with the usual and general-purpose `HashMap` struct.
+
+The `ArrayHashMap` struct creates a hashtable that is faster to iterate over.
+That is why this specific type of hashtable might be valuable to you.
+Some other properties of a `ArrayHashMap` hashtable are:
+
+- the order of insertion is preserved. So the order of the values you find while iterating through this hashtable
+are actually the order in which these values were inserted in the hashtable.
+
+- the key-value pairs are stored sequentially, one after another.
+
+
+You can create an `ArrayHashMap` object by using, once again, a helper function that
+chooses automatically for you a hash function implementation. This is the
+`AutoArrayHashMap()` function, which works very similarly to the `AutoHashMap()`
+function that we presented at @sec-hashmap.
+
+You provide two data types to this function. The data type of the keys that will be
+used in this hashtable, and the data type of the values that will be stored in
+this hashtable.
+
+An `ArrayHashMap` object have essentially the exact same methods from the `HashMap` struct.
+So you can insert new values into the hashtable by using the `put()` method, you can look (or get)
+a value from the hashtable by using the `get()` method. But the `remove()` method is not available
+in this specific type of hashtable.
+
+In order to delete values from the hashtable, you would use the same methods that you find in
+an `ArrayList` object, i.e. a dynamic array. I presented these methods at @sec-dynamic-array-remove,
+which are the `swapRemove()` and `orderedRemove()` methods. These methods have here the same meaning, or,
+the same effect that they have in an `ArrayList` object.
+
+This means that, with `swapRemove()` you remove the value from the hashtable, but you do not preserve
+the order in which the values were inserted into the structure. While `orderedRemove()` is capable
+of retaining the insertion order of these values.
+
+But instead of providing an index as input to `swapRemove()` or `orderedRemove()`, like I described
+at @sec-dynamic-array-remove, these methods here in an `ArrayHashMap` take a key as input, like
+the `remove()` method from a `HashMap` object. If you want to provide an index as input, instead
+of a key, you should use the `swapRemoveAt()` and `orderedRemoveAt()` methods.
+
+
+```{zig}
+#| eval: false
+var hash_table = AutoArrayHashMap(u32, u16)
+    .init(allocator);
+defer hash_table.deinit();
+```
+
+
+
+### The `StringHashMap` hashtable {#sec-string-hash-map}
+
+One thing that you will notice in the other two types of hashtables that I
+presented in the last sections, is that neither of them accepts a slice data type
+in their keys.
+What this means is that you cannot use a slice value to represent a key in
+these types of hashtable.
+
+The most obvious consequence of this, is that you cannot use strings as keys
+in these hashtables. But is extremely commom to use string values as keys
+in hashtables.
+
+Take this very simple Javascript code snippet as an example. We are creating
+a simple hashtable object named `people`. Then, we add a new entry to this
+hashtable, which is identified by the string `'Pedro'`. This string is the
+key in this case, while the object containing different personal information such as
+age, height and city, is the value to be stored in the hashtable.
+
+```js
+var people = new Object();
+people['Pedro'] = {
+    'age': 25,
+    'height': 1.67,
+    'city': 'Belo Horizonte'
+};
+```
+
+This pattern of using strings as keys is very commom in
+all sorts of situations. That is why the Zig Standard Library offers a
+specific type of hashtable for this purpose, which is created through the `StringHashMap()` function.
+This function creates a hashtable that uses strings as keys. The only input of this
+function is the data type of the values that will be stored into this hashtable.
+
+In the example below, I'm creating a hashtable to store the ages of different people.
+The keys to be used in this hashtable are the names of each person, while the value stored in the
+hashtable is the age of the person identified by the key.
+
+That is why I provide the `u8` data type (which is the data type used by the age values) as input to this `StringHashMap()` function.
+As the result, it creates a hashtable that uses string values as keys, and, that stores
+`u8` values in it. Notice that an allocator object is provided at the `init()` method of the
+resulting object from the `StringHashMap()` function.
+
+```{zig}
+#| auto_main: false
+const std = @import("std");
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    var ages = std.StringHashMap(u8).init(allocator);
+    defer ages.deinit();
+
+    try ages.put("Pedro", 25);
+    try ages.put("Matheus", 21);
+    try ages.put("Abgail", 42);
+
+    var it = ages.iterator();
+    while (it.next()) |kv| {
+        std.debug.print("Key: {s} | ", .{kv.key_ptr.*});
+        std.debug.print("Age: {d}\n", .{kv.value_ptr.*});
+    }
+}
+```
+
+```
+Key: Pedro | Age: 25
+Key: Abgail | Age: 42
+Key: Matheus | Age: 21
+```
+
+
+### The `StringArrayHashMap` hashtable
+
+The Zig Standard Library also provides a type of hashtable that mix the cons and pros of the
+types of hashtables that were presented on the previous two sections. That is, a hashtable
+that uses strings as keys, but also have the advantages from the `ArrayHashMap` struct.
+In other words, you can have a hashtable that is fast to iterate over,
+that preserves insertion order, and also, that uses strings as keys.
+
+You can create such type of hashtable by using the `StringArrayHashMap()` function.
+This function accepts a data type as input, which is the data type of the values that are
+going to be stored inside this hashtable, in the same style as the function presented
+at @sec-string-hash-map.
+
+You can insert new values into this hashtable by using the same `put()` method that
+I presented at @sec-string-hash-map. And you can also get values from the hashtable
+by using the same `get()` method that I exposed on previous sections.
+Like it's `ArrayHashMap` brother, to delete values from this specific type of hashtable,
+we also use the `orderedRemove()` and `swapRemove()` methods, with the same effects that
+I described at @sec-array-map.
+
+If we take the code example that was exposed at @sec-string-hash-map, we can
+achieve the exact same result with `StringArrayHashMap()`. All we have to do
+is to change the use of `StringHashMap()` to `StringArrayHashMap()` at the
+fifth line in this code example. It would change to this:
+
+```{zig}
+#| eval: false
+var ages = std.StringArrayHashMap(u8).init(allocator);
+```
+
+
+
+## Linked lists
+
+The Zig Standard Library provides implementation for both single and doubly linked lists.
+A linked list is a linear data structure that looks like a chain, or, a rope.
+The main advantage of this data structure is that you normally have fast
+insertion and deletion operations. But, as a disadvantage, iterating through
+this data structure is usually not so fast as iterating through an array.
+
+The idea behind a linked list is basically build a structure that concists of a series of nodes
+connected to each other by pointers. This means that linked lists are usually not contiguos
+in memory, because each node might be south in memory, but the next node might be north
+in memory, then the next node might be left in memory, anyway, you get it, they can be anywhere.
+
+At @fig-linked-list we can see a diagram of a singly linked list. Notice that we begin with
+a first node. This first node is usually called "the head of the linked list". Then, from this
+first node we uncover the remaining nodes in the structure, by following the locations pointed
+by the pointers.
+
+Every node have two things in it. It have the value that is stored in the current node
+, and also have a pointer. This pointer points to the next node in the list. If this pointer
+is null, then, it means that we reached the end of our linked list.
+
+![A diagram of a singly linked list.](./../Figures/linked-list.png){#fig-linked-list}
+
+
+At @fig-linked-list2 we can see a diagram of a doubly linked list. The only thing that really
+changes is that every node in the linked list have both a pointer to the previous node,
+and, a pointer to the next node. So every node have now two pointers in it. These are
+usually called the `prev` (for "previous") and `next` (for "next") pointers of the node.
+
+In the singly linked list example, we had only one single pointer in each node, and this singular
+pointer was always pointing to the next node in the sequence. In other words, singly linked lists
+normally have only the `next` pointer in them.
+
+![A diagram of a doubly linked list.](./../Figures/doubly-linked-list.png){#fig-linked-list2}
+
+
+
+Linked lists are available in Zig through the functions `SinglyLinkedList()` and
+`DoublyLinkedList()`, for "singly linked lists" and "doubly linked lists", respectively. These functions are
+actually generic functions, which we are going to talk more about at @sec-generic-fun.
+
+For now, just understand that, in order to create a linked list object,
+we begin by providing a data type to these functions. This data type defines
+the type of data that this linked list will store. In the example below,
+we are creating a singly linked list capable of storing `u32` values.
+So each node in this linked list will store a `u32` value.
+
+Both the `SinglyLinkedList()` and `DoublyLinkedList()` functions returns a type, i.e. a struct definition, as result. This means that
+the object `Lu32` is actually a type definition, or a struct definition. It defines
+the type "singly linked list of `u32` values".
+
+So now that we have the definition of the struct, we have to instantiate a `Lu32` object.
+We normally instantiate struct objects in Zig by using an `init()` method.
+But in this case, we are instantiating the struct directly, by using an empty
+`struct` literal, in the expression `Lu32{}`.
+
+In this example, we first create multiple node objects, and after we create them,
+we start to insert and connect these nodes to build the linked list, using the
+`prepend()` and `insertAfter()` methods. Notice that the `prepend()` method
+is a method from the linked list object, while the `insertAfter()` is a method
+present in the node objects.
+
+In essence, the `prepend()` method inserts a node at the beginning of the linked
+list. In other words, the node that you provide to this method, becomes the new
+"head node" of the linked list. It becomes the first node in the list (see @fig-linked-list).
+
+On the other side, the `insertAfter()` method is used to basically connect two nodes together.
+When you provide a node to this method, it creates a pointer to this input node,
+and stores this pointer in the current node, from which the method was called from.
+In other words, this method creates the pointer that connects these two nodes together
+and stores it in the `next` attribute of the current node.
+
+Since doubly linked list have both a `next` and a `prev` pointers in each node,
+referring to the next and previous nodes in the sequence, respectively,
+as I described at @fig-linked-list2, a node object created from
+a `DoublyLinkedList()` object would have both a
+`insertBefore()` (for `prev`) and a `insertAfter()` (for `next`) methods
+available.
+
+This means that, if we used a doubly linked list, we could use the `insertBefore()` method
+to store the pointer to the input node in the `prev` attribute. This would put the input
+node as the "previous node", or, the node before the current node. The `insertAfter()` method
+have "after" in it's name to indicate that this method puts the pointer created to the input
+node in the `next` attribute of the current node, and as the result, the input node becomes
+the "next node" of the current node.
+
+Since we are using a singly linked list in this example, we have only the `insertAfter()` method
+available in the node objects that we create from our `Lu32` type.
+
+
+```{zig}
+#| auto_main: false
+const std = @import("std");
+const SinglyLinkedList = std.SinglyLinkedList;
+const Lu32 = SinglyLinkedList(u32);
+
+pub fn main() !void {
+    var list = Lu32{};
+    var one = Lu32.Node{ .data = 1 };
+    var two = Lu32.Node{ .data = 2 };
+    var three = Lu32.Node{ .data = 3 };
+    var four = Lu32.Node{ .data = 4 };
+    var five = Lu32.Node{ .data = 5 };
+
+    list.prepend(&two); // {2}
+    two.insertAfter(&five); // {2, 5}
+    list.prepend(&one); // {1, 2, 5}
+    two.insertAfter(&three); // {1, 2, 3, 5}
+    three.insertAfter(&four); // {1, 2, 3, 4, 5}
+}
+```
+
+
+There are other methods available from the linked list object, depending if this object is
+a singly linked list or a doubly linked list, that might be very useful for you, like:
+
+- `remove()` to remove a specific node from the linked list.
+- `popFirst()` to remove the first node from the linked list.
+- if singly linked list, `len()` to count how many nodes there is in the linked list.
+- if doubly linked list, checkout the `len` attribute to see how many nodes there is in the linked list.
+- if singly linked list, `popFirst()` to remove the first node from the linked list.
+- if doubly linked list, `pop()` and `popFirst()` to remove the last and first nodes from the linked list, respectively.
+- if doubly linked list, `append()` to add a new node to end of the linked list (i.e. inverse of `prepend()`).
+
+
+
+
+
+
+## Conclusion
+
+There are many other data structures that I did not presented here.
+But you can check them out at the offical Zig Standard Library documentation page.
+Actually, when you get into the [homepage of the documentation](https://ziglang.org/documentation/master/std/#)[^home], the first thing
+that appears to you in this page, is a list of types and data structures.
+
+
+In this section you can see a list of the many different data structures available in
+the Zig Standard Library. There are some very specific structures in this list, like a
+[`BoundedArray` struct](https://ziglang.org/documentation/master/std/#std.bounded_array.BoundedArray)[^bounded]
+, but there is also some more general structures, such as a
+[`PriorityQueue` struct](https://ziglang.org/documentation/master/std/#std.priority_queue.PriorityQueue)[^priority].
+
+
+[^home]: <https://ziglang.org/documentation/master/std/#>
+[^priority]: <https://ziglang.org/documentation/master/std/#std.priority_queue.PriorityQueue>.
+[^bounded]: <https://ziglang.org/documentation/master/std/#std.bounded_array.BoundedArray>
+
+
+
+
+
+

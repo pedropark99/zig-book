@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.549">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>An Introduction to Zig - 12&nbsp; Building a stack data structure</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../references.html" rel="next">
+<link href="../Chapters/09-data-structures.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/10-stack-project.html"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Building a stack data structure</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">An Introduction to Zig</a> 
+        <div class="sidebar-tools-main">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Welcome</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-zig-weird.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Introducing Zig</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/03-structs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Structs, Modules and Control Flow</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-memory.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Memory and Allocators</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-base64.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Building a base64 encoder/decoder</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/02-debugging.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Debugging Zig applications</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/05-pointers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Pointers and Optionals</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/04-http-server.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Building a HTTP Server from scratch</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/03-unittests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/07-build-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Build System</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/09-error-handling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Error handling and unions</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/09-data-structures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Data Structures</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/10-stack-project.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Building a stack data structure</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-comptime" id="toc-sec-comptime" class="nav-link active" data-scroll-target="#sec-comptime"><span class="header-section-number">12.1</span> Understanding <code>comptime</code> in Zig</a>
+  <ul class="collapse">
+  <li><a href="#applying-over-a-function-argument" id="toc-applying-over-a-function-argument" class="nav-link" data-scroll-target="#applying-over-a-function-argument"><span class="header-section-number">12.1.1</span> Applying over a function argument</a></li>
+  <li><a href="#applying-over-an-expression" id="toc-applying-over-an-expression" class="nav-link" data-scroll-target="#applying-over-an-expression"><span class="header-section-number">12.1.2</span> Applying over an expression</a></li>
+  <li><a href="#applying-over-a-block" id="toc-applying-over-a-block" class="nav-link" data-scroll-target="#applying-over-a-block"><span class="header-section-number">12.1.3</span> Applying over a block</a></li>
+  </ul></li>
+  <li><a href="#sec-generics" id="toc-sec-generics" class="nav-link" data-scroll-target="#sec-generics"><span class="header-section-number">12.2</span> Introducing Generics</a>
+  <ul class="collapse">
+  <li><a href="#sec-generic-fun" id="toc-sec-generic-fun" class="nav-link" data-scroll-target="#sec-generic-fun"><span class="header-section-number">12.2.1</span> A generic function</a></li>
+  <li><a href="#sec-generic-struct" id="toc-sec-generic-struct" class="nav-link" data-scroll-target="#sec-generic-struct"><span class="header-section-number">12.2.2</span> A generic data structure</a></li>
+  </ul></li>
+  <li><a href="#sec-what-stack" id="toc-sec-what-stack" class="nav-link" data-scroll-target="#sec-what-stack"><span class="header-section-number">12.3</span> What is a stack?</a></li>
+  <li><a href="#writing-the-stack-data-structure" id="toc-writing-the-stack-data-structure" class="nav-link" data-scroll-target="#writing-the-stack-data-structure"><span class="header-section-number">12.4</span> Writing the stack data structure</a>
+  <ul class="collapse">
+  <li><a href="#implementing-the-push-operation" id="toc-implementing-the-push-operation" class="nav-link" data-scroll-target="#implementing-the-push-operation"><span class="header-section-number">12.4.1</span> Implementing the <code>push</code> operation</a></li>
+  <li><a href="#implementing-the-pop-operation" id="toc-implementing-the-pop-operation" class="nav-link" data-scroll-target="#implementing-the-pop-operation"><span class="header-section-number">12.4.2</span> Implementing the <code>pop</code> operation</a></li>
+  <li><a href="#implementing-the-deinit-method" id="toc-implementing-the-deinit-method" class="nav-link" data-scroll-target="#implementing-the-deinit-method"><span class="header-section-number">12.4.3</span> Implementing the <code>deinit</code> method</a></li>
+  </ul></li>
+  <li><a href="#making-it-generic" id="toc-making-it-generic" class="nav-link" data-scroll-target="#making-it-generic"><span class="header-section-number">12.5</span> Making it generic</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">12.6</span> Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Building a stack data structure</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>In this chapter we are going to implement a stack data structure as our next small project in this book. Implementing basic data structures in any language is kind of a “kindergarten task” (if this term even exist) in computer science (CS), because we normally learn and implement them in the first semesters of CS.</p>
+<p>But this is actually good! Since this should be a very easy task, we don’t need much to explain what a stack is, then, we can concentrate on what is really important here, which is learning how the concept of “generics” are implemented in the Zig language, and how one of the key features of Zig, which is comptime, works, and use the stack data structure to demonstrate these concepts on the fly.</p>
+<p>But before we get into building the stack data structure, we first need to understand what the <code>comptime</code> keyword does to your code, and after that, we also need to learn about how generics work in Zig.</p>
+<section id="sec-comptime" class="level2" data-number="12.1">
+<h2 data-number="12.1" class="anchored" data-anchor-id="sec-comptime"><span class="header-section-number">12.1</span> Understanding <code>comptime</code> in Zig</h2>
+<p>One of the key features of Zig is <code>comptime</code>. This keyword introduces a whole new concept and paradigm, that is tightly connected with the compilation process. At <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a> we described the importance and the role that “compile-time vs runtime” plays into Zig. At that section, we learned that the rules applied to a value/object change a lot depending on whether this value is known at compile-time, or just at runtime.</p>
+<p>The <code>comptime</code> keyword is strongly related to these two spaces of time in the compilation process, i.e.&nbsp;the compile-time and the runtime. Let’s quickly recap the differences. Compile-time is the period of time when your Zig source code is being compiled by the <code>zig</code> compiler, while the runtime is the period of time when your Zig program is being executed, i.e.&nbsp;when we execute the binary files outputted by the <code>zig</code> compiler.</p>
+<p>There are three ways in which you can apply the <code>comptime</code> keyword, which are:</p>
+<ul>
+<li>apply <code>comptime</code> on a function argument.</li>
+<li>apply <code>comptime</code> on an object.</li>
+<li>apply <code>comptime</code> on a block of expressions.</li>
+</ul>
+<section id="applying-over-a-function-argument" class="level3" data-number="12.1.1">
+<h3 data-number="12.1.1" class="anchored" data-anchor-id="applying-over-a-function-argument"><span class="header-section-number">12.1.1</span> Applying over a function argument</h3>
+<p>When you apply the <code>comptime</code> on a function argument you are saying to the <code>zig</code> compiler that the value assigned to that particular argument of the function must be known at compile-time. We explained in details at <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a> what exactly “value known at compile-time” means, so, in case you have doubts about this idea, comeback to that section.</p>
+<p>Now let’s think about the consequences of this idea. First of all, we are imposing a limit, or, a requirement to that particular function argument. If the programmer accidentally tries to give a value to this function argument that is not known at compile time, the <code>zig</code> compiler will notice this problem, and as a consequence, it will raise a compilation error saying that it cannot compile your program. Because you are providing a value that is “runtime known” to a function argument that must be “compile-time known”.</p>
+<p>Take a look at this very simple example below, where we define a <code>double()</code> function, that simply doubles the input value named <code>num</code>. Notice that, we use the <code>comptime</code> keyword before the name of the function argument. This keyword is marking the function argument <code>num</code> as a “comptime argument”.</p>
+<p>That is a function argument whose value must be compile-time known. This is why the expression <code>double(5678)</code> is valid, and no compilation errors are raised. Because the value <code>5678</code> is compile-time known, so this is the expected behaviour for this function.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> double(<span class="kw">comptime</span> num: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> num * <span class="dv">2</span>;</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"test comptime"</span> <span class="op">{</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    _ = double(<span class="dv">5678</span>);</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>But what if we provide a number that is not compile-time known to this function? For example, we might provide a different input value to this function depending on the target OS of our compilation process. The code example delow demonstrates such case.</p>
+<p>Because the value of the object <code>n</code> is determined at runtime, we cannot provide this object as input to the <code>double()</code> function. The <code>zig</code> compiler will not allow it, because we marked the <code>num</code> argument as a “comptime argument”. That is why the <code>zig</code> compiler raises the compile-time error exposed below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> builtin = <span class="bu">@import</span>(<span class="st">"builtin"</span>);</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> double(<span class="kw">comptime</span> num: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> num * <span class="dv">2</span>;</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"test comptime"</span> <span class="op">{</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> n: <span class="dt">u32</span> = <span class="cn">undefined</span>;</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (builtin.target.os.tag == .windows) <span class="op">{</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        n = <span class="dv">1234</span>;</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        n = <span class="dv">5678</span>;</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    _ = double(n);</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>t.zig:12:16: error: runtime-known argument passed to comptime parameter </code></pre>
+<p>Comptime arguments are frequently used on functions that return some sort of generic structure. In fact, <code>comptime</code> is the essence (or the basis) to make generics in Zig. We are going to talk more about generics at <a href="#sec-generics" class="quarto-xref"><span>Section 12.2</span></a>.</p>
+<p>For now, let’s take a look at this code example from <span class="citation" data-cites="karlseguin_generics">Seguin (<a href="../references.html#ref-karlseguin_generics" role="doc-biblioref">2024</a>)</span>. You can see that this <code>IntArray()</code> function have one argument named <code>length</code>. This argument is marked as comptime, and receives a value of type <code>usize</code> as input. So the value given to this argument must be compile-time known. We can also see that this function returns an array of <code>i64</code> values as output.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> IntArray(<span class="kw">comptime</span> length: <span class="dt">usize</span>) <span class="dt">type</span> <span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> [length]<span class="dt">i64</span>;</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now, the key component of this function is the <code>length</code> argument. This argument is used to determine the size of the array that is produced by the function. Let’s think about the consequences of that. If the size of the array is dependent on the value assigned to the <code>length</code> argument, this means that the data type of the output of the function depends on the value of this <code>length</code> argument.</p>
+<p>Let this statement sink for a bit in your mind. As I described at <a href="01-zig-weird.html#sec-root-file" class="quarto-xref"><span>Section 1.2.2</span></a>, Zig is a strongly-typed language, specially on function declarations. So every time we write a function in Zig, we have to annotate the data type of the value returned by the function. But how can we do that, if this data type depends on the value given to the argument of the function?</p>
+<p>Think about this for a second. If <code>length</code> is equal to 3 for example, then, the return type of the function is <code>[3]i64</code>. But if <code>length</code> is equal to 40, then, the return type becomes <code>[40]i64</code>. At this point the <code>zig</code> compiler would be confused, and raise a compilation error, saying something like this:</p>
+<blockquote class="blockquote">
+<p>Hey! You have annotated that this function should return a <code>[3]i64</code> value, but I got a <code>[40]i64</code> value instead! This doesn’t look right!</p>
+</blockquote>
+<p>So how can you solve this problem? How do we overcome this barrier? This is when the <code>type</code> keyword comes in. This <code>type</code> keyword is basically saying to the <code>zig</code> compiler that this function will return some type, but it doesn’t know yet what exactly type that is. We will talk more about this at <a href="#sec-generics" class="quarto-xref"><span>Section 12.2</span></a>.</p>
+</section>
+<section id="applying-over-an-expression" class="level3" data-number="12.1.2">
+<h3 data-number="12.1.2" class="anchored" data-anchor-id="applying-over-an-expression"><span class="header-section-number">12.1.2</span> Applying over an expression</h3>
+<p>When you apply the <code>comptime</code> keyword over an expression, then, it is garanteed that the <code>zig</code> compiler will execute this expression at compile-time. If for some reason, this expression cannot be executed at compile-time (e.g.&nbsp;for example, maybe this expression depends on a value that is only known at runtime), then, the <code>zig</code> compiler will raise a compilation error.</p>
+<p>Take this example from the official documentation of Zig <span class="citation" data-cites="zigdocs">(<a href="../references.html#ref-zigdocs" role="doc-biblioref">Zig Software Foundation 2024</a>)</span>. We are executing the same <code>fibonacci()</code> function both at runtime, and, at compile-time. The function is by default executed at runtime, but because we use the <code>comptime</code> keyword at the second “try expression”, this expression is executed at compile-time.</p>
+<p>This might be a bit confusing for some people. Yes! When I say that this expression is executed at compile-time, I mean that this expression is compiled and executed while the <code>zig</code> compiler is compiling your Zig source code.</p>
+<p>If you think hard enough about how the C and C++ macros work, you can reach the conclusion that they are also executed at compile-time. Because C and C++ macros are just simple text replacements operations, that are performed at compile-time to form the final version of the C or C++ source code that get’s sent to the compiler.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expect = <span class="bu">@import</span>(<span class="st">"std"</span>).testing.expect;</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> fibonacci(index: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (index &lt; <span class="dv">2</span>) <span class="kw">return</span> index;</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> fibonacci(index - <span class="dv">1</span>) + fibonacci(index - <span class="dv">2</span>);</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"fibonacci"</span> <span class="op">{</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// test fibonacci at run-time</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect(fibonacci(<span class="dv">7</span>) == <span class="dv">13</span>);</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">// test fibonacci at compile-time</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> <span class="kw">comptime</span> expect(fibonacci(<span class="dv">7</span>) == <span class="dv">13</span>);</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>A lot of your Zig source code might be potentially executed at compile-time, because the <code>zig</code> compiler can figure it out the result value of some types of expressions. Specially if these expressions involves only compile-time known values. We have talked about this at <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a>.</p>
+<p>But when you use the <code>comptime</code> keyword on an expression, there is no “it might be executed at compile-time” anymore. With the <code>comptime</code> keyword you are ordering the <code>zig</code> compiler to execute this expression at compile-time. You are imposing this rule, it is garanteed that the compiler will always execute it at compile-time. Or it at least, the compiler will try to execute it. If the compiler cannot execute the expression for whatever reason, the compiler will raise a compilation error.</p>
+</section>
+<section id="applying-over-a-block" class="level3" data-number="12.1.3">
+<h3 data-number="12.1.3" class="anchored" data-anchor-id="applying-over-a-block"><span class="header-section-number">12.1.3</span> Applying over a block</h3>
+<p>Blocks were described at <a href="01-zig-weird.html#sec-blocks" class="quarto-xref"><span>Section 1.7</span></a>. When you apply the <code>comptime</code> keyword over a block of expressions, you get essentially the same effect when you apply this keyword to a single expression. That is, the entire block of expressions is executed at compile-time by the <code>zig</code> compiler.</p>
+<p>In the example below, we mark the block labeled of <code>blk</code> as a comptime block, and, therefore, the expressions inside this block are executed at compile-time.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expect = <span class="bu">@import</span>(<span class="st">"std"</span>).testing.expect;</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> fibonacci(index: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (index &lt; <span class="dv">2</span>) <span class="kw">return</span> index;</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> fibonacci(index - <span class="dv">1</span>) + fibonacci(index - <span class="dv">2</span>);</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"fibonacci in a block"</span> <span class="op">{</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x = <span class="kw">comptime</span> blk: <span class="op">{</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n1 = <span class="dv">5</span>;</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n2 = <span class="dv">2</span>;</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n3 = n1 + n2;</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> expect(fibonacci(n3) == <span class="dv">13</span>);</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">break</span> :blk n3;</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>;</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    _ = x;</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="sec-generics" class="level2" data-number="12.2">
+<h2 data-number="12.2" class="anchored" data-anchor-id="sec-generics"><span class="header-section-number">12.2</span> Introducing Generics</h2>
+<p>First of all, what is a generic? Generic is the idea to allow a type (<code>f64</code>, <code>u8</code>, <code>u32</code>, <code>bool</code>, and also, user-defined types, like the <code>User</code> struct that we defined at <a href="03-structs.html#sec-structs-and-oop" class="quarto-xref"><span>Section 2.2</span></a>) to be a parameter to methods, classes and interfaces <span class="citation" data-cites="geeks_generics">(<a href="../references.html#ref-geeks_generics" role="doc-biblioref">Geeks for Geeks 2024</a>)</span>. In other words, a “generic” is a class (or a method) that can work with multiple data types.</p>
+<p>For example, in Java, generics are created through the operator <code>&lt;&gt;</code>. With this operator, a Java class is capable of receiving a data type as input, and therefore, the class can fit it’s features according to this input data type. As another example, generics in C++ are supported through the concept of templates. Class templates in C++ are generics.</p>
+<p>In Zig, generics are implemented through <code>comptime</code>. The <code>comptime</code> keyword allows us to collect a data type at compile time, and pass this data type as input to a piece of code.</p>
+<section id="sec-generic-fun" class="level3" data-number="12.2.1">
+<h3 data-number="12.2.1" class="anchored" data-anchor-id="sec-generic-fun"><span class="header-section-number">12.2.1</span> A generic function</h3>
+<p>Take the <code>max()</code> function exposed below as a first example. This function is essentially a “generic function”. In this function, we have a comptime function argument named <code>T</code>. Notice that this <code>T</code> argument have a data type of <code>type</code>. Weird right? This <code>type</code> keyword is the “father of all types”, or, “the type of types” in Zig. Because we used this <code>type</code> keyword in the <code>T</code> argument, we are telling the <code>zig</code> compiler that this <code>T</code> argument will receive some data type as input.</p>
+<p>Also notice the use of the <code>comptime</code> keyword in this argument. As I described at <a href="#sec-comptime" class="quarto-xref"><span>Section 12.1</span></a>, every time you use this keyword in a function argument, this means that the value of this argument must be known at compile-time. This makes sense, right? Because there is no data type that you can make that is known only at runtime.</p>
+<p>Think about this. Every data type that you will ever write is always known at compile-time. Specially because data types are an essential information for the compiler to actually compile your source code. Having this in mind, makes sense to mark this argument as a comptime argument.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> max(<span class="kw">comptime</span> T: <span class="dt">type</span>, a: T, b: T) T <span class="op">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">if</span> (a &gt; b) a <span class="kw">else</span> b;</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Also notice that the value of the <code>T</code> argument is actually used to define the data type of the other arguments of the function, <code>a</code> and <code>b</code>, and also at the return type annotation of the function. That is, the data type of these arguments (<code>a</code> and <code>b</code>), and, the return data type of the function itself, are determined by the input value given to the <code>T</code> argument.</p>
+<p>As a result, we have a generic function that works with different data types. For example, I can provide <code>u8</code> values to this <code>max()</code> function, and it will work as expected. But if I provide <code>f64</code> values instead, it will also work as expected. If I did not use a generic function, I would have to write a <code>max()</code> for each one of the data types that I wanted to use. This generic function provides a very useful shortcut for us.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> max(<span class="kw">comptime</span> T: <span class="dt">type</span>, a: T, b: T) T <span class="op">{</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">if</span> (a &gt; b) a <span class="kw">else</span> b;</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"test max"</span> <span class="op">{</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n1 = max(<span class="dt">u8</span>, <span class="dv">4</span>, <span class="dv">10</span>);</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Max n1: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n1<span class="op">}</span>);</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n2 = max(<span class="dt">f64</span>, <span class="fl">89.24</span>, <span class="fl">64.001</span>);</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Max n2: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n2<span class="op">}</span>);</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Max n1: 10
+Max n2: 89.24</code></pre>
+</section>
+<section id="sec-generic-struct" class="level3" data-number="12.2.2">
+<h3 data-number="12.2.2" class="anchored" data-anchor-id="sec-generic-struct"><span class="header-section-number">12.2.2</span> A generic data structure</h3>
+<p>Every data structure that you find in the Zig Standard Library (e.g.&nbsp;<code>ArrayList</code>, <code>HashMap</code>, etc.) is essentially a generic data structure. These data structures are generic in the sense that they work with any data type you want. You just say which is the data type of the values that are going to be stored in this data structure, and they just work as expected.</p>
+<p>A generic data structure in Zig is the way to replicate a generic class from Java, or, a class template from C++. But you may quest yourself: how do we build a generic data structure in Zig?</p>
+<p>The basic idea is to write a generic function that creates the data structure definition for the specific type we want. In other words, this generic function behaves as a “constructor”. The function outputs the <code>struct</code> definition that defines this data structure for a specific data type.</p>
+<p>To create such function, we need to add a comptime argument to this function that receives a data type as input. We already learned how to do this at the previous section (<a href="#sec-generic-fun" class="quarto-xref"><span>Section 12.2.1</span></a>).</p>
+<p>I think the best way to demonstrate how to create a generic data structure is to actually write one. This where we go to our next small project in this book. This one is a very small project, which is to write a stack data structure.</p>
+</section>
+</section>
+<section id="sec-what-stack" class="level2" data-number="12.3">
+<h2 data-number="12.3" class="anchored" data-anchor-id="sec-what-stack"><span class="header-section-number">12.3</span> What is a stack?</h2>
+<p>A stack data structure is a structure that follows a LIFO (<em>last in first out</em>) principle. Only two operations are normally supported in a stack data structure, which are <code>push</code> and <code>pop</code>. The <code>push</code> operation is used to add new values to the stack, while <code>pop</code> is used to remove values from the stack.</p>
+<p>When people try to explain how the stack data structure works, the most common analogy that people use is a stack of plates. Imagine that you have a stack of plates, for example, a stack of 10 plates in your table. Each plate represents a value that is currently stored in this stack.</p>
+<p>Currently we have a stack with 10 different values, or 10 different plates. Now, imagine that you want to add a new plate (or a new value) to this stack, which translates to the <code>push</code> operation. You would add this plate (or this value) by just putting the new plate on the top of the stack. Then, you would increase the stack to 11 plates.</p>
+<p>But how would you remove plates (or remove values) from this stack (a.k.a. the <code>pop</code> operation) ? To do that, we would have to remove the plate on the top of the stack, and, as a result, we would have, once again, 10 plates in the stack.</p>
+<p>This demonstrates the LIFO concept, because the first plate in the stack, which is the plate in the bottom of the stack is the last plate to get out of the stack. Think about it. In order to remove this specific plate from the stack, we have to remove all plates in the stack. So every operation in the stack, either insertion or deletion, is always made at the top of the stack. The <a href="#fig-stack" class="quarto-xref">Figure&nbsp;<span>12.1</span></a> below exposes this logic visually:</p>
+<div id="fig-stack" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-stack-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="./../Figures/lifo-stack.svg" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-stack-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;12.1: A diagram of a stack structure. Source: Wikipedia, the free encyclopedia.
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="writing-the-stack-data-structure" class="level2" data-number="12.4">
+<h2 data-number="12.4" class="anchored" data-anchor-id="writing-the-stack-data-structure"><span class="header-section-number">12.4</span> Writing the stack data structure</h2>
+<p>We are going to write the stack data structure in two steps. First, we are going to implement a stack that can only store <code>u32</code> values. Then, after that, we are going to extend our implementation to make it generic, so that it works with any data type we want.</p>
+<p>First, we need to decide how the values will be stored inside the stack. There are multiple ways to implement the storage behind a stack structure. Some people prefer to use a doubly linked list, some others prefer to use a dynamic array, etc. In this example we are going to use an array behind the hood, to store the values in the stack, which is the <code>items</code> data member of our <code>Stack</code> struct definition.</p>
+<p>Also notice in our <code>Stack</code> struct that we have three other data members: <code>capacity</code>, <code>length</code> and <code>allocator</code>. The <code>capacity</code> member contains the capacity of the underlying array that stores the values in the stack. The <code>length</code> contains the number of values that are currently being stored in the stack. And the <code>allocator</code> contains the allocator object which will be used by the stack structure whenever it needs to allocate more space for the values that are being stored.</p>
+<p>We begin by defining an <code>init()</code> method of this struct, which is going to be responsible for instantiating a <code>Stack</code> object. Notice that, inside this <code>init()</code> method, we start by allocating an array with the capacity specified in the <code>capacity</code> argument. Then, we use the built-in function <code>@memset()</code> to set all elements of this new array that we have allocated to zero.</p>
+<p>In other words, this <code>@memset()</code> function is basically equivalent to the <code>memset()</code> function from C Standard Library<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. In this example, we are using this function to essentially assign the value <code>0</code> to all elements of this array. We do that to initialize this memory that was allocated. Uninitialized memory is a commom source of undefined behaviour, so, this step is made for safety reasons.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Allocator = std.mem.Allocator;</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Stack = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    items: []<span class="dt">u32</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    capacity: <span class="dt">usize</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    length: <span class="dt">usize</span>,</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    allocator: Allocator,</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(allocator: Allocator, capacity: <span class="dt">usize</span>) !Stack <span class="op">{</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">var</span> buf = <span class="kw">try</span> allocator.alloc(<span class="dt">u32</span>, capacity);</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>        <span class="bu">@memset</span>(buf[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> .<span class="op">{</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>            .items = buf[<span class="dv">0</span>..],</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>            .capacity = capacity,</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>            .length = <span class="dv">0</span>,</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>            .allocator = allocator,</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="implementing-the-push-operation" class="level3" data-number="12.4.1">
+<h3 data-number="12.4.1" class="anchored" data-anchor-id="implementing-the-push-operation"><span class="header-section-number">12.4.1</span> Implementing the <code>push</code> operation</h3>
+<p>Now that we have written the basic logic to create a new <code>Stack</code> object, we can start writing the logic responsible for performing a push operation. Remember, a push operation in a stack data structure is the operation responsible for adding a new value to the stack.</p>
+<p>So how can we add a new value to the <code>Stack</code> object that we have? The <code>push()</code> function exposed below is an answer to this question. Remember from what we discussed at <a href="#sec-what-stack" class="quarto-xref"><span>Section 12.3</span></a> that values are always added to the top of the stack. This means that this <code>push()</code> function must always find the element in the underlying array of the stack, that currently represents the top position of the stack, and add this value there.</p>
+<p>First, we have an if statement in this function. This if statement is checking whether we need to expand the underlying array to store this new value that we are adding to the stack. In other words, maybe the underlying array does not have enough capacity to store this new value, and, in this case, we need to expand our array to get the capacity that we need.</p>
+<p>So, if the logic test in this if statement returns true, it means that the array does not have enough capacity, and we need to expand it before we store this new value. So inside this if statement we are executing the necessary expressions to expand the underlying array.</p>
+<p>Notice that we use the allocator object to allocate a new array that is twice as bigger than the current array (<code>self.capacity * 2</code>). Then, we use <code>memset()</code> once again to set all fields in this array to zero, making sure that all memory is properly initialized.</p>
+<p>After that, we use a different built-in function named <code>@memcpy()</code>. This built-in function is equivalent to the <code>memcpy()</code> function from the C Standard Library<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. It is used to copy the values from one block of memory to another block of memory. In other words, you can use this function to copy the values from one array into another array.</p>
+<p>We are using this <code>@memcpy()</code> built-in function to copy the values that are currently in the underlying array of the stack object (<code>self.items</code>) into our new and bigger array that we have allocated (<code>new_buf</code>). After we execute this function, the <code>new_buf</code> contains a copy of the values that are present at <code>self.items</code>.</p>
+<p>Now that we have secured a copy of our current values in the <code>new_buf</code> object, we can now free the memory currently allocated at <code>self.items</code>. After that, we just need to assign our new and bigger array to <code>self.items</code>. This is the sequence of steps necessary to expand our array.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> push(self: *Stack, val: <span class="dt">u32</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> ((self.length + <span class="dv">1</span>) &gt; self.capacity) <span class="op">{</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>        <span class="kw">var</span> new_buf = <span class="kw">try</span> self.allocator.alloc(</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>            <span class="dt">u32</span>, self.capacity * <span class="dv">2</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>        <span class="bu">@memset</span>(new_buf[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>        <span class="bu">@memcpy</span>(</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>            new_buf[<span class="dv">0</span>..self.capacity], self.items</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>        self.allocator.free(self.items);</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>        self.items = new_buf;</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    self.items[self.length] = val;</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    self.length += <span class="dv">1</span>;</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>After we make sure that we have enough room to store this new value that we are adding to the stack, all we have to do is to assign this value to the top element in this stack, and, increase the value of the <code>length</code> attribute by one. We find the top element in the stack by using the <code>length</code> attribute.</p>
+</section>
+<section id="implementing-the-pop-operation" class="level3" data-number="12.4.2">
+<h3 data-number="12.4.2" class="anchored" data-anchor-id="implementing-the-pop-operation"><span class="header-section-number">12.4.2</span> Implementing the <code>pop</code> operation</h3>
+<p>Now, we can implement the pop operation of our stack object. This is a much easier operation to implement, and the pop method below summarises all the logic that is needed.</p>
+<p>We just have to find the element in the underlying array that currently represents the top of the stack, and set this element to zero, to indicate that this element is “empty”. After that, we also need to decrease the <code>length</code> attribute of the stack by one.</p>
+<p>If the current length of the stack is zero, it means that there is no values being stored in the stack currently. So, in this case, we could just return from the function and do nothing really. This is what the if statement inside this function is checking for.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> pop(self: *Stack) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (self.length == <span class="dv">0</span>) <span class="kw">return</span>;</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    self.items[self.length - <span class="dv">1</span>] = <span class="dv">0</span>;</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    self.length -= <span class="dv">1</span>;</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="implementing-the-deinit-method" class="level3" data-number="12.4.3">
+<h3 data-number="12.4.3" class="anchored" data-anchor-id="implementing-the-deinit-method"><span class="header-section-number">12.4.3</span> Implementing the <code>deinit</code> method</h3>
+<p>We have implemented the methods responsible for the two main operations associated with the stack data structure, which is <code>pop()</code> and <code>push()</code>, and we also have implemented the method responsible for instantiating a new <code>Stack</code> object, which is the <code>init()</code> method.</p>
+<p>But now, we need to implement also the method responsible for destroying a <code>Stack</code> object. In Zig, this task is commonly associated with the method named <code>deinit()</code>. Most struct objects in Zig have such method, and it is commonly nicknamed of “the destructor method”.</p>
+<p>In theory, all we have to do to destroy the <code>Stack</code> object is to make sure that we free the allocated memory for the underlying array, using the allocator object that is stored inside the <code>Stack</code> object. This is what the <code>deinit()</code> method below is doing.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> deinit(self: *Stack) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    self.allocator.free(self.items);</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="making-it-generic" class="level2" data-number="12.5">
+<h2 data-number="12.5" class="anchored" data-anchor-id="making-it-generic"><span class="header-section-number">12.5</span> Making it generic</h2>
+<p>Now that we have implemented the basic skeleton of our stack data structure, we can now focus on discussing how can we make it generic. How can we make this basic skeleton to work not only with <code>u32</code> values, but also, with any other data type we want? For example, we might need to create a stack object to store <code>User</code> values in it. How can we make this possible? The answer lies on the use of generics and <code>comptime</code>.</p>
+<p>As I described at <a href="#sec-generic-struct" class="quarto-xref"><span>Section 12.2.2</span></a>, the basic idea is to write a generic function that returns as result a struct definition as output. In theory, we do not need much to transform our <code>Stack</code> struct into a generic data structure. All that we need to do, to make our <code>Stack</code> struct generic, is to transform the underlying array in the stack structure into a generic array.</p>
+<p>In other words, this underlying array needs to be a “chameleon”. It needs to adapt, and transform it into an array of the data type that we give it to. For example, if we need to create a stack that will store <code>u8</code> values, then, this underlying array needs to be a <code>u8</code> array (i.e.&nbsp;<code>[]u8</code>). But if we need to store <code>User</code> values instead, then, this array needs to be a <code>User</code> array (i.e.&nbsp;<code>[]User</code>). Etc.</p>
+<p>We do that by using a generic function. Because a generic function can receive a data type as input, and we can pass this data type to the struct definition of our <code>Stack</code> object. Therefore, we can use the generic function to create a <code>Stack</code> object that can store the data type we want. If we want to create a stack structure that stores <code>User</code> values, we pass the <code>User</code> data type to this generic function, and it will create for us the struct definition that describes a <code>Stack</code> object that can store <code>User</code> values in it.</p>
+<p>Take the code example below as an example. I truncated some parts of the <code>Stack</code> struct for brevity reasons. But if a specific part of our <code>Stack</code> struct is not exposed here in this example, is because this part did not changed from the previous example. It remains the same.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> Stack(<span class="kw">comptime</span> T: <span class="dt">type</span>) <span class="dt">type</span> <span class="op">{</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>        items: []T,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>        capacity: <span class="dt">usize</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>        length: <span class="dt">usize</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        allocator: Allocator,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> Self = <span class="bu">@This</span>();</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">pub</span> <span class="kw">fn</span> init(allocator: Allocator, capacity: <span class="dt">usize</span>) !Stack(T) <span class="op">{</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>            <span class="kw">var</span> buf = <span class="kw">try</span> allocator.alloc(T, capacity);</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>            <span class="bu">@memset</span>(buf[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> .<span class="op">{</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>                .items = buf[<span class="dv">0</span>..],</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                .capacity = capacity,</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                .length = <span class="dv">0</span>,</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>                .allocator = allocator,</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>;</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>        <span class="kw">pub</span> <span class="kw">fn</span> push(self: *Self, val: T) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>        <span class="co">// Truncate the rest of the struct</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>;</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Notice that we have created a function in this example named <code>Stack()</code>. This function takes a type as input, and passes this type to the struct definition of our <code>Stack</code> object. The data member <code>items</code> is now, an array of type <code>T</code>, which is the data type that we passed as input to the function. The function argument <code>val</code> in the <code>push()</code> function is now a value of type <code>T</code> too.</p>
+<p>Now we have finally a stack data structure that is generic. I mean, we probably still need to adjust the <code>@memset()</code> calls, to trully make it generic for any data type. But this version is good enough, and it really works well with any of the primitive data types of Zig.</p>
+<p>We can just provide a data type to this function, and it will create a definition of a <code>Stack</code> object that can store values of the data type that we provided. In the example below, we are creating the definition of a <code>Stack</code> object that can store <code>u8</code> values in it. This definition is stored at the <code>Stacku8</code> object. This <code>Stacku8</code> object becomes our new struct, it is the struct that we are going to use to create our <code>Stack</code> object.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Stacku8 = Stack(<span class="dt">u8</span>);</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stack = <span class="kw">try</span> Stacku8.init(allocator, <span class="dv">10</span>);</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> stack.deinit();</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">1</span>);</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">2</span>);</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">3</span>);</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">4</span>);</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">5</span>);</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">6</span>);</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack len: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.length<span class="op">}</span>);</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack capacity: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.capacity<span class="op">}</span>);</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>stack.pop();</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack len: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.length<span class="op">}</span>);</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>stack.pop();</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack len: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.length<span class="op">}</span>);</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack state: {any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.items<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Stack len: 6
+Stack capacity: 10
+Stack len: 5
+Stack len: 4
+Stack state: { 1, 2, 3, 4, 0, 0, 0, 0, 0, 0 }</code></pre>
+<p>Every generic data structure in the Zig Standard Library (<code>ArrayList</code>, <code>HashMap</code>, <code>SinlyLinkedList</code>, etc.) is implemented through this logic, of using a generic function to create the struct definition that can work with the data type that you provided as input.</p>
+</section>
+<section id="conclusion" class="level2" data-number="12.6">
+<h2 data-number="12.6" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">12.6</span> Conclusion</h2>
+<p>The full source code of the stack structure discussed in this chapter is freely available at the official repository for this book. Just checkout the <a href="https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/stack.zig"><code>stack.zig</code></a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> for the <code>u32</code> version of our stack, and the <a href="https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/generic_stack.zig"><code>generic_stack.zig</code></a><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> for the generic version, available inside the <code>ZigExamples</code> folder of the repository.</p>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-geeks_generics" class="csl-entry" role="listitem">
+Geeks for Geeks. 2024. <span>“Generics in c++.”</span> <span>Geeks for Geeks</span>. <a href="https://www.geeksforgeeks.org/generics-in-c/">https://www.geeksforgeeks.org/generics-in-c/</a>.
+</div>
+<div id="ref-karlseguin_generics" class="csl-entry" role="listitem">
+Seguin, Karl. 2024. <span>“Generics.”</span> <a href="https://www.openmymind.net/learning_zig/generics/">https://www.openmymind.net/learning_zig/generics/</a>.
+</div>
+<div id="ref-zigdocs" class="csl-entry" role="listitem">
+Zig Software Foundation. 2024. <span>“Language Reference.”</span> Zig Software Foundation. <a href="https://ziglang.org/documentation/master/">https://ziglang.org/documentation/master/</a>.
+</div>
+</div>
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p><a href="https://www.tutorialspoint.com/c_standard_library/c_function_memset.htm" class="uri">https://www.tutorialspoint.com/c_standard_library/c_function_memset.htm</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p><a href="https://www.tutorialspoint.com/c_standard_library/c_function_memcpy.htm" class="uri">https://www.tutorialspoint.com/c_standard_library/c_function_memcpy.htm</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p><a href="https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/stack.zig" class="uri">https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/stack.zig</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p><a href="https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/generic_stack.zig" class="uri">https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/generic_stack.zig</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../Chapters/09-data-structures.html" class="pagination-link  aria-label=" &lt;span="" structures&lt;="" span&gt;"="">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Data Structures</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../references.html" class="pagination-link" aria-label="References">
+        <span class="nav-page-text">References</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
