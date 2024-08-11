@@ -700,8 +700,44 @@ was called from. We usually annotate this argument in the methods by writing `se
 followed by the colon character (`:`), and the data type of the struct to which
 the method belongs to (e.g. `User`, `Vec3`, etc.).
 
+If we take the `Vec3` struct that we defined in the previous section as an example,
+we can see in the `distance()` method that this `self` argument is annotated as
+`self: Vec3`. Because the state of the `Vec3` object is never altered by this
+method.
 
+But what if we do have a method that alters the state of the object, by altering the
+values of it's data members. How should we annotate `self` in this instance? The answer is:
+"we should pass a pointer of `x` to `self`, and not simply a copy of `x` to `self`".
+In other words, you should annotate `self` as `self: *x`, instead of annotating it
+as `self: x`.
 
+If we create a new method inside the `Vec3` object that, for example, expands the
+vector by multiplying it's coordinates by a factor o two, then, we need to follow
+this rule specified in the previous paragraph. The code example below demonstrates
+this idea:
+
+```{zig}
+#| build_type: "lib"
+#| auto_main: false
+const std = @import("std");
+const m = std.math;
+const Vec3 = struct {
+    x: f64,
+    y: f64,
+    z: f64,
+
+    pub fn distance(self: Vec3, other: Vec3) f64 {
+        const xd = m.pow(f64, self.x - other.x, 2.0);
+        const yd = m.pow(f64, self.y - other.y, 2.0);
+        const zd = m.pow(f64, self.z - other.z, 2.0);
+        return m.sqrt(xd + yd + zd);
+    }
+
+    pub fn double(self: Vec3) void {
+    
+    }
+};
+```
 
 ## Type inference {#sec-type-inference}
 
