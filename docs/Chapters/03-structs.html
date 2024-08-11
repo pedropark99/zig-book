@@ -623,6 +623,66 @@ Exiting function ...</code></pre>
 </section>
 <section id="about-the-struct-state" class="level3" data-number="2.2.4">
 <h3 data-number="2.2.4" class="anchored" data-anchor-id="about-the-struct-state"><span class="header-section-number">2.2.4</span> About the struct state</h3>
+<p>Sometimes you don’t need to care about the state of your struct object. Sometimes, you just need to instantiate and use the objects, without altering their state. You can notice that when you have methods inside this struct object that might use the values that are present the data members, but they do not alter the values in the data members of structs in anyway.</p>
+<p>The <code>Vec3</code> struct that we presented in the previous section is an example of that. This struct have a single method named <code>distance()</code>, and this method do use the values present in all three data members of the struct (<code>x</code>, <code>y</code> and <code>z</code>). But at the same time, this method do not change the values of these data members in any point.</p>
+<p>As a result of that, when we create <code>Vec3</code> objects we usually create them as constant objects, like the <code>v1</code> and <code>v2</code> objects presented in the previous code example. We can create them as variable objects with the <code>var</code> keyword, if we want to. But because the methods of this <code>Vec3</code> struct do not change the state of the objects in any point, is unnecessary to mark them as variable objects.</p>
+<p>But why? Why am I talkin about this here? Is because the <code>self</code> argument in the methods is affected depending on whether the methods present in a struct change or not the state of the object itself. More specifically, when you have a method in a struct that changes the state of the object (i.e.&nbsp;change the value of a data member), the <code>self</code> argument in this method must be annotated in a different manner.</p>
+<p>As I described in the previous section, the <code>self</code> argument in methods of a struct is the argument that receives as input the object from which the method was called from. We usually annotate this argument in the methods by writing <code>self</code>, followed by the colon character (<code>:</code>), and the data type of the struct to which the method belongs to (e.g.&nbsp;<code>User</code>, <code>Vec3</code>, etc.).</p>
+<p>If we take the <code>Vec3</code> struct that we defined in the previous section as an example, we can see in the <code>distance()</code> method that this <code>self</code> argument is annotated as <code>self: Vec3</code>. Because the state of the <code>Vec3</code> object is never altered by this method.</p>
+<p>But what if we do have a method that alters the state of the object, by altering the values of it’s data members. How should we annotate <code>self</code> in this instance? The answer is: “we should pass a pointer of <code>x</code> to <code>self</code>, and not simply a copy of <code>x</code> to <code>self</code>”. In other words, you should annotate <code>self</code> as <code>self: *x</code>, instead of annotating it as <code>self: x</code>.</p>
+<p>If we create a new method inside the <code>Vec3</code> object that, for example, expands the vector by multiplying it’s coordinates by a factor o two, then, we need to follow this rule specified in the previous paragraph. The code example below demonstrates this idea:</p>
+<div class="cell" data-build_type="lib">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> m = std.math;</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Vec3 = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>    x: <span class="dt">f64</span>,</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>    y: <span class="dt">f64</span>,</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>    z: <span class="dt">f64</span>,</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> distance(self: Vec3, other: Vec3) <span class="dt">f64</span> <span class="op">{</span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> xd = m.pow(<span class="dt">f64</span>, self.x - other.x, <span class="fl">2.0</span>);</span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> yd = m.pow(<span class="dt">f64</span>, self.y - other.y, <span class="fl">2.0</span>);</span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> zd = m.pow(<span class="dt">f64</span>, self.z - other.z, <span class="fl">2.0</span>);</span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> m.sqrt(xd + yd + zd);</span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> double(self: *Vec3) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a>        self.x = self.x * <span class="fl">2.0</span>;</span>
+<span id="cb32-17"><a href="#cb32-17" aria-hidden="true" tabindex="-1"></a>        self.y = self.y * <span class="fl">2.0</span>;</span>
+<span id="cb32-18"><a href="#cb32-18" aria-hidden="true" tabindex="-1"></a>        self.z = self.z * <span class="fl">2.0</span>;</span>
+<span id="cb32-19"><a href="#cb32-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb32-20"><a href="#cb32-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Notice in the code example above that we have added a new method to our <code>Vec3</code> struct named <code>double()</code>. This method essentially doubles the coordinate values of our vector object. Also notice that, in the case of the <code>double()</code> method, we annotated the <code>self</code> argument as <code>*Vec3</code>, indicating that this argument receives a pointer (or a reference, if you prefer to call it this way) to a <code>Vec3</code> object, instead of receiving a copy of the object directly, as input.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> v3 = Vec3 <span class="op">{</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>    .x = <span class="fl">4.2</span>, .y = <span class="fl">2.4</span>, .z = <span class="fl">0.9</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>v3.double();</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Doubled: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>v3.x<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Doubled: 8.4</code></pre>
+<p>If you change the <code>self</code> argument in this <code>double()</code> method to <code>self: Vec3</code>, like in the <code>distance()</code> method, you will get the error exposed below as result. Notice that this error message is indicating a line from the <code>double()</code> method body, indicating that you cannot alter the value of the <code>x</code> data member.</p>
+<div class="sourceCode" id="cb35"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co">// If we change the function signature of double to:</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> double(self: Vec3) <span class="dt">void</span> <span class="op">{</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This error message indicates that the <code>x</code> data member belongs to a constant object, and, because of that, it cannot be changed. Even though we marked the <code>v3</code> object that we have created in the previous code example as a variable object. So even though this <code>x</code> data member belongs to a variable object in our code, this error message is pointing to the opposite direction.</p>
+<pre><code>t.zig:16:13: error: cannot assign to constant
+        self.x = self.x * 2.0;
+        ~~~~^~</code></pre>
+<p>But this error message is misleading, because the only thing that we have changed is the <code>self</code> argument signature from <code>*Vec3</code> to <code>Vec3</code>. So, just remember this general rule below about your method declarations:</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If a method of your <code>x</code> struct alters the state of the object, by changing the value of any data member, then, remember to use <code>self: *x</code>, instead of <code>self: x</code> in the function signature of this method.</p>
+</div>
+</div>
 </section>
 </section>
 <section id="sec-type-inference" class="level2" data-number="2.3">
@@ -637,28 +697,28 @@ Exiting function ...</code></pre>
 <p>Because these weird values contain a dot character before them, we are asking the <code>zig</code> compiler to infer the types of these values inside the switch statement. Then, the <code>zig</code> compiler is looking into the current context where these values are being used, and it is trying to infer the types of these values.</p>
 <p>Since they are being used inside a switch statement, the <code>zig</code> compiler looks into the type of the input object given to the switch statement, which is the <code>order</code> object in this case. Because this object have type <code>AtomicOrder</code>, the <code>zig</code> compiler infers that these values are data members from this type <code>AtomicOrder</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">inline</span> <span class="kw">fn</span> fence(self: *Self, <span class="kw">comptime</span> order: AtomicOrder) <span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// LLVM's ThreadSanitizer doesn't support the normal fences so we specialize for it.</span></span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (builtin.sanitize_thread) <span class="op">{</span></span>
-<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> tsan = <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_acquire(addr: *anyopaque) <span class="dt">void</span>;</span>
-<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_release(addr: *anyopaque) <span class="dt">void</span>;</span>
-<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
-<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> addr: *anyopaque = self;</span>
-<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">switch</span> (order) <span class="op">{</span></span>
-<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>            .unordered, .monotonic =&gt; <span class="bu">@compileError</span>(<span class="bu">@tagName</span>(order) ++ <span class="st">" only applies to atomic loads and stores"</span>),</span>
-<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>            .acquire =&gt; tsan.__tsan_acquire(addr),</span>
-<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>            .release =&gt; tsan.__tsan_release(addr),</span>
-<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a>            .acq_rel, .seq_cst =&gt; <span class="op">{</span></span>
-<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_acquire(addr);</span>
-<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_release(addr);</span>
-<span id="cb32-17"><a href="#cb32-17" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>,</span>
-<span id="cb32-18"><a href="#cb32-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
-<span id="cb32-19"><a href="#cb32-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb32-20"><a href="#cb32-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb32-21"><a href="#cb32-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="bu">@fence</span>(order);</span>
-<span id="cb32-22"><a href="#cb32-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">inline</span> <span class="kw">fn</span> fence(self: *Self, <span class="kw">comptime</span> order: AtomicOrder) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// LLVM's ThreadSanitizer doesn't support the normal fences so we specialize for it.</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (builtin.sanitize_thread) <span class="op">{</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> tsan = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_acquire(addr: *anyopaque) <span class="dt">void</span>;</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_release(addr: *anyopaque) <span class="dt">void</span>;</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> addr: *anyopaque = self;</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">switch</span> (order) <span class="op">{</span></span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>            .unordered, .monotonic =&gt; <span class="bu">@compileError</span>(<span class="bu">@tagName</span>(order) ++ <span class="st">" only applies to atomic loads and stores"</span>),</span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>            .acquire =&gt; tsan.__tsan_acquire(addr),</span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>            .release =&gt; tsan.__tsan_release(addr),</span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a>            .acq_rel, .seq_cst =&gt; <span class="op">{</span></span>
+<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_acquire(addr);</span>
+<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_release(addr);</span>
+<span id="cb37-17"><a href="#cb37-17" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>,</span>
+<span id="cb37-18"><a href="#cb37-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb37-19"><a href="#cb37-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-21"><a href="#cb37-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="bu">@fence</span>(order);</span>
+<span id="cb37-22"><a href="#cb37-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>This is how basic type inference is done in Zig. If we didn’t use the dot character before the values inside this switch statement, then, we would be forced to write explicitly the data types of these values. For example, instead of writing <code>.release</code> we would have to write <code>AtomicOrder.release</code>. We would have to do this for every single value in this switch statement, and this is a lot of work. That is why type inference is commonly used on switch statements in Zig.</p>
 </section>
@@ -666,20 +726,20 @@ Exiting function ...</code></pre>
 <h2 data-number="2.4" class="anchored" data-anchor-id="modules"><span class="header-section-number">2.4</span> Modules</h2>
 <p>We already talked about what modules are, and also, how to import other modules into you current module through <em>import statements</em>, so that you can use functionality from these other modules in your current module. But in this section, I just want to make it clear that modules are actually structs in Zig.</p>
 <p>In other words, every Zig module (i.e.&nbsp;a <code>.zig</code> file) that you write in your project is internally stored as a struct object. Take the line exposed below as an example. In this line we are importing the Zig Standard Library into our current module.</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb38"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>When we want to access the functions and objects from the standard library, we are basically accessing the data members of the struct stored in the <code>std</code> object. That is why we use the same syntax that we use in normal structs, with the dot operator (<code>.</code>) to access the data members and methods of the struct.</p>
 <p>When this “import statement” get’s executed, the result of this expression is a struct object that contains the Zig Standard Library modules, global variables, functions, etc. And this struct object get’s saved (or stored) inside the constant object named <code>std</code>.</p>
 <p>Take the <a href="https://github.com/kprotty/zap/blob/blog/src/thread_pool.zig"><code>thread_pool.zig</code> module from the project <code>zap</code></a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> as an example. This module is written as if it was a big struct. That is why we have a top-level and public <code>init()</code> method written in this module. The idea is that all top-level functions written in this module are methods from the struct, and all top-level objects and struct declarations are data members of this struct. The module is the struct itself.</p>
 <p>So you would import and use this module by doing something like this:</p>
-<div class="sourceCode" id="cb34"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ThreadPool = <span class="bu">@import</span>(<span class="st">"thread_pool.zig"</span>);</span>
-<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_cpus = std.Thread.getCpuCount()</span>
-<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> <span class="bu">@panic</span>(<span class="st">"failed to get cpu core count"</span>);</span>
-<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_threads = std.math.cast(<span class="dt">u16</span>, num_cpus)</span>
-<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> std.math.maxInt(<span class="dt">u16</span>);</span>
-<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pool = ThreadPool.init(</span>
-<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> .max_threads = num_threads <span class="op">}</span></span>
-<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb39"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ThreadPool = <span class="bu">@import</span>(<span class="st">"thread_pool.zig"</span>);</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_cpus = std.Thread.getCpuCount()</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> <span class="bu">@panic</span>(<span class="st">"failed to get cpu core count"</span>);</span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_threads = std.math.cast(<span class="dt">u16</span>, num_cpus)</span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> std.math.maxInt(<span class="dt">u16</span>);</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pool = ThreadPool.init(</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> .max_threads = num_threads <span class="op">}</span></span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 
 </section>

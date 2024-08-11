@@ -733,11 +733,67 @@ const Vec3 = struct {
         return m.sqrt(xd + yd + zd);
     }
 
-    pub fn double(self: Vec3) void {
-    
+    pub fn double(self: *Vec3) void {
+        self.x = self.x * 2.0;
+        self.y = self.y * 2.0;
+        self.z = self.z * 2.0;
     }
 };
 ```
+
+Notice in the code example above that we have added a new method
+to our `Vec3` struct named `double()`. This method essentially doubles the
+coordinate values of our vector object. Also notice that, in the
+case of the `double()` method, we annotated the `self` argument as `*Vec3`,
+indicating that this argument receives a pointer (or a reference, if you prefer to call it this way)
+to a `Vec3` object, instead of receiving a copy of the object directly, as input.
+
+```{zig}
+var v3 = Vec3 {
+    .x = 4.2, .y = 2.4, .z = 0.9
+};
+v3.double();
+std.debug.print("Doubled: {d}\n", .{v3.x});
+```
+
+```
+Doubled: 8.4
+```
+
+
+
+If you change the `self` argument in this `double()` method to `self: Vec3`, like in the
+`distance()` method, you will get the error exposed below as result. Notice that this
+error message is indicating a line from the `double()` method body,
+indicating that you cannot alter the value of the `x` data member.
+
+```zig
+// If we change the function signature of double to:
+    pub fn double(self: Vec3) void {
+```
+
+This error message indicates that the `x` data member belongs to a constant object,
+and, because of that, it cannot be changed. Even though we marked the `v3` object
+that we have created in the previous code example as a variable object.
+So even though this `x` data member belongs to a variable object in our code, this error
+message is pointing to the opposite direction.
+
+```
+t.zig:16:13: error: cannot assign to constant
+        self.x = self.x * 2.0;
+        ~~~~^~
+```
+
+But this error message is misleading, because the only thing that we have changed
+is the `self` argument signature from `*Vec3` to `Vec3`. So, just remember this
+general rule below about your method declarations:
+
+::: {.callout-note}
+If a method of your `x` struct alters the state of the object, by
+changing the value of any data member, then, remember to use `self: *x`,
+instead of `self: x` in the function signature of this method.
+:::
+
 
 ## Type inference {#sec-type-inference}
 
