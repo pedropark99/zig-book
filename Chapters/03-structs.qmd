@@ -578,11 +578,127 @@ pub fn main() !void {
 
 
 
-### More on methods
+### Struct declarations must be constant
+
+Types in Zig must be `const` or `comptime` (we are going to talk more about comptime at @sec-comptime).
+What this means is that you cannot create a new data type, and mark it as variable with the `var` keyword.
+So struct declarations are always constant. You cannot declare a new struct using the `var` keyword.
+It must be `const`.
+
+In the `Vec3` example below, this declaration is allowed because I'm using the `const` keyword
+to declare this new data type.
+
+```{zig}
+#| build_type: "lib"
+#| auto_main: false
+const Vec3 = struct {
+    x: f64,
+    y: f64,
+    z: f64,
+};
+```
+
+
+### The `self` method argument
+
+In every language that have OOP, when we declare a method of some class or struct, we
+usually declare this method as a function that have a `self` argument.
+This `self` argument is the reference to the object itself from which the method
+is being called from.
+
+Is not mandatory to use this `self` argument. But why would you not use this `self` argument?
+There is no reason to not use it. Because the only way to get access to the data stored in the
+data members of your struct is to access them through this `self` argument.
+If you don't need to use the data in the data members of your struct inside your method, then, you very likely don't need
+a method, you can just simply declare this logic as a simple function, outside of your
+struct declaration.
+
+
+Take the `Vec3` struct below. Inside this `Vec3` struct we declared a method named `distance()`.
+This method calculates the distance between two `Vec3` objects, by following the distance
+formula in euclidean space. Notice that this `distance()` method takes two `Vec3` objects
+as input, `self` and `other`.
+
+
+```{zig}
+#| build_type: "lib"
+#| auto_main: false
+const std = @import("std");
+const m = std.math;
+const Vec3 = struct {
+    x: f64,
+    y: f64,
+    z: f64,
+
+    pub fn distance(self: Vec3, other: Vec3) f64 {
+        const xd = m.pow(f64, self.x - other.x, 2.0);
+        const yd = m.pow(f64, self.y - other.y, 2.0);
+        const zd = m.pow(f64, self.z - other.z, 2.0);
+        return m.sqrt(xd + yd + zd);
+    }
+};
+```
+
+
+The `self` argument corresponds to the `Vec3` object from which this `distance()` method
+is being called from. While the `other` is a separate `Vec3` object that is given as input
+to this method. In the example below, the `self` argument corresponds to the object
+`v1`, because the `distance()` method is being called from the `v1` object,
+while the `other` argument corresponds to the object `v2`.
+
+
+```{zig}
+#| eval: false
+const v1 = Vec3 {
+    .x = 4.2, .y = 2.4, .z = 0.9
+};
+const v2 = Vec3 {
+    .x = 5.1, .y = 5.6, .z = 1.6
+};
+
+std.debug.print(
+    "Distance: {d}\n",
+    .{v1.distance(v2)}
+);
+```
+
+```
+Distance: 3.3970575502926055
+```
 
 
 
+### About the struct state
 
+Sometimes you don't need to care about the state of your struct object. Sometimes, you just need
+to instantiate and use the objects, without altering their state. You can notice that when you have methods
+inside this struct object that might use the values that are present the data members, but they
+do not alter the values in the data members of structs in anyway.
+
+The `Vec3` struct that we presented in the previous section is an example of that.
+This struct have a single method named `distance()`, and this method do use the values
+present in all three data members of the struct (`x`, `y` and `z`). But at the same time,
+this method do not change the values of these data members in any point.
+
+As a result of that, when we create `Vec3` objects we usually create them as
+constant objects, like the `v1` and `v2` objects presented in the previous
+code example. We can create them as variable objects with the `var` keyword,
+if we want to. But because the methods of this `Vec3` struct do not change
+the state of the objects in any point, is unnecessary to mark them
+as variable objects.
+
+But why? Why am I talkin about this here? Is because the `self` argument
+in the methods is affected depending on whether the
+methods present in a struct change or not the state of the object itself.
+More specifically, when you have a method in a struct that changes the state
+of the object (i.e. change the value of a data member), the `self` argument
+in this method must be annotated in a different manner.
+
+As I described in the previous section, the `self` argument in methods of
+a struct is the argument that receives as input the object from which the method
+was called from. We usually annotate this argument in the methods by writing `self`,
+followed by the colon character (`:`), and the data type of the struct to which
+the method belongs to (e.g. `User`, `Vec3`, etc.).
 
 
 

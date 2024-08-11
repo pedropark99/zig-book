@@ -248,10 +248,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#while-loops" id="toc-while-loops" class="nav-link" data-scroll-target="#while-loops"><span class="header-section-number">2.1.5</span> While loops</a></li>
   <li><a href="#using-break-and-continue" id="toc-using-break-and-continue" class="nav-link" data-scroll-target="#using-break-and-continue"><span class="header-section-number">2.1.6</span> Using <code>break</code> and <code>continue</code></a></li>
   </ul></li>
-  <li><a href="#sec-structs-and-oop" id="toc-sec-structs-and-oop" class="nav-link" data-scroll-target="#sec-structs-and-oop"><span class="header-section-number">2.2</span> Structs and OOP</a></li>
-  <li><a href="#sec-anonymous-struct-literals" id="toc-sec-anonymous-struct-literals" class="nav-link" data-scroll-target="#sec-anonymous-struct-literals"><span class="header-section-number">2.3</span> Anonymous struct literals</a></li>
-  <li><a href="#sec-type-inference" id="toc-sec-type-inference" class="nav-link" data-scroll-target="#sec-type-inference"><span class="header-section-number">2.4</span> Type inference</a></li>
-  <li><a href="#modules" id="toc-modules" class="nav-link" data-scroll-target="#modules"><span class="header-section-number">2.5</span> Modules</a></li>
+  <li><a href="#sec-structs-and-oop" id="toc-sec-structs-and-oop" class="nav-link" data-scroll-target="#sec-structs-and-oop"><span class="header-section-number">2.2</span> Structs and OOP</a>
+  <ul class="collapse">
+  <li><a href="#sec-anonymous-struct-literals" id="toc-sec-anonymous-struct-literals" class="nav-link" data-scroll-target="#sec-anonymous-struct-literals"><span class="header-section-number">2.2.1</span> Anonymous struct literals</a></li>
+  <li><a href="#struct-declarations-must-be-constant" id="toc-struct-declarations-must-be-constant" class="nav-link" data-scroll-target="#struct-declarations-must-be-constant"><span class="header-section-number">2.2.2</span> Struct declarations must be constant</a></li>
+  <li><a href="#the-self-method-argument" id="toc-the-self-method-argument" class="nav-link" data-scroll-target="#the-self-method-argument"><span class="header-section-number">2.2.3</span> The <code>self</code> method argument</a></li>
+  <li><a href="#about-the-struct-state" id="toc-about-the-struct-state" class="nav-link" data-scroll-target="#about-the-struct-state"><span class="header-section-number">2.2.4</span> About the struct state</a></li>
+  </ul></li>
+  <li><a href="#sec-type-inference" id="toc-sec-type-inference" class="nav-link" data-scroll-target="#sec-type-inference"><span class="header-section-number">2.3</span> Type inference</a></li>
+  <li><a href="#modules" id="toc-modules" class="nav-link" data-scroll-target="#modules"><span class="header-section-number">2.4</span> Modules</a></li>
   </ul>
 </nav>
     </div>
@@ -310,7 +315,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 data-number="2.1.2" class="anchored" data-anchor-id="sec-switch"><span class="header-section-number">2.1.2</span> Swith statements</h3>
 <p>Switch statements are also available in Zig. A switch statement in Zig have a similar syntax to a switch statement in Rust. As you would expect, to write a switch statement in Zig we use the <code>switch</code> keyword. We provide the value that we want to “switch over” inside a pair of parentheses. Then, we list the possible combinations (or “branchs”) inside a pair of curly braces.</p>
 <p>Let’s take a look at the code example below. You can see in this example that, I’m creating an enum type called <code>Role</code>. We talk more about enums at <a href="04-http-server.html#sec-enum" class="quarto-xref"><span>Section 7.6</span></a>. But in essence, this <code>Role</code> type is listing different types of roles in a fictitious company, like <code>SE</code> for Software Engineer, <code>DE</code> for Data Engineer, <code>PM</code> for Product Manager, etc.</p>
-<p>Notice that we are using the value from the <code>role</code> object in the switch statement, to discover which exact area we need to store in the <code>area</code> variable object. Also notice that we are using type inference inside the switch statement, with the dot character, as we described at <a href="#sec-type-inference" class="quarto-xref"><span>Section 2.4</span></a>. This makes the <code>zig</code> compiler infer the correct data type of the values (<code>PM</code>, <code>SE</code>, etc.) for us.</p>
+<p>Notice that we are using the value from the <code>role</code> object in the switch statement, to discover which exact area we need to store in the <code>area</code> variable object. Also notice that we are using type inference inside the switch statement, with the dot character, as we described at <a href="#sec-type-inference" class="quarto-xref"><span>Section 2.3</span></a>. This makes the <code>zig</code> compiler infer the correct data type of the values (<code>PM</code>, <code>SE</code>, etc.) for us.</p>
 <p>Also notice that, we are grouping multiple values in the same branch of the switch statement. We just separate each possible value with a comma. So, for example, if <code>role</code> contains either <code>DE</code> or <code>DA</code>, the <code>area</code> variable would contain the value <code>"Data &amp; Analytics"</code>, instead of <code>"Platform"</code>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
@@ -541,9 +546,8 @@ Exiting function ...</code></pre>
 <p>The <code>pub</code> keyword plays an important role in struct declarations, and OOP in Zig. Every method that you declare in your struct that is marked with the keyword <code>pub</code>, becomes a public method of this particular struct.</p>
 <p>So every method that you create in your struct, is, at first, a private method of that struct. Meaning that, this method can only be called from within this struct. But, if you mark this method as public, with the keyword <code>pub</code>, then, you can call the method directly from the <code>User</code> object you have in your code.</p>
 <p>In other words, the functions marked by the keyword <code>pub</code> are members of the public API of that struct. For example, if I did not marked the <code>print_name()</code> method as public, then, I could not execute the line <code>u.print_name()</code>. Because I would not be authorized to call this method directly in my code.</p>
-</section>
-<section id="sec-anonymous-struct-literals" class="level2" data-number="2.3">
-<h2 data-number="2.3" class="anchored" data-anchor-id="sec-anonymous-struct-literals"><span class="header-section-number">2.3</span> Anonymous struct literals</h2>
+<section id="sec-anonymous-struct-literals" class="level3" data-number="2.2.1">
+<h3 data-number="2.2.1" class="anchored" data-anchor-id="sec-anonymous-struct-literals"><span class="header-section-number">2.2.1</span> Anonymous struct literals</h3>
 <p>You can declare a struct object as a literal value. When we do that, we normally specify the data type of this struct literal by writing it’s data type just before the opening curly braces. For example, I could write a struct literal of type <code>User</code> that we defined in the previous section like this:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> eu = User <span class="op">{</span></span>
@@ -554,7 +558,7 @@ Exiting function ...</code></pre>
 <span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>_ = eu;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>However, in Zig, we can also write an anonymous struct literal. That is, you can write a struct literal, but not especify explicitly the type of this particular struct. An anonymous struct is written by using the syntax <code>.{}</code>. So, we essentially replaced the explicit type of the struct literal with a dot character (<code>.</code>).</p>
-<p>As we described at <a href="#sec-type-inference" class="quarto-xref"><span>Section 2.4</span></a>, when you put a dot before a struct literal, the type of this struct literal is automatically inferred by the <code>zig</code> compiler. In essence, the <code>zig</code> compiler will look for some hint of what is the type of that struct. It can be the type annotation of an function argument, or the return type annotation of the function that you are using, or the type annotation of a variable. If the compiler do find such type annotation, then, it will use this type in your literal struct.</p>
+<p>As we described at <a href="#sec-type-inference" class="quarto-xref"><span>Section 2.3</span></a>, when you put a dot before a struct literal, the type of this struct literal is automatically inferred by the <code>zig</code> compiler. In essence, the <code>zig</code> compiler will look for some hint of what is the type of that struct. It can be the type annotation of an function argument, or the return type annotation of the function that you are using, or the type annotation of a variable. If the compiler do find such type annotation, then, it will use this type in your literal struct.</p>
 <p>Anonymous structs are very commom to use in function arguments in Zig. One example that you have seen already constantly, is the <code>print()</code> function from the <code>stdout</code> object. This function takes two arguments. The first argument, is a template string, which should contain string format specifiers in it, which tells how the values provided in the second argument should be printed into the message.</p>
 <p>While the second argument is a struct literal that lists the values to be printed into the template message specified in the first argument. You normally want to use an anonymous struct literal here, so that, the <code>zig</code> compiler do the job of specifying the type of this particular anonymous struct for you.</p>
 <div class="cell">
@@ -568,61 +572,114 @@ Exiting function ...</code></pre>
 </div>
 </div>
 </section>
-<section id="sec-type-inference" class="level2" data-number="2.4">
-<h2 data-number="2.4" class="anchored" data-anchor-id="sec-type-inference"><span class="header-section-number">2.4</span> Type inference</h2>
+<section id="struct-declarations-must-be-constant" class="level3" data-number="2.2.2">
+<h3 data-number="2.2.2" class="anchored" data-anchor-id="struct-declarations-must-be-constant"><span class="header-section-number">2.2.2</span> Struct declarations must be constant</h3>
+<p>Types in Zig must be <code>const</code> or <code>comptime</code> (we are going to talk more about comptime at <a href="10-stack-project.html#sec-comptime" class="quarto-xref"><span>Section 12.1</span></a>). What this means is that you cannot create a new data type, and mark it as variable with the <code>var</code> keyword. So struct declarations are always constant. You cannot declare a new struct using the <code>var</code> keyword. It must be <code>const</code>.</p>
+<p>In the <code>Vec3</code> example below, this declaration is allowed because I’m using the <code>const</code> keyword to declare this new data type.</p>
+<div class="cell" data-build_type="lib">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Vec3 = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    x: <span class="dt">f64</span>,</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    y: <span class="dt">f64</span>,</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    z: <span class="dt">f64</span>,</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="the-self-method-argument" class="level3" data-number="2.2.3">
+<h3 data-number="2.2.3" class="anchored" data-anchor-id="the-self-method-argument"><span class="header-section-number">2.2.3</span> The <code>self</code> method argument</h3>
+<p>In every language that have OOP, when we declare a method of some class or struct, we usually declare this method as a function that have a <code>self</code> argument. This <code>self</code> argument is the reference to the object itself from which the method is being called from.</p>
+<p>Is not mandatory to use this <code>self</code> argument. But why would you not use this <code>self</code> argument? There is no reason to not use it. Because the only way to get access to the data stored in the data members of your struct is to access them through this <code>self</code> argument. If you don’t need to use the data in the data members of your struct inside your method, then, you very likely don’t need a method, you can just simply declare this logic as a simple function, outside of your struct declaration.</p>
+<p>Take the <code>Vec3</code> struct below. Inside this <code>Vec3</code> struct we declared a method named <code>distance()</code>. This method calculates the distance between two <code>Vec3</code> objects, by following the distance formula in euclidean space. Notice that this <code>distance()</code> method takes two <code>Vec3</code> objects as input, <code>self</code> and <code>other</code>.</p>
+<div class="cell" data-build_type="lib">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> m = std.math;</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Vec3 = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    x: <span class="dt">f64</span>,</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>    y: <span class="dt">f64</span>,</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>    z: <span class="dt">f64</span>,</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> distance(self: Vec3, other: Vec3) <span class="dt">f64</span> <span class="op">{</span></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> xd = m.pow(<span class="dt">f64</span>, self.x - other.x, <span class="fl">2.0</span>);</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> yd = m.pow(<span class="dt">f64</span>, self.y - other.y, <span class="fl">2.0</span>);</span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> zd = m.pow(<span class="dt">f64</span>, self.z - other.z, <span class="fl">2.0</span>);</span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> m.sqrt(xd + yd + zd);</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The <code>self</code> argument corresponds to the <code>Vec3</code> object from which this <code>distance()</code> method is being called from. While the <code>other</code> is a separate <code>Vec3</code> object that is given as input to this method. In the example below, the <code>self</code> argument corresponds to the object <code>v1</code>, because the <code>distance()</code> method is being called from the <code>v1</code> object, while the <code>other</code> argument corresponds to the object <code>v2</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v1 = Vec3 <span class="op">{</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>    .x = <span class="fl">4.2</span>, .y = <span class="fl">2.4</span>, .z = <span class="fl">0.9</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v2 = Vec3 <span class="op">{</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>    .x = <span class="fl">5.1</span>, .y = <span class="fl">5.6</span>, .z = <span class="fl">1.6</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>std.debug.print(</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Distance: {d}</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span>v1.distance(v2)<span class="op">}</span></span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Distance: 3.3970575502926055</code></pre>
+</section>
+<section id="about-the-struct-state" class="level3" data-number="2.2.4">
+<h3 data-number="2.2.4" class="anchored" data-anchor-id="about-the-struct-state"><span class="header-section-number">2.2.4</span> About the struct state</h3>
+</section>
+</section>
+<section id="sec-type-inference" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="sec-type-inference"><span class="header-section-number">2.3</span> Type inference</h2>
 <p>Zig is kind of a strongly typed language. I say “kind of” because there are situations where you don’t have to explicitly write the type of every single object in your source code, as you would expect from a traditional strongly typed language, such as C and C++.</p>
 <p>In some situations, the <code>zig</code> compiler can use type inference to solves the data types for you, easing some of the burden that you carry as a developer. The most commom way this happens is through function arguments that receives struct objects as input.</p>
 <p>In general, type inference in Zig is done by using the dot character (<code>.</code>). Everytime you see a dot character written before a struct literal, or before a enum value, or something like that, you know that this dot character is playing a special party in this place. More specifically, it is telling the <code>zig</code> compiler something on the lines of: “Hey! Can you infer the type of this value for me? Please!”. In other words, this dot character is playing a role similar to the <code>auto</code> keyword in C++.</p>
-<p>I give you some examples of this at <a href="#sec-anonymous-struct-literals" class="quarto-xref"><span>Section 2.3</span></a>, where we present anonymous struct literals. Anonymous struct literals are, essentially, struct literals that use type inference to infer the exact type of this particular struct literal. This type inference is done by looking for some minimal hint of the correct data type to be used. You could say that the <code>zig</code> compiler looks for any neighbouring type annotation that might tell him what would be the correct type.</p>
+<p>I give you some examples of this at <a href="#sec-anonymous-struct-literals" class="quarto-xref"><span>Section 2.2.1</span></a>, where we present anonymous struct literals. Anonymous struct literals are, essentially, struct literals that use type inference to infer the exact type of this particular struct literal. This type inference is done by looking for some minimal hint of the correct data type to be used. You could say that the <code>zig</code> compiler looks for any neighbouring type annotation that might tell him what would be the correct type.</p>
 <p>Another commom place where we use type inference in Zig is at switch statements (which we talk about at <a href="#sec-switch" class="quarto-xref"><span>Section 2.1.2</span></a>). So I also gave some other examples of type inference at <a href="#sec-switch" class="quarto-xref"><span>Section 2.1.2</span></a>, where we were inferring the data types of enum values listed inside of switch statements (e.g.&nbsp;<code>.DE</code>). But as another example, take a look at this <code>fence()</code> function reproduced below, which comes from the <a href="https://github.com/ziglang/zig/blob/master/lib/std/atomic.zig"><code>atomic.zig</code> module</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> of the Zig Standard Library.</p>
 <p>There are a lot of things in this function that we haven’t talked about yet, such as: what <code>comptime</code> means? <code>inline</code>? <code>extern</code>? What is this star symbol before <code>Self</code>? Let’s just ignore all of these things, and focus solely on the switch statement that is inside this function.</p>
 <p>We can see that this switch statement uses the <code>order</code> object as input. This <code>order</code> object is one of the inputs of this <code>fence()</code> function, and we can see in the type annotation, that this object is of type <code>AtomicOrder</code>. We can also see a bunch of values inside the switch statements that begins with a dot character, such as <code>.release</code> and <code>.acquire</code>.</p>
 <p>Because these weird values contain a dot character before them, we are asking the <code>zig</code> compiler to infer the types of these values inside the switch statement. Then, the <code>zig</code> compiler is looking into the current context where these values are being used, and it is trying to infer the types of these values.</p>
 <p>Since they are being used inside a switch statement, the <code>zig</code> compiler looks into the type of the input object given to the switch statement, which is the <code>order</code> object in this case. Because this object have type <code>AtomicOrder</code>, the <code>zig</code> compiler infers that these values are data members from this type <code>AtomicOrder</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">inline</span> <span class="kw">fn</span> fence(self: *Self, <span class="kw">comptime</span> order: AtomicOrder) <span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// LLVM's ThreadSanitizer doesn't support the normal fences so we specialize for it.</span></span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (builtin.sanitize_thread) <span class="op">{</span></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> tsan = <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_acquire(addr: *anyopaque) <span class="dt">void</span>;</span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_release(addr: *anyopaque) <span class="dt">void</span>;</span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
-<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> addr: *anyopaque = self;</span>
-<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">switch</span> (order) <span class="op">{</span></span>
-<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>            .unordered, .monotonic =&gt; <span class="bu">@compileError</span>(<span class="bu">@tagName</span>(order) ++ <span class="st">" only applies to atomic loads and stores"</span>),</span>
-<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>            .acquire =&gt; tsan.__tsan_acquire(addr),</span>
-<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>            .release =&gt; tsan.__tsan_release(addr),</span>
-<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a>            .acq_rel, .seq_cst =&gt; <span class="op">{</span></span>
-<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_acquire(addr);</span>
-<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_release(addr);</span>
-<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>,</span>
-<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
-<span id="cb28-19"><a href="#cb28-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb28-20"><a href="#cb28-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-21"><a href="#cb28-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="bu">@fence</span>(order);</span>
-<span id="cb28-22"><a href="#cb28-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">inline</span> <span class="kw">fn</span> fence(self: *Self, <span class="kw">comptime</span> order: AtomicOrder) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// LLVM's ThreadSanitizer doesn't support the normal fences so we specialize for it.</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (builtin.sanitize_thread) <span class="op">{</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> tsan = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_acquire(addr: *anyopaque) <span class="dt">void</span>;</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_release(addr: *anyopaque) <span class="dt">void</span>;</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> addr: *anyopaque = self;</span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">switch</span> (order) <span class="op">{</span></span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>            .unordered, .monotonic =&gt; <span class="bu">@compileError</span>(<span class="bu">@tagName</span>(order) ++ <span class="st">" only applies to atomic loads and stores"</span>),</span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>            .acquire =&gt; tsan.__tsan_acquire(addr),</span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>            .release =&gt; tsan.__tsan_release(addr),</span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a>            .acq_rel, .seq_cst =&gt; <span class="op">{</span></span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_acquire(addr);</span>
+<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_release(addr);</span>
+<span id="cb32-17"><a href="#cb32-17" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>,</span>
+<span id="cb32-18"><a href="#cb32-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb32-19"><a href="#cb32-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb32-20"><a href="#cb32-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-21"><a href="#cb32-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="bu">@fence</span>(order);</span>
+<span id="cb32-22"><a href="#cb32-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>This is how basic type inference is done in Zig. If we didn’t use the dot character before the values inside this switch statement, then, we would be forced to write explicitly the data types of these values. For example, instead of writing <code>.release</code> we would have to write <code>AtomicOrder.release</code>. We would have to do this for every single value in this switch statement, and this is a lot of work. That is why type inference is commonly used on switch statements in Zig.</p>
 </section>
-<section id="modules" class="level2" data-number="2.5">
-<h2 data-number="2.5" class="anchored" data-anchor-id="modules"><span class="header-section-number">2.5</span> Modules</h2>
+<section id="modules" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="modules"><span class="header-section-number">2.4</span> Modules</h2>
 <p>We already talked about what modules are, and also, how to import other modules into you current module through <em>import statements</em>, so that you can use functionality from these other modules in your current module. But in this section, I just want to make it clear that modules are actually structs in Zig.</p>
 <p>In other words, every Zig module (i.e.&nbsp;a <code>.zig</code> file) that you write in your project is internally stored as a struct object. Take the line exposed below as an example. In this line we are importing the Zig Standard Library into our current module.</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>When we want to access the functions and objects from the standard library, we are basically accessing the data members of the struct stored in the <code>std</code> object. That is why we use the same syntax that we use in normal structs, with the dot operator (<code>.</code>) to access the data members and methods of the struct.</p>
 <p>When this “import statement” get’s executed, the result of this expression is a struct object that contains the Zig Standard Library modules, global variables, functions, etc. And this struct object get’s saved (or stored) inside the constant object named <code>std</code>.</p>
 <p>Take the <a href="https://github.com/kprotty/zap/blob/blog/src/thread_pool.zig"><code>thread_pool.zig</code> module from the project <code>zap</code></a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> as an example. This module is written as if it was a big struct. That is why we have a top-level and public <code>init()</code> method written in this module. The idea is that all top-level functions written in this module are methods from the struct, and all top-level objects and struct declarations are data members of this struct. The module is the struct itself.</p>
 <p>So you would import and use this module by doing something like this:</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ThreadPool = <span class="bu">@import</span>(<span class="st">"thread_pool.zig"</span>);</span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_cpus = std.Thread.getCpuCount()</span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> <span class="bu">@panic</span>(<span class="st">"failed to get cpu core count"</span>);</span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_threads = std.math.cast(<span class="dt">u16</span>, num_cpus)</span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> std.math.maxInt(<span class="dt">u16</span>);</span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pool = ThreadPool.init(</span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> .max_threads = num_threads <span class="op">}</span></span>
-<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ThreadPool = <span class="bu">@import</span>(<span class="st">"thread_pool.zig"</span>);</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_cpus = std.Thread.getCpuCount()</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> <span class="bu">@panic</span>(<span class="st">"failed to get cpu core count"</span>);</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_threads = std.math.cast(<span class="dt">u16</span>, num_cpus)</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> std.math.maxInt(<span class="dt">u16</span>);</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pool = ThreadPool.init(</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> .max_threads = num_threads <span class="op">}</span></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 
 </section>
