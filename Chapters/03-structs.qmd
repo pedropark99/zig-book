@@ -434,6 +434,90 @@ for (ns) |i| {
 ```
 
 
+
+## Function parameters are immutable {#sec-fun-pars}
+
+We have already discussed a lot of the syntax behind function declarations at @sec-root-file and @sec-main-file.
+But I want to emphasize a curious fact about function parameters (a.k.a. function arguments) in Zig.
+In summary, function parameters are immutable in Zig.
+
+Take the code example below, where we declare a simple function that just tries to add
+some amount to the input integer, and returns the result back. But if you look closely
+at the body of this `add2()` function, you will notice that we try
+to save the result back into the `x` function argument.
+
+In other words, this function not only use the value that it received through the function argument
+`x`, but it also tries to change the value of this function argument, by assigning the addition result
+into `x`. However, function arguments in Zig are immutable. You cannot change their values, or, you
+cannot assign values to them inside the body's function.
+
+This is the reason why, the code example below do not compile successfully. If you try to compile
+this code example, you get a compile error warning you that you are trying to change the value of a
+immutable (i.e. constant) object.
+
+```{zig}
+#| eval: false
+const std = @import("std");
+fn add2(x: u32) u32 {
+    x = x + 2;
+    return x;
+}
+
+pub fn main() !void {
+    const y = add2(4);
+    std.debug.print("{d}\n", .{y});
+}
+```
+
+```
+t.zig:3:5: error: cannot assign to constant
+    x = x + 2;
+    ^
+```
+
+
+If a function argument receives as input a object whose data type is
+any of the primitive types that we have listed at @sec-primitive-data-types
+this object is always passed by value to the function. In other words, this object
+is copied to the function stack frame.
+
+However, if the input object have a more complex data type, for example, it might
+be a struct instance, or an array, or a union, etc., in cases like that, the `zig` compiler
+will take the liberty of deciding for you which strategy is best. The `zig` compiler will
+pass your object to the function either by value, or by reference. The compiler will always
+choose the strategy that is faster for you.
+This optimization that you get for free is possible only because function arguments are
+immutable in Zig.
+
+To overcome this barrier, we need to take the lead, and explicitly choose to pass the
+object by reference. That is, instead of depending on the `zig` compiler to decide for us, we need
+to explicitly mark the function argument as a pointer. This way, we are telling the compiler
+that this function argument will be passed by reference to the function.
+
+By making it a pointer, we can finally use and alter directly the value of this function argument inside
+the body of the `add2()` function. You can see that the code example below compiles successfully.
+
+```{zig}
+#| auto_main: false
+const std = @import("std");
+fn add2(x: *u32) void {
+    const d: u32 = 2;
+    x.* = x.* + d;
+}
+
+pub fn main() !void {
+    var x: u32 = 4;
+    add2(&x);
+    std.debug.print("Result: {d}\n", .{x});
+}
+```
+
+```
+Result: 6
+```
+
+
+
 ## Structs and OOP {#sec-structs-and-oop}
 
 Zig is a language more closely related to C (which is a procedural language),
@@ -599,7 +683,7 @@ const Vec3 = struct {
 ```
 
 
-### The `self` method argument
+### The `self` method argument {#sec-self-arg}
 
 In every language that have OOP, when we declare a method of some class or struct, we
 usually declare this method as a function that have a `self` argument.
@@ -672,17 +756,17 @@ Distance: 3.3970575502926055
 
 Sometimes you don't need to care about the state of your struct object. Sometimes, you just need
 to instantiate and use the objects, without altering their state. You can notice that when you have methods
-inside this struct object that might use the values that are present the data members, but they
-do not alter the values in the data members of structs in anyway.
+inside your struct declaration that might use the values that are present in the data members, but they
+do not alter the values in the data members of the struct in anyway.
 
-The `Vec3` struct that we presented in the previous section is an example of that.
+The `Vec3` struct that was presented at @sec-self-arg is an example of that.
 This struct have a single method named `distance()`, and this method do use the values
 present in all three data members of the struct (`x`, `y` and `z`). But at the same time,
 this method do not change the values of these data members in any point.
 
 As a result of that, when we create `Vec3` objects we usually create them as
-constant objects, like the `v1` and `v2` objects presented in the previous
-code example. We can create them as variable objects with the `var` keyword,
+constant objects, like the `v1` and `v2` objects presented at @sec-self-arg.
+We can create them as variable objects with the `var` keyword,
 if we want to. But because the methods of this `Vec3` struct do not change
 the state of the objects in any point, is unnecessary to mark them
 as variable objects.
@@ -694,7 +778,7 @@ More specifically, when you have a method in a struct that changes the state
 of the object (i.e. change the value of a data member), the `self` argument
 in this method must be annotated in a different manner.
 
-As I described in the previous section, the `self` argument in methods of
+As I described at @sec-self-arg, the `self` argument in methods of
 a struct is the argument that receives as input the object from which the method
 was called from. We usually annotate this argument in the methods by writing `self`,
 followed by the colon character (`:`), and the data type of the struct to which
@@ -707,7 +791,7 @@ method.
 
 But what if we do have a method that alters the state of the object, by altering the
 values of it's data members. How should we annotate `self` in this instance? The answer is:
-"we should pass a pointer of `x` to `self`, and not simply a copy of `x` to `self`".
+"we should annotate `self` as a pointer of `x`, instead of just `x`".
 In other words, you should annotate `self` as `self: *x`, instead of annotating it
 as `self: x`.
 
@@ -746,7 +830,7 @@ to our `Vec3` struct named `double()`. This method essentially doubles the
 coordinate values of our vector object. Also notice that, in the
 case of the `double()` method, we annotated the `self` argument as `*Vec3`,
 indicating that this argument receives a pointer (or a reference, if you prefer to call it this way)
-to a `Vec3` object, instead of receiving a copy of the object directly, as input.
+to a `Vec3` object as input.
 
 ```{zig}
 #| eval: false
@@ -763,8 +847,8 @@ Doubled: 8.4
 
 
 
-If you change the `self` argument in this `double()` method to `self: Vec3`, like in the
-`distance()` method, you will get the error exposed below as result. Notice that this
+Now, if you change the `self` argument in this `double()` method to `self: Vec3`, like in the
+`distance()` method, you will get the compiler error exposed below as result. Notice that this
 error message is indicating a line from the `double()` method body,
 indicating that you cannot alter the value of the `x` data member.
 
@@ -774,10 +858,8 @@ indicating that you cannot alter the value of the `x` data member.
 ```
 
 This error message indicates that the `x` data member belongs to a constant object,
-and, because of that, it cannot be changed. Even though we marked the `v3` object
-that we have created in the previous code example as a variable object.
-So even though this `x` data member belongs to a variable object in our code, this error
-message is pointing to the opposite direction.
+and, because of that, it cannot be changed. Ultimately, this error message
+is telling us that the `self` argument is constant.
 
 ```
 t.zig:16:13: error: cannot assign to constant
@@ -785,9 +867,22 @@ t.zig:16:13: error: cannot assign to constant
         ~~~~^~
 ```
 
-But this error message is misleading, because the only thing that we have changed
-is the `self` argument signature from `*Vec3` to `Vec3` in the `double()` method. So, just remember this
-general rule below about your method declarations:
+If you take some time, and think hard about this error message, you will understand it.
+You already have the tools to understand why we are getting this error message.
+We have talked about it already at @sec-fun-pars.
+So remember, every function argument is immutable in Zig, and `self`
+is included in this rule.
+
+It does not matter if the object that you pass as input to the function argument is
+a variable object or not. In this example, we marked the `v3` object as a variable object.
+But this does not matter. Because it is not about the input object, it is about
+the function argument.
+
+The problem begins when we try to alter the value of `self` directly, which is a function argument,
+and, every function argument is immutable by default. You may quest yourself how can we overcome
+this barrier, and once again, the solution was also discussed at @sec-fun-pars.
+We overcome this barrier, by explicitly marking the `self` argument as a pointer.
+
 
 ::: {.callout-note}
 If a method of your `x` struct alters the state of the object, by
@@ -795,10 +890,10 @@ changing the value of any data member, then, remember to use `self: *x`,
 instead of `self: x` in the function signature of this method.
 :::
 
+
 You could also interpret the content discussed in this section as:
 "if you need to alter the state of your `x` struct object in one of it's methods,
-you must pass the `x` struct object by reference to the `self` argument of this method,
-instead of passing it by value".
+you must explicitly pass the `x` struct object by reference to the `self` argument of this method".
 
 
 
