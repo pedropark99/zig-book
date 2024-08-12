@@ -526,18 +526,22 @@ Exiting function ...</code></pre>
     ^</code></pre>
 <p>If a function argument receives as input a object whose data type is any of the primitive types that we have listed at <a href="01-zig-weird.html#sec-primitive-data-types" class="quarto-xref"><span>Section 1.5</span></a> this object is always passed by value to the function. In other words, this object is copied to the function stack frame.</p>
 <p>However, if the input object have a more complex data type, for example, it might be a struct instance, or an array, or a union, etc., in cases like that, the <code>zig</code> compiler will take the liberty of deciding for you which strategy is best. The <code>zig</code> compiler will pass your object to the function either by value, or by reference. The compiler will always choose the strategy that is faster for you. This optimization that you get for free is possible only because function arguments are immutable in Zig.</p>
+<p>To overcome this barrier, we need to take the lead, and explicitly choose to pass the object by reference. That is, instead of depending on the <code>zig</code> compiler to decide for us, we need to explicitly mark the function argument as a pointer. This way, we are telling the compiler that this function argument will be passed by reference to the function.</p>
+<p>By making it a pointer, we can finally use and alter directly the value of this function argument inside the body of the <code>add2()</code> function. You can see that the code example below compiles successfully.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add2(x: *<span class="dt">u32</span>) <span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    x = x + <span class="dv">2</span>;</span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> x: <span class="dt">u32</span> = <span class="bu">@intCast</span>(<span class="dv">4</span>);</span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>    add2(&amp;x);</span>
-<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>x<span class="op">}</span>);</span>
-<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> d: <span class="dt">u32</span> = <span class="dv">2</span>;</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>    x.* = x.* + d;</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> x: <span class="dt">u32</span> = <span class="dv">4</span>;</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>    add2(&amp;x);</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Result: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>x<span class="op">}</span>);</span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<pre><code>Result: 6</code></pre>
 </section>
 <section id="sec-structs-and-oop" class="level2" data-number="2.3">
 <h2 data-number="2.3" class="anchored" data-anchor-id="sec-structs-and-oop"><span class="header-section-number">2.3</span> Structs and OOP</h2>
@@ -549,33 +553,33 @@ Exiting function ...</code></pre>
 <p>Notice the data members of this struct, <code>id</code>, <code>name</code> and <code>email</code>. Every data member have it’s type explicitly annotated, with the colon character (<code>:</code>) syntax that we described earlier at <a href="01-zig-weird.html#sec-root-file" class="quarto-xref"><span>Section 1.2.2</span></a>. But also notice that every line in the struct body that describes a data member, ends with a comma character (<code>,</code>). So every time you declare a data member in your Zig code, always end the line with a comma character, instead of ending it with the traditional semicolon character (<code>;</code>).</p>
 <p>Next, also notice in this example, that we registrated an <code>init()</code> function as a method of this <code>User</code> struct. This <code>init()</code> method is the constructor method that you use to instantiate every new <code>User</code> object. That is why this <code>init()</code> function return an <code>User</code> object as result.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> User = <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>    id: <span class="dt">u64</span>,</span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    name: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
-<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    email: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
-<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(id: <span class="dt">u64</span>,</span>
-<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>                name: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
-<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>                email: []<span class="kw">const</span> <span class="dt">u8</span>) User <span class="op">{</span></span>
-<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> User <span class="op">{</span></span>
-<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>            .id = id,</span>
-<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>            .name = name,</span>
-<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>            .email = email</span>
-<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
-<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> print_name(self: User) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>self.name<span class="op">}</span>);</span>
-<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
-<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> u = User.init(<span class="dv">1</span>, <span class="st">"pedro"</span>, <span class="st">"email@gmail.com"</span>);</span>
-<span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> u.print_name();</span>
-<span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> User = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>    id: <span class="dt">u64</span>,</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>    name: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>    email: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(id: <span class="dt">u64</span>,</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>                name: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>                email: []<span class="kw">const</span> <span class="dt">u8</span>) User <span class="op">{</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> User <span class="op">{</span></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>            .id = id,</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>            .name = name,</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>            .email = email</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> print_name(self: User) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>self.name<span class="op">}</span>);</span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> u = User.init(<span class="dv">1</span>, <span class="st">"pedro"</span>, <span class="st">"email@gmail.com"</span>);</span>
+<span id="cb27-26"><a href="#cb27-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> u.print_name();</span>
+<span id="cb27-27"><a href="#cb27-27" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>pedro</code></pre>
 </div>
@@ -587,23 +591,23 @@ Exiting function ...</code></pre>
 <h3 data-number="2.3.1" class="anchored" data-anchor-id="sec-anonymous-struct-literals"><span class="header-section-number">2.3.1</span> Anonymous struct literals</h3>
 <p>You can declare a struct object as a literal value. When we do that, we normally specify the data type of this struct literal by writing it’s data type just before the opening curly braces. For example, I could write a struct literal of type <code>User</code> that we defined in the previous section like this:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> eu = User <span class="op">{</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    .id = <span class="dv">1</span>,</span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"Pedro"</span>,</span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    .email = <span class="st">"someemail@gmail.com"</span></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>_ = eu;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> eu = User <span class="op">{</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>    .id = <span class="dv">1</span>,</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"Pedro"</span>,</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    .email = <span class="st">"someemail@gmail.com"</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>_ = eu;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>However, in Zig, we can also write an anonymous struct literal. That is, you can write a struct literal, but not especify explicitly the type of this particular struct. An anonymous struct is written by using the syntax <code>.{}</code>. So, we essentially replaced the explicit type of the struct literal with a dot character (<code>.</code>).</p>
 <p>As we described at <a href="#sec-type-inference" class="quarto-xref"><span>Section 2.4</span></a>, when you put a dot before a struct literal, the type of this struct literal is automatically inferred by the <code>zig</code> compiler. In essence, the <code>zig</code> compiler will look for some hint of what is the type of that struct. It can be the type annotation of an function argument, or the return type annotation of the function that you are using, or the type annotation of a variable. If the compiler do find such type annotation, then, it will use this type in your literal struct.</p>
 <p>Anonymous structs are very commom to use in function arguments in Zig. One example that you have seen already constantly, is the <code>print()</code> function from the <code>stdout</code> object. This function takes two arguments. The first argument, is a template string, which should contain string format specifiers in it, which tells how the values provided in the second argument should be printed into the message.</p>
 <p>While the second argument is a struct literal that lists the values to be printed into the template message specified in the first argument. You normally want to use an anonymous struct literal here, so that, the <code>zig</code> compiler do the job of specifying the type of this particular anonymous struct for you.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Hello, {s}!</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="st">"world"</span><span class="op">}</span>);</span>
-<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Hello, {s}!</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="st">"world"</span><span class="op">}</span>);</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Hello, world!</code></pre>
 </div>
@@ -614,11 +618,11 @@ Exiting function ...</code></pre>
 <p>Types in Zig must be <code>const</code> or <code>comptime</code> (we are going to talk more about comptime at <a href="10-stack-project.html#sec-comptime" class="quarto-xref"><span>Section 12.1</span></a>). What this means is that you cannot create a new data type, and mark it as variable with the <code>var</code> keyword. So struct declarations are always constant. You cannot declare a new struct using the <code>var</code> keyword. It must be <code>const</code>.</p>
 <p>In the <code>Vec3</code> example below, this declaration is allowed because I’m using the <code>const</code> keyword to declare this new data type.</p>
 <div class="cell" data-build_type="lib">
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Vec3 = <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>    x: <span class="dt">f64</span>,</span>
-<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>    y: <span class="dt">f64</span>,</span>
-<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>    z: <span class="dt">f64</span>,</span>
-<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Vec3 = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    x: <span class="dt">f64</span>,</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    y: <span class="dt">f64</span>,</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>    z: <span class="dt">f64</span>,</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="sec-self-arg" class="level3" data-number="2.3.3">
@@ -627,34 +631,34 @@ Exiting function ...</code></pre>
 <p>Is not mandatory to use this <code>self</code> argument. But why would you not use this <code>self</code> argument? There is no reason to not use it. Because the only way to get access to the data stored in the data members of your struct is to access them through this <code>self</code> argument. If you don’t need to use the data in the data members of your struct inside your method, then, you very likely don’t need a method, you can just simply declare this logic as a simple function, outside of your struct declaration.</p>
 <p>Take the <code>Vec3</code> struct below. Inside this <code>Vec3</code> struct we declared a method named <code>distance()</code>. This method calculates the distance between two <code>Vec3</code> objects, by following the distance formula in euclidean space. Notice that this <code>distance()</code> method takes two <code>Vec3</code> objects as input, <code>self</code> and <code>other</code>.</p>
 <div class="cell" data-build_type="lib">
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> m = std.math;</span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Vec3 = <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>    x: <span class="dt">f64</span>,</span>
-<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>    y: <span class="dt">f64</span>,</span>
-<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>    z: <span class="dt">f64</span>,</span>
-<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> distance(self: Vec3, other: Vec3) <span class="dt">f64</span> <span class="op">{</span></span>
-<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> xd = m.pow(<span class="dt">f64</span>, self.x - other.x, <span class="fl">2.0</span>);</span>
-<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> yd = m.pow(<span class="dt">f64</span>, self.y - other.y, <span class="fl">2.0</span>);</span>
-<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> zd = m.pow(<span class="dt">f64</span>, self.z - other.z, <span class="fl">2.0</span>);</span>
-<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> m.sqrt(xd + yd + zd);</span>
-<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> m = std.math;</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Vec3 = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>    x: <span class="dt">f64</span>,</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>    y: <span class="dt">f64</span>,</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>    z: <span class="dt">f64</span>,</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> distance(self: Vec3, other: Vec3) <span class="dt">f64</span> <span class="op">{</span></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> xd = m.pow(<span class="dt">f64</span>, self.x - other.x, <span class="fl">2.0</span>);</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> yd = m.pow(<span class="dt">f64</span>, self.y - other.y, <span class="fl">2.0</span>);</span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> zd = m.pow(<span class="dt">f64</span>, self.z - other.z, <span class="fl">2.0</span>);</span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> m.sqrt(xd + yd + zd);</span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>The <code>self</code> argument corresponds to the <code>Vec3</code> object from which this <code>distance()</code> method is being called from. While the <code>other</code> is a separate <code>Vec3</code> object that is given as input to this method. In the example below, the <code>self</code> argument corresponds to the object <code>v1</code>, because the <code>distance()</code> method is being called from the <code>v1</code> object, while the <code>other</code> argument corresponds to the object <code>v2</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v1 = Vec3 <span class="op">{</span></span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>    .x = <span class="fl">4.2</span>, .y = <span class="fl">2.4</span>, .z = <span class="fl">0.9</span></span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
-<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v2 = Vec3 <span class="op">{</span></span>
-<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>    .x = <span class="fl">5.1</span>, .y = <span class="fl">5.6</span>, .z = <span class="fl">1.6</span></span>
-<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
-<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>std.debug.print(</span>
-<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Distance: {d}</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span>v1.distance(v2)<span class="op">}</span></span>
-<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v1 = Vec3 <span class="op">{</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>    .x = <span class="fl">4.2</span>, .y = <span class="fl">2.4</span>, .z = <span class="fl">0.9</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v2 = Vec3 <span class="op">{</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>    .x = <span class="fl">5.1</span>, .y = <span class="fl">5.6</span>, .z = <span class="fl">1.6</span></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>std.debug.print(</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Distance: {d}</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span>v1.distance(v2)<span class="op">}</span></span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Distance: 3.3970575502926055</code></pre>
 </section>
@@ -669,39 +673,39 @@ Exiting function ...</code></pre>
 <p>But what if we do have a method that alters the state of the object, by altering the values of it’s data members. How should we annotate <code>self</code> in this instance? The answer is: “we should annotate <code>self</code> as a pointer of <code>x</code>, instead of just <code>x</code>”. In other words, you should annotate <code>self</code> as <code>self: *x</code>, instead of annotating it as <code>self: x</code>.</p>
 <p>If we create a new method inside the <code>Vec3</code> object that, for example, expands the vector by multiplying it’s coordinates by a factor o two, then, we need to follow this rule specified in the previous paragraph. The code example below demonstrates this idea:</p>
 <div class="cell" data-build_type="lib">
-<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> m = std.math;</span>
-<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Vec3 = <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>    x: <span class="dt">f64</span>,</span>
-<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>    y: <span class="dt">f64</span>,</span>
-<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>    z: <span class="dt">f64</span>,</span>
-<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> distance(self: Vec3, other: Vec3) <span class="dt">f64</span> <span class="op">{</span></span>
-<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> xd = m.pow(<span class="dt">f64</span>, self.x - other.x, <span class="fl">2.0</span>);</span>
-<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> yd = m.pow(<span class="dt">f64</span>, self.y - other.y, <span class="fl">2.0</span>);</span>
-<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> zd = m.pow(<span class="dt">f64</span>, self.z - other.z, <span class="fl">2.0</span>);</span>
-<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> m.sqrt(xd + yd + zd);</span>
-<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-15"><a href="#cb35-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> double(self: *Vec3) <span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb35-16"><a href="#cb35-16" aria-hidden="true" tabindex="-1"></a>        self.x = self.x * <span class="fl">2.0</span>;</span>
-<span id="cb35-17"><a href="#cb35-17" aria-hidden="true" tabindex="-1"></a>        self.y = self.y * <span class="fl">2.0</span>;</span>
-<span id="cb35-18"><a href="#cb35-18" aria-hidden="true" tabindex="-1"></a>        self.z = self.z * <span class="fl">2.0</span>;</span>
-<span id="cb35-19"><a href="#cb35-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb35-20"><a href="#cb35-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> m = std.math;</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Vec3 = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>    x: <span class="dt">f64</span>,</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>    y: <span class="dt">f64</span>,</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>    z: <span class="dt">f64</span>,</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> distance(self: Vec3, other: Vec3) <span class="dt">f64</span> <span class="op">{</span></span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> xd = m.pow(<span class="dt">f64</span>, self.x - other.x, <span class="fl">2.0</span>);</span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> yd = m.pow(<span class="dt">f64</span>, self.y - other.y, <span class="fl">2.0</span>);</span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> zd = m.pow(<span class="dt">f64</span>, self.z - other.z, <span class="fl">2.0</span>);</span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> m.sqrt(xd + yd + zd);</span>
+<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb36-14"><a href="#cb36-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-15"><a href="#cb36-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> double(self: *Vec3) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb36-16"><a href="#cb36-16" aria-hidden="true" tabindex="-1"></a>        self.x = self.x * <span class="fl">2.0</span>;</span>
+<span id="cb36-17"><a href="#cb36-17" aria-hidden="true" tabindex="-1"></a>        self.y = self.y * <span class="fl">2.0</span>;</span>
+<span id="cb36-18"><a href="#cb36-18" aria-hidden="true" tabindex="-1"></a>        self.z = self.z * <span class="fl">2.0</span>;</span>
+<span id="cb36-19"><a href="#cb36-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb36-20"><a href="#cb36-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Notice in the code example above that we have added a new method to our <code>Vec3</code> struct named <code>double()</code>. This method essentially doubles the coordinate values of our vector object. Also notice that, in the case of the <code>double()</code> method, we annotated the <code>self</code> argument as <code>*Vec3</code>, indicating that this argument receives a pointer (or a reference, if you prefer to call it this way) to a <code>Vec3</code> object as input.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> v3 = Vec3 <span class="op">{</span></span>
-<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>    .x = <span class="fl">4.2</span>, .y = <span class="fl">2.4</span>, .z = <span class="fl">0.9</span></span>
-<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
-<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>v3.double();</span>
-<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Doubled: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>v3.x<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> v3 = Vec3 <span class="op">{</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>    .x = <span class="fl">4.2</span>, .y = <span class="fl">2.4</span>, .z = <span class="fl">0.9</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>v3.double();</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Doubled: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>v3.x<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Doubled: 8.4</code></pre>
 <p>Now, if you change the <code>self</code> argument in this <code>double()</code> method to <code>self: Vec3</code>, like in the <code>distance()</code> method, you will get the compiler error exposed below as result. Notice that this error message is indicating a line from the <code>double()</code> method body, indicating that you cannot alter the value of the <code>x</code> data member.</p>
-<div class="sourceCode" id="cb38"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co">// If we change the function signature of double to:</span></span>
-<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> double(self: Vec3) <span class="dt">void</span> <span class="op">{</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb39"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co">// If we change the function signature of double to:</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> double(self: Vec3) <span class="dt">void</span> <span class="op">{</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>This error message indicates that the <code>x</code> data member belongs to a constant object, and, because of that, it cannot be changed. Ultimately, this error message is telling us that the <code>self</code> argument is constant.</p>
 <pre><code>t.zig:16:13: error: cannot assign to constant
         self.x = self.x * 2.0;
@@ -736,28 +740,28 @@ Note
 <p>Because these weird values contain a dot character before them, we are asking the <code>zig</code> compiler to infer the types of these values inside the switch statement. Then, the <code>zig</code> compiler is looking into the current context where these values are being used, and it is trying to infer the types of these values.</p>
 <p>Since they are being used inside a switch statement, the <code>zig</code> compiler looks into the type of the input object given to the switch statement, which is the <code>order</code> object in this case. Because this object have type <code>AtomicOrder</code>, the <code>zig</code> compiler infers that these values are data members from this type <code>AtomicOrder</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">inline</span> <span class="kw">fn</span> fence(self: *Self, <span class="kw">comptime</span> order: AtomicOrder) <span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// LLVM's ThreadSanitizer doesn't support the normal fences so we specialize for it.</span></span>
-<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (builtin.sanitize_thread) <span class="op">{</span></span>
-<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> tsan = <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_acquire(addr: *anyopaque) <span class="dt">void</span>;</span>
-<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_release(addr: *anyopaque) <span class="dt">void</span>;</span>
-<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
-<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> addr: *anyopaque = self;</span>
-<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">switch</span> (order) <span class="op">{</span></span>
-<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a>            .unordered, .monotonic =&gt; <span class="bu">@compileError</span>(<span class="bu">@tagName</span>(order) ++ <span class="st">" only applies to atomic loads and stores"</span>),</span>
-<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a>            .acquire =&gt; tsan.__tsan_acquire(addr),</span>
-<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>            .release =&gt; tsan.__tsan_release(addr),</span>
-<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a>            .acq_rel, .seq_cst =&gt; <span class="op">{</span></span>
-<span id="cb40-15"><a href="#cb40-15" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_acquire(addr);</span>
-<span id="cb40-16"><a href="#cb40-16" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_release(addr);</span>
-<span id="cb40-17"><a href="#cb40-17" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>,</span>
-<span id="cb40-18"><a href="#cb40-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
-<span id="cb40-19"><a href="#cb40-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb40-20"><a href="#cb40-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-21"><a href="#cb40-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="bu">@fence</span>(order);</span>
-<span id="cb40-22"><a href="#cb40-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">inline</span> <span class="kw">fn</span> fence(self: *Self, <span class="kw">comptime</span> order: AtomicOrder) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// LLVM's ThreadSanitizer doesn't support the normal fences so we specialize for it.</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (builtin.sanitize_thread) <span class="op">{</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> tsan = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_acquire(addr: *anyopaque) <span class="dt">void</span>;</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_release(addr: *anyopaque) <span class="dt">void</span>;</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> addr: *anyopaque = self;</span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">switch</span> (order) <span class="op">{</span></span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>            .unordered, .monotonic =&gt; <span class="bu">@compileError</span>(<span class="bu">@tagName</span>(order) ++ <span class="st">" only applies to atomic loads and stores"</span>),</span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>            .acquire =&gt; tsan.__tsan_acquire(addr),</span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>            .release =&gt; tsan.__tsan_release(addr),</span>
+<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>            .acq_rel, .seq_cst =&gt; <span class="op">{</span></span>
+<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_acquire(addr);</span>
+<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_release(addr);</span>
+<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>,</span>
+<span id="cb41-18"><a href="#cb41-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb41-19"><a href="#cb41-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb41-20"><a href="#cb41-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-21"><a href="#cb41-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="bu">@fence</span>(order);</span>
+<span id="cb41-22"><a href="#cb41-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>This is how basic type inference is done in Zig. If we didn’t use the dot character before the values inside this switch statement, then, we would be forced to write explicitly the data types of these values. For example, instead of writing <code>.release</code> we would have to write <code>AtomicOrder.release</code>. We would have to do this for every single value in this switch statement, and this is a lot of work. That is why type inference is commonly used on switch statements in Zig.</p>
 </section>
@@ -765,20 +769,20 @@ Note
 <h2 data-number="2.5" class="anchored" data-anchor-id="modules"><span class="header-section-number">2.5</span> Modules</h2>
 <p>We already talked about what modules are, and also, how to import other modules into you current module through <em>import statements</em>, so that you can use functionality from these other modules in your current module. But in this section, I just want to make it clear that modules are actually structs in Zig.</p>
 <p>In other words, every Zig module (i.e.&nbsp;a <code>.zig</code> file) that you write in your project is internally stored as a struct object. Take the line exposed below as an example. In this line we are importing the Zig Standard Library into our current module.</p>
-<div class="sourceCode" id="cb41"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb42"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>When we want to access the functions and objects from the standard library, we are basically accessing the data members of the struct stored in the <code>std</code> object. That is why we use the same syntax that we use in normal structs, with the dot operator (<code>.</code>) to access the data members and methods of the struct.</p>
 <p>When this “import statement” get’s executed, the result of this expression is a struct object that contains the Zig Standard Library modules, global variables, functions, etc. And this struct object get’s saved (or stored) inside the constant object named <code>std</code>.</p>
 <p>Take the <a href="https://github.com/kprotty/zap/blob/blog/src/thread_pool.zig"><code>thread_pool.zig</code> module from the project <code>zap</code></a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> as an example. This module is written as if it was a big struct. That is why we have a top-level and public <code>init()</code> method written in this module. The idea is that all top-level functions written in this module are methods from the struct, and all top-level objects and struct declarations are data members of this struct. The module is the struct itself.</p>
 <p>So you would import and use this module by doing something like this:</p>
-<div class="sourceCode" id="cb42"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ThreadPool = <span class="bu">@import</span>(<span class="st">"thread_pool.zig"</span>);</span>
-<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_cpus = std.Thread.getCpuCount()</span>
-<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> <span class="bu">@panic</span>(<span class="st">"failed to get cpu core count"</span>);</span>
-<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_threads = std.math.cast(<span class="dt">u16</span>, num_cpus)</span>
-<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> std.math.maxInt(<span class="dt">u16</span>);</span>
-<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pool = ThreadPool.init(</span>
-<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> .max_threads = num_threads <span class="op">}</span></span>
-<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb43"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ThreadPool = <span class="bu">@import</span>(<span class="st">"thread_pool.zig"</span>);</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_cpus = std.Thread.getCpuCount()</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> <span class="bu">@panic</span>(<span class="st">"failed to get cpu core count"</span>);</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_threads = std.math.cast(<span class="dt">u16</span>, num_cpus)</span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> std.math.maxInt(<span class="dt">u16</span>);</span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pool = ThreadPool.init(</span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> .max_threads = num_threads <span class="op">}</span></span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 
 </section>
