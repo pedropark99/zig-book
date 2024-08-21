@@ -26,7 +26,7 @@ descriptors for the *standard channels* of your system (`stdout` and `stdin`), a
 functions to create and use I/O streams.
 
 
-## Input/Output basics
+## Input/Output basics {#sec-io-basics}
 
 If you have programming experience in a high-level language, you certainly have used before
 the input and output functionalities of this language. In other words, you certainly have
@@ -72,29 +72,71 @@ That is, your OS is the intermediary between every input/output operation made i
 regardless of the programming language that you are using.
 
 
-### The writer and reader pattern
+### The writer and reader pattern {#sec-writer-reader}
 
-In Zig, there is a pattern around input/output (IO). I (the author of this book) don't know if there is an official name for this pattern,
+In Zig, there is a pattern around input/output (IO). I (the author of this book) don't know if there is an official name for this pattern.
 But here, in this book, I will call it the "writer and reader pattern". In essence, every IO operation in Zig is
 made through either a `GenericReader` or a `GenericWriter` object[^gen-zig].
 
 These two data types come from the `std.io` module of the Zig Standard Library. As their names suggests, a
-`GenericReader` is an object that offers tools to read data from "something" (or somewhere), while a `GenericWriter`
+`GenericReader` is an object that offers tools to read data from "something" (or "somewhere"), while a `GenericWriter`
 offers tools to write data into this "something".
-This "something" might be a lot of things: a file that exists in your filesystem; or, it might be an existing network socket of your system[^sock]; or,
+This "something" might be different things: like a file that exists in your filesystem; or, it might be a network socket of your system[^sock]; or,
 a continuous stream of data, like a standard input device from your system, that might be constantly
-receiving new data from users, or like a live chat in a game that is constantly receiving and displaying new messages from the
-users of the game.
+receiving new data from users, or, as another example, a live chat in a game that is constantly receiving and displaying new messages from the
+players of the game.
 
 [^gen-zig]: Previously, these objects were known as the `Reader` and `Writer` objects.
 [^sock]: The socket objects that we have created at @sec-create-socket, are examples of network sockets.
 
-So, if you want to **read** data from something, or somewhere, it means that you need to create a `GenericReader` object.
-But if you need instead, to **write** data into this "something", then, you need to create a `GenericWriter` object.
-We normally create such objects through a file descriptor object.
+So, if you want to **read** data from something, or somewhere, it means that you need to use a `GenericReader` object.
+But if you need instead, to **write** data into this "something", then, you need to use a `GenericWriter` object instead.
+Both of these objects are normally created from a file descriptor object. More specifically, through the `writer()` and `reader()`
+methods of this file descriptor object. If you are not familiar with this type of object, go to the
+next section.
+
+Every `GenericWriter` object have methods like `print()`, which allows you to write/send a formatted string
+(i.e. this formatted string is like a `f` string in Python, or, similar to the `printf()` C function)
+into the "something" (file, socket, stream, etc.) that you are using. It also have a `writeAll()` method, which allows you to
+write a string, or, an array of bytes into the "something".
+
+Likewise, every `GenericReader` object have methods like `readAll()`, which allows you to read the
+data from the "something" (file, socket, stream, etc.) until it fills a particular array (i.e. a "buffer") object.
+In other words, if you provide an array object of 300 `u8` values to `readAll()`, then, this method attempts to read 300 bytes
+of data from the "something", and it stores them into the array object that you have provided.
+
+We also have other methods, like the `readAtLeast()` method,
+which allows you to specify how many bytes exactly you want to read from the "something".
+In more details, if you give the number $n$ as input to this method, then, it will attempt to read at least $n$ bytes of data from the "something".
+The "something" might have less than $n$ bytes of data available for you to read, so, it is not garanteed
+that you will get precisely $n$ bytes as result.
+
+Another useful method is `readUntilDelimiterOrEof()`. In this method, you specify a "delimiter character".
+The idea is that this function will attempt to read as many bytes of data as possible from the "something",
+until it encounters the end of the stream, or, it encounters the "delimiter character" that you have specified.
+
+If you don't know exactly how many bytes will come from the "something", you may find the `readAllAlloc()` method
+useful. In essence, you provide an allocator object to this method, so that it can allocate more space if needed.
+As consequence, this method will try to read all bytes of the "something", and, if it runs out of space at some point
+during the "reading process", it uses the allocator object to allocate more space to continue reading the bytes.
+As result, this method returns a slice to the array object containing all the bytes read.
+
+This is just a quick description of the methods present in these types of objects. But I recommend you
+to read the official docs, both for
+[`GenericWriter`](https://ziglang.org/documentation/master/std/#std.io.GenericWriter)[^gen-write] and
+[`GenericReader`](https://ziglang.org/documentation/master/std/#std.io.GenericReader)[^gen-read].
+I also think it is a good idea to read the source code of the modules in the Zig Standard Library
+that defines the methods present in these objects, which are the
+[`Reader.zig`](https://github.com/ziglang/zig/blob/master/lib/std/io/Reader.zig)[^mod-read]
+and [`Writer.zig`]()[^mod-write].
+
+[^gen-read]: <https://ziglang.org/documentation/master/std/#std.io.GenericReader>.
+[^gen-write]: <https://ziglang.org/documentation/master/std/#std.io.GenericWriter>.
+[^mod-read]: <https://github.com/ziglang/zig/blob/master/lib/std/io/Reader.zig>.
+[^mod-write]: <https://github.com/ziglang/zig/blob/master/lib/std/io/Writer.zig>.
 
 
-### Introducing file descriptors
+### Introducing file descriptors {#sec-file-descriptor}
 
 A "file descriptor" object is a core component behind every I/O operation that is made in any operating system (OS).
 Such object is an identifier for a particular input/output (IO) resource from your OS [@wiki_file_descriptor].
@@ -105,9 +147,10 @@ It describes and identifies this particular resource. An IO resource might be:
 - other types of stream channels.
 - a pipeline (or just "pipe") in your terminal[^pipes].
 
-[^pipes]: Pipeline is a mechanism for inter-process communication. You could also interpret a pipeline as a "set of processes that are chained together, through the standard input/output devices of the system". At Linux for example, a pipeline is created inside a terminal, by connecting two or more terminal commands with the "pipe" character (`|`).
+[^pipes]: A pipeline is a mechanism for inter-process communication, or, inter-process IO. You could also interpret a pipeline as a "set of processes that are chained together, through the standard input/output devices of the system". At Linux for example, a pipeline is created inside a terminal, by connecting two or more terminal commands with the "pipe" character (`|`).
 
-From the bulletpoints listed aboved, we know that although the term "file" is present, a "file descriptor" might be more than a file.
+From the bulletpoints listed aboved, we know that although the term "file" is present,
+a "file descriptor" might describe something more than just a file.
 This concept of a "file descriptor" comes from the Portable Operating System Interface (POSIX) API,
 which is a set of standards that guide how operating systems across the world should be implemented,
 to maintain compatibility between them.
@@ -119,8 +162,17 @@ is open to "read operations", while "write operations" are closed and not author
 These IO modes are essentially, the modes that you provide to the argument `mode`
 from the `fopen()` C function, and also, from the `open()` Python built-in function.
 
-In C, a "file descriptor" is a `FILE` pointer. But in Zig, a file descriptor is a `File` object.
-This data type `File` is described in the `std.fs` module of the Zig Standard Library.
+In C, a "file descriptor" is a `FILE` pointer, but, in Zig, a file descriptor is a `File` object.
+This data type (`File`) is described in the `std.fs` module of the Zig Standard Library.
+We normally don't create a `File` object directly in our Zig code. Instead, we normally get such object as result when we
+open an IO resource. In other words, we normally ask to our OS to open and use a particular IO
+resource, and, if the OS do open succesfully this IO resource, the OS normally handles back to us
+a file descriptor to this particular IO resource.
+
+So you usually get a `File` object by using functions and methods from the Zig Standard Library
+that asks the OS to open some IO resources, like the `openFile()` method that opens a file in the
+filesystem. The `net.Stream` object that we have created at @sec-create-socket is also a type of
+file descriptor object.
 
 
 ### The *standard output*
@@ -221,22 +273,76 @@ the purpose of this channel.
 
 
 
+
+
+## Buffered IO
+
+As we described at @sec-io-basics, input/output (IO) operations are made directly by the operating system.
+It is the OS that manages the IO resource that you want to use for your IO operations.
+The consequence of this fact is that IO operations are heavilly based on system calls (i.e. calling the operating system directly).
+
+Just to be clear, there is nothing particularly wrong with system calls. We use them all the time on
+any serious codebase written in any low-level programming language. However, system calls are
+always orders of magnitude slower than many different types of operations.
+
+So is perfectly fine to use a system call once in a while. But when these system calls start to be used often,
+you can clearly notice most of the times the lost of performance in your application. So, the good rule of thumbs
+is to use a system call only when it is needed, and also, only in infrequent situations, to reduce
+the number of system calls performed to a minimum.
+
+Buffered IO is a strategy to achieve better performance. It is used to reduce the number of system calls made by IO operations, and, as
+consequence, achieve a much higher performance in these IO operations. IO operations made through a `FILE` pointer in C are buffered
+by default, so, at least in C, you don't need to worry about this subject. But IO operations in both Rust and Zig are not
+buffered depending on which file descriptor, functions and methods that you are using.
+
+In Rust, buffered IO is implemented through the `BufReader` and `BufWriter` structs, while in Zig, it is implemented
+through the `BufferedReader` and `BufferedWriter` structs.
+
+More specifically, the IO operations that you perform through the `GenericWriter` and `GenericReader` objects
+that we presented at @sec-writer-reader are not buffered by default, which means that these objects
+might create a lot of system calls depending on the situation.
+
+In other words, by not performing buffered IO operations, a `GenericWriter` and `GenericReader` object
+usually produces a high amount of system calls to read or write small amounts of data. The more ideal
+scenario would be to use a single system call to read or write a high amount of data at once
+(i.e. to read or write a batch of data in a single system call). This is where buffered IO comes in.
+
+To explain buffered IO, is best to use an example. Suppose you have a file with 1MB size, and
+that you want to read this file into your program.
+
+
+
+When you use buffered IO, every IO operation made uses an underlying buffer object. The idea is, instead of using
+multiple system calls, with buffered IO we create a single system call that tells something like this:
+
+> Hey OS! Could you please read/write enough bytes from this IO resource to fill the space.
+
+methods like `readAll()` or `writeAll()` use a single system call.
+
+
+
+
 ## Filesystem basics
 
-If you have ever programmed in your life, you probably know
+Now that we have discussed the basics around Input/Output operations in Zig, we need to
+talk about the basics around filesystems, which is another core part of any operating system.
+Also, filesystems are related to input/output, because the files that we store and create in our
+computer are considered an IO resource, as we described at @sec-file-descriptor.
+
+Likewise when we were talking about input/output, if you have ever programmed in your life, you probably know
 some basics about filesystems and file operations, etc.
-But, since I don't know you, I don't know what is your background, maybe
-these concepts that I will describe are clear in your mind, but maybe not.
-Anyhow, I will spend some time just to put everyone on the same basis.
+But, since I don't know you, I don't know what is your background. As a result,
+these concepts that I will describe might be clear in your mind, but they also maybe be not as clear as you think.
+Just bare with me, while I'm trying to put everyone on the same basis.
 
 
 ### The concept of current working directory (CWD)
 
-The working directory is the folder on your computer where you is currently rooted,
+The working directory is the folder on your computer where you are currently rooted at,
 or in other words, it is the folder that your program is currently looking at.
-Therefore, whenever you are executing a program, it will necessarily be working with
-a specific folder on your computer. It will be in this folder that the program will initially
-look for the files you require, and it will also be in this folder that the program
+Therefore, whenever you are executing a program, this program is always working with
+a specific folder on your computer. It is always in this folder that the program will initially
+look for the files you require, and it is also in this folder that the program
 will initially save all the files you ask it to save.
 
 The working directory is determined by the folder from which you invoke your program
@@ -262,19 +368,21 @@ current working directory, you must provide a path to that file or folder.
 
 ### The concept of paths
 
-You also probably know the concept paths, either by a lot of practice with computers and programming, or,
-by knowing a little bit about filesystems. But once again, I don't know you, so let's remember
-what a path is.
-
 A path is essentially a location. It points to a location in your filesystem. We use
 paths to describe the location of files and folders in our computer.
 One important aspect is that paths are always written inside strings,
 i.e. they are always provided as text values.
 
-There are two types of paths that you can provide to any program in any OS: a relative path, or a absolute path.
+There are two types of paths that you can provide to any program in any OS: a relative path, or an absolute path.
 Absolute paths are paths that start at the root of your filesystem, and go all the way to the file name or the specfic folder
 that you are referring to. This type of path is called absolute, because it points to a unique, absolute location on your computer.
 That is, there is no other existing location on your computer that corresponds to this path. It is an unique identifier.
+
+In Windows, an absolute path is a path that starts with a hard disk identifier (e.g. `C:/Users/pedro`).
+On the other hand, absolute paths in Linux and MacOS, are paths that start with a forward slash character (e.g. `/usr/local/bin`).
+Notice that a path is composed by "segments". Each segment is connected to each other by a slash character (`\` or `/`).
+On Windows, the backward slash (`\`) is normally used to connect the path segments. While on Linux and MacOS, the forward
+slash (`/`) is the character used to connect path segments.
 
 In contrast, a relative path is a path that start at the CWD. In other words, a relative path is
 "relative to the CWD". The path used to access the `hello.zig` file at @fig-cwd is an example of relative path. This path
@@ -308,7 +416,7 @@ Therefore, this path is equivalent to `"src/xml.cpp"`.
 
 ## The current working directory handler
 
-In Zig, filesystem operations are usually made through a directory handler.
+In Zig, filesystem operations are usually made through a directory handler object.
 A directory handler in Zig is an object of type `Dir`, which is a struct that comes from the `std.fs` module.
 You normally create such `Dir` object, by calling the `std.fs.cwd()` function.
 This function returns a `Dir` object that points to, or, that represents the CWD.
@@ -316,7 +424,8 @@ This function returns a `Dir` object that points to, or, that represents the CWD
 Through this `Dir` object, you can create new files, or modify, or read existing ones that are
 inside your CWD. In the example below, we are creating this `Dir` object, and storing it
 inside the `cwd` object. Through this `cwd` object we can perform filesystem operations in
-the CWD, creating, deleting, reading or modifying files inside the CWD.
+the CWD, creating, deleting, reading or modifying files inside the CWD, and other locations
+in our computer.
 
 ```{zig}
 #| auto_main: true
