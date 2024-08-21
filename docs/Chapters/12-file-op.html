@@ -54,7 +54,27 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="../site_libs/quarto-nav/quarto-nav.js"></script>
@@ -247,9 +267,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#inputoutput-basics" id="toc-inputoutput-basics" class="nav-link active" data-scroll-target="#inputoutput-basics"><span class="header-section-number">13.1</span> Input/Output basics</a>
   <ul class="collapse">
-  <li><a href="#the-standard-output" id="toc-the-standard-output" class="nav-link" data-scroll-target="#the-standard-output"><span class="header-section-number">13.1.1</span> The <em>standard output</em></a></li>
-  <li><a href="#the-standard-input" id="toc-the-standard-input" class="nav-link" data-scroll-target="#the-standard-input"><span class="header-section-number">13.1.2</span> The <em>standard input</em></a></li>
-  <li><a href="#the-standard-error" id="toc-the-standard-error" class="nav-link" data-scroll-target="#the-standard-error"><span class="header-section-number">13.1.3</span> The <em>standard error</em></a></li>
+  <li><a href="#the-writer-and-reader-pattern" id="toc-the-writer-and-reader-pattern" class="nav-link" data-scroll-target="#the-writer-and-reader-pattern"><span class="header-section-number">13.1.1</span> The writer and reader pattern</a></li>
+  <li><a href="#introducing-file-descriptors" id="toc-introducing-file-descriptors" class="nav-link" data-scroll-target="#introducing-file-descriptors"><span class="header-section-number">13.1.2</span> Introducing file descriptors</a></li>
+  <li><a href="#the-standard-output" id="toc-the-standard-output" class="nav-link" data-scroll-target="#the-standard-output"><span class="header-section-number">13.1.3</span> The <em>standard output</em></a></li>
+  <li><a href="#the-standard-input" id="toc-the-standard-input" class="nav-link" data-scroll-target="#the-standard-input"><span class="header-section-number">13.1.4</span> The <em>standard input</em></a></li>
+  <li><a href="#the-standard-error" id="toc-the-standard-error" class="nav-link" data-scroll-target="#the-standard-error"><span class="header-section-number">13.1.5</span> The <em>standard error</em></a></li>
   </ul></li>
   <li><a href="#filesystem-basics" id="toc-filesystem-basics" class="nav-link" data-scroll-target="#filesystem-basics"><span class="header-section-number">13.2</span> Filesystem basics</a>
   <ul class="collapse">
@@ -299,8 +321,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Furthermore, OS’s also normally create a dedicated channel for exchanging error messages, known as the <em>standard error</em> channel, or, the <code>stderr</code> channel. This is the channel to which error and warning messages are usually sent to. These are the messages that are normally displayed in red-like or orange-like colors into your terminal.</p>
 <p>Normally, every OS (e.g.&nbsp;Windows, MacOS, Linux, etc.) creates a dedicated and separate pair of <em>standard output</em>, <em>standard error</em> and <em>standard input</em> channels for every single program (or process) that runs in your computer. This means that every program you write have a dedicated <code>stdin</code>, <code>stderr</code> and <code>stdout</code> that are separate from the <code>stdin</code>, <code>stderr</code> and <code>stdout</code> of other programs and processes that are currently running.</p>
 <p>This is a behaviour from your OS. This does not come from the programming language that you are using. Because as I sad earlier, input and output in programming languages, specially in high-level ones, are just a simple abstraction over the <code>stdin</code>, <code>stderr</code> and <code>stdout</code> from your current OS. That is, your OS is the intermediary between every input/output operation made in your program, regardless of the programming language that you are using.</p>
-<section id="the-standard-output" class="level3" data-number="13.1.1">
-<h3 data-number="13.1.1" class="anchored" data-anchor-id="the-standard-output"><span class="header-section-number">13.1.1</span> The <em>standard output</em></h3>
+<section id="the-writer-and-reader-pattern" class="level3" data-number="13.1.1">
+<h3 data-number="13.1.1" class="anchored" data-anchor-id="the-writer-and-reader-pattern"><span class="header-section-number">13.1.1</span> The writer and reader pattern</h3>
+<p>In Zig, there is a pattern around input/output (IO). I’m don’t know if there is an official name for this pattern, But here, in this book, I will call it the “writer and reader pattern”. In essence, every IO operation in Zig is made through either a <code>GenericReader</code> or a <code>GenericWriter</code> object<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
+<p>These two data types come from the <code>std.io</code> module of the Zig Standard Library. As their names suggests, a <code>GenericReader</code> is an object that offers tools to read data from something (or somewhere), while a <code>GenericWriter</code> offers tools to write data into this “something”. This “something” might be a lot of things: a file that exists in your filesystem; or, it might be an existing network socket of your system<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>; or, a continuous stream of data, like a standard input device from your system, that might be constantly receiving new data from users, or like a live chat in a game that is constantly receiving and displaying new messages from the users of the game.</p>
+<p>So, if you want to <strong>read</strong> data from something, or somewhere, it means that you need to create a <code>GenericReader</code> object. But if you need instead, to <strong>write</strong> data into this “something”, then, you need to create a <code>GenericWriter</code> object. We normally create such objects through a file descriptor object.</p>
+</section>
+<section id="introducing-file-descriptors" class="level3" data-number="13.1.2">
+<h3 data-number="13.1.2" class="anchored" data-anchor-id="introducing-file-descriptors"><span class="header-section-number">13.1.2</span> Introducing file descriptors</h3>
+<p>A “file descriptor” object is a core component behind every I/O operation that is made in any operating system (OS). Such object is an identifier for a particular input/output (IO) resource from your OS <span class="citation" data-cites="wiki_file_descriptor">(<a href="../references.html#ref-wiki_file_descriptor" role="doc-biblioref">Wikipedia 2024</a>)</span>. It describes and identifies this particular resource. An IO resource might be:</p>
+<ul>
+<li>an existing file in your filesystem.</li>
+<li>an existing network socket.</li>
+<li>a pipeline (or just “pipe”) in your terminal<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>.</li>
+</ul>
+<p>From the bulletpoints listed aboved, we know that although the term “file” is present, a “file descriptor” might be more than a file. This concept of a “file descriptor” comes from the Portable Operating System Interface (POSIX) API, which is a set of standards that guide how operating systems across the world should be implemented, to maintain compatibility between them.</p>
+</section>
+<section id="the-standard-output" class="level3" data-number="13.1.3">
+<h3 data-number="13.1.3" class="anchored" data-anchor-id="the-standard-output"><span class="header-section-number">13.1.3</span> The <em>standard output</em></h3>
 <p>You already saw across this book, how can we access and use specifically the <code>stdout</code> in Zig to send some output to the user. For that, we use the <code>getStdOut()</code> function from the <code>std.io</code> module. This function returns a file descriptor that describes the <code>stdout</code> channel of your current OS. Through this file descriptor object, we can read from or write stuff to the <code>stdout</code> of our program.</p>
 <p>Although we can read stuff recorded into the <code>stdout</code> channel, we normally only write to (or “print”) stuff into this channel. The reason is very similar to what we discussed at <a href="04-http-server.html#sec-read-http-message" class="quarto-xref"><span>Section 7.4.3</span></a>, when we were discussing what “reading from” versus “writing to” the connection object from our small HTTP Server project would mean.</p>
 <p>When we write stuff into a channel, we are essentially sending data to the other end of this channel. In contrast, when we read stuff from this channel, we are essentially reading the data that was sent through this channel. Since the <code>stdout</code> is a channel to send output to the user, the key verb here is <strong>send</strong>. We want to send something to someone, and, as consequence, we want to <strong>write</strong> something into some channel.</p>
@@ -317,8 +355,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <pre><code>This message was written into stdout.</code></pre>
 <p>This <code>GenericWriter</code> object is like any other generic writer object that you would normally get from a file descriptor object. So, the same methods from a generic writer object that you would use while writing files to the filesystem for example, you could also use them here, from the file descriptor object of <code>stdout</code>, and vice-versa.</p>
 </section>
-<section id="the-standard-input" class="level3" data-number="13.1.2">
-<h3 data-number="13.1.2" class="anchored" data-anchor-id="the-standard-input"><span class="header-section-number">13.1.2</span> The <em>standard input</em></h3>
+<section id="the-standard-input" class="level3" data-number="13.1.4">
+<h3 data-number="13.1.4" class="anchored" data-anchor-id="the-standard-input"><span class="header-section-number">13.1.4</span> The <em>standard input</em></h3>
 <p>You can access the <em>standard input</em> (i.e.&nbsp;<code>stdin</code>) in Zig by using the <code>getStdIn()</code> function from the <code>std.io</code> module. Like it’s sister (<code>getStdOut()</code>), this function also returns a file descriptor object that describes the <code>stdin</code> channel of your OS.</p>
 <p>Since now, we want to receive some input from the user, the key verb here becomes <strong>receive</strong>, and, as consequence, we usually want to <strong>read</strong> data from the <code>stdin</code> channel, instead of writing data into it. So, we normally use the <code>reader()</code> method of the file descriptor object returned by <code>getStdIn()</code>, to get access to a <code>GenericReader</code> object that we can use to read data from <code>stdin</code>.</p>
 <p>In the example below, we are creating a small buffer capable of holding 20 characters. Then, we try to read the data from the <code>stdin</code> with the <code>readUntilDelimiterOrEof()</code> method, and save this data into the <code>buffer</code> object. Also notice that we are reading the data from the <code>stdin</code> until we hit a new line character (<code>'\n'</code>).</p>
@@ -339,8 +377,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 Your name is: Pedro
 </code></pre>
 </section>
-<section id="the-standard-error" class="level3" data-number="13.1.3">
-<h3 data-number="13.1.3" class="anchored" data-anchor-id="the-standard-error"><span class="header-section-number">13.1.3</span> The <em>standard error</em></h3>
+<section id="the-standard-error" class="level3" data-number="13.1.5">
+<h3 data-number="13.1.5" class="anchored" data-anchor-id="the-standard-error"><span class="header-section-number">13.1.5</span> The <em>standard error</em></h3>
 <p>The <em>standard error</em> (a.k.a. the <code>stderr</code>) works exactly the same as the <code>stdout</code>. You just call the <code>getStdErr()</code> function from the <code>std.io</code> module, and you get the file descriptor to <code>stderr</code>. Ideally, you should write only error or warning messages to <code>stderr</code>, because this is the purpose of this channel.</p>
 </section>
 </section>
@@ -395,7 +433,7 @@ Figure&nbsp;13.1: An example of executing a program from the terminal
 <h3 data-number="13.4.1" class="anchored" data-anchor-id="creating-files"><span class="header-section-number">13.4.1</span> Creating files</h3>
 <p>We create new files by using the <code>createFile()</code> method from the <code>Dir</code> object. Just provide the name of the file that you want to create, and this function will do the necessary steps to create such file. You can also provide a relative path to this function, and it will create the file by following this path, which is relative to the CWD.</p>
 <p>This function might return an error, so, you should use <code>try</code>, <code>catch</code>, or any of the other methods presented at <a href="09-error-handling.html" class="quarto-xref"><span>Chapter 10</span></a> to handle this possible error. But if everything goes well, this <code>createFile()</code> method returns a <code>File</code> object as result.</p>
-<p>Take this code example below. In this example, we are creating a new text file named <code>foo.txt</code>. If the function <code>createFile()</code> succeeds, the object named <code>file</code> will contain a file handler, which is pretty much the same thing as a file descriptor object created from the famous C function <code>fopen()</code><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
+<p>Take this code example below. In this example, we are creating a new text file named <code>foo.txt</code>. If the function <code>createFile()</code> succeeds, the object named <code>file</code> will contain a file handler, which is pretty much the same thing as a file descriptor object created from the famous C function <code>fopen()</code><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>.</p>
 <p>Now, a quick note, when we create a file descriptor with the C function <code>fopen()</code>, we must always close the file at the end of our program, or, as soon as we completed all operations that we wanted to perform on the file. In Zig, this is no different. So everytime we create a new file, this file remains “open”, waiting for some operation to be performed. As soon as we are done with it, we always have to close this file, to free the resources associated with it. This is true both for Zig and C. In Zig, we do this by calling the method <code>close()</code> from the file handler object.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
@@ -406,12 +444,20 @@ Figure&nbsp;13.1: An example of executing a program from the terminal
 </div>
 
 
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-wiki_file_descriptor" class="csl-entry" role="listitem">
+Wikipedia. 2024. <span>“File Descriptor.”</span> Wikipedia. <a href="https://en.wikipedia.org/wiki/File_descriptor">https://en.wikipedia.org/wiki/File_descriptor</a>.
+</div>
+</div>
 </section>
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>
 <ol>
-<li id="fn1"><p><a href="https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm" class="uri">https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1"><p>Previously, these objects were known as the <code>Reader</code> and <code>Writer</code> objects.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>The socket objects that we have created at <a href="04-http-server.html#sec-create-socket" class="quarto-xref"><span>Section 7.4.1</span></a>, are examples of network sockets.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>Pipeline is a mechanism for inter-process communication. You could also interpret a pipeline as a “set of processes that are chained together, through the standard input/output devices of the system”. In Linux for example, a pipeline is created inside a terminal, by connecting two or more terminal commands with the “pipe” character (<code>|</code>).<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p><a href="https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm" class="uri">https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 

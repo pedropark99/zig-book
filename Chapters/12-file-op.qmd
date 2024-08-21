@@ -74,6 +74,43 @@ regardless of the programming language that you are using.
 
 ### The writer and reader pattern
 
+In Zig, there is a pattern around input/output (IO). I'm don't know if there is an official name for this pattern,
+But here, in this book, I will call it the "writer and reader pattern". In essence, every IO operation in Zig is
+made through either a `GenericReader` or a `GenericWriter` object[^gen-zig].
+
+These two data types come from the `std.io` module of the Zig Standard Library. As their names suggests, a
+`GenericReader` is an object that offers tools to read data from something (or somewhere), while a `GenericWriter`
+offers tools to write data into this "something".
+This "something" might be a lot of things: a file that exists in your filesystem; or, it might be an existing network socket of your system[^sock]; or,
+a continuous stream of data, like a standard input device from your system, that might be constantly
+receiving new data from users, or like a live chat in a game that is constantly receiving and displaying new messages from the
+users of the game.
+
+[^gen-zig]: Previously, these objects were known as the `Reader` and `Writer` objects.
+[^sock]: The socket objects that we have created at @sec-create-socket, are examples of network sockets.
+
+So, if you want to **read** data from something, or somewhere, it means that you need to create a `GenericReader` object.
+But if you need instead, to **write** data into this "something", then, you need to create a `GenericWriter` object.
+We normally create such objects through a file descriptor object.
+
+
+### Introducing file descriptors
+
+A "file descriptor" object is a core component behind every I/O operation that is made in any operating system (OS).
+Such object is an identifier for a particular input/output (IO) resource from your OS [@wiki_file_descriptor].
+It describes and identifies this particular resource. An IO resource might be:
+
+- an existing file in your filesystem.
+- an existing network socket.
+- a pipeline (or just "pipe") in your terminal[^pipes].
+
+[^pipes]: Pipeline is a mechanism for inter-process communication. You could also interpret a pipeline as a "set of processes that are chained together, through the standard input/output devices of the system". At Linux for example, a pipeline is created inside a terminal, by connecting two or more terminal commands with the "pipe" character (`|`).
+
+From the bulletpoints listed aboved, we know that although the term "file" is present, a "file descriptor" might be more than a file.
+This concept of a "file descriptor" comes from the Portable Operating System Interface (POSIX) API,
+which is a set of standards that guide how operating systems across the world should be implemented,
+to maintain compatibility between them.
+
 
 
 
