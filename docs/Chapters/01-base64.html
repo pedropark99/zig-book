@@ -2,12 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.549">
+<meta name="generator" content="quarto-1.5.56">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>An Introduction to Zig - 4&nbsp; Building a base64 encoder/decoder</title>
+<title>4&nbsp; Building a base64 encoder/decoder – An Introduction to Zig</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -33,7 +33,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -125,7 +125,7 @@ div.csl-indent {
   }
 }</script>
 
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
 <script type="text/javascript">
@@ -163,13 +163,13 @@ window.Quarto = {
   <header id="quarto-header" class="headroom fixed-top">
   <nav class="quarto-secondary-nav">
     <div class="container-fluid d-flex">
-      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
         <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/01-base64.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Building a base64 encoder/decoder</span></a></li></ol></nav>
-        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
-      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
         <i class="bi bi-search"></i>
       </button>
     </div>
@@ -275,7 +275,7 @@ window.Quarto = {
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../Chapters/12-file-op.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Filesystem and file operations</span></span></a>
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Filesystem and Input/Output (IO)</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -402,7 +402,7 @@ window.Quarto = {
 <p>The algorithm behind a base64 encoder usually works on a window of 3 bytes. Because each byte have 8 bits, so, 3 bytes forms a set of <span class="math inline">\(8 \times 3 = 24\)</span> bits. This is desirable for the base64 algorithm, because 24 bits is divisble by 6, which form a set of 4 groups of 6 bits each.</p>
 <p>So the base64 algorithm works by converting 3 bytes at a time into 4 characters in the base64 scale. It keeps iterating through the input string, 3 bytes at a time, and converting them into the base64 scale, producing 4 characters per iteration. It keeps iterating, and producing these “new characters” until it hits the end of the input string.</p>
 <p>Now you may think, what if you have a particular string that have a number of bytes that is not divisible by 3? What happens? For example, if you have a string that contains only two characters/bytes, such as “Hi”. How the algorithm would behave in such situation? You find the answer at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>4.1</span></a>. You can see at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>4.1</span></a> that the string “Hi”, when converted to base64, becomes the string “SGk=”:</p>
-<div id="fig-base64-algo1" class="quarto-figure quarto-figure-center quarto-float anchored">
+<div id="fig-base64-algo1" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-base64-algo1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="./../Figures/base64-encoder-flow.png" class="img-fluid figure-img">
@@ -423,7 +423,7 @@ Figure&nbsp;4.1: The logic behind a base64 encoder
 <p>The algorithm behind a base64 decoder is essentially the inverse process of a base64 encoder. A base64 decoder needs to be able to translate base64 messages back into their original meaning, i.e.&nbsp;into the original sequence of binary data.</p>
 <p>A base64 decoder usually works on a window of 4 bytes. Because it wants to convert these 4 bytes back into the original sequence of 3 bytes, that was converted into 4 groups of 6 bits by the base64 encoder. Remember, in a base64 decoder we are essentially reverting the process made by the base64 encoder.</p>
 <p>Each byte in the input string (the base64 encoded string) normally contributes to re-create two different bytes in the output (the original binary data). In other words, each byte that comes out of a base64 decoder is created by transforming merging two different bytes in the input together. You can see this fact at <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>4.2</span></a>:</p>
-<div id="fig-base64-algo2" class="quarto-figure quarto-figure-center quarto-float anchored">
+<div id="fig-base64-algo2" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-base64-algo2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="./../Figures/base64-decoder-flow.png" class="img-fluid figure-img">
@@ -494,7 +494,7 @@ Figure&nbsp;4.2: The logic behind a base64 decoder
 <li><code>output[3]</code> is produced by taking the last six bits from <code>input[2]</code>.</li>
 </ol>
 <p>This is the perfect scenario, when we have a full window of 3 bytes to work on. Just to make things as clear as possible, the <a href="#fig-encoder-bitshift" class="quarto-xref">Figure&nbsp;<span>4.3</span></a> demonstrates visually how the step 2 mentioned above works. So this is the step necessary to produce the 2nd byte in the <code>output</code> of the encoder, by taking the 1st byte (dark purple) and the 2nd byte (orange) in the input. You can see that, at the end of the process, we get a new byte that contains the last 2 bits from the 1st byte in the <code>input</code>, and the first 4 bits from the 2nd byte in the <code>input</code>.</p>
-<div id="fig-encoder-bitshift" class="quarto-figure quarto-figure-center quarto-float anchored">
+<div id="fig-encoder-bitshift" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-encoder-bitshift-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="../Figures/base64-encoder-bit-shift.png" class="img-fluid figure-img">
@@ -515,7 +515,7 @@ Figure&nbsp;4.3: How the 2nd byte in the output of the encoder is produced from 
 <li><code>output[2]</code> and <code>output[3]</code> are the character <code>=</code>.</li>
 </ul>
 <p>If these bulletpoints were a bit confusing for you, you may find the <a href="#tbl-transf-6bit" class="quarto-xref">Table&nbsp;<span>4.1</span></a> more intuitive. This table unifies all this logic into a simple table. Notice that this table also provides the exact expression in Zig that creates the corresponding byte in the output.</p>
-<div id="tbl-transf-6bit" class="quarto-float anchored">
+<div id="tbl-transf-6bit" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-transf-6bit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;4.1: How the 6-bit transformation translates into code in different window settings.
@@ -526,7 +526,7 @@ Table&nbsp;4.1: How the 6-bit transformation translates into code in different w
 <div id="xmcfcovxsb" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
-<table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
+<table class="gt_table caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
 <colgroup>
 <col style="width: 33%">
 <col style="width: 33%">
@@ -781,7 +781,7 @@ Table&nbsp;4.1: How the 6-bit transformation translates into code in different w
 <p>Before we continue, let’s try to visualize how these transformations make the original bytes that we had before the encoding process. First, think back at the 6-bit transformation performed by the encoder exposed at <a href="#sec-encoder-logic" class="quarto-xref"><span>Section 4.4</span></a>. The first byte in the output of the encoder is produced by moving the bits in the first byte of the input two positions to the right.</p>
 <p>So, if for example the first byte in the input of the encoder was the sequence <code>ABCDEFGH</code>, then, the first byte in the output of the encoder would be <code>00ABCDEF</code> (this sequence would be the first byte in the input of the decoder). Now, if the second byte in the input of the encoder was the sequence <code>IJKLMNOP</code>, then, the second byte in the encoder output would be <code>00GHIJKL</code> (as we demonstrated at <a href="#fig-encoder-bitshift" class="quarto-xref">Figure&nbsp;<span>4.3</span></a>).</p>
 <p>So, if the sequences <code>00ABCDEF</code> and <code>00GHIJKL</code> sequences are the first byte and the second bytes, respectively, in the input of the decoder, the <a href="#fig-decoder-bitshift" class="quarto-xref">Figure&nbsp;<span>4.4</span></a> demonstrates visually how these two bytes are transformed into the first byte of the output of the decoder. Notice that the output byte is the sequence <code>ABCDEFGH</code>, which is the original byte from the input of the encoder.</p>
-<div id="fig-decoder-bitshift" class="quarto-figure quarto-figure-center quarto-float anchored">
+<div id="fig-decoder-bitshift" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-decoder-bitshift-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="../Figures/base64-decoder-bit-shift.png" class="img-fluid figure-img">
@@ -792,7 +792,7 @@ Figure&nbsp;4.4: How the 1st byte in the decoder output is produced from the 1st
 </figure>
 </div>
 <p>The <a href="#tbl-6bit-decode" class="quarto-xref">Table&nbsp;<span>4.2</span></a> presents how the three steps described ealier translate into Zig code:</p>
-<div id="tbl-6bit-decode" class="quarto-float anchored">
+<div id="tbl-6bit-decode" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-6bit-decode-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;4.2: The necessary steps for the 6-transformation in the decode process.
@@ -803,7 +803,7 @@ Table&nbsp;4.2: The necessary steps for the 6-transformation in the decode proce
 <div id="kjmpceeejo" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
   
   
-<table class="gt_table table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
+<table class="gt_table caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false" data-bgcolor="#FFFFFF">
 <colgroup>
 <col style="width: 50%">
 <col style="width: 50%">
@@ -1108,18 +1108,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
     return false;
   }
-  const clipboard = new window.ClipboardJS('.code-copy-button', {
-    text: function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-    }
-  });
-  clipboard.on('success', function(e) {
+  const onCopySuccess = function(e) {
     // button target
     const button = e.trigger;
     // don't keep focus
@@ -1151,7 +1140,47 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }, 1000);
     // clear code selection
     e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
   });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
   function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
     const config = {
       allowHTML: true,
@@ -1186,7 +1215,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
-      return note.innerHTML;
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
     });
   }
   const xrefs = window.document.querySelectorAll('a.quarto-xref');
@@ -1462,12 +1495,12 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../Chapters/01-memory.html" class="pagination-link  aria-label=" &lt;span="" and="" allocators&lt;="" span&gt;"="">
+      <a href="../Chapters/01-memory.html" class="pagination-link" aria-label="Memory and Allocators">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Memory and Allocators</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../Chapters/02-debugging.html" class="pagination-link" aria-label="<span class='chapter-number'>5</span>&nbsp; <span class='chapter-title'>Debugging Zig applications</span>">
+      <a href="../Chapters/02-debugging.html" class="pagination-link" aria-label="Debugging Zig applications">
         <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Debugging Zig applications</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>

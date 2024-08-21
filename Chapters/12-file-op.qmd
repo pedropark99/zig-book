@@ -20,6 +20,160 @@ In this chapter we are going to discuss how to use the cross-platform structs an
 in the Zig Standard Library that executes filesystem operations. Most of these functions and structs
 comes from the `std.fs` module.
 
+We are also going to talk about Input/Output (also known as IO) operations in Zig. Most of
+these operations are made by using the structs and functions from `std.io` module, which defines
+descriptors for the *standard channels* of your system (`stdout` and `stdin`), and also,
+functions to create and use I/O streams.
+
+
+## Input/Output basics
+
+If you have programming experience in a high-level language, you certainly have used before
+the input and output functionalities of this language. In other words, you certainly have
+been in a situation where you needed to sent some output to the user, or, to receive an input
+from the user.
+
+For example, in Python we can receive some input from the user by using the `input()` built-in
+function. But we can also print (or "show") some output to the user by using the `print()`
+built-in function. So yes, if you have programmed before in Python, you certainly have
+used these functions once before.
+
+But do you know how these functions relate back to your operating system (OS)? How exactly
+they are interacting with the resources of your OS to receive or sent input/output.
+In essence, these input/output functions from high-level languages are just abstractions
+over the *standard output* and *standard input* channels of your operating system.
+
+This means that we receive an input, or send some output, through the operating system.
+It is the OS that makes the bridge between the user and your program. Your program
+does not have a direct access to the user. It is the OS that intermediates every
+message exchanged between your program and the user.
+
+The *standard output* and *standard input* channels of your OS are commonly known as the
+`stdout` and `stdin` channels of your OS, respectively. In some contexts, they are also called of the *standard output device*
+and *standard input device*. As the name suggests, the *standard output*
+is the channel through which output flows, while the *standard input* is the channel in which
+input flows.
+
+Furthermore, OS's also normally create a dedicated channel for exchanging error messages, known as the
+*standard error* channel, or, the `stderr` channel. This is the channel to which error and warning messages
+are usually sent to. These are the messages that are normally displayed in red-like or orange-like colors
+into your terminal.
+
+Normally, every OS (e.g. Windows, MacOS, Linux, etc.) creates a dedicated and separate pair of
+*standard output*, *standard error* and *standard input* channels for every single program (or process) that runs in your computer.
+This means that every program you write have a dedicated `stdin`, `stderr` and `stdout` that are separate
+from the `stdin`, `stderr` and `stdout` of other programs and processes that are currently running.
+
+This is a behaviour from your OS.
+This does not come from the programming language that you are using.
+Because as I sad earlier, input and output in programming languages, specially
+in high-level ones, are just a simple abstraction over the `stdin`, `stderr` and `stdout` from your current OS.
+That is, your OS is the intermediary between every input/output operation made in your program,
+regardless of the programming language that you are using.
+
+
+### The writer and reader pattern
+
+
+
+
+### The *standard output*
+
+You already saw across this book, how can we access and use specifically the `stdout` in Zig
+to send some output to the user.
+For that, we use the `getStdOut()` function from the `std.io` module. This function returns
+a file descriptor that describes the `stdout` channel of your current OS. Through this file
+descriptor object, we can read from or write stuff to the `stdout` of our program.
+
+Although we can read stuff recorded into the `stdout` channel, we normally only
+write to (or "print") stuff into this channel. The reason is very similar to what we discussed at
+@sec-read-http-message, when we were discussing what "reading from" versus "writing to" the connection
+object from our small HTTP Server project would mean.
+
+When we write stuff into a channel, we are essentially sending data to the other end of this channel.
+In contrast, when we read stuff from this channel, we are essentially reading the data that was sent
+through this channel. Since the `stdout` is a channel to send output to the user, the key verb here
+is **send**. We want to send something to someone, and, as consequence, we want to **write** something
+into some channel.
+
+That is why, when we use `getStdOut()`, most of the times, we also use the `writer()` method from the `stdout` file descriptor,
+to get access to a writer object that we can use to write stuff into this `stdout` channel.
+More specifically, this `writer()` method returns a `GenericWriter` object. One of the
+main methods of this `GenericWriter` object is the `print()` method that we have used
+before to write (or "print") a formatted string into the `stdout` channel.
+
+```{zig}
+#| auto_main: false
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+pub fn main() !void {
+    try stdout.writeAll(
+        "This message was written into stdout.\n"
+    );
+}
+```
+
+```
+This message was written into stdout.
+```
+
+
+This `GenericWriter` object is like any other generic writer object that you would normally get from a file descriptor object.
+So, the same methods from a generic writer object that you would use while writing files to the filesystem for example, you could also
+use them here, from the file descriptor object of `stdout`, and vice-versa.
+
+
+### The *standard input*
+
+You can access the *standard input* (i.e. `stdin`) in Zig by using the `getStdIn()` function from the `std.io` module.
+Like it's sister (`getStdOut()`), this function also returns a file descriptor object that describes the `stdin` channel
+of your OS.
+
+Since now, we want to receive some input from the user, the key verb here becomes **receive**, and, as consequence,
+we usually want to **read** data from the `stdin` channel, instead of writing data into it. So, we normally use
+the `reader()` method of the file descriptor object returned by `getStdIn()`, to get access to a `GenericReader`
+object that we can use to read data from `stdin`.
+
+In the example below, we are creating a small buffer capable of holding 20 characters. Then, we try to read
+the data from the `stdin` with the `readUntilDelimiterOrEof()` method, and save this data into the `buffer` object.
+Also notice that we are reading the data from the `stdin` until we hit a new line character (`'\n'`).
+
+If you execute this program, you will notice that this program stops the execution, and start to wait indefinetly
+for some input from the user. In other words, you need to type your name into the terminal, and then, you press Enter to
+send your name to `stdin`. After you send your name to `stdin`, the program reads this input, and continues with the execution,
+by printing the given name to `stdout`. In the example below, I typed my name (Pedro) into the terminal, and then, pressed Enter.
+
+
+```{zig}
+#| eval: false
+#| auto_main: false
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+const stdin = std.io.getStdIn().reader();
+pub fn main() !void {
+    try stdout.writeAll("Type your name\n");
+    var buffer: [20]u8 = undefined;
+    @memset(buffer[0..], 0);
+    _ = try stdin.readUntilDelimiterOrEof(buffer[0..], '\n');
+    try stdout.print("Your name is: {s}\n", .{buffer});
+}
+```
+
+```
+Type your name
+Your name is: Pedro
+
+```
+
+
+### The *standard error*
+
+The *standard error* (a.k.a. the `stderr`) works exactly the same as the `stdout`.
+You just call the `getStdErr()` function from the `std.io` module, and you get the file descriptor to `stderr`.
+Ideally, you should write only error or warning messages to `stderr`, because this is
+the purpose of this channel.
+
+
 
 ## Filesystem basics
 
@@ -119,6 +273,7 @@ inside the `cwd` object. Through this `cwd` object we can perform filesystem ope
 the CWD, creating, deleting, reading or modifying files inside the CWD.
 
 ```{zig}
+#| auto_main: true
 const cwd = std.fs.cwd();
 _ = cwd;
 ```
