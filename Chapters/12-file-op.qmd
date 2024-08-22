@@ -291,33 +291,59 @@ is to use a system call only when it is needed, and also, only in infrequent sit
 the number of system calls performed to a minimum.
 
 Buffered IO is a strategy to achieve better performance. It is used to reduce the number of system calls made by IO operations, and, as
-consequence, achieve a much higher performance in these IO operations. IO operations made through a `FILE` pointer in C are buffered
-by default, so, at least in C, you don't need to worry about this subject. But IO operations in both Rust and Zig are not
-buffered depending on which file descriptor, functions and methods that you are using.
+consequence, achieve a much higher performance. At @fig-buff-diff you can find two different diagrams which presents the differences between
+read operations performed in an unbuferred IO environment versus a buffered environemnt.
+Let's suppose that we have a text file that contains the famous Lorem ipsum text[^lorem]. Let's also suppose that these diagrams at @fig-buff-diff
+are showing the read operations that we are performing to read the Lorem ipsum text from this text file present in our
+filesystem.
 
-In Rust, buffered IO is implemented through the `BufReader` and `BufWriter` structs, while in Zig, it is implemented
+The first thing you notice, is that in an unbuffered environment the read operations lead to many system calls.
+More precisely, in the diagram exposed at @fig-unbuffered-io we get one system call per each byte that we read from the text file.
+On the other hand, at @fig-buffered-io we have only one system call at the very beginning.
+
+When we use a buffered IO system, when we perform the first read operation, instead of sending one single byte directly
+to our program, the OS first send a chunk of bytes from the file at once to a underlying buffer object (i.e. an array object).
+This chunk of bytes are cached/stored inside this buffer object, and when this operation is done, then
+your program receives the byte that it actually asked for.
+
+From now on, for every new read operation that you perform, instead of making a new system call to ask
+for the next byte in the file to the OS, this read operation is redirected to the buffer object, that have
+this next byte is already cached and ready to go.
+
+
+[^lorem]: <https://www.lipsum.com/>.
+
+::: {#fig-buff-diff layout-nrow=2}
+
+![Unbuffered IO](./../Figures/unbuffered-io.png){#fig-unbuffered-io width=60%}
+
+![Buffered IO](./../Figures/buffered-io2.png){#fig-buffered-io}
+
+Diagrams of read operations performed in buffered IO and unbuffered IO environments.
+
+:::
+
+This is the basic logic behind buffered IO systems. The size of the buffer object depends, but most of the times
+it is equal to a full page of memory (4096 bytes). If we follow this logic, then, the OS reads the first 4096 bytes
+of the file and caches it into the buffer object. As long as your program does not consume all of the 4096 bytes,
+not a single system call is created.
+
+A new system call is made only when you consume all of the 4096 bytes from the buffer. In this situation,
+the new system call made essentially asks the OS to send the next 4096 bytes in the file, and once again,
+they are cached into the buffer object, and the cycle starts once again.
+
+
+IO operations made through a `FILE` pointer in C are buffered
+by default, so, at least in C, you don't need to worry about this subject. But in contrast, IO operations in both Rust and Zig are not
+buffered depending on which functions from the standard libraries that you are using.
+
+For example, in Rust, buffered IO is implemented through the `BufReader` and `BufWriter` structs, while in Zig, it is implemented
 through the `BufferedReader` and `BufferedWriter` structs.
-
-More specifically, the IO operations that you perform through the `GenericWriter` and `GenericReader` objects
-that we presented at @sec-writer-reader are not buffered by default, which means that these objects
+So any IO operation that you perform through the `GenericWriter` and `GenericReader` objects
+that we presented at @sec-writer-reader are not buffered, which means that these objects
 might create a lot of system calls depending on the situation.
 
-In other words, by not performing buffered IO operations, a `GenericWriter` and `GenericReader` object
-usually produces a high amount of system calls to read or write small amounts of data. The more ideal
-scenario would be to use a single system call to read or write a high amount of data at once
-(i.e. to read or write a batch of data in a single system call). This is where buffered IO comes in.
 
-To explain buffered IO, is best to use an example. Suppose you have a file with 1MB size, and
-that you want to read this file into your program.
-
-
-
-When you use buffered IO, every IO operation made uses an underlying buffer object. The idea is, instead of using
-multiple system calls, with buffered IO we create a single system call that tells something like this:
-
-> Hey OS! Could you please read/write enough bytes from this IO resource to fill the space.
-
-methods like `readAll()` or `writeAll()` use a single system call.
 
 
 

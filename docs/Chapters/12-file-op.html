@@ -426,15 +426,52 @@ Your name is: Pedro
 <h2 data-number="13.2" class="anchored" data-anchor-id="buffered-io"><span class="header-section-number">13.2</span> Buffered IO</h2>
 <p>As we described at <a href="#sec-io-basics" class="quarto-xref"><span>Section 13.1</span></a>, input/output (IO) operations are made directly by the operating system. It is the OS that manages the IO resource that you want to use for your IO operations. The consequence of this fact is that IO operations are heavilly based on system calls (i.e.&nbsp;calling the operating system directly).</p>
 <p>Just to be clear, there is nothing particularly wrong with system calls. We use them all the time on any serious codebase written in any low-level programming language. However, system calls are always orders of magnitude slower than many different types of operations.</p>
-<p>Is perfectly fine to use a system call once in a while. But when these system calls start to be used often, you can clearly notice most of the times the lost of performance in your application. So, the good rule of thumbs is to use a system call only when it is needed, and also, only in infrequent situations, to reduce the number of system calls performed to a minimum.</p>
-<p>This is particularly important for IO. Because IO operations ultimately execute at least one system call. More specifically, the IO operations that you perform through the <code>GenericWriter</code> and <code>GenericReader</code> objects that we presented at <a href="#sec-writer-reader" class="quarto-xref"><span>Section 13.1.1</span></a> are not buffered by default, which means that these objects might create a lot of system calls depending on the situation.</p>
-<p>In other words, by not performing buffered IO operations, a <code>GenericWriter</code> and <code>GenericReader</code> object usually produces a high amount of system calls to read or write small amounts of data. The more ideal scenario would be to use a single system call to read or write a high amount of data at once (i.e.&nbsp;to read or write a batch of data in a single system call). This is where buffered IO comes in.</p>
-<p>To explain buffered IO, is best to use an example. Suppose you have a file with 1MB size, and that you want to read this file into your program.</p>
-<p>When you use buffered IO, every IO operation made uses an underlying buffer object. The idea is, instead of using multiple system calls, with buffered IO we create a single system call that tells something like this:</p>
-<blockquote class="blockquote">
-<p>Hey OS! Could you please read/write enough bytes from this IO resource to fill the space.</p>
-</blockquote>
-<p>methods like <code>readAll()</code> or <code>writeAll()</code> use a single system call.</p>
+<p>So is perfectly fine to use a system call once in a while. But when these system calls start to be used often, you can clearly notice most of the times the lost of performance in your application. So, the good rule of thumbs is to use a system call only when it is needed, and also, only in infrequent situations, to reduce the number of system calls performed to a minimum.</p>
+<p>Buffered IO is a strategy to achieve better performance. It is used to reduce the number of system calls made by IO operations, and, as consequence, achieve a much higher performance. At <a href="#fig-buff-diff" class="quarto-xref">Figure&nbsp;<span>13.1</span></a> you can find two different diagrams which presents the differences between read operations performed in an unbuferred IO environment versus a buffered environemnt. Let’s suppose that we have a text file that contains the famous Lorem ipsum text<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a>. Let’s also suppose that these diagrams at <a href="#fig-buff-diff" class="quarto-xref">Figure&nbsp;<span>13.1</span></a> are showing the read operations that we are performing to read the Lorem ipsum text from this text file present in our filesystem.</p>
+<p>The first thing you notice, is that in an unbuffered environment the read operations lead to many system calls. More precisely, in the diagram exposed at <a href="#fig-unbuffered-io" class="quarto-xref">Figure&nbsp;<span>13.1 (a)</span></a> we get one system call per each byte that we read from the text file. On the other hand, at <a href="#fig-buffered-io" class="quarto-xref">Figure&nbsp;<span>13.1 (b)</span></a> we have only one system call at the very beginning.</p>
+<p>When we use a buffered IO system, when we perform the first read operation, instead of sending one single byte directly to our program, the OS first send a chunk of bytes from the file at once to a underlying buffer object (i.e.&nbsp;an array object). This chunk of bytes are cached/stored inside this buffer object, and when this operation is done, then your program receives the byte that it actually asked for.</p>
+<p>From now on, for every new read operation that you perform, instead of making a new system call to ask for the next byte in the file to the OS, this read operation is redirected to the buffer object, that have this next byte is already cached and ready to go.</p>
+<div id="fig-buff-diff" class="quarto-layout-panel">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-buff-diff-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-layout-row">
+<div class="quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-buff-diff" style="flex-basis: 100.0%;justify-content: flex-start;">
+<div id="fig-unbuffered-io" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-subfloat-fig figure">
+<div aria-describedby="fig-unbuffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="./../Figures/unbuffered-io.png" class="img-fluid figure-img" style="width:60.0%" data-ref-parent="fig-buff-diff">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-unbuffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(a) Unbuffered IO
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="quarto-layout-row">
+<div class="quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-buff-diff" style="flex-basis: 100.0%;justify-content: flex-start;">
+<div id="fig-buffered-io" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-subfloat-fig figure">
+<div aria-describedby="fig-buffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="./../Figures/buffered-io2.png" class="img-fluid figure-img" data-ref-parent="fig-buff-diff">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-buffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(b) Buffered IO
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-buff-diff-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;13.1: Diagrams of read operations performed in buffered IO and unbuffered IO environments.
+</figcaption>
+</figure>
+</div>
+<p>This is the basic logic behind buffered IO systems. The size of the buffer object depends, but most of the times it is equal to a full page of memory (4096 bytes). If we follow this logic, then, the OS reads the first 4096 bytes of the file and caches it into the buffer object. As long as your program does not consume all of the 4096 bytes, not a single system call is created.</p>
+<p>A new system call is made only when you consume all of the 4096 bytes from the buffer. In this situation, the new system call made essentially asks the OS to send the next 4096 bytes in the file, and once again, they are cached into the buffer object, and the cycle starts once again.</p>
+<p>IO operations made through a <code>FILE</code> pointer in C are buffered by default, so, at least in C, you don’t need to worry about this subject. But in contrast, IO operations in both Rust and Zig are not buffered depending on which functions from the standard libraries that you are using.</p>
+<p>For example, in Rust, buffered IO is implemented through the <code>BufReader</code> and <code>BufWriter</code> structs, while in Zig, it is implemented through the <code>BufferedReader</code> and <code>BufferedWriter</code> structs. So any IO operation that you perform through the <code>GenericWriter</code> and <code>GenericReader</code> objects that we presented at <a href="#sec-writer-reader" class="quarto-xref"><span>Section 13.1.1</span></a> are not buffered, which means that these objects might create a lot of system calls depending on the situation.</p>
 </section>
 <section id="filesystem-basics" class="level2" data-number="13.3">
 <h2 data-number="13.3" class="anchored" data-anchor-id="filesystem-basics"><span class="header-section-number">13.3</span> Filesystem basics</h2>
@@ -444,25 +481,25 @@ Your name is: Pedro
 <h3 data-number="13.3.1" class="anchored" data-anchor-id="the-concept-of-current-working-directory-cwd"><span class="header-section-number">13.3.1</span> The concept of current working directory (CWD)</h3>
 <p>The working directory is the folder on your computer where you are currently rooted at, or in other words, it is the folder that your program is currently looking at. Therefore, whenever you are executing a program, this program is always working with a specific folder on your computer. It is always in this folder that the program will initially look for the files you require, and it is also in this folder that the program will initially save all the files you ask it to save.</p>
 <p>The working directory is determined by the folder from which you invoke your program in the terminal. In other words, if you are in the terminal of your OS, and you execute a binary file (i.e.&nbsp;a program) from this terminal, the folder to which your terminal is pointing at is the current working directory of your program that is being executed.</p>
-<p>At <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.1</span></a> we have an example of me executing a program from the terminal. We are executing the program outputted by the <code>zig</code> compiler by compiling the Zig module named <code>hello.zig</code>. The CWD in this case is the <code>zig-book</code> folder. In other words, while the <code>hello.zig</code> program is executing, it will be looking at the <code>zig-book</code> folder, and any file operation that we perform inside this program, will be using this <code>zig-book</code> folder as the “starting point”, or, as the “central focus”.</p>
+<p>At <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.2</span></a> we have an example of me executing a program from the terminal. We are executing the program outputted by the <code>zig</code> compiler by compiling the Zig module named <code>hello.zig</code>. The CWD in this case is the <code>zig-book</code> folder. In other words, while the <code>hello.zig</code> program is executing, it will be looking at the <code>zig-book</code> folder, and any file operation that we perform inside this program, will be using this <code>zig-book</code> folder as the “starting point”, or, as the “central focus”.</p>
 <div id="fig-cwd" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-cwd-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="./../Figures/cwd.png" class="img-fluid figure-img">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-cwd-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure&nbsp;13.1: An example of executing a program from the terminal
+Figure&nbsp;13.2: An example of executing a program from the terminal
 </figcaption>
 </figure>
 </div>
-<p>Just because we are rooted inside a particular folder (in the case of <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.1</span></a>, the <code>zig-book</code> folder) of our computer, it doesn’t mean that we cannot access or write resources in other locations of our computer. The current working directory (CWD) mechanism just defines where your program will look first for the files you ask for. This does not prevent you from accessing files that are located elsewhere on your computer. However, to access any file that is in a folder other than your current working directory, you must provide a path to that file or folder.</p>
+<p>Just because we are rooted inside a particular folder (in the case of <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.2</span></a>, the <code>zig-book</code> folder) of our computer, it doesn’t mean that we cannot access or write resources in other locations of our computer. The current working directory (CWD) mechanism just defines where your program will look first for the files you ask for. This does not prevent you from accessing files that are located elsewhere on your computer. However, to access any file that is in a folder other than your current working directory, you must provide a path to that file or folder.</p>
 </section>
 <section id="the-concept-of-paths" class="level3" data-number="13.3.2">
 <h3 data-number="13.3.2" class="anchored" data-anchor-id="the-concept-of-paths"><span class="header-section-number">13.3.2</span> The concept of paths</h3>
 <p>A path is essentially a location. It points to a location in your filesystem. We use paths to describe the location of files and folders in our computer. One important aspect is that paths are always written inside strings, i.e.&nbsp;they are always provided as text values.</p>
 <p>There are two types of paths that you can provide to any program in any OS: a relative path, or an absolute path. Absolute paths are paths that start at the root of your filesystem, and go all the way to the file name or the specfic folder that you are referring to. This type of path is called absolute, because it points to a unique, absolute location on your computer. That is, there is no other existing location on your computer that corresponds to this path. It is an unique identifier.</p>
 <p>In Windows, an absolute path is a path that starts with a hard disk identifier (e.g.&nbsp;<code>C:/Users/pedro</code>). On the other hand, absolute paths in Linux and MacOS, are paths that start with a forward slash character (e.g.&nbsp;<code>/usr/local/bin</code>). Notice that a path is composed by “segments”. Each segment is connected to each other by a slash character (<code>\</code> or <code>/</code>). On Windows, the backward slash (<code>\</code>) is normally used to connect the path segments. While on Linux and MacOS, the forward slash (<code>/</code>) is the character used to connect path segments.</p>
-<p>In contrast, a relative path is a path that start at the CWD. In other words, a relative path is “relative to the CWD”. The path used to access the <code>hello.zig</code> file at <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.1</span></a> is an example of relative path. This path is reproduced below. This path begins at the CWD, which in the context of <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.1</span></a>, is the <code>zig-book</code> folder, then, it goes to the <code>ZigExamples</code> folder, then, into <code>zig-basics</code>, then, to the <code>hello.zig</code> file.</p>
+<p>In contrast, a relative path is a path that start at the CWD. In other words, a relative path is “relative to the CWD”. The path used to access the <code>hello.zig</code> file at <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.2</span></a> is an example of relative path. This path is reproduced below. This path begins at the CWD, which in the context of <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.2</span></a>, is the <code>zig-book</code> folder, then, it goes to the <code>ZigExamples</code> folder, then, into <code>zig-basics</code>, then, to the <code>hello.zig</code> file.</p>
 <pre><code>ZigExamples/zig-basics/hello_world.zig</code></pre>
 </section>
 <section id="path-wildcards" class="level3" data-number="13.3.3">
@@ -488,7 +525,7 @@ Figure&nbsp;13.1: An example of executing a program from the terminal
 <h3 data-number="13.5.1" class="anchored" data-anchor-id="creating-files"><span class="header-section-number">13.5.1</span> Creating files</h3>
 <p>We create new files by using the <code>createFile()</code> method from the <code>Dir</code> object. Just provide the name of the file that you want to create, and this function will do the necessary steps to create such file. You can also provide a relative path to this function, and it will create the file by following this path, which is relative to the CWD.</p>
 <p>This function might return an error, so, you should use <code>try</code>, <code>catch</code>, or any of the other methods presented at <a href="09-error-handling.html" class="quarto-xref"><span>Chapter 10</span></a> to handle this possible error. But if everything goes well, this <code>createFile()</code> method returns a <code>File</code> object as result.</p>
-<p>Take this code example below. In this example, we are creating a new text file named <code>foo.txt</code>. If the function <code>createFile()</code> succeeds, the object named <code>file</code> will contain a file handler, which is pretty much the same thing as a file descriptor object created from the famous C function <code>fopen()</code><a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a>.</p>
+<p>Take this code example below. In this example, we are creating a new text file named <code>foo.txt</code>. If the function <code>createFile()</code> succeeds, the object named <code>file</code> will contain a file handler, which is pretty much the same thing as a file descriptor object created from the famous C function <code>fopen()</code><a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a>.</p>
 <p>Now, a quick note, when we create a file descriptor with the C function <code>fopen()</code>, we must always close the file at the end of our program, or, as soon as we completed all operations that we wanted to perform on the file. In Zig, this is no different. So everytime we create a new file, this file remains “open”, waiting for some operation to be performed. As soon as we are done with it, we always have to close this file, to free the resources associated with it. This is true both for Zig and C. In Zig, we do this by calling the method <code>close()</code> from the file handler object.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
@@ -516,7 +553,8 @@ Wikipedia. 2024. <span>“File Descriptor.”</span> Wikipedia. <a href="https:/
 <li id="fn5"><p><a href="https://github.com/ziglang/zig/blob/master/lib/std/io/Reader.zig" class="uri">https://github.com/ziglang/zig/blob/master/lib/std/io/Reader.zig</a>.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn6"><p><a href="https://github.com/ziglang/zig/blob/master/lib/std/io/Writer.zig" class="uri">https://github.com/ziglang/zig/blob/master/lib/std/io/Writer.zig</a>.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn7"><p>A pipeline is a mechanism for inter-process communication, or, inter-process IO. You could also interpret a pipeline as a “set of processes that are chained together, through the standard input/output devices of the system”. At Linux for example, a pipeline is created inside a terminal, by connecting two or more terminal commands with the “pipe” character (<code>|</code>).<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn8"><p><a href="https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm" class="uri">https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn8"><p><a href="https://www.lipsum.com/" class="uri">https://www.lipsum.com/</a>.<a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn9"><p><a href="https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm" class="uri">https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
