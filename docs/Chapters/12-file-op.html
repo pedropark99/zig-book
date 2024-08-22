@@ -306,6 +306,7 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#understanding-how-buffered-io-works" id="toc-understanding-how-buffered-io-works" class="nav-link" data-scroll-target="#understanding-how-buffered-io-works"><span class="header-section-number">13.2.1</span> Understanding how buffered IO works</a></li>
   <li><a href="#buffered-io-across-different-languages" id="toc-buffered-io-across-different-languages" class="nav-link" data-scroll-target="#buffered-io-across-different-languages"><span class="header-section-number">13.2.2</span> Buffered IO across different languages</a></li>
+  <li><a href="#using-buffered-io-in-zig" id="toc-using-buffered-io-in-zig" class="nav-link" data-scroll-target="#using-buffered-io-in-zig"><span class="header-section-number">13.2.3</span> Using buffered IO in Zig</a></li>
   </ul></li>
   <li><a href="#filesystem-basics" id="toc-filesystem-basics" class="nav-link" data-scroll-target="#filesystem-basics"><span class="header-section-number">13.3</span> Filesystem basics</a>
   <ul class="collapse">
@@ -313,11 +314,8 @@ window.Quarto = {
   <li><a href="#the-concept-of-paths" id="toc-the-concept-of-paths" class="nav-link" data-scroll-target="#the-concept-of-paths"><span class="header-section-number">13.3.2</span> The concept of paths</a></li>
   <li><a href="#path-wildcards" id="toc-path-wildcards" class="nav-link" data-scroll-target="#path-wildcards"><span class="header-section-number">13.3.3</span> Path wildcards</a></li>
   </ul></li>
-  <li><a href="#the-current-working-directory-handler" id="toc-the-current-working-directory-handler" class="nav-link" data-scroll-target="#the-current-working-directory-handler"><span class="header-section-number">13.4</span> The current working directory handler</a></li>
-  <li><a href="#crud-operations-on-files" id="toc-crud-operations-on-files" class="nav-link" data-scroll-target="#crud-operations-on-files"><span class="header-section-number">13.5</span> CRUD operations on files</a>
-  <ul class="collapse">
-  <li><a href="#creating-files" id="toc-creating-files" class="nav-link" data-scroll-target="#creating-files"><span class="header-section-number">13.5.1</span> Creating files</a></li>
-  </ul></li>
+  <li><a href="#the-cwd-handler" id="toc-the-cwd-handler" class="nav-link" data-scroll-target="#the-cwd-handler"><span class="header-section-number">13.4</span> The CWD handler</a></li>
+  <li><a href="#creating-files" id="toc-creating-files" class="nav-link" data-scroll-target="#creating-files"><span class="header-section-number">13.5</span> Creating files</a></li>
   </ul>
 </nav>
     </div>
@@ -459,7 +457,7 @@ Your name is: Pedro
 <div id="fig-buffered-io" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-subfloat-fig figure">
 <div aria-describedby="fig-buffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<img src="./../Figures/buffered-io2.png" class="img-fluid figure-img" data-ref-parent="fig-buff-diff">
+<img src="./../Figures/buffered-io.png" class="img-fluid figure-img" data-ref-parent="fig-buff-diff">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-buffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 (b) Buffered IO
@@ -480,7 +478,58 @@ Figure&nbsp;13.1: Diagrams of read operations performed in buffered IO and unbuf
 <section id="buffered-io-across-different-languages" class="level3" data-number="13.2.2">
 <h3 data-number="13.2.2" class="anchored" data-anchor-id="buffered-io-across-different-languages"><span class="header-section-number">13.2.2</span> Buffered IO across different languages</h3>
 <p>IO operations made through a <code>FILE</code> pointer in C are buffered by default, so, at least in C, you don’t need to worry about this subject. But in contrast, IO operations in both Rust and Zig are not buffered depending on which functions from the standard libraries that you are using.</p>
-<p>For example, in Rust, buffered IO is implemented through the <code>BufReader</code> and <code>BufWriter</code> structs, while in Zig, it is implemented through the <code>BufferedReader</code> and <code>BufferedWriter</code> structs. So any IO operation that you perform through the <code>GenericWriter</code> and <code>GenericReader</code> objects that we presented at <a href="#sec-writer-reader" class="quarto-xref"><span>Section 13.1.1</span></a> are not buffered, which means that these objects might create a lot of system calls depending on the situation.</p>
+<p>For example, in Rust, buffered IO is implemented through the <code>BufReader</code> and <code>BufWriter</code> structs, while in Zig, it is implemented through the <code>BufferedReader</code> and <code>BufferedWriter</code> structs. So any IO operation that you perform through the <code>GenericWriter</code> and <code>GenericReader</code> objects that I presented at <a href="#sec-writer-reader" class="quarto-xref"><span>Section 13.1.1</span></a> are not buffered, which means that these objects might create a lot of system calls depending on the situation.</p>
+</section>
+<section id="using-buffered-io-in-zig" class="level3" data-number="13.2.3">
+<h3 data-number="13.2.3" class="anchored" data-anchor-id="using-buffered-io-in-zig"><span class="header-section-number">13.2.3</span> Using buffered IO in Zig</h3>
+<p>Using buffered IO in Zig is actually very easy. All you have to do is to just give the <code>GenericWriter</code> object to the <code>bufferedWriter()</code> function, or, to give the <code>GenericReader</code> object to the <code>bufferedReader()</code> function. These functions come from the <code>std.io</code> module, and they will construct the <code>BufferedWriter</code> or <code>BufferedReader</code> object for you.</p>
+<p>After you create this new <code>BufferedWriter</code> or <code>BufferedReader</code> object, you can call the <code>writer()</code> or <code>reader()</code> method of this new object, to get access to a new (and buffered) generic reader or generic writer.</p>
+<p>Let’s describe the process once again. Every time that you have a file descriptor object, you first get the generic writer or generic reader object from it, by calling the <code>writer()</code> or <code>reader()</code> methods of this file descriptor object. Then, you provide this generic writer or generic reader to the <code>bufferedWriter()</code> or <code>bufferedReader()</code> function, which creates a new <code>BufferedWriter</code> or <code>BufferedReader</code> object. Then, you call the <code>writer()</code> or <code>reader()</code> methods of this buffered writer or buffered reader object, which gives you access to a generic writer or generic reader object that is buffered.</p>
+<p>Take this program as an example. This program is essentially demonstrating the process exposed at <a href="#fig-buffered-io" class="quarto-xref">Figure&nbsp;<span>13.1 (b)</span></a>. We are simply opening a text file that contains the Lorem ipsum text, and then, we create a buffered IO reader object at <code>bufreader</code>, and we use this <code>bufreader</code> object to read the contents of this file into a buffer object, then, we end the program by printing this buffer to <code>stdout</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> file = <span class="kw">try</span> std.fs.cwd().openFile(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ZigExamples/file-io/lorem.txt"</span>, .<span class="op">{}</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> file.close();</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffered = std.io.bufferedReader(file.reader());</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> bufreader = buffered.reader();</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffer: [<span class="dv">1000</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="bu">@memset</span>(buffer[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> bufreader.readUntilDelimiterOrEof(</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    buffer[<span class="dv">0</span>..], <span class="ch">'\n'</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Lorem ipsum dolor sit amet, consectetur
+adipiscing elit. Sed tincidunt erat sed nulla ornare, nec
+aliquet ex laoreet. Ut nec rhoncus nunc. Integer magna metus,
+ultrices eleifend porttitor ut, finibus ut tortor. Maecenas
+sapien justo, finibus tincidunt dictum ac, semper et lectus.
+Vivamus molestie egestas orci ac viverra. Pellentesque nec
+arcu facilisis, euismod eros eu, sodales nisl. Ut egestas
+sagittis arcu, in accumsan sapien rhoncus sit amet. Aenean
+neque lectus, imperdiet ac lobortis a, ullamcorper sed massa.
+Nullam porttitor porttitor erat nec dapibus. Ut vel dui nec
+nulla vulputate molestie eget non nunc. Ut commodo luctus ipsum,
+in finibus libero feugiat eget. Etiam vel ante at urna tincidunt
+posuere sit amet ut felis. Maecenas finibus suscipit tristique.
+Donec viverra non sapien id suscipit.</code></pre>
+<p>Despite being a buffered IO reader, this <code>bufreader</code> object is similar to any other <code>GenericReader</code> object, and have the exact same methods. So, although these two types of objects perform very different IO operations, they have the same interface, so, you the programmer, can interchangeably use them without the need to change anything in your source code. So a buffered IO reader or a buffered IO writer objects have the same methods than it’s generic and unbuffered brothers, i.e.&nbsp;the generic reader and generic writer objects that I presented at <a href="#sec-writer-reader" class="quarto-xref"><span>Section 13.1.1</span></a>.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In general, you should always use a buffered IO reader or a buffered IO writer object to perform IO operations in Zig. Because they deliver better performance to your IO operations.</p>
+</div>
+</div>
 </section>
 </section>
 <section id="filesystem-basics" class="level2" data-number="13.3">
@@ -519,31 +568,48 @@ Figure&nbsp;13.2: An example of executing a program from the terminal
 <p>Therefore, the path <code>"Course/.."</code> refers to the folder before the <code>Course</code> folder. As another example, the path <code>"src/writexml/../xml.cpp"</code> refers to the file <code>xml.cpp</code> that is inside the folder before the <code>writexml</code> folder, which in this example is the <code>src</code> folder. Therefore, this path is equivalent to <code>"src/xml.cpp"</code>.</p>
 </section>
 </section>
-<section id="the-current-working-directory-handler" class="level2" data-number="13.4">
-<h2 data-number="13.4" class="anchored" data-anchor-id="the-current-working-directory-handler"><span class="header-section-number">13.4</span> The current working directory handler</h2>
-<p>In Zig, filesystem operations are usually made through a directory handler object. A directory handler in Zig is an object of type <code>Dir</code>, which is a struct that comes from the <code>std.fs</code> module. You normally create such <code>Dir</code> object, by calling the <code>std.fs.cwd()</code> function. This function returns a <code>Dir</code> object that points to, or, that represents the CWD.</p>
-<p>Through this <code>Dir</code> object, you can create new files, or modify, or read existing ones that are inside your CWD. In the example below, we are creating this <code>Dir</code> object, and storing it inside the <code>cwd</code> object. Through this <code>cwd</code> object we can perform filesystem operations in the CWD, creating, deleting, reading or modifying files inside the CWD, and other locations in our computer.</p>
+<section id="the-cwd-handler" class="level2" data-number="13.4">
+<h2 data-number="13.4" class="anchored" data-anchor-id="the-cwd-handler"><span class="header-section-number">13.4</span> The CWD handler</h2>
+<p>In Zig, filesystem operations are usually made through a directory handler object. A directory handler in Zig is an object of type <code>Dir</code>, which is an object that describes a particular folder in the filesystem of our computer. You normally create a <code>Dir</code> object, by calling the <code>std.fs.cwd()</code> function. This function returns a <code>Dir</code> object that points to (or, that describes) the current working directory (CWD).</p>
+<p>Through this <code>Dir</code> object, you can create new files, or modify, or read existing ones that are inside your CWD. In other words, a <code>Dir</code> object is the main entrypoint in Zig to perform multiple types of filesystem operations. In the example below, we are creating this <code>Dir</code> object, and storing it inside the <code>cwd</code> object. Although we are not using this object at this code example, we are going to use it a lot over the next examples.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>_ = cwd;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>_ = cwd;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="crud-operations-on-files" class="level2" data-number="13.5">
-<h2 data-number="13.5" class="anchored" data-anchor-id="crud-operations-on-files"><span class="header-section-number">13.5</span> CRUD operations on files</h2>
-<p>In this section, we will describe how to perform basic CRUD (Create, Read, Update and Delete) operations on files. This section describes which methods from the <code>Dir</code> object are used to perform these operations, and we also describes the available flags for each operation.</p>
-<section id="creating-files" class="level3" data-number="13.5.1">
-<h3 data-number="13.5.1" class="anchored" data-anchor-id="creating-files"><span class="header-section-number">13.5.1</span> Creating files</h3>
+<section id="creating-files" class="level2" data-number="13.5">
+<h2 data-number="13.5" class="anchored" data-anchor-id="creating-files"><span class="header-section-number">13.5</span> Creating files</h2>
 <p>We create new files by using the <code>createFile()</code> method from the <code>Dir</code> object. Just provide the name of the file that you want to create, and this function will do the necessary steps to create such file. You can also provide a relative path to this function, and it will create the file by following this path, which is relative to the CWD.</p>
-<p>This function might return an error, so, you should use <code>try</code>, <code>catch</code>, or any of the other methods presented at <a href="09-error-handling.html" class="quarto-xref"><span>Chapter 10</span></a> to handle this possible error. But if everything goes well, this <code>createFile()</code> method returns a <code>File</code> object as result.</p>
-<p>Take this code example below. In this example, we are creating a new text file named <code>foo.txt</code>. If the function <code>createFile()</code> succeeds, the object named <code>file</code> will contain a file handler, which is pretty much the same thing as a file descriptor object created from the famous C function <code>fopen()</code><a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a>.</p>
-<p>Now, a quick note, when we create a file descriptor with the C function <code>fopen()</code>, we must always close the file at the end of our program, or, as soon as we completed all operations that we wanted to perform on the file. In Zig, this is no different. So everytime we create a new file, this file remains “open”, waiting for some operation to be performed. As soon as we are done with it, we always have to close this file, to free the resources associated with it. This is true both for Zig and C. In Zig, we do this by calling the method <code>close()</code> from the file handler object.</p>
+<p>This function might return an error, so, you should use <code>try</code>, <code>catch</code>, or any of the other methods presented at <a href="09-error-handling.html" class="quarto-xref"><span>Chapter 10</span></a> to handle the possible error. But if everything goes well, this <code>createFile()</code> method returns a file descriptor object (i.e.&nbsp;a <code>File</code> object) as result, through which you can add content to the file with the IO operations that I presented before.</p>
+<p>Take this code example below. In this example, we are creating a new text file named <code>foo.txt</code>. If the function <code>createFile()</code> succeeds, the object named <code>file</code> will contain a file descriptor object, which we can use to write (or add) new content to the file, like we do in this example, by using a buffered writer object to write a new line of text to the file.</p>
+<p>Now, a quick note, when we create a file descriptor object in C, by using a C function like <code>fopen()</code>, we must always close the file at the end of our program, or, as soon as we complete all operations that we wanted to perform on the file. In Zig, this is no different. So everytime we create a new file, this file remains “open”, waiting for some operation to be performed. As soon as we are done with it, we always have to close this file, to free the resources associated with it. In Zig, we do this by calling the method <code>close()</code> from the file descriptor object.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file = <span class="kw">try</span> cwd.createFile(<span class="st">"foo.txt"</span>, .<span class="op">{}</span>);</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co">// Do things with the file ...</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co">// Don't forget to close the file at the end.</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> file.close();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file = <span class="kw">try</span> cwd.createFile(<span class="st">"foo.txt"</span>, .<span class="op">{}</span>);</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co">// Don't forget to close the file at the end.</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> file.close();</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">// Do things with the file ...</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> fw = file.writer();</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> fw.writeAll(</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Writing this line to the file</span><span class="sc">\n</span><span class="st">"</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>So, in this example we not only have created a file into the filesystem, but we also wrote some data into this file, using the file descriptor object returned by <code>createFile()</code>. If the file that you are trying to create already exists in your filesystem, this <code>createFile()</code> call will overwrite the contents of the file, or, in other words, it will in practice erase all the contents of the existing file.</p>
+<p>If you don’t want this to happen, meaning, that you don’t want to overwrite the contents of the existing file, but you want to write data to this file anyway (i.e.&nbsp;you want to append data to the file), you should use the <code>openFile()</code> method from the <code>Dir</code> object.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file = <span class="kw">try</span> cwd.createFile(<span class="st">"foo.txt"</span>, .<span class="op">{}</span>);</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">// Don't forget to close the file at the end.</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> file.close();</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co">// Do things with the file ...</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> fw = file.writer();</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> fw.writeAll(</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Writing this line to the file</span><span class="sc">\n</span><span class="st">"</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>error: NotOpenForReading
+t.zig:14:9: 0x103846b in main (t)
+    _ = try fr.readAll(buffer[0..]);</code></pre>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
@@ -551,7 +617,6 @@ Figure&nbsp;13.2: An example of executing a program from the terminal
 Wikipedia. 2024. <span>“File Descriptor.”</span> Wikipedia. <a href="https://en.wikipedia.org/wiki/File_descriptor">https://en.wikipedia.org/wiki/File_descriptor</a>.
 </div>
 </div>
-</section>
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>
@@ -564,7 +629,6 @@ Wikipedia. 2024. <span>“File Descriptor.”</span> Wikipedia. <a href="https:/
 <li id="fn6"><p><a href="https://github.com/ziglang/zig/blob/master/lib/std/io/Writer.zig" class="uri">https://github.com/ziglang/zig/blob/master/lib/std/io/Writer.zig</a>.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn7"><p>A pipeline is a mechanism for inter-process communication, or, inter-process IO. You could also interpret a pipeline as a “set of processes that are chained together, through the standard input/output devices of the system”. At Linux for example, a pipeline is created inside a terminal, by connecting two or more terminal commands with the “pipe” character (<code>|</code>).<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn8"><p><a href="https://www.lipsum.com/" class="uri">https://www.lipsum.com/</a>.<a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn9"><p><a href="https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm" class="uri">https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 

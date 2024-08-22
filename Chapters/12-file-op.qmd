@@ -320,7 +320,7 @@ this next byte already cached and ready to go.
 
 ![Unbuffered IO](./../Figures/unbuffered-io.png){#fig-unbuffered-io width=60%}
 
-![Buffered IO](./../Figures/buffered-io2.png){#fig-buffered-io}
+![Buffered IO](./../Figures/buffered-io.png){#fig-buffered-io}
 
 Diagrams of read operations performed in buffered IO and unbuffered IO environments.
 
@@ -345,12 +345,80 @@ buffered depending on which functions from the standard libraries that you are u
 For example, in Rust, buffered IO is implemented through the `BufReader` and `BufWriter` structs, while in Zig, it is implemented
 through the `BufferedReader` and `BufferedWriter` structs.
 So any IO operation that you perform through the `GenericWriter` and `GenericReader` objects
-that we presented at @sec-writer-reader are not buffered, which means that these objects
+that I presented at @sec-writer-reader are not buffered, which means that these objects
 might create a lot of system calls depending on the situation.
 
 
+### Using buffered IO in Zig
+
+Using buffered IO in Zig is actually very easy. All you have to do is to just
+give the `GenericWriter` object to the `bufferedWriter()` function, or, to give the `GenericReader`
+object to the `bufferedReader()` function. These functions come from the `std.io` module,
+and they will construct the `BufferedWriter` or `BufferedReader` object for you.
+
+After you create this new `BufferedWriter` or `BufferedReader` object, you can call the `writer()`
+or `reader()` method of this new object, to get access to a new (and buffered) generic reader or
+generic writer.
+
+Let's describe the process once again. Every time that you have a file descriptor object, you first get the generic writer or generic reader
+object from it, by calling the `writer()` or `reader()` methods of this file descriptor object.
+Then, you provide this generic writer or generic reader to the `bufferedWriter()` or `bufferedReader()`
+function, which creates a new `BufferedWriter` or `BufferedReader` object. Then, you call
+the `writer()` or `reader()` methods of this buffered writer or buffered reader object,
+which gives you access to a generic writer or generic reader object that is buffered.
+
+Take this program as an example. This program is essentially demonstrating the process exposed at @fig-buffered-io.
+We are simply opening a text file that contains the Lorem ipsum text, and then, we create a buffered IO reader object
+at `bufreader`, and we use this `bufreader` object to read the contents of this file into a buffer object, then,
+we end the program by printing this buffer to `stdout`.
 
 
+```{zig}
+#| auto_main: true
+var file = try std.fs.cwd().openFile(
+    "ZigExamples/file-io/lorem.txt", .{}
+);
+defer file.close();
+var buffered = std.io.bufferedReader(file.reader());
+var bufreader = buffered.reader();
+
+var buffer: [1000]u8 = undefined;
+@memset(buffer[0..], 0);
+
+_ = try bufreader.readUntilDelimiterOrEof(
+    buffer[0..], '\n'
+);
+try stdout.print("{s}\n", .{buffer});
+```
+
+```
+Lorem ipsum dolor sit amet, consectetur
+adipiscing elit. Sed tincidunt erat sed nulla ornare, nec
+aliquet ex laoreet. Ut nec rhoncus nunc. Integer magna metus,
+ultrices eleifend porttitor ut, finibus ut tortor. Maecenas
+sapien justo, finibus tincidunt dictum ac, semper et lectus.
+Vivamus molestie egestas orci ac viverra. Pellentesque nec
+arcu facilisis, euismod eros eu, sodales nisl. Ut egestas
+sagittis arcu, in accumsan sapien rhoncus sit amet. Aenean
+neque lectus, imperdiet ac lobortis a, ullamcorper sed massa.
+Nullam porttitor porttitor erat nec dapibus. Ut vel dui nec
+nulla vulputate molestie eget non nunc. Ut commodo luctus ipsum,
+in finibus libero feugiat eget. Etiam vel ante at urna tincidunt
+posuere sit amet ut felis. Maecenas finibus suscipit tristique.
+Donec viverra non sapien id suscipit.
+```
+
+Despite being a buffered IO reader, this `bufreader` object is similar to any other `GenericReader` object,
+and have the exact same methods. So, although these two types of objects perform very different IO operations,
+they have the same interface, so, you the programmer, can interchangeably use them
+without the need to change anything in your source code.
+So a buffered IO reader or a buffered IO writer objects have the same methods than it's generic and unbuffered brothers,
+i.e. the generic reader and generic writer objects that I presented at @sec-writer-reader.
+
+::: {.callout-tip}
+In general, you should always use a buffered IO reader or a buffered IO writer object to perform
+IO operations in Zig. Because they deliver better performance to your IO operations.
+:::
 
 
 ## Filesystem basics
@@ -445,18 +513,21 @@ Therefore, this path is equivalent to `"src/xml.cpp"`.
 
 
 
-## The current working directory handler
+## The CWD handler
 
 In Zig, filesystem operations are usually made through a directory handler object.
-A directory handler in Zig is an object of type `Dir`, which is a struct that comes from the `std.fs` module.
-You normally create such `Dir` object, by calling the `std.fs.cwd()` function.
-This function returns a `Dir` object that points to, or, that represents the CWD.
+A directory handler in Zig is an object of type `Dir`, which is an object that describes
+a particular folder in the filesystem of our computer.
+You normally create a `Dir` object, by calling the `std.fs.cwd()` function.
+This function returns a `Dir` object that points to (or, that describes) the
+current working directory (CWD).
 
 Through this `Dir` object, you can create new files, or modify, or read existing ones that are
-inside your CWD. In the example below, we are creating this `Dir` object, and storing it
-inside the `cwd` object. Through this `cwd` object we can perform filesystem operations in
-the CWD, creating, deleting, reading or modifying files inside the CWD, and other locations
-in our computer.
+inside your CWD. In other words, a `Dir` object is the main entrypoint in Zig to perform
+multiple types of filesystem operations.
+In the example below, we are creating this `Dir` object, and storing it
+inside the `cwd` object. Although we are not using this object at this code example,
+we are going to use it a lot over the next examples.
 
 ```{zig}
 #| auto_main: true
@@ -465,14 +536,8 @@ _ = cwd;
 ```
 
 
-## CRUD operations on files
 
-In this section, we will describe how to perform basic CRUD (Create, Read, Update and Delete) operations
-on files. This section describes which methods from the `Dir` object are used to perform
-these operations, and we also describes the available flags for each operation.
-
-
-### Creating files
+## Creating files
 
 We create new files by using the `createFile()` method from the `Dir` object.
 Just provide the name of the file that you want to create, and this function will
@@ -480,30 +545,68 @@ do the necessary steps to create such file. You can also provide a relative path
 and it will create the file by following this path, which is relative to the CWD.
 
 This function might return an error, so, you should use `try`, `catch`, or any of the other methods presented
-at @sec-error-handling to handle this possible error. But if everything goes well,
-this `createFile()` method returns a `File` object as result.
+at @sec-error-handling to handle the possible error. But if everything goes well,
+this `createFile()` method returns a file descriptor object (i.e. a `File` object) as result,
+through which you can add content to the file with the IO operations that I presented before.
 
 Take this code example below. In this example, we are creating a new text file
-named `foo.txt`. If the function `createFile()` succeeds, the object named `file` will contain a file handler,
-which is pretty much the same thing as a file descriptor object created from the famous C function `fopen()`[^fopen-doc].
+named `foo.txt`. If the function `createFile()` succeeds, the object named `file` will contain a file descriptor
+object, which we can use to write (or add) new content to the file, like we do in this example, by using
+a buffered writer object to write a new line of text to the file.
 
-[^fopen-doc]: <https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm>
-
-Now, a quick note, when we create a file descriptor with the C function `fopen()`, we must always close the file
-at the end of our program, or, as soon as we completed all operations that we wanted to perform
+Now, a quick note, when we create a file descriptor object in C, by using a C function like `fopen()`, we must always close the file
+at the end of our program, or, as soon as we complete all operations that we wanted to perform
 on the file. In Zig, this is no different. So everytime we create a new file, this file remains
 "open", waiting for some operation to be performed. As soon as we are done with it, we always have
-to close this file, to free the resources associated with it. This is true both for Zig and C.
-In Zig, we do this by calling the method `close()` from the file handler object.
+to close this file, to free the resources associated with it.
+In Zig, we do this by calling the method `close()` from the file descriptor object.
 
 
 ```{zig}
-#| eval: false
+#| auto_main: true
+#| eval: true
 const cwd = std.fs.cwd();
 const file = try cwd.createFile("foo.txt", .{});
-// Do things with the file ...
 // Don't forget to close the file at the end.
 defer file.close();
+// Do things with the file ...
+var fw = file.writer();
+_ = try fw.writeAll(
+    "Writing this line to the file\n"
+);
+```
+
+
+So, in this example we not only have created a file into the filesystem,
+but we also wrote some data into this file, using the file descriptor object
+returned by `createFile()`. If the file that you are trying to create
+already exists in your filesystem, this `createFile()` call will
+overwrite the contents of the file, or, in other words, it will
+in practice erase all the contents of the existing file.
+
+If you don't want this to happen, meaning, that you don't want to overwrite
+the contents of the existing file, but you want to write data to this file anyway
+(i.e. you want to append data to the file), you should use the `openFile()`
+method from the `Dir` object.
+
+
+```{zig}
+const cwd = std.fs.cwd();
+const file = try cwd.createFile("foo.txt", .{});
+// Don't forget to close the file at the end.
+defer file.close();
+// Do things with the file ...
+var fw = file.writer();
+_ = try fw.writeAll(
+    "Writing this line to the file\n"
+);
+```
+
+
+```
+error: NotOpenForReading
+t.zig:14:9: 0x103846b in main (t)
+    _ = try fr.readAll(buffer[0..]);
 ```
 
 
