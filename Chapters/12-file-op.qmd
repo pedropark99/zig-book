@@ -290,25 +290,28 @@ you can clearly notice most of the times the lost of performance in your applica
 is to use a system call only when it is needed, and also, only in infrequent situations, to reduce
 the number of system calls performed to a minimum.
 
+
+### Understanding how buffered IO works
+
 Buffered IO is a strategy to achieve better performance. It is used to reduce the number of system calls made by IO operations, and, as
 consequence, achieve a much higher performance. At @fig-buff-diff you can find two different diagrams which presents the differences between
-read operations performed in an unbuferred IO environment versus a buffered environemnt.
-Let's suppose that we have a text file that contains the famous Lorem ipsum text[^lorem]. Let's also suppose that these diagrams at @fig-buff-diff
-are showing the read operations that we are performing to read the Lorem ipsum text from this text file present in our
-filesystem.
+read operations performed in an unbuferred IO environment versus a buffered IO environemnt.
 
-The first thing you notice, is that in an unbuffered environment the read operations lead to many system calls.
+To give a better context to these diagrams, let's suppose that we have a text file that contains the famous Lorem ipsum text[^lorem]
+in our filesystem. Let's also suppose that these diagrams at @fig-buff-diff
+are showing the read operations that we are performing to read the Lorem ipsum text from this text file.
+The first thing you notice when looking at the diagrams, is that in an unbuffered environment the read operations leads to many system calls.
 More precisely, in the diagram exposed at @fig-unbuffered-io we get one system call per each byte that we read from the text file.
 On the other hand, at @fig-buffered-io we have only one system call at the very beginning.
 
-When we use a buffered IO system, when we perform the first read operation, instead of sending one single byte directly
-to our program, the OS first send a chunk of bytes from the file at once to a underlying buffer object (i.e. an array object).
+When we use a buffered IO system, at the first read operation we perform, instead of sending one single byte directly
+to our program, the OS first sends a chunk of bytes from the file to a buffer object (i.e. an array).
 This chunk of bytes are cached/stored inside this buffer object, and when this operation is done, then
 your program receives the byte that it actually asked for.
 
 From now on, for every new read operation that you perform, instead of making a new system call to ask
 for the next byte in the file to the OS, this read operation is redirected to the buffer object, that have
-this next byte is already cached and ready to go.
+this next byte already cached and ready to go.
 
 
 [^lorem]: <https://www.lipsum.com/>.
@@ -323,15 +326,17 @@ Diagrams of read operations performed in buffered IO and unbuffered IO environme
 
 :::
 
-This is the basic logic behind buffered IO systems. The size of the buffer object depends, but most of the times
+This is the basic logic behind buffered IO systems. The size of the buffer object depends, but most of the times,
 it is equal to a full page of memory (4096 bytes). If we follow this logic, then, the OS reads the first 4096 bytes
-of the file and caches it into the buffer object. As long as your program does not consume all of the 4096 bytes,
+of the file and caches it into the buffer object. As long as your program does not consume all of the 4096 bytes from the buffer,
 not a single system call is created.
 
-A new system call is made only when you consume all of the 4096 bytes from the buffer. In this situation,
-the new system call made essentially asks the OS to send the next 4096 bytes in the file, and once again,
-they are cached into the buffer object, and the cycle starts once again.
+However, as soon as you consume all of the 4096 bytes from the buffer, it means that there is no bytes left in the buffer.
+In this situation, a new system call is made to ask the OS to send the next 4096 bytes in the file, and once again,
+these bytes are cached into the buffer object, and the cycle starts once again.
 
+
+### Buffered IO across different languages
 
 IO operations made through a `FILE` pointer in C are buffered
 by default, so, at least in C, you don't need to worry about this subject. But in contrast, IO operations in both Rust and Zig are not
