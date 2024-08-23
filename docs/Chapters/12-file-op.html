@@ -317,12 +317,14 @@ window.Quarto = {
   <li><a href="#the-cwd-handler" id="toc-the-cwd-handler" class="nav-link" data-scroll-target="#the-cwd-handler"><span class="header-section-number">13.4</span> The CWD handler</a></li>
   <li><a href="#file-operations" id="toc-file-operations" class="nav-link" data-scroll-target="#file-operations"><span class="header-section-number">13.5</span> File operations</a>
   <ul class="collapse">
-  <li><a href="#creating-files" id="toc-creating-files" class="nav-link" data-scroll-target="#creating-files"><span class="header-section-number">13.5.1</span> Creating files</a></li>
+  <li><a href="#sec-creating-files" id="toc-sec-creating-files" class="nav-link" data-scroll-target="#sec-creating-files"><span class="header-section-number">13.5.1</span> Creating files</a></li>
   <li><a href="#opening-files-and-appending-data-to-it" id="toc-opening-files-and-appending-data-to-it" class="nav-link" data-scroll-target="#opening-files-and-appending-data-to-it"><span class="header-section-number">13.5.2</span> Opening files and appending data to it</a></li>
   <li><a href="#deleting-files" id="toc-deleting-files" class="nav-link" data-scroll-target="#deleting-files"><span class="header-section-number">13.5.3</span> Deleting files</a></li>
   <li><a href="#copying-files" id="toc-copying-files" class="nav-link" data-scroll-target="#copying-files"><span class="header-section-number">13.5.4</span> Copying files</a></li>
+  <li><a href="#read-the-docs" id="toc-read-the-docs" class="nav-link" data-scroll-target="#read-the-docs"><span class="header-section-number">13.5.5</span> Read the docs!</a></li>
   </ul></li>
   <li><a href="#sec-indicators" id="toc-sec-indicators" class="nav-link" data-scroll-target="#sec-indicators"><span class="header-section-number">13.6</span> Position indicators</a></li>
+  <li><a href="#directory-operations" id="toc-directory-operations" class="nav-link" data-scroll-target="#directory-operations"><span class="header-section-number">13.7</span> Directory operations</a></li>
   </ul>
 </nav>
     </div>
@@ -586,8 +588,8 @@ Figure&nbsp;13.2: An example of executing a program from the terminal
 </section>
 <section id="file-operations" class="level2" data-number="13.5">
 <h2 data-number="13.5" class="anchored" data-anchor-id="file-operations"><span class="header-section-number">13.5</span> File operations</h2>
-<section id="creating-files" class="level3" data-number="13.5.1">
-<h3 data-number="13.5.1" class="anchored" data-anchor-id="creating-files"><span class="header-section-number">13.5.1</span> Creating files</h3>
+<section id="sec-creating-files" class="level3" data-number="13.5.1">
+<h3 data-number="13.5.1" class="anchored" data-anchor-id="sec-creating-files"><span class="header-section-number">13.5.1</span> Creating files</h3>
 <p>We create new files by using the <code>createFile()</code> method from the <code>Dir</code> object. Just provide the name of the file that you want to create, and this function will do the necessary steps to create such file. You can also provide a relative path to this function, and it will create the file by following this path, which is relative to the CWD.</p>
 <p>This function might return an error, so, you should use <code>try</code>, <code>catch</code>, or any of the other methods presented at <a href="09-error-handling.html" class="quarto-xref"><span>Chapter 10</span></a> to handle the possible error. But if everything goes well, this <code>createFile()</code> method returns a file descriptor object (i.e.&nbsp;a <code>File</code> object) as result, through which you can add content to the file with the IO operations that I presented before.</p>
 <p>Take this code example below. In this example, we are creating a new text file named <code>foo.txt</code>. If the function <code>createFile()</code> succeeds, the object named <code>file</code> will contain a file descriptor object, which we can use to write (or add) new content to the file, like we do in this example, by using a buffered writer object to write a new line of text to the file.</p>
@@ -654,11 +656,34 @@ Figure&nbsp;13.2: An example of executing a program from the terminal
 </section>
 <section id="copying-files" class="level3" data-number="13.5.4">
 <h3 data-number="13.5.4" class="anchored" data-anchor-id="copying-files"><span class="header-section-number">13.5.4</span> Copying files</h3>
+<p>To copy existing files, we use the <code>copyFile()</code> method. The first argument in this method is the path to the file that you want to copy. The second argument is a <code>Dir</code> object, i.e.&nbsp;a directory handler, more specifically, a <code>Dir</code> object that points to the folder in your computer where you want to copy the file to. The third argument is the new path of the file, or, in other words, the new location of the file. The fourth argument is the options (or flags) to be used in the copy operation.</p>
+<p>The <code>Dir</code> object that you provide as input to this method will be used to copy the file to the new location. You may create this <code>Dir</code> object before calling the <code>copyFile()</code> method. Maybe you are planning to copy the file to a completly different location in your computer, so it might be worth to create a directory handler to that location. But if you copying the file to a subfolder of your CWD, then, you can just simply pass the CWD handler to this argument.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.copyFile(</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"foo.txt"</span>,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    cwd,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ZigExamples/file-io/foo.txt"</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{}</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="read-the-docs" class="level3" data-number="13.5.5">
+<h3 data-number="13.5.5" class="anchored" data-anchor-id="read-the-docs"><span class="header-section-number">13.5.5</span> Read the docs!</h3>
+<p>There are some other useful methods for file operations available at <code>Dir</code> objects, such as the <code>writeFile()</code> method, but I recommend you to read the docs for the <a href="https://ziglang.org/documentation/master/std/#std.fs.Dir"><code>Dir</code> type</a><a href="#fn12" class="footnote-ref" id="fnref12" role="doc-noteref"><sup>12</sup></a> to explore the other available methods, since I already talked too much about them.</p>
 </section>
 </section>
 <section id="sec-indicators" class="level2" data-number="13.6">
 <h2 data-number="13.6" class="anchored" data-anchor-id="sec-indicators"><span class="header-section-number">13.6</span> Position indicators</h2>
-<p>This method <a href="https://en.cppreference.com/w/c/io/fseek"><code>fseek()</code></a><a href="#fn12" class="footnote-ref" id="fnref12" role="doc-noteref"><sup>12</sup></a></p>
+<p>A position indicator is like a pointer, or, an index. This “index” identifies the current location in the file (or, in the data stream) that the file descriptor object that you have is currently looking at.</p>
+<p>When you create a file descriptor, the position indicator starts at the beginning of the file, or, at the beginning of the stream. When you read or write data into the file (or socket, or data stream, etc.) described by this file descriptor object, you move the position indicator.</p>
+<p>In other words, any IO operation ends up moving the position indicator. For example, suppose that we have a file of 300 bytes total in size. If you read 100 bytes from the file, the position indicator moves 100 bytes forward. If you try to write 50 bytes into this same file, these 50 bytes will be written from the current position of the position indicator. Since the indicator is at a 100 bytes forward from the beginning of the file, these 50 bytes would be written in the middle of the file.</p>
+<p>This is why we have used the <code>seekTo()</code> method at the last code example presented at <a href="#sec-creating-files" class="quarto-xref"><span>Section 13.5.1</span></a>. We have used this method to move the position indicator back to the beginning of the file, which would make sure that we would write the text that we wanted to write from the beginning of the file, instead of writing it in the middle of the file. Because before the write operation, we already had performed a read operation, which means that the position indicator was moved in this read operation.</p>
+<p>The position indicators of a file descriptor object can be changed (or altered) by using the “seek” methods from this file descriptor, which are: <code>seekTo()</code>, <code>seekFromEnd()</code> and <code>seekBy()</code>. These methods have the same effect, or, the same resposibility that the <a href="https://en.cppreference.com/w/c/io/fseek"><code>fseek()</code></a><a href="#fn13" class="footnote-ref" id="fnref13" role="doc-noteref"><sup>13</sup></a> C function.</p>
+<p>The bulletpoints below summarises what is the effect.</p>
+</section>
+<section id="directory-operations" class="level2" data-number="13.7">
+<h2 data-number="13.7" class="anchored" data-anchor-id="directory-operations"><span class="header-section-number">13.7</span> Directory operations</h2>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
@@ -681,7 +706,8 @@ Wikipedia. 2024. <span>“File Descriptor.”</span> Wikipedia. <a href="https:/
 <li id="fn9"><p><a href="https://ziglang.org/documentation/master/std/#std.fs.File.OpenFlags" class="uri">https://ziglang.org/documentation/master/std/#std.fs.File.OpenFlags</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn10"><p><a href="https://docs.python.org/3/tutorial/inputoutput.html#reading-and-writing-files" class="uri">https://docs.python.org/3/tutorial/inputoutput.html#reading-and-writing-files</a><a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn11"><p><a href="https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm" class="uri">https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm</a><a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn12"><p><a href="https://en.cppreference.com/w/c/io/fseek" class="uri">https://en.cppreference.com/w/c/io/fseek</a><a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn12"><p><a href="https://ziglang.org/documentation/master/std/#std.fs.Dir" class="uri">https://ziglang.org/documentation/master/std/#std.fs.Dir</a><a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn13"><p><a href="https://en.cppreference.com/w/c/io/fseek" class="uri">https://en.cppreference.com/w/c/io/fseek</a><a href="#fnref13" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 

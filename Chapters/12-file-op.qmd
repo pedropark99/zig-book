@@ -545,7 +545,7 @@ _ = cwd;
 
 ## File operations
 
-### Creating files
+### Creating files {#sec-creating-files}
 
 We create new files by using the `createFile()` method from the `Dir` object.
 Just provide the name of the file that you want to create, and this function will
@@ -701,14 +701,84 @@ try cwd.deleteFile("foo.txt");
 
 ### Copying files
 
+To copy existing files, we use the `copyFile()` method. The first argument in this method
+is the path to the file that you want to copy. The second argument is a `Dir` object, i.e. a directory handler,
+more specifically, a `Dir` object that points to the folder in your computer where you want to
+copy the file to. The third argument is the new path of the file, or, in other words, the new location
+of the file. The fourth argument is the options (or flags) to be used in the copy operation.
+
+The `Dir` object that you provide as input to this method will be used to copy the file to
+the new location. You may create this `Dir` object before calling the `copyFile()` method.
+Maybe you are planning to copy the file to a completly different location in your computer,
+so it might be worth to create a directory handler to that location. But if you copying the
+file to a subfolder of your CWD, then, you can just simply pass the CWD handler to this argument.
+
+```{zig}
+#| eval: false
+const cwd = std.fs.cwd();
+try cwd.copyFile(
+    "foo.txt",
+    cwd,
+    "ZigExamples/file-io/foo.txt",
+    .{}
+);
+```
+
+
+### Read the docs!
+
+There are some other useful methods for file operations available at `Dir` objects,
+such as the `writeFile()` method, but I recommend you to read the docs for the
+[`Dir` type](https://ziglang.org/documentation/master/std/#std.fs.Dir)[^zig-dir]
+to explore the other available methods, since I already talked too much about them.
+
+
+[^zig-dir]: <https://ziglang.org/documentation/master/std/#std.fs.Dir>
 
 
 
 
 ## Position indicators {#sec-indicators}
 
-This method
+A position indicator is like a pointer, or, an index. This "index" identifies the current
+location in the file (or, in the data stream) that the file descriptor object that you have
+is currently looking at.
+
+When you create a file descriptor, the position indicator starts at the beginning of the file,
+or, at the beginning of the stream. When you read or write data into the file (or socket, or data stream, etc.)
+described by this file descriptor object, you move the position indicator.
+
+In other words, any IO operation ends up moving the position indicator. For example, suppose
+that we have a file of 300 bytes total in size. If you
+read 100 bytes from the file, the position indicator moves 100 bytes forward. If you try
+to write 50 bytes into this same file, these 50 bytes will be written from the current
+position of the position indicator. Since the indicator is at a 100 bytes forward from
+the beginning of the file, these 50 bytes would be written in the middle of the file.
+
+This is why we have used the `seekTo()` method at the last code example presented at @sec-creating-files.
+We have used this method to move the position indicator back to the beginning of the file, which
+would make sure that we would write the text that we wanted to write from the beginning of the file,
+instead of writing it from the middle of the file. Because before the write operation, we already had
+performed a read operation, which means that the position indicator was moved in this read operation.
+
+The position indicators of a file descriptor object can be changed (or altered) by using the
+"seek" methods from this file descriptor, which are: `seekTo()`, `seekFromEnd()` and `seekBy()`.
+These methods have the same effect, or, the same resposibility that the
 [`fseek()`](https://en.cppreference.com/w/c/io/fseek)[^c-fseek]
+C function.
 
 [^c-fseek]: <https://en.cppreference.com/w/c/io/fseek>
+
+
+Considering that `offset` refers to the index that you provide as input to these "seek" methods,
+the bulletpoints below summarises what is the effect of each of these methods:
+
+- `seekTo()` will move the position indicator to the location that is `offset` bytes from the beginning of the file.
+- `seekFromEnd()` will move the position indicator to the location that is `offset` bytes from the end of the file.
+- `seekBy()` will move the position indicator to the location that is `offset` bytes from the current position in the file.
+
+
+
+
+## Directory operations
 
