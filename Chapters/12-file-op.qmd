@@ -606,10 +606,9 @@ a program like this one below becomes valid:
 
 
 ```{zig}
+#| auto_main: true
 const cwd = std.fs.cwd();
-const file = try cwd.createFile(
-    "foo.txt", .{ .read = true }
-);
+const file = try cwd.createFile("foo.txt", .{ .read = true });
 defer file.close();
 
 var fw = file.writer();
@@ -617,6 +616,7 @@ _ = try fw.writeAll("We are going to read this line\n");
 
 var buffer: [300]u8 = undefined;
 @memset(buffer[0..], 0);
+try file.seekTo(0);
 var fr = file.reader();
 _ = try fr.readAll(buffer[0..]);
 try stdout.print("{s}\n", .{buffer});
@@ -628,5 +628,18 @@ We are going to read this line
 ```
 
 
+If you are not familiar with position indicators, you may not recognize what the method
+`seekTo()` is, or, what does it do. If that is your case, do not worry,
+we are going to talk more about this method at @sec-indicators. But essentially
+this method is moving the position indicator back to the beginning of the file,
+so that we can read the contents of the file from the beginning.
 
+
+
+## Position indicators {#sec-indicators}
+
+This method
+[`fseek()`](https://en.cppreference.com/w/c/io/fseek)[^c-fseek]
+
+[^c-fseek]: <https://en.cppreference.com/w/c/io/fseek>
 

@@ -316,6 +316,7 @@ window.Quarto = {
   </ul></li>
   <li><a href="#the-cwd-handler" id="toc-the-cwd-handler" class="nav-link" data-scroll-target="#the-cwd-handler"><span class="header-section-number">13.4</span> The CWD handler</a></li>
   <li><a href="#creating-files" id="toc-creating-files" class="nav-link" data-scroll-target="#creating-files"><span class="header-section-number">13.5</span> Creating files</a></li>
+  <li><a href="#sec-indicators" id="toc-sec-indicators" class="nav-link" data-scroll-target="#sec-indicators"><span class="header-section-number">13.6</span> Position indicators</a></li>
   </ul>
 </nav>
     </div>
@@ -596,20 +597,29 @@ Figure&nbsp;13.2: An example of executing a program from the terminal
 </div>
 <p>So, in this example we not only have created a file into the filesystem, but we also wrote some data into this file, using the file descriptor object returned by <code>createFile()</code>. If the file that you are trying to create already exists in your filesystem, this <code>createFile()</code> call will overwrite the contents of the file, or, in other words, it will in practice erase all the contents of the existing file.</p>
 <p>If you don’t want this to happen, meaning, that you don’t want to overwrite the contents of the existing file, but you want to write data to this file anyway (i.e.&nbsp;you want to append data to the file), you should use the <code>openFile()</code> method from the <code>Dir</code> object.</p>
+<p>Another important aspect about <code>createFile()</code> is that this method creates a file that is not opened to read operations by default. It means that you cannot read this file. You are not allowed to. So for example, you might want to write some stuff into this file at the beginning of the execution of your program. Then, at a future point in your program you might need to read what you have wroted into this file. If you try to read data from this file, you will likely get a <code>NotOpenForReading</code> error as result.</p>
+<p>But how can you overcome this barrier? How can you create a file that is open to read operations? All you have to do, is to set the <code>read</code> flag to true in the second argument of <code>createFile()</code>. When you set this flag to true, then the file get’s create with “read permissions”, and, as consequence, a program like this one below becomes valid:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file = <span class="kw">try</span> cwd.createFile(<span class="st">"foo.txt"</span>, .<span class="op">{}</span>);</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">// Don't forget to close the file at the end.</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> file.close();</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co">// Do things with the file ...</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> fw = file.writer();</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> fw.writeAll(</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Writing this line to the file</span><span class="sc">\n</span><span class="st">"</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file = <span class="kw">try</span> cwd.createFile(<span class="st">"foo.txt"</span>, .<span class="op">{</span> .read = <span class="cn">true</span> <span class="op">}</span>);</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> file.close();</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> fw = file.writer();</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> fw.writeAll(<span class="st">"We are going to read this line</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffer: [<span class="dv">300</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="bu">@memset</span>(buffer[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> file.seekTo(<span class="dv">0</span>);</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> fr = file.reader();</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> fr.readAll(buffer[<span class="dv">0</span>..]);</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<pre><code>error: NotOpenForReading
-t.zig:14:9: 0x103846b in main (t)
-    _ = try fr.readAll(buffer[0..]);</code></pre>
+<pre><code>We are going to read this line</code></pre>
+<p>If you are not familiar with position indicators, you may not recognize what the method <code>seekTo()</code> is, or, what does it do. If that is your case, do not worry, we are going to talk more about this method at <a href="#sec-indicators" class="quarto-xref"><span>Section 13.6</span></a>. But essentially this method is moving the position indicator back to the beginning of the file, so that we can read the contents of the file from the beginning.</p>
+</section>
+<section id="sec-indicators" class="level2" data-number="13.6">
+<h2 data-number="13.6" class="anchored" data-anchor-id="sec-indicators"><span class="header-section-number">13.6</span> Position indicators</h2>
+<p>This method <a href="https://en.cppreference.com/w/c/io/fseek"><code>fseek()</code></a><a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a></p>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
@@ -629,6 +639,7 @@ Wikipedia. 2024. <span>“File Descriptor.”</span> Wikipedia. <a href="https:/
 <li id="fn6"><p><a href="https://github.com/ziglang/zig/blob/master/lib/std/io/Writer.zig" class="uri">https://github.com/ziglang/zig/blob/master/lib/std/io/Writer.zig</a>.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn7"><p>A pipeline is a mechanism for inter-process communication, or, inter-process IO. You could also interpret a pipeline as a “set of processes that are chained together, through the standard input/output devices of the system”. At Linux for example, a pipeline is created inside a terminal, by connecting two or more terminal commands with the “pipe” character (<code>|</code>).<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn8"><p><a href="https://www.lipsum.com/" class="uri">https://www.lipsum.com/</a>.<a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn9"><p><a href="https://en.cppreference.com/w/c/io/fseek" class="uri">https://en.cppreference.com/w/c/io/fseek</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
