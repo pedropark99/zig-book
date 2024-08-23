@@ -589,25 +589,44 @@ the contents of the existing file, but you want to write data to this file anywa
 (i.e. you want to append data to the file), you should use the `openFile()`
 method from the `Dir` object.
 
+Another important aspect about `createFile()` is that this method creates a file
+that is not opened to read operations by default. It means that you cannot read this file.
+You are not allowed to.
+So for example, you might want to write some stuff into this file at the beginning of the execution
+of your program. Then, at a future point in your program you might need to read what you have
+wroted into this file. If you try to read data from this file, you will likely
+get a `NotOpenForReading` error as result.
+
+
+But how can you overcome this barrier? How can you create a file that is open
+to read operations? All you have to do, is to set the `read` flag to true
+in the second argument of `createFile()`. When you set this flag to true,
+then the file get's create with "read permissions", and, as consequence,
+a program like this one below becomes valid:
+
 
 ```{zig}
 const cwd = std.fs.cwd();
-const file = try cwd.createFile("foo.txt", .{});
-// Don't forget to close the file at the end.
-defer file.close();
-// Do things with the file ...
-var fw = file.writer();
-_ = try fw.writeAll(
-    "Writing this line to the file\n"
+const file = try cwd.createFile(
+    "foo.txt", .{ .read = true }
 );
+defer file.close();
+
+var fw = file.writer();
+_ = try fw.writeAll("We are going to read this line\n");
+
+var buffer: [300]u8 = undefined;
+@memset(buffer[0..], 0);
+var fr = file.reader();
+_ = try fr.readAll(buffer[0..]);
+try stdout.print("{s}\n", .{buffer});
 ```
 
 
 ```
-error: NotOpenForReading
-t.zig:14:9: 0x103846b in main (t)
-    _ = try fr.readAll(buffer[0..]);
+We are going to read this line
 ```
+
 
 
 
