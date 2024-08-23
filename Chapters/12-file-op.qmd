@@ -513,6 +513,7 @@ Therefore, this path is equivalent to `"src/xml.cpp"`.
 
 
 
+
 ## The CWD handler
 
 In Zig, filesystem operations are usually made through a directory handler object.
@@ -537,7 +538,14 @@ _ = cwd;
 
 
 
-## Creating files
+
+
+
+
+
+## File operations
+
+### Creating files
 
 We create new files by using the `createFile()` method from the `Dir` object.
 Just provide the name of the file that you want to create, and this function will
@@ -635,7 +643,7 @@ this method is moving the position indicator back to the beginning of the file,
 so that we can read the contents of the file from the beginning.
 
 
-## Opening files
+### Opening files and appending data to it
 
 Opening files is easy. Just use the `openFile()` method instead of `createFile()`.
 In the first argument of `openFile()` you provide the path to the file that
@@ -657,12 +665,15 @@ There are three IO modes, or, three values that you can provide to this flag, wh
 These modes are similar to the modes that you provide to the `mode` argument of the
 `open()` Python built-in function[^py-open], or, the `mode` argument of the
 `fopen()` C function[^c-open].
+In the code example below, we are opening the `foo.txt` text file with a `write_only` mode,
+and appending a new line of text to the end of the file. We use `seekFromEnd()` this time
+to garantee that we are going to append the text to the end of the file. Once again, methods
+such as `seekFromEnd()` are described in more depth at @sec-indicators.
 
 [^py-open]: <https://docs.python.org/3/tutorial/inputoutput.html#reading-and-writing-files>
 [^c-open]: <https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm>
 
-In the code example below, we are opening the `foo.txt` text file, and appending
-a new line of text into it.
+
 
 ```{zig}
 #| auto_main: true
@@ -673,6 +684,24 @@ try file.seekFromEnd(0);
 var fw = file.writer();
 _ = try fw.writeAll("Some random text to write\n");
 ```
+
+
+### Deleting files
+
+Sometimes, we just need to delete/remove the files that we have.
+To do that, we use the `deleteFile()` method. You just provide the path of the
+file that you want to delete, and this method will try to delete the file located
+at this path.
+
+```{zig}
+#| eval: false
+const cwd = std.fs.cwd();
+try cwd.deleteFile("foo.txt");
+```
+
+### Copying files
+
+
 
 
 
