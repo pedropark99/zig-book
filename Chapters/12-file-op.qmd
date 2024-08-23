@@ -635,6 +635,45 @@ this method is moving the position indicator back to the beginning of the file,
 so that we can read the contents of the file from the beginning.
 
 
+## Opening files
+
+Opening files is easy. Just use the `openFile()` method instead of `createFile()`.
+In the first argument of `openFile()` you provide the path to the file that
+you want to open. Then, on the second argument you provide the flags (or, the options)
+that dictates how the file is opened.
+
+You can see the full list of options for `openFile()` by visiting the documentation for
+[`OpenFlags`](https://ziglang.org/documentation/master/std/#std.fs.File.OpenFlags)[^oflags].
+But the main flag that you will most certainly be worried about is the `mode` flag.
+This flag specifies the IO mode that the file will be using when it get's opened.
+There are three IO modes, or, three values that you can provide to this flag, which are:
+
+- `read_only`, allows only read operations on the file. All write operations are blocked.
+- `write_only`, allows only write operations on the file. All read operations are blocked. 
+- `read_write`, allows both write and read operations on the file.
+
+[^oflags]: <https://ziglang.org/documentation/master/std/#std.fs.File.OpenFlags>
+
+These modes are similar to the modes that you provide to the `mode` argument of the
+`open()` Python built-in function[^py-open], or, the `mode` argument of the
+`fopen()` C function[^c-open].
+
+[^py-open]: <https://docs.python.org/3/tutorial/inputoutput.html#reading-and-writing-files>
+[^c-open]: <https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm>
+
+In the code example below, we are opening the `foo.txt` text file, and appending
+a new line of text into it.
+
+```{zig}
+#| auto_main: true
+const cwd = std.fs.cwd();
+const file = try cwd.openFile("foo.txt", .{ .mode = .write_only });
+defer file.close();
+var fw = file.writer();
+_ = try fw.writeAll("We are going to read this line\n");
+```
+
+
 
 ## Position indicators {#sec-indicators}
 
