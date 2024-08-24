@@ -747,7 +747,7 @@ When you create a file descriptor, the position indicator starts at the beginnin
 or, at the beginning of the stream. When you read or write data into the file (or socket, or data stream, etc.)
 described by this file descriptor object, you end up moving the position indicator.
 
-In other words, any IO operation have a commom side effect, which is moving the position indicator.
+In other words, any IO operation have a common side effect, which is moving the position indicator.
 For example, suppose that we have a file of 300 bytes total in size. If you
 read 100 bytes from the file, the position indicator moves 100 bytes forward. If you try
 to write 50 bytes into this same file, these 50 bytes will be written from the current
@@ -781,6 +781,110 @@ positive or negative index.
 
 
 
+
+
+
 ## Directory operations
 
+### Iterating through the files in a directory
+
+One of the most classic tasks related to filesystem is to be able
+to iterate through the existing files in a directory. Iteration
+over a directory is made in Zig through a iterator pattern. In other words, we need
+to create a iterator object, and use this object to iterate through the files.
+
+You can produce such directory object by using either the `iterate()` or `walk()` methods
+of a `Dir` object. Both methods return a iterator object as result, which you can advance by using
+`next()`. The difference between these methods, is that `iterate()` returns a non-recursive iterator,
+while `walk()` does. It means that the iterator returned by `walk()` will not only iterate through
+the files available in the current directory, but also, through the files from any subdirectory found
+inside the current directory.
+
+In the example below, we are displaying the names of the files stored inside the
+directory `ZigExamples/file-io`. Notice that we had to open this directory through
+the `openDir()` function. Also notice that we provided the flag `iterate` in the
+second argument of `openDir()`. This flag is important, because without this flag,
+we would not be allowed to iterate through the files in this directory.
+
+```{zig}
+#| auto_main: true
+const cwd = std.fs.cwd();
+const dir = try cwd.openDir(
+    "ZigExamples/file-io/",
+    .{ .iterate = true }
+);
+var it = dir.iterate();
+while (try it.next()) |entry| {
+    try stdout.print(
+        "File name: {s}\n",
+        .{entry.name}
+    );
+}
+```
+
+```
+File name: create_file_and_write_toit.zig
+File name: create_file.zig
+File name: lorem.txt
+File name: iterate.zig
+File name: delete_file.zig
+File name: append_to_file.zig
+File name: user_input.zig
+File name: foo.txt
+File name: create_file_and_read.zig
+File name: buff_io.zig
+File name: copy_file.zig
+```
+
+
 ### Creating new directories
+
+There are two methods that are important when it comes to
+creating directories, which are `makeDir()` and `makePath()`.
+The difference between these two methods is that `makeDir()` can
+only create one single directory in the current directory in each call,
+while `makePath()` is capable of recursively create subdirectories in the same call.
+
+
+This is why the name of this method is "make path". It will create as many
+subdirectories as necessary to create the path that you provided as input.
+So, if you provide the path `"sub1/sub2/sub3"` as input to this method,
+it will create three different subdirectories, `sub1`, `sub2` and `sub3`,
+within the same function call. In contrast, if you provided such path
+as input to `makeDir()`, you would likely get an error as result, since
+this method can only create a single subdirectory.
+
+```{zig}
+#| auto_main: true
+#| eval: false
+const cwd = std.fs.cwd();
+try cwd.makeDir("src");
+try cwd.makePath("src/decoders/jpg/");
+```
+
+### Deleting directories
+
+To delete a directory, just provide the path to the directory that you want to delete
+as input to the `deleteDir()` method from a `Dir` object. In the example below,
+we are deleting the `src` directory that we have just created in the previous example.
+
+```{zig}
+#| auto_main: true
+#| eval: false
+const cwd = std.fs.cwd();
+try cwd.deleteDir("src");
+```
+
+
+## Conclusion
+
+In this chapter, I have described how to perform in Zig the most common filesystem and IO operations.
+But you might feel the lack of some other, less common, operation in this chapter, such as: how to rename files,
+or how to open a directory, or how to create symbolic links, or how to use `access()` to test if a particular
+path exists in your computer. But for all of these less common tasks, I recommend you to read
+the docs of the [`Dir` type](https://ziglang.org/documentation/master/std/#std.fs.Dir)[^zig-dir]
+, since you can find a good description of these cases there.
+
+
+
+
