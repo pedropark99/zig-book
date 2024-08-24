@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.56">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>13&nbsp; Filesystem and Input/Output (IO) – An Introduction to Zig</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../references.html" rel="next">
+<link href="../Chapters/10-stack-project.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/12-file-op.html"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Filesystem and Input/Output (IO)</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">An Introduction to Zig</a> 
+        <div class="sidebar-tools-main">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Welcome</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-zig-weird.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Introducing Zig</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/03-structs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Structs, Modules and Control Flow</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-memory.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Memory and Allocators</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-base64.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Project 1 - Building a base64 encoder/decoder</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/02-debugging.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Debugging Zig applications</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/05-pointers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Pointers and Optionals</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/04-http-server.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Project 2 - Building a HTTP Server from scratch</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/03-unittests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/07-build-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Build System</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/09-error-handling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Error handling and unions</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/09-data-structures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Data Structures</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/10-stack-project.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Project 3 - Building a stack data structure</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/12-file-op.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Filesystem and Input/Output (IO)</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-io-basics" id="toc-sec-io-basics" class="nav-link active" data-scroll-target="#sec-io-basics"><span class="header-section-number">13.1</span> Input/Output basics</a>
+  <ul class="collapse">
+  <li><a href="#sec-writer-reader" id="toc-sec-writer-reader" class="nav-link" data-scroll-target="#sec-writer-reader"><span class="header-section-number">13.1.1</span> The writer and reader pattern</a></li>
+  <li><a href="#sec-file-descriptor" id="toc-sec-file-descriptor" class="nav-link" data-scroll-target="#sec-file-descriptor"><span class="header-section-number">13.1.2</span> Introducing file descriptors</a></li>
+  <li><a href="#the-standard-output" id="toc-the-standard-output" class="nav-link" data-scroll-target="#the-standard-output"><span class="header-section-number">13.1.3</span> The <em>standard output</em></a></li>
+  <li><a href="#the-standard-input" id="toc-the-standard-input" class="nav-link" data-scroll-target="#the-standard-input"><span class="header-section-number">13.1.4</span> The <em>standard input</em></a></li>
+  <li><a href="#the-standard-error" id="toc-the-standard-error" class="nav-link" data-scroll-target="#the-standard-error"><span class="header-section-number">13.1.5</span> The <em>standard error</em></a></li>
+  </ul></li>
+  <li><a href="#buffered-io" id="toc-buffered-io" class="nav-link" data-scroll-target="#buffered-io"><span class="header-section-number">13.2</span> Buffered IO</a>
+  <ul class="collapse">
+  <li><a href="#understanding-how-buffered-io-works" id="toc-understanding-how-buffered-io-works" class="nav-link" data-scroll-target="#understanding-how-buffered-io-works"><span class="header-section-number">13.2.1</span> Understanding how buffered IO works</a></li>
+  <li><a href="#buffered-io-across-different-languages" id="toc-buffered-io-across-different-languages" class="nav-link" data-scroll-target="#buffered-io-across-different-languages"><span class="header-section-number">13.2.2</span> Buffered IO across different languages</a></li>
+  <li><a href="#using-buffered-io-in-zig" id="toc-using-buffered-io-in-zig" class="nav-link" data-scroll-target="#using-buffered-io-in-zig"><span class="header-section-number">13.2.3</span> Using buffered IO in Zig</a></li>
+  </ul></li>
+  <li><a href="#filesystem-basics" id="toc-filesystem-basics" class="nav-link" data-scroll-target="#filesystem-basics"><span class="header-section-number">13.3</span> Filesystem basics</a>
+  <ul class="collapse">
+  <li><a href="#the-concept-of-current-working-directory-cwd" id="toc-the-concept-of-current-working-directory-cwd" class="nav-link" data-scroll-target="#the-concept-of-current-working-directory-cwd"><span class="header-section-number">13.3.1</span> The concept of current working directory (CWD)</a></li>
+  <li><a href="#the-concept-of-paths" id="toc-the-concept-of-paths" class="nav-link" data-scroll-target="#the-concept-of-paths"><span class="header-section-number">13.3.2</span> The concept of paths</a></li>
+  <li><a href="#path-wildcards" id="toc-path-wildcards" class="nav-link" data-scroll-target="#path-wildcards"><span class="header-section-number">13.3.3</span> Path wildcards</a></li>
+  </ul></li>
+  <li><a href="#the-cwd-handler" id="toc-the-cwd-handler" class="nav-link" data-scroll-target="#the-cwd-handler"><span class="header-section-number">13.4</span> The CWD handler</a></li>
+  <li><a href="#file-operations" id="toc-file-operations" class="nav-link" data-scroll-target="#file-operations"><span class="header-section-number">13.5</span> File operations</a>
+  <ul class="collapse">
+  <li><a href="#sec-creating-files" id="toc-sec-creating-files" class="nav-link" data-scroll-target="#sec-creating-files"><span class="header-section-number">13.5.1</span> Creating files</a></li>
+  <li><a href="#opening-files-and-appending-data-to-it" id="toc-opening-files-and-appending-data-to-it" class="nav-link" data-scroll-target="#opening-files-and-appending-data-to-it"><span class="header-section-number">13.5.2</span> Opening files and appending data to it</a></li>
+  <li><a href="#deleting-files" id="toc-deleting-files" class="nav-link" data-scroll-target="#deleting-files"><span class="header-section-number">13.5.3</span> Deleting files</a></li>
+  <li><a href="#copying-files" id="toc-copying-files" class="nav-link" data-scroll-target="#copying-files"><span class="header-section-number">13.5.4</span> Copying files</a></li>
+  <li><a href="#read-the-docs" id="toc-read-the-docs" class="nav-link" data-scroll-target="#read-the-docs"><span class="header-section-number">13.5.5</span> Read the docs!</a></li>
+  </ul></li>
+  <li><a href="#sec-indicators" id="toc-sec-indicators" class="nav-link" data-scroll-target="#sec-indicators"><span class="header-section-number">13.6</span> Position indicators</a></li>
+  <li><a href="#directory-operations" id="toc-directory-operations" class="nav-link" data-scroll-target="#directory-operations"><span class="header-section-number">13.7</span> Directory operations</a>
+  <ul class="collapse">
+  <li><a href="#iterating-through-the-files-in-a-directory" id="toc-iterating-through-the-files-in-a-directory" class="nav-link" data-scroll-target="#iterating-through-the-files-in-a-directory"><span class="header-section-number">13.7.1</span> Iterating through the files in a directory</a></li>
+  <li><a href="#creating-new-directories" id="toc-creating-new-directories" class="nav-link" data-scroll-target="#creating-new-directories"><span class="header-section-number">13.7.2</span> Creating new directories</a></li>
+  <li><a href="#deleting-directories" id="toc-deleting-directories" class="nav-link" data-scroll-target="#deleting-directories"><span class="header-section-number">13.7.3</span> Deleting directories</a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">13.8</span> Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Filesystem and Input/Output (IO)</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>In this chapter we are going to discuss how to use the cross-platform structs and functions available in the Zig Standard Library that executes filesystem operations. Most of these functions and structs comes from the <code>std.fs</code> module.</p>
+<p>We are also going to talk about Input/Output (also known as IO) operations in Zig. Most of these operations are made by using the structs and functions from <code>std.io</code> module, which defines descriptors for the <em>standard channels</em> of your system (<code>stdout</code> and <code>stdin</code>), and also, functions to create and use I/O streams.</p>
+<section id="sec-io-basics" class="level2" data-number="13.1">
+<h2 data-number="13.1" class="anchored" data-anchor-id="sec-io-basics"><span class="header-section-number">13.1</span> Input/Output basics</h2>
+<p>If you have programming experience in a high-level language, you certainly have used before the input and output functionalities of this language. In other words, you certainly have been in a situation where you needed to sent some output to the user, or, to receive an input from the user.</p>
+<p>For example, in Python we can receive some input from the user by using the <code>input()</code> built-in function. But we can also print (or “show”) some output to the user by using the <code>print()</code> built-in function. So yes, if you have programmed before in Python, you certainly have used these functions once before.</p>
+<p>But do you know how these functions relate back to your operating system (OS)? How exactly they are interacting with the resources of your OS to receive or sent input/output. In essence, these input/output functions from high-level languages are just abstractions over the <em>standard output</em> and <em>standard input</em> channels of your operating system.</p>
+<p>This means that we receive an input, or send some output, through the operating system. It is the OS that makes the bridge between the user and your program. Your program does not have a direct access to the user. It is the OS that intermediates every message exchanged between your program and the user.</p>
+<p>The <em>standard output</em> and <em>standard input</em> channels of your OS are commonly known as the <code>stdout</code> and <code>stdin</code> channels of your OS, respectively. In some contexts, they are also called of the <em>standard output device</em> and <em>standard input device</em>. As the name suggests, the <em>standard output</em> is the channel through which output flows, while the <em>standard input</em> is the channel in which input flows.</p>
+<p>Furthermore, OS’s also normally create a dedicated channel for exchanging error messages, known as the <em>standard error</em> channel, or, the <code>stderr</code> channel. This is the channel to which error and warning messages are usually sent to. These are the messages that are normally displayed in red-like or orange-like colors into your terminal.</p>
+<p>Normally, every OS (e.g.&nbsp;Windows, MacOS, Linux, etc.) creates a dedicated and separate pair of <em>standard output</em>, <em>standard error</em> and <em>standard input</em> channels for every single program (or process) that runs in your computer. This means that every program you write have a dedicated <code>stdin</code>, <code>stderr</code> and <code>stdout</code> that are separate from the <code>stdin</code>, <code>stderr</code> and <code>stdout</code> of other programs and processes that are currently running.</p>
+<p>This is a behaviour from your OS. This does not come from the programming language that you are using. Because as I sad earlier, input and output in programming languages, specially in high-level ones, are just a simple abstraction over the <code>stdin</code>, <code>stderr</code> and <code>stdout</code> from your current OS. That is, your OS is the intermediary between every input/output operation made in your program, regardless of the programming language that you are using.</p>
+<section id="sec-writer-reader" class="level3" data-number="13.1.1">
+<h3 data-number="13.1.1" class="anchored" data-anchor-id="sec-writer-reader"><span class="header-section-number">13.1.1</span> The writer and reader pattern</h3>
+<p>In Zig, there is a pattern around input/output (IO). I (the author of this book) don’t know if there is an official name for this pattern. But here, in this book, I will call it the “writer and reader pattern”. In essence, every IO operation in Zig is made through either a <code>GenericReader</code> or a <code>GenericWriter</code> object<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
+<p>These two data types come from the <code>std.io</code> module of the Zig Standard Library. As their names suggests, a <code>GenericReader</code> is an object that offers tools to read data from “something” (or “somewhere”), while a <code>GenericWriter</code> offers tools to write data into this “something”. This “something” might be different things: like a file that exists in your filesystem; or, it might be a network socket of your system<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>; or, a continuous stream of data, like a standard input device from your system, that might be constantly receiving new data from users, or, as another example, a live chat in a game that is constantly receiving and displaying new messages from the players of the game.</p>
+<p>So, if you want to <strong>read</strong> data from something, or somewhere, it means that you need to use a <code>GenericReader</code> object. But if you need instead, to <strong>write</strong> data into this “something”, then, you need to use a <code>GenericWriter</code> object instead. Both of these objects are normally created from a file descriptor object. More specifically, through the <code>writer()</code> and <code>reader()</code> methods of this file descriptor object. If you are not familiar with this type of object, go to the next section.</p>
+<p>Every <code>GenericWriter</code> object have methods like <code>print()</code>, which allows you to write/send a formatted string (i.e.&nbsp;this formatted string is like a <code>f</code> string in Python, or, similar to the <code>printf()</code> C function) into the “something” (file, socket, stream, etc.) that you are using. It also have a <code>writeAll()</code> method, which allows you to write a string, or, an array of bytes into the “something”.</p>
+<p>Likewise, every <code>GenericReader</code> object have methods like <code>readAll()</code>, which allows you to read the data from the “something” (file, socket, stream, etc.) until it fills a particular array (i.e.&nbsp;a “buffer”) object. In other words, if you provide an array object of 300 <code>u8</code> values to <code>readAll()</code>, then, this method attempts to read 300 bytes of data from the “something”, and it stores them into the array object that you have provided.</p>
+<p>We also have other methods, like the <code>readAtLeast()</code> method, which allows you to specify how many bytes exactly you want to read from the “something”. In more details, if you give the number <span class="math inline">\(n\)</span> as input to this method, then, it will attempt to read at least <span class="math inline">\(n\)</span> bytes of data from the “something”. The “something” might have less than <span class="math inline">\(n\)</span> bytes of data available for you to read, so, it is not garanteed that you will get precisely <span class="math inline">\(n\)</span> bytes as result.</p>
+<p>Another useful method is <code>readUntilDelimiterOrEof()</code>. In this method, you specify a “delimiter character”. The idea is that this function will attempt to read as many bytes of data as possible from the “something”, until it encounters the end of the stream, or, it encounters the “delimiter character” that you have specified.</p>
+<p>If you don’t know exactly how many bytes will come from the “something”, you may find the <code>readAllAlloc()</code> method useful. In essence, you provide an allocator object to this method, so that it can allocate more space if needed. As consequence, this method will try to read all bytes of the “something”, and, if it runs out of space at some point during the “reading process”, it uses the allocator object to allocate more space to continue reading the bytes. As result, this method returns a slice to the array object containing all the bytes read.</p>
+<p>This is just a quick description of the methods present in these types of objects. But I recommend you to read the official docs, both for <a href="https://ziglang.org/documentation/master/std/#std.io.GenericWriter"><code>GenericWriter</code></a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> and <a href="https://ziglang.org/documentation/master/std/#std.io.GenericReader"><code>GenericReader</code></a><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>. I also think it is a good idea to read the source code of the modules in the Zig Standard Library that defines the methods present in these objects, which are the <a href="https://github.com/ziglang/zig/blob/master/lib/std/io/Reader.zig"><code>Reader.zig</code></a><a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a> and <a href=""><code>Writer.zig</code></a><a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a>.</p>
+</section>
+<section id="sec-file-descriptor" class="level3" data-number="13.1.2">
+<h3 data-number="13.1.2" class="anchored" data-anchor-id="sec-file-descriptor"><span class="header-section-number">13.1.2</span> Introducing file descriptors</h3>
+<p>A “file descriptor” object is a core component behind every I/O operation that is made in any operating system (OS). Such object is an identifier for a particular input/output (IO) resource from your OS <span class="citation" data-cites="wiki_file_descriptor">(<a href="../references.html#ref-wiki_file_descriptor" role="doc-biblioref">Wikipedia 2024</a>)</span>. It describes and identifies this particular resource. An IO resource might be:</p>
+<ul>
+<li>an existing file in your filesystem.</li>
+<li>an existing network socket.</li>
+<li>other types of stream channels.</li>
+<li>a pipeline (or just “pipe”) in your terminal<a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a>.</li>
+</ul>
+<p>From the bulletpoints listed aboved, we know that although the term “file” is present, a “file descriptor” might describe something more than just a file. This concept of a “file descriptor” comes from the Portable Operating System Interface (POSIX) API, which is a set of standards that guide how operating systems across the world should be implemented, to maintain compatibility between them.</p>
+<p>A file descriptor not only identifies the input/output resource that you are using to receive or send some data, but it also describes where this resource is, and also, which IO mode this resource is currently using. For example, this IO resource might be using only the “read” IO mode, which means that this resource is open to “read operations”, while “write operations” are closed and not authorized. These IO modes are essentially, the modes that you provide to the argument <code>mode</code> from the <code>fopen()</code> C function, and also, from the <code>open()</code> Python built-in function.</p>
+<p>In C, a “file descriptor” is a <code>FILE</code> pointer, but, in Zig, a file descriptor is a <code>File</code> object. This data type (<code>File</code>) is described in the <code>std.fs</code> module of the Zig Standard Library. We normally don’t create a <code>File</code> object directly in our Zig code. Instead, we normally get such object as result when we open an IO resource. In other words, we normally ask to our OS to open and use a particular IO resource, and, if the OS do open succesfully this IO resource, the OS normally handles back to us a file descriptor to this particular IO resource.</p>
+<p>So you usually get a <code>File</code> object by using functions and methods from the Zig Standard Library that asks the OS to open some IO resources, like the <code>openFile()</code> method that opens a file in the filesystem. The <code>net.Stream</code> object that we have created at <a href="04-http-server.html#sec-create-socket" class="quarto-xref"><span>Section 7.4.1</span></a> is also a type of file descriptor object.</p>
+</section>
+<section id="the-standard-output" class="level3" data-number="13.1.3">
+<h3 data-number="13.1.3" class="anchored" data-anchor-id="the-standard-output"><span class="header-section-number">13.1.3</span> The <em>standard output</em></h3>
+<p>You already saw across this book, how can we access and use specifically the <code>stdout</code> in Zig to send some output to the user. For that, we use the <code>getStdOut()</code> function from the <code>std.io</code> module. This function returns a file descriptor that describes the <code>stdout</code> channel of your current OS. Through this file descriptor object, we can read from or write stuff to the <code>stdout</code> of our program.</p>
+<p>Although we can read stuff recorded into the <code>stdout</code> channel, we normally only write to (or “print”) stuff into this channel. The reason is very similar to what we discussed at <a href="04-http-server.html#sec-read-http-message" class="quarto-xref"><span>Section 7.4.3</span></a>, when we were discussing what “reading from” versus “writing to” the connection object from our small HTTP Server project would mean.</p>
+<p>When we write stuff into a channel, we are essentially sending data to the other end of this channel. In contrast, when we read stuff from this channel, we are essentially reading the data that was sent through this channel. Since the <code>stdout</code> is a channel to send output to the user, the key verb here is <strong>send</strong>. We want to send something to someone, and, as consequence, we want to <strong>write</strong> something into some channel.</p>
+<p>That is why, when we use <code>getStdOut()</code>, most of the times, we also use the <code>writer()</code> method from the <code>stdout</code> file descriptor, to get access to a writer object that we can use to write stuff into this <code>stdout</code> channel. More specifically, this <code>writer()</code> method returns a <code>GenericWriter</code> object. One of the main methods of this <code>GenericWriter</code> object is the <code>print()</code> method that we have used before to write (or “print”) a formatted string into the <code>stdout</code> channel.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.writeAll(</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"This message was written into stdout.</span><span class="sc">\n</span><span class="st">"</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>This message was written into stdout.</code></pre>
+<p>This <code>GenericWriter</code> object is like any other generic writer object that you would normally get from a file descriptor object. So, the same methods from a generic writer object that you would use while writing files to the filesystem for example, you could also use them here, from the file descriptor object of <code>stdout</code>, and vice-versa.</p>
+</section>
+<section id="the-standard-input" class="level3" data-number="13.1.4">
+<h3 data-number="13.1.4" class="anchored" data-anchor-id="the-standard-input"><span class="header-section-number">13.1.4</span> The <em>standard input</em></h3>
+<p>You can access the <em>standard input</em> (i.e.&nbsp;<code>stdin</code>) in Zig by using the <code>getStdIn()</code> function from the <code>std.io</code> module. Like it’s sister (<code>getStdOut()</code>), this function also returns a file descriptor object that describes the <code>stdin</code> channel of your OS.</p>
+<p>Since now, we want to receive some input from the user, the key verb here becomes <strong>receive</strong>, and, as consequence, we usually want to <strong>read</strong> data from the <code>stdin</code> channel, instead of writing data into it. So, we normally use the <code>reader()</code> method of the file descriptor object returned by <code>getStdIn()</code>, to get access to a <code>GenericReader</code> object that we can use to read data from <code>stdin</code>.</p>
+<p>In the example below, we are creating a small buffer capable of holding 20 characters. Then, we try to read the data from the <code>stdin</code> with the <code>readUntilDelimiterOrEof()</code> method, and save this data into the <code>buffer</code> object. Also notice that we are reading the data from the <code>stdin</code> until we hit a new line character (<code>'\n'</code>).</p>
+<p>If you execute this program, you will notice that this program stops the execution, and start to wait indefinetly for some input from the user. In other words, you need to type your name into the terminal, and then, you press Enter to send your name to <code>stdin</code>. After you send your name to <code>stdin</code>, the program reads this input, and continues with the execution, by printing the given name to <code>stdout</code>. In the example below, I typed my name (Pedro) into the terminal, and then, pressed Enter.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdin = std.io.getStdIn().reader();</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.writeAll(<span class="st">"Type your name</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">20</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memset</span>(buffer[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdin.readUntilDelimiterOrEof(buffer[<span class="dv">0</span>..], <span class="ch">'\n'</span>);</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Your name is: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer<span class="op">}</span>);</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Type your name
+Your name is: Pedro
+</code></pre>
+</section>
+<section id="the-standard-error" class="level3" data-number="13.1.5">
+<h3 data-number="13.1.5" class="anchored" data-anchor-id="the-standard-error"><span class="header-section-number">13.1.5</span> The <em>standard error</em></h3>
+<p>The <em>standard error</em> (a.k.a. the <code>stderr</code>) works exactly the same as the <code>stdout</code>. You just call the <code>getStdErr()</code> function from the <code>std.io</code> module, and you get the file descriptor to <code>stderr</code>. Ideally, you should write only error or warning messages to <code>stderr</code>, because this is the purpose of this channel.</p>
+</section>
+</section>
+<section id="buffered-io" class="level2" data-number="13.2">
+<h2 data-number="13.2" class="anchored" data-anchor-id="buffered-io"><span class="header-section-number">13.2</span> Buffered IO</h2>
+<p>As we described at <a href="#sec-io-basics" class="quarto-xref"><span>Section 13.1</span></a>, input/output (IO) operations are made directly by the operating system. It is the OS that manages the IO resource that you want to use for your IO operations. The consequence of this fact is that IO operations are heavilly based on system calls (i.e.&nbsp;calling the operating system directly).</p>
+<p>Just to be clear, there is nothing particularly wrong with system calls. We use them all the time on any serious codebase written in any low-level programming language. However, system calls are always orders of magnitude slower than many different types of operations.</p>
+<p>So is perfectly fine to use a system call once in a while. But when these system calls start to be used often, you can clearly notice most of the times the lost of performance in your application. So, the good rule of thumbs is to use a system call only when it is needed, and also, only in infrequent situations, to reduce the number of system calls performed to a minimum.</p>
+<section id="understanding-how-buffered-io-works" class="level3" data-number="13.2.1">
+<h3 data-number="13.2.1" class="anchored" data-anchor-id="understanding-how-buffered-io-works"><span class="header-section-number">13.2.1</span> Understanding how buffered IO works</h3>
+<p>Buffered IO is a strategy to achieve better performance. It is used to reduce the number of system calls made by IO operations, and, as consequence, achieve a much higher performance. At <a href="#fig-buff-diff" class="quarto-xref">Figure&nbsp;<span>13.1</span></a> you can find two different diagrams which presents the differences between read operations performed in an unbuferred IO environment versus a buffered IO environemnt.</p>
+<p>To give a better context to these diagrams, let’s suppose that we have a text file that contains the famous Lorem ipsum text<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a> in our filesystem. Let’s also suppose that these diagrams at <a href="#fig-buff-diff" class="quarto-xref">Figure&nbsp;<span>13.1</span></a> are showing the read operations that we are performing to read the Lorem ipsum text from this text file. The first thing you notice when looking at the diagrams, is that in an unbuffered environment the read operations leads to many system calls. More precisely, in the diagram exposed at <a href="#fig-unbuffered-io" class="quarto-xref">Figure&nbsp;<span>13.1 (a)</span></a> we get one system call per each byte that we read from the text file. On the other hand, at <a href="#fig-buffered-io" class="quarto-xref">Figure&nbsp;<span>13.1 (b)</span></a> we have only one system call at the very beginning.</p>
+<p>When we use a buffered IO system, at the first read operation we perform, instead of sending one single byte directly to our program, the OS first sends a chunk of bytes from the file to a buffer object (i.e.&nbsp;an array). This chunk of bytes are cached/stored inside this buffer object, and when this operation is done, then your program receives the byte that it actually asked for.</p>
+<p>From now on, for every new read operation that you perform, instead of making a new system call to ask for the next byte in the file to the OS, this read operation is redirected to the buffer object, that have this next byte already cached and ready to go.</p>
+<div id="fig-buff-diff" class="quarto-layout-panel">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-buff-diff-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-layout-row">
+<div class="quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-buff-diff" style="flex-basis: 100.0%;justify-content: flex-start;">
+<div id="fig-unbuffered-io" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-subfloat-fig figure">
+<div aria-describedby="fig-unbuffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="./../Figures/unbuffered-io.png" class="img-fluid figure-img" style="width:60.0%" data-ref-parent="fig-buff-diff">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-unbuffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(a) Unbuffered IO
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="quarto-layout-row">
+<div class="quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-buff-diff" style="flex-basis: 100.0%;justify-content: flex-start;">
+<div id="fig-buffered-io" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-subfloat-fig figure">
+<div aria-describedby="fig-buffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="./../Figures/buffered-io.png" class="img-fluid figure-img" data-ref-parent="fig-buff-diff">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-buffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(b) Buffered IO
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-buff-diff-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;13.1: Diagrams of read operations performed in buffered IO and unbuffered IO environments.
+</figcaption>
+</figure>
+</div>
+<p>This is the basic logic behind buffered IO systems. The size of the buffer object depends, but most of the times, it is equal to a full page of memory (4096 bytes). If we follow this logic, then, the OS reads the first 4096 bytes of the file and caches it into the buffer object. As long as your program does not consume all of the 4096 bytes from the buffer, not a single system call is created.</p>
+<p>However, as soon as you consume all of the 4096 bytes from the buffer, it means that there is no bytes left in the buffer. In this situation, a new system call is made to ask the OS to send the next 4096 bytes in the file, and once again, these bytes are cached into the buffer object, and the cycle starts once again.</p>
+</section>
+<section id="buffered-io-across-different-languages" class="level3" data-number="13.2.2">
+<h3 data-number="13.2.2" class="anchored" data-anchor-id="buffered-io-across-different-languages"><span class="header-section-number">13.2.2</span> Buffered IO across different languages</h3>
+<p>IO operations made through a <code>FILE</code> pointer in C are buffered by default, so, at least in C, you don’t need to worry about this subject. But in contrast, IO operations in both Rust and Zig are not buffered depending on which functions from the standard libraries that you are using.</p>
+<p>For example, in Rust, buffered IO is implemented through the <code>BufReader</code> and <code>BufWriter</code> structs, while in Zig, it is implemented through the <code>BufferedReader</code> and <code>BufferedWriter</code> structs. So any IO operation that you perform through the <code>GenericWriter</code> and <code>GenericReader</code> objects that I presented at <a href="#sec-writer-reader" class="quarto-xref"><span>Section 13.1.1</span></a> are not buffered, which means that these objects might create a lot of system calls depending on the situation.</p>
+</section>
+<section id="using-buffered-io-in-zig" class="level3" data-number="13.2.3">
+<h3 data-number="13.2.3" class="anchored" data-anchor-id="using-buffered-io-in-zig"><span class="header-section-number">13.2.3</span> Using buffered IO in Zig</h3>
+<p>Using buffered IO in Zig is actually very easy. All you have to do is to just give the <code>GenericWriter</code> object to the <code>bufferedWriter()</code> function, or, to give the <code>GenericReader</code> object to the <code>bufferedReader()</code> function. These functions come from the <code>std.io</code> module, and they will construct the <code>BufferedWriter</code> or <code>BufferedReader</code> object for you.</p>
+<p>After you create this new <code>BufferedWriter</code> or <code>BufferedReader</code> object, you can call the <code>writer()</code> or <code>reader()</code> method of this new object, to get access to a new (and buffered) generic reader or generic writer.</p>
+<p>Let’s describe the process once again. Every time that you have a file descriptor object, you first get the generic writer or generic reader object from it, by calling the <code>writer()</code> or <code>reader()</code> methods of this file descriptor object. Then, you provide this generic writer or generic reader to the <code>bufferedWriter()</code> or <code>bufferedReader()</code> function, which creates a new <code>BufferedWriter</code> or <code>BufferedReader</code> object. Then, you call the <code>writer()</code> or <code>reader()</code> methods of this buffered writer or buffered reader object, which gives you access to a generic writer or generic reader object that is buffered.</p>
+<p>Take this program as an example. This program is essentially demonstrating the process exposed at <a href="#fig-buffered-io" class="quarto-xref">Figure&nbsp;<span>13.1 (b)</span></a>. We are simply opening a text file that contains the Lorem ipsum text, and then, we create a buffered IO reader object at <code>bufreader</code>, and we use this <code>bufreader</code> object to read the contents of this file into a buffer object, then, we end the program by printing this buffer to <code>stdout</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> file = <span class="kw">try</span> std.fs.cwd().openFile(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ZigExamples/file-io/lorem.txt"</span>, .<span class="op">{}</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> file.close();</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffered = std.io.bufferedReader(file.reader());</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> bufreader = buffered.reader();</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffer: [<span class="dv">1000</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="bu">@memset</span>(buffer[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> bufreader.readUntilDelimiterOrEof(</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    buffer[<span class="dv">0</span>..], <span class="ch">'\n'</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Lorem ipsum dolor sit amet, consectetur
+adipiscing elit. Sed tincidunt erat sed nulla ornare, nec
+aliquet ex laoreet. Ut nec rhoncus nunc. Integer magna metus,
+ultrices eleifend porttitor ut, finibus ut tortor. Maecenas
+sapien justo, finibus tincidunt dictum ac, semper et lectus.
+Vivamus molestie egestas orci ac viverra. Pellentesque nec
+arcu facilisis, euismod eros eu, sodales nisl. Ut egestas
+sagittis arcu, in accumsan sapien rhoncus sit amet. Aenean
+neque lectus, imperdiet ac lobortis a, ullamcorper sed massa.
+Nullam porttitor porttitor erat nec dapibus. Ut vel dui nec
+nulla vulputate molestie eget non nunc. Ut commodo luctus ipsum,
+in finibus libero feugiat eget. Etiam vel ante at urna tincidunt
+posuere sit amet ut felis. Maecenas finibus suscipit tristique.
+Donec viverra non sapien id suscipit.</code></pre>
+<p>Despite being a buffered IO reader, this <code>bufreader</code> object is similar to any other <code>GenericReader</code> object, and have the exact same methods. So, although these two types of objects perform very different IO operations, they have the same interface, so, you the programmer, can interchangeably use them without the need to change anything in your source code. So a buffered IO reader or a buffered IO writer objects have the same methods than it’s generic and unbuffered brothers, i.e.&nbsp;the generic reader and generic writer objects that I presented at <a href="#sec-writer-reader" class="quarto-xref"><span>Section 13.1.1</span></a>.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In general, you should always use a buffered IO reader or a buffered IO writer object to perform IO operations in Zig. Because they deliver better performance to your IO operations.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="filesystem-basics" class="level2" data-number="13.3">
+<h2 data-number="13.3" class="anchored" data-anchor-id="filesystem-basics"><span class="header-section-number">13.3</span> Filesystem basics</h2>
+<p>Now that we have discussed the basics around Input/Output operations in Zig, we need to talk about the basics around filesystems, which is another core part of any operating system. Also, filesystems are related to input/output, because the files that we store and create in our computer are considered an IO resource, as we described at <a href="#sec-file-descriptor" class="quarto-xref"><span>Section 13.1.2</span></a>.</p>
+<p>Likewise when we were talking about input/output, if you have ever programmed in your life, you probably know some basics about filesystems and file operations, etc. But, since I don’t know you, I don’t know what is your background. As a result, these concepts that I will describe might be clear in your mind, but they also maybe be not as clear as you think. Just bare with me, while I’m trying to put everyone on the same basis.</p>
+<section id="the-concept-of-current-working-directory-cwd" class="level3" data-number="13.3.1">
+<h3 data-number="13.3.1" class="anchored" data-anchor-id="the-concept-of-current-working-directory-cwd"><span class="header-section-number">13.3.1</span> The concept of current working directory (CWD)</h3>
+<p>The working directory is the folder on your computer where you are currently rooted at, or in other words, it is the folder that your program is currently looking at. Therefore, whenever you are executing a program, this program is always working with a specific folder on your computer. It is always in this folder that the program will initially look for the files you require, and it is also in this folder that the program will initially save all the files you ask it to save.</p>
+<p>The working directory is determined by the folder from which you invoke your program in the terminal. In other words, if you are in the terminal of your OS, and you execute a binary file (i.e.&nbsp;a program) from this terminal, the folder to which your terminal is pointing at is the current working directory of your program that is being executed.</p>
+<p>At <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.2</span></a> we have an example of me executing a program from the terminal. We are executing the program outputted by the <code>zig</code> compiler by compiling the Zig module named <code>hello.zig</code>. The CWD in this case is the <code>zig-book</code> folder. In other words, while the <code>hello.zig</code> program is executing, it will be looking at the <code>zig-book</code> folder, and any file operation that we perform inside this program, will be using this <code>zig-book</code> folder as the “starting point”, or, as the “central focus”.</p>
+<div id="fig-cwd" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-cwd-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="./../Figures/cwd.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-cwd-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;13.2: An example of executing a program from the terminal
+</figcaption>
+</figure>
+</div>
+<p>Just because we are rooted inside a particular folder (in the case of <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.2</span></a>, the <code>zig-book</code> folder) of our computer, it doesn’t mean that we cannot access or write resources in other locations of our computer. The current working directory (CWD) mechanism just defines where your program will look first for the files you ask for. This does not prevent you from accessing files that are located elsewhere on your computer. However, to access any file that is in a folder other than your current working directory, you must provide a path to that file or folder.</p>
+</section>
+<section id="the-concept-of-paths" class="level3" data-number="13.3.2">
+<h3 data-number="13.3.2" class="anchored" data-anchor-id="the-concept-of-paths"><span class="header-section-number">13.3.2</span> The concept of paths</h3>
+<p>A path is essentially a location. It points to a location in your filesystem. We use paths to describe the location of files and folders in our computer. One important aspect is that paths are always written inside strings, i.e.&nbsp;they are always provided as text values.</p>
+<p>There are two types of paths that you can provide to any program in any OS: a relative path, or an absolute path. Absolute paths are paths that start at the root of your filesystem, and go all the way to the file name or the specfic folder that you are referring to. This type of path is called absolute, because it points to a unique, absolute location on your computer. That is, there is no other existing location on your computer that corresponds to this path. It is an unique identifier.</p>
+<p>In Windows, an absolute path is a path that starts with a hard disk identifier (e.g.&nbsp;<code>C:/Users/pedro</code>). On the other hand, absolute paths in Linux and MacOS, are paths that start with a forward slash character (e.g.&nbsp;<code>/usr/local/bin</code>). Notice that a path is composed by “segments”. Each segment is connected to each other by a slash character (<code>\</code> or <code>/</code>). On Windows, the backward slash (<code>\</code>) is normally used to connect the path segments. While on Linux and MacOS, the forward slash (<code>/</code>) is the character used to connect path segments.</p>
+<p>In contrast, a relative path is a path that start at the CWD. In other words, a relative path is “relative to the CWD”. The path used to access the <code>hello.zig</code> file at <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.2</span></a> is an example of relative path. This path is reproduced below. This path begins at the CWD, which in the context of <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.2</span></a>, is the <code>zig-book</code> folder, then, it goes to the <code>ZigExamples</code> folder, then, into <code>zig-basics</code>, then, to the <code>hello.zig</code> file.</p>
+<pre><code>ZigExamples/zig-basics/hello_world.zig</code></pre>
+</section>
+<section id="path-wildcards" class="level3" data-number="13.3.3">
+<h3 data-number="13.3.3" class="anchored" data-anchor-id="path-wildcards"><span class="header-section-number">13.3.3</span> Path wildcards</h3>
+<p>When providing paths, specially relative paths, you have the option of using a <em>wildcard</em>. There are two commonly used <em>wildcards</em> in paths, which are “one period” (.) and “two periods” (..). In other words, these two specific characters have special meanings when used in paths, and can be used on any operating system (Mac, Windows, Linux, etc.). That is, they are “cross platform”.</p>
+<p>The “one period” represents an alias for your current working directory. This means that the relative paths <code>"./Course/Data/covid.csv"</code> and <code>"Course/Data/covid.csv"</code> are equivalent. On the other hand, the “two periods” refers to the previous directory. For example, the path <code>"Course/.."</code> is equivalent to the path <code>"."</code>, that is, the current working directory.</p>
+<p>Therefore, the path <code>"Course/.."</code> refers to the folder before the <code>Course</code> folder. As another example, the path <code>"src/writexml/../xml.cpp"</code> refers to the file <code>xml.cpp</code> that is inside the folder before the <code>writexml</code> folder, which in this example is the <code>src</code> folder. Therefore, this path is equivalent to <code>"src/xml.cpp"</code>.</p>
+</section>
+</section>
+<section id="the-cwd-handler" class="level2" data-number="13.4">
+<h2 data-number="13.4" class="anchored" data-anchor-id="the-cwd-handler"><span class="header-section-number">13.4</span> The CWD handler</h2>
+<p>In Zig, filesystem operations are usually made through a directory handler object. A directory handler in Zig is an object of type <code>Dir</code>, which is an object that describes a particular folder in the filesystem of our computer. You normally create a <code>Dir</code> object, by calling the <code>std.fs.cwd()</code> function. This function returns a <code>Dir</code> object that points to (or, that describes) the current working directory (CWD).</p>
+<p>Through this <code>Dir</code> object, you can create new files, or modify, or read existing ones that are inside your CWD. In other words, a <code>Dir</code> object is the main entrypoint in Zig to perform multiple types of filesystem operations. In the example below, we are creating this <code>Dir</code> object, and storing it inside the <code>cwd</code> object. Although we are not using this object at this code example, we are going to use it a lot over the next examples.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>_ = cwd;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="file-operations" class="level2" data-number="13.5">
+<h2 data-number="13.5" class="anchored" data-anchor-id="file-operations"><span class="header-section-number">13.5</span> File operations</h2>
+<section id="sec-creating-files" class="level3" data-number="13.5.1">
+<h3 data-number="13.5.1" class="anchored" data-anchor-id="sec-creating-files"><span class="header-section-number">13.5.1</span> Creating files</h3>
+<p>We create new files by using the <code>createFile()</code> method from the <code>Dir</code> object. Just provide the name of the file that you want to create, and this function will do the necessary steps to create such file. You can also provide a relative path to this function, and it will create the file by following this path, which is relative to the CWD.</p>
+<p>This function might return an error, so, you should use <code>try</code>, <code>catch</code>, or any of the other methods presented at <a href="09-error-handling.html" class="quarto-xref"><span>Chapter 10</span></a> to handle the possible error. But if everything goes well, this <code>createFile()</code> method returns a file descriptor object (i.e.&nbsp;a <code>File</code> object) as result, through which you can add content to the file with the IO operations that I presented before.</p>
+<p>Take this code example below. In this example, we are creating a new text file named <code>foo.txt</code>. If the function <code>createFile()</code> succeeds, the object named <code>file</code> will contain a file descriptor object, which we can use to write (or add) new content to the file, like we do in this example, by using a buffered writer object to write a new line of text to the file.</p>
+<p>Now, a quick note, when we create a file descriptor object in C, by using a C function like <code>fopen()</code>, we must always close the file at the end of our program, or, as soon as we complete all operations that we wanted to perform on the file. In Zig, this is no different. So everytime we create a new file, this file remains “open”, waiting for some operation to be performed. As soon as we are done with it, we always have to close this file, to free the resources associated with it. In Zig, we do this by calling the method <code>close()</code> from the file descriptor object.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file = <span class="kw">try</span> cwd.createFile(<span class="st">"foo.txt"</span>, .<span class="op">{}</span>);</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co">// Don't forget to close the file at the end.</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> file.close();</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">// Do things with the file ...</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> fw = file.writer();</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> fw.writeAll(</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Writing this line to the file</span><span class="sc">\n</span><span class="st">"</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>So, in this example we not only have created a file into the filesystem, but we also wrote some data into this file, using the file descriptor object returned by <code>createFile()</code>. If the file that you are trying to create already exists in your filesystem, this <code>createFile()</code> call will overwrite the contents of the file, or, in other words, it will in practice erase all the contents of the existing file.</p>
+<p>If you don’t want this to happen, meaning, that you don’t want to overwrite the contents of the existing file, but you want to write data to this file anyway (i.e.&nbsp;you want to append data to the file), you should use the <code>openFile()</code> method from the <code>Dir</code> object.</p>
+<p>Another important aspect about <code>createFile()</code> is that this method creates a file that is not opened to read operations by default. It means that you cannot read this file. You are not allowed to. So for example, you might want to write some stuff into this file at the beginning of the execution of your program. Then, at a future point in your program you might need to read what you have wroted into this file. If you try to read data from this file, you will likely get a <code>NotOpenForReading</code> error as result.</p>
+<p>But how can you overcome this barrier? How can you create a file that is open to read operations? All you have to do, is to set the <code>read</code> flag to true in the second argument of <code>createFile()</code>. When you set this flag to true, then the file get’s create with “read permissions”, and, as consequence, a program like this one below becomes valid:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file = <span class="kw">try</span> cwd.createFile(<span class="st">"foo.txt"</span>, .<span class="op">{</span> .read = <span class="cn">true</span> <span class="op">}</span>);</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> file.close();</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> fw = file.writer();</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> fw.writeAll(<span class="st">"We are going to read this line</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffer: [<span class="dv">300</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="bu">@memset</span>(buffer[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> file.seekTo(<span class="dv">0</span>);</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> fr = file.reader();</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> fr.readAll(buffer[<span class="dv">0</span>..]);</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>We are going to read this line</code></pre>
+<p>If you are not familiar with position indicators, you may not recognize what the method <code>seekTo()</code> is, or, what does it do. If that is your case, do not worry, we are going to talk more about this method at <a href="#sec-indicators" class="quarto-xref"><span>Section 13.6</span></a>. But essentially this method is moving the position indicator back to the beginning of the file, so that we can read the contents of the file from the beginning.</p>
+</section>
+<section id="opening-files-and-appending-data-to-it" class="level3" data-number="13.5.2">
+<h3 data-number="13.5.2" class="anchored" data-anchor-id="opening-files-and-appending-data-to-it"><span class="header-section-number">13.5.2</span> Opening files and appending data to it</h3>
+<p>Opening files is easy. Just use the <code>openFile()</code> method instead of <code>createFile()</code>. In the first argument of <code>openFile()</code> you provide the path to the file that you want to open. Then, on the second argument you provide the flags (or, the options) that dictates how the file is opened.</p>
+<p>You can see the full list of options for <code>openFile()</code> by visiting the documentation for <a href="https://ziglang.org/documentation/master/std/#std.fs.File.OpenFlags"><code>OpenFlags</code></a><a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a>. But the main flag that you will most certainly be worried about is the <code>mode</code> flag. This flag specifies the IO mode that the file will be using when it get’s opened. There are three IO modes, or, three values that you can provide to this flag, which are:</p>
+<ul>
+<li><code>read_only</code>, allows only read operations on the file. All write operations are blocked.</li>
+<li><code>write_only</code>, allows only write operations on the file. All read operations are blocked.</li>
+<li><code>read_write</code>, allows both write and read operations on the file.</li>
+</ul>
+<p>These modes are similar to the modes that you provide to the <code>mode</code> argument of the <code>open()</code> Python built-in function<a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a>, or, the <code>mode</code> argument of the <code>fopen()</code> C function<a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a>. In the code example below, we are opening the <code>foo.txt</code> text file with a <code>write_only</code> mode, and appending a new line of text to the end of the file. We use <code>seekFromEnd()</code> this time to garantee that we are going to append the text to the end of the file. Once again, methods such as <code>seekFromEnd()</code> are described in more depth at <a href="#sec-indicators" class="quarto-xref"><span>Section 13.6</span></a>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file = <span class="kw">try</span> cwd.openFile(<span class="st">"foo.txt"</span>, .<span class="op">{</span> .mode = .write_only <span class="op">}</span>);</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> file.close();</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> file.seekFromEnd(<span class="dv">0</span>);</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> fw = file.writer();</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> fw.writeAll(<span class="st">"Some random text to write</span><span class="sc">\n</span><span class="st">"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="deleting-files" class="level3" data-number="13.5.3">
+<h3 data-number="13.5.3" class="anchored" data-anchor-id="deleting-files"><span class="header-section-number">13.5.3</span> Deleting files</h3>
+<p>Sometimes, we just need to delete/remove the files that we have. To do that, we use the <code>deleteFile()</code> method. You just provide the path of the file that you want to delete, and this method will try to delete the file located at this path.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.deleteFile(<span class="st">"foo.txt"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="copying-files" class="level3" data-number="13.5.4">
+<h3 data-number="13.5.4" class="anchored" data-anchor-id="copying-files"><span class="header-section-number">13.5.4</span> Copying files</h3>
+<p>To copy existing files, we use the <code>copyFile()</code> method. The first argument in this method is the path to the file that you want to copy. The second argument is a <code>Dir</code> object, i.e.&nbsp;a directory handler, more specifically, a <code>Dir</code> object that points to the folder in your computer where you want to copy the file to. The third argument is the new path of the file, or, in other words, the new location of the file. The fourth argument is the options (or flags) to be used in the copy operation.</p>
+<p>The <code>Dir</code> object that you provide as input to this method will be used to copy the file to the new location. You may create this <code>Dir</code> object before calling the <code>copyFile()</code> method. Maybe you are planning to copy the file to a completly different location in your computer, so it might be worth to create a directory handler to that location. But if you copying the file to a subfolder of your CWD, then, you can just simply pass the CWD handler to this argument.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.copyFile(</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"foo.txt"</span>,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    cwd,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ZigExamples/file-io/foo.txt"</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{}</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="read-the-docs" class="level3" data-number="13.5.5">
+<h3 data-number="13.5.5" class="anchored" data-anchor-id="read-the-docs"><span class="header-section-number">13.5.5</span> Read the docs!</h3>
+<p>There are some other useful methods for file operations available at <code>Dir</code> objects, such as the <code>writeFile()</code> method, but I recommend you to read the docs for the <a href="https://ziglang.org/documentation/master/std/#std.fs.Dir"><code>Dir</code> type</a><a href="#fn12" class="footnote-ref" id="fnref12" role="doc-noteref"><sup>12</sup></a> to explore the other available methods, since I already talked too much about them.</p>
+</section>
+</section>
+<section id="sec-indicators" class="level2" data-number="13.6">
+<h2 data-number="13.6" class="anchored" data-anchor-id="sec-indicators"><span class="header-section-number">13.6</span> Position indicators</h2>
+<p>A position indicator is like a type of cursor, or, an index. This “index” identifies the current location in the file (or, in the data stream) that the file descriptor object that you have is currently looking at. When you create a file descriptor, the position indicator starts at the beginning of the file, or, at the beginning of the stream. When you read or write data into the file (or socket, or data stream, etc.) described by this file descriptor object, you end up moving the position indicator.</p>
+<p>In other words, any IO operation have a common side effect, which is moving the position indicator. For example, suppose that we have a file of 300 bytes total in size. If you read 100 bytes from the file, the position indicator moves 100 bytes forward. If you try to write 50 bytes into this same file, these 50 bytes will be written from the current position indicated by the position indicator. Since the indicator is at a 100 bytes forward from the beginning of the file, these 50 bytes would be written in the middle of the file.</p>
+<p>This is why we have used the <code>seekTo()</code> method at the last code example presented at <a href="#sec-creating-files" class="quarto-xref"><span>Section 13.5.1</span></a>. We have used this method to move the position indicator back to the beginning of the file, which would make sure that we would write the text that we wanted to write from the beginning of the file, instead of writing it from the middle of the file. Because before the write operation, we already had performed a read operation, which means that the position indicator was moved in this read operation.</p>
+<p>The position indicators of a file descriptor object can be changed (or altered) by using the “seek” methods from this file descriptor, which are: <code>seekTo()</code>, <code>seekFromEnd()</code> and <code>seekBy()</code>. These methods have the same effect, or, the same resposibility that the <a href="https://en.cppreference.com/w/c/io/fseek"><code>fseek()</code></a><a href="#fn13" class="footnote-ref" id="fnref13" role="doc-noteref"><sup>13</sup></a> C function.</p>
+<p>Considering that <code>offset</code> refers to the index that you provide as input to these “seek” methods, the bulletpoints below summarises what is the effect of each of these methods. A quick note, in the case of <code>seekFromEnd()</code> and <code>seekBy()</code>, the <code>offset</code> provided can be either a positive or negative index.</p>
+<ul>
+<li><code>seekTo()</code> will move the position indicator to the location that is <code>offset</code> bytes from the beginning of the file.</li>
+<li><code>seekFromEnd()</code> will move the position indicator to the location that is <code>offset</code> bytes from the end of the file.</li>
+<li><code>seekBy()</code> will move the position indicator to the location that is <code>offset</code> bytes from the current position in the file.</li>
+</ul>
+</section>
+<section id="directory-operations" class="level2" data-number="13.7">
+<h2 data-number="13.7" class="anchored" data-anchor-id="directory-operations"><span class="header-section-number">13.7</span> Directory operations</h2>
+<section id="iterating-through-the-files-in-a-directory" class="level3" data-number="13.7.1">
+<h3 data-number="13.7.1" class="anchored" data-anchor-id="iterating-through-the-files-in-a-directory"><span class="header-section-number">13.7.1</span> Iterating through the files in a directory</h3>
+<p>One of the most classic tasks related to filesystem is to be able to iterate through the existing files in a directory. Iteration over a directory is made in Zig through a iterator pattern. In other words, we need to create a iterator object, and use this object to iterate through the files.</p>
+<p>You can produce such directory object by using either the <code>iterate()</code> or <code>walk()</code> methods of a <code>Dir</code> object. Both methods return a iterator object as result, which you can advance by using <code>next()</code>. The difference between these methods, is that <code>iterate()</code> returns a non-recursive iterator, while <code>walk()</code> does. It means that the iterator returned by <code>walk()</code> will not only iterate through the files available in the current directory, but also, through the files from any subdirectory found inside the current directory.</p>
+<p>In the example below, we are displaying the names of the files stored inside the directory <code>ZigExamples/file-io</code>. Notice that we had to open this directory through the <code>openDir()</code> function. Also notice that we provided the flag <code>iterate</code> in the second argument of <code>openDir()</code>. This flag is important, because without this flag, we would not be allowed to iterate through the files in this directory.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dir = <span class="kw">try</span> cwd.openDir(</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ZigExamples/file-io/"</span>,</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> .iterate = <span class="cn">true</span> <span class="op">}</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> it = dir.iterate();</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="kw">while</span> (<span class="kw">try</span> it.next()) |entry| <span class="op">{</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">"File name: {s}</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>        .<span class="op">{</span>entry.name<span class="op">}</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>File name: create_file_and_write_toit.zig
+File name: create_file.zig
+File name: lorem.txt
+File name: iterate.zig
+File name: delete_file.zig
+File name: append_to_file.zig
+File name: user_input.zig
+File name: foo.txt
+File name: create_file_and_read.zig
+File name: buff_io.zig
+File name: copy_file.zig</code></pre>
+</section>
+<section id="creating-new-directories" class="level3" data-number="13.7.2">
+<h3 data-number="13.7.2" class="anchored" data-anchor-id="creating-new-directories"><span class="header-section-number">13.7.2</span> Creating new directories</h3>
+<p>There are two methods that are important when it comes to creating directories, which are <code>makeDir()</code> and <code>makePath()</code>. The difference between these two methods is that <code>makeDir()</code> can only create one single directory in the current directory in each call, while <code>makePath()</code> is capable of recursively create subdirectories in the same call.</p>
+<p>This is why the name of this method is “make path”. It will create as many subdirectories as necessary to create the path that you provided as input. So, if you provide the path <code>"sub1/sub2/sub3"</code> as input to this method, it will create three different subdirectories, <code>sub1</code>, <code>sub2</code> and <code>sub3</code>, within the same function call. In contrast, if you provided such path as input to <code>makeDir()</code>, you would likely get an error as result, since this method can only create a single subdirectory.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.makeDir(<span class="st">"src"</span>);</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.makePath(<span class="st">"src/decoders/jpg/"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="deleting-directories" class="level3" data-number="13.7.3">
+<h3 data-number="13.7.3" class="anchored" data-anchor-id="deleting-directories"><span class="header-section-number">13.7.3</span> Deleting directories</h3>
+<p>To delete a directory, just provide the path to the directory that you want to delete as input to the <code>deleteDir()</code> method from a <code>Dir</code> object. In the example below, we are deleting the <code>src</code> directory that we have just created in the previous example.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.deleteDir(<span class="st">"src"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="conclusion" class="level2" data-number="13.8">
+<h2 data-number="13.8" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">13.8</span> Conclusion</h2>
+<p>In this chapter, I have described how to perform in Zig the most common filesystem and IO operations. But you might feel the lack of some other, less common, operation in this chapter, such as: how to rename files, or how to open a directory, or how to create symbolic links, or how to use <code>access()</code> to test if a particular path exists in your computer. But for all of these less common tasks, I recommend you to read the docs of the <a href="https://ziglang.org/documentation/master/std/#std.fs.Dir"><code>Dir</code> type</a><a href="#fn14" class="footnote-ref" id="fnref14" role="doc-noteref"><sup>14</sup></a> , since you can find a good description of these cases there.</p>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-wiki_file_descriptor" class="csl-entry" role="listitem">
+Wikipedia. 2024. <span>“File Descriptor.”</span> Wikipedia. <a href="https://en.wikipedia.org/wiki/File_descriptor">https://en.wikipedia.org/wiki/File_descriptor</a>.
+</div>
+</div>
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p>Previously, these objects were known as the <code>Reader</code> and <code>Writer</code> objects.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>The socket objects that we have created at <a href="04-http-server.html#sec-create-socket" class="quarto-xref"><span>Section 7.4.1</span></a>, are examples of network sockets.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p><a href="https://ziglang.org/documentation/master/std/#std.io.GenericWriter" class="uri">https://ziglang.org/documentation/master/std/#std.io.GenericWriter</a>.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p><a href="https://ziglang.org/documentation/master/std/#std.io.GenericReader" class="uri">https://ziglang.org/documentation/master/std/#std.io.GenericReader</a>.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p><a href="https://github.com/ziglang/zig/blob/master/lib/std/io/Reader.zig" class="uri">https://github.com/ziglang/zig/blob/master/lib/std/io/Reader.zig</a>.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6"><p><a href="https://github.com/ziglang/zig/blob/master/lib/std/io/Writer.zig" class="uri">https://github.com/ziglang/zig/blob/master/lib/std/io/Writer.zig</a>.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7"><p>A pipeline is a mechanism for inter-process communication, or, inter-process IO. You could also interpret a pipeline as a “set of processes that are chained together, through the standard input/output devices of the system”. At Linux for example, a pipeline is created inside a terminal, by connecting two or more terminal commands with the “pipe” character (<code>|</code>).<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn8"><p><a href="https://www.lipsum.com/" class="uri">https://www.lipsum.com/</a>.<a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn9"><p><a href="https://ziglang.org/documentation/master/std/#std.fs.File.OpenFlags" class="uri">https://ziglang.org/documentation/master/std/#std.fs.File.OpenFlags</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn10"><p><a href="https://docs.python.org/3/tutorial/inputoutput.html#reading-and-writing-files" class="uri">https://docs.python.org/3/tutorial/inputoutput.html#reading-and-writing-files</a><a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn11"><p><a href="https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm" class="uri">https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm</a><a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn12"><p><a href="https://ziglang.org/documentation/master/std/#std.fs.Dir" class="uri">https://ziglang.org/documentation/master/std/#std.fs.Dir</a><a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn13"><p><a href="https://en.cppreference.com/w/c/io/fseek" class="uri">https://en.cppreference.com/w/c/io/fseek</a><a href="#fnref13" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn14"><p><a href="https://ziglang.org/documentation/master/std/#std.fs.Dir" class="uri">https://ziglang.org/documentation/master/std/#std.fs.Dir</a><a href="#fnref14" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../Chapters/10-stack-project.html" class="pagination-link" aria-label="Project 3 - Building a stack data structure">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Project 3 - Building a stack data structure</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../references.html" class="pagination-link" aria-label="References">
+        <span class="nav-page-text">References</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
