@@ -294,7 +294,7 @@ window.Quarto = {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#dynamic-arrays" id="toc-dynamic-arrays" class="nav-link active" data-scroll-target="#dynamic-arrays"><span class="header-section-number">11.1</span> Dynamic Arrays</a>
+  <li><a href="#sec-dynamic-array" id="toc-sec-dynamic-array" class="nav-link active" data-scroll-target="#sec-dynamic-array"><span class="header-section-number">11.1</span> Dynamic Arrays</a>
   <ul class="collapse">
   <li><a href="#capacity-vs-length" id="toc-capacity-vs-length" class="nav-link" data-scroll-target="#capacity-vs-length"><span class="header-section-number">11.1.1</span> Capacity vs Length</a></li>
   <li><a href="#creating-an-arraylist-object" id="toc-creating-an-arraylist-object" class="nav-link" data-scroll-target="#creating-an-arraylist-object"><span class="header-section-number">11.1.2</span> Creating an <code>ArrayList</code> object</a></li>
@@ -313,7 +313,8 @@ window.Quarto = {
   <li><a href="#the-stringarrayhashmap-hashtable" id="toc-the-stringarrayhashmap-hashtable" class="nav-link" data-scroll-target="#the-stringarrayhashmap-hashtable"><span class="header-section-number">11.2.6</span> The <code>StringArrayHashMap</code> hashtable</a></li>
   </ul></li>
   <li><a href="#linked-lists" id="toc-linked-lists" class="nav-link" data-scroll-target="#linked-lists"><span class="header-section-number">11.3</span> Linked lists</a></li>
-  <li><a href="#conclusion-1" id="toc-conclusion-1" class="nav-link" data-scroll-target="#conclusion-1"><span class="header-section-number">11.4</span> Conclusion</a></li>
+  <li><a href="#multi-array-structure" id="toc-multi-array-structure" class="nav-link" data-scroll-target="#multi-array-structure"><span class="header-section-number">11.4</span> Multi array structure</a></li>
+  <li><a href="#conclusion-1" id="toc-conclusion-1" class="nav-link" data-scroll-target="#conclusion-1"><span class="header-section-number">11.5</span> Conclusion</a></li>
   </ul>
 </nav>
     </div>
@@ -340,8 +341,8 @@ window.Quarto = {
 
 
 <p>In this chapter, we are going to discuss some Data Structures that are available from the Zig Standard Library, specially <code>ArrayList</code> and also <code>HashMap</code>. I’m also want to talk about one of the key features of Zig in this chapter, which is <code>comptime</code>, and how we can use it to create generics in Zig.</p>
-<section id="dynamic-arrays" class="level2" data-number="11.1">
-<h2 data-number="11.1" class="anchored" data-anchor-id="dynamic-arrays"><span class="header-section-number">11.1</span> Dynamic Arrays</h2>
+<section id="sec-dynamic-array" class="level2" data-number="11.1">
+<h2 data-number="11.1" class="anchored" data-anchor-id="sec-dynamic-array"><span class="header-section-number">11.1</span> Dynamic Arrays</h2>
 <p>In high level languages, arrays are usually dynamic. They easily grow in size when they have to, and you don’t need to worry about it. In contrast, arrays in low level languages are usually static by default. This is the reality of C, C++, Rust and also Zig. Static arrays were presented at <a href="01-zig-weird.html#sec-arrays" class="quarto-xref"><span>Section 1.6</span></a>, but in this section, we are going to talk about dynamic arrays.</p>
 <p>Dynamic arrays are simply arrays that can grow in size during the runtime of your program. Most low level languages offer some implementation of a dynamic array in their standard library. C++ have <code>std::vector</code>, Rust have <code>Vec</code>, and Zig have <code>std.ArrayList</code>.</p>
 <p>The <code>std.ArrayList</code> struct provides a contiguous and growable array for you. It works like any other dinamic array, it allocates a contiguous block of memory, and when this block have no space left, <code>ArrayList</code> allocates another contiguous and bigger block of memory, copies the elements to this new location, and erases (or frees) the previous block of memory.</p>
@@ -722,8 +723,77 @@ Figure&nbsp;11.4: A diagram of a doubly linked list.
 <li>if doubly linked list, <code>append()</code> to add a new node to end of the linked list (i.e.&nbsp;inverse of <code>prepend()</code>).</li>
 </ul>
 </section>
-<section id="conclusion-1" class="level2" data-number="11.4">
-<h2 data-number="11.4" class="anchored" data-anchor-id="conclusion-1"><span class="header-section-number">11.4</span> Conclusion</h2>
+<section id="multi-array-structure" class="level2" data-number="11.4">
+<h2 data-number="11.4" class="anchored" data-anchor-id="multi-array-structure"><span class="header-section-number">11.4</span> Multi array structure</h2>
+<p>Zig introduces a new data structure called <code>MultiArrayList()</code>. It is a different version of the dynamic array that we have introduced at <a href="#sec-dynamic-array" class="quarto-xref"><span>Section 11.1</span></a>. The difference between this structure and the <code>ArrayList()</code> that we know from <a href="#sec-dynamic-array" class="quarto-xref"><span>Section 11.1</span></a>, is that <code>MultiArrayList()</code> creates a separate dynamic array for each field of the struct that you provide as input.</p>
+<p>Consider the following code example. We create a new custom struct called <code>Person</code>. This struct contains three different data members, or, three different fields. As consequence, when we provide this <code>Person</code> data type as input to <code>MultiArrayList()</code>, this creates three different arrays. One array for each field in the struct.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Person = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    name: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    age: <span class="dt">u8</span>,</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    height: <span class="dt">f32</span>,</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> PersonArray = std.MultiArrayList(Person);</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> people = PersonArray<span class="op">{}</span>;</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> people.deinit(allocator);</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> people.append(allocator, .<span class="op">{</span></span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"Auguste"</span>, .age = <span class="dv">15</span>, .height = <span class="fl">1.54</span></span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> people.append(allocator, .<span class="op">{</span></span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"Elena"</span>, .age = <span class="dv">26</span>, .height = <span class="fl">1.65</span></span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> people.append(allocator, .<span class="op">{</span></span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"Michael"</span>, .age = <span class="dv">64</span>, .height = <span class="fl">1.87</span></span>
+<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
+<span id="cb21-24"><a href="#cb21-24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In other words, instead of creating an array of “persons”, the <code>MultiArrayList()</code> function creates a “struct of arrays”. Each data member of this struct is a different array that stores the values of a specific field from the <code>Person</code> struct values that are added (or, appended) to the “struct of arrays”.</p>
+<p>The <a href="#fig-multi-array" class="quarto-xref">Figure&nbsp;<span>11.5</span></a> exposed below presents a diagram that describes the <code>PersonArray</code> struct that we have created in the previous code example. Notice that the values of the data members present in each of the three <code>Person</code> values that we have appended into the <code>PersonArray</code> object that we have instantiated, are scattered across three different internal arrays of the <code>PersonArray</code> object.</p>
+<div id="fig-multi-array" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-multi-array-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="./../Figures/multi-array.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-multi-array-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11.5: A diagram of the <code>PersonArray</code> struct.
+</figcaption>
+</figure>
+</div>
+<p>You can easily access each of these arrays separately, and iterate over the values of each array. For that, you will need to call the <code>items()</code> method from the <code>PersonArray</code> object, and provide as input to this method, the name of the field that you want to iterate over. If you want to iterate through the <code>.age</code> array for example, then, you need to call <code>items(.age)</code> from the <code>PersonArray</code> object, like in the example below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (people.items(.age)) |*age| <span class="op">{</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Age: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>age.*<span class="op">}</span>);</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Age: 15
+Age: 26
+Age: 64</code></pre>
+<p>In the above example, we are iterating over the values of the <code>.age</code> array, or, the internal array of the <code>PersonArray</code> object that contains the values of the <code>age</code> data member from the <code>Person</code> values that were added to the multi array struct.</p>
+<p>In this example we are calling the <code>items()</code> method directly from the <code>PersonArray</code> object. However, it is recommended on most situations to call this <code>items()</code> method from a “slice object”, which you can create from the <code>slice()</code> method. The reason for this is that calling <code>items()</code> multiple times have better performance if you use a slice object.</p>
+<p>In other words, if you are planning to access only one of the internal arrays from your “multi array struct”, it is fine to call <code>items()</code> directly from the multi array object. But if you need to access many of the internal arrays from your “multi array struct”, then, you will likely need to call <code>items()</code> more than once, and, in such circustance, is better to call <code>items()</code> through a slice object. The example below demonstrates the use of such object:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> slice = people.slice();</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (slice.items(.age)) |*age| <span class="op">{</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    age.* += <span class="dv">10</span>;</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (slice.items(.name), slice.items(.age)) |*n,*a| <span class="op">{</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Name: {s}, Age: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n.*, a.*<span class="op">}</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Name: Auguste, Age: 25
+Name: Elena, Age: 36
+Name: Michael, Age: 74</code></pre>
+</section>
+<section id="conclusion-1" class="level2" data-number="11.5">
+<h2 data-number="11.5" class="anchored" data-anchor-id="conclusion-1"><span class="header-section-number">11.5</span> Conclusion</h2>
 <p>There are many other data structures that I did not presented here. But you can check them out at the offical Zig Standard Library documentation page. Actually, when you get into the <a href="https://ziglang.org/documentation/master/std/#">homepage of the documentation</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>, the first thing that appears to you in this page, is a list of types and data structures.</p>
 <p>In this section you can see a list of the many different data structures available in the Zig Standard Library. There are some very specific structures in this list, like a <a href="https://ziglang.org/documentation/master/std/#std.bounded_array.BoundedArray"><code>BoundedArray</code> struct</a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> , but there is also some more general structures, such as a <a href="https://ziglang.org/documentation/master/std/#std.priority_queue.PriorityQueue"><code>PriorityQueue</code> struct</a><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>.</p>
 

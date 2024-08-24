@@ -837,9 +837,18 @@ a singly linked list or a doubly linked list, that might be very useful for you,
 ## Multi array structure
 
 Zig introduces a new data structure called `MultiArrayList()`. It is a different version of the dynamic array
-that we have introduced at @sec-dynamic-array.
+that we have introduced at @sec-dynamic-array. The difference between this structure and the `ArrayList()`
+that we know from @sec-dynamic-array, is that `MultiArrayList()` creates a separate dynamic array
+for each field of the struct that you provide as input.
+
+Consider the following code example. We create a new custom struct called `Person`. This
+struct contains three different data members, or, three different fields. As consequence,
+when we provide this `Person` data type as input to `MultiArrayList()`, this
+creates three different arrays. One array for each field in the struct.
+
 
 ```{zig}
+#| auto_main: false
 const std = @import("std");
 const Person = struct {
     name: []const u8,
@@ -866,9 +875,72 @@ pub fn main() !void {
 }
 ```
 
+In other words, instead of creating an array of "persons", the `MultiArrayList()` function
+creates a "struct of arrays". Each data member of this struct is a different array that stores
+the values of a specific field from the `Person` struct values that are added (or, appended) to the "struct of arrays".
+
+The @fig-multi-array exposed below presents a diagram that describes the `PersonArray` struct
+that we have created in the previous code example. Notice that the values of the data members
+present in each of the three `Person` values that we have appended into the `PersonArray` object
+that we have instantiated, are scattered across three different internal arrays of the `PersonArray` object.
+
+![A diagram of the `PersonArray` struct.](./../Figures/multi-array.png){#fig-multi-array}
+
+You can easily access each of these arrays separately, and iterate over the values of each array.
+For that, you will need to call the `items()` method from the `PersonArray` object, and provide as input
+to this method, the name of the field that you want to iterate over.
+If you want to iterate through the `.age` array for example, then, you need to call `items(.age)` from
+the `PersonArray` object, like in the example below:
+
+```{zig}
+#| eval: false
+for (people.items(.age)) |*age| {
+    try stdout.print("Age: {d}\n", .{age.*});
+}
+```
+
+```
+Age: 15
+Age: 26
+Age: 64
+```
 
 
+In the above example, we are iterating over the values of the `.age` array, or,
+the internal array of the `PersonArray` object that contains the values of the `age`
+data member from the `Person` values that were added to the multi array struct.
 
+In this example we are calling the `items()` method directly from the `PersonArray`
+object. However, it is recommended on most situations to call this `items()` method
+from a "slice object", which you can create from the `slice()` method.
+The reason for this is that calling `items()` multiple times have better performance
+if you use a slice object.
+
+In other words, if you are planning to access only one of the
+internal arrays from your "multi array struct", it is fine to call `items()` directly
+from the multi array object. But if you need to access many of the internal arrays
+from your "multi array struct", then, you will likely need to call `items()` more
+than once, and, in such circustance, is better to call `items()` through a slice object.
+The example below demonstrates the use of such object:
+
+```{zig}
+#| eval: false
+var slice = people.slice();
+for (slice.items(.age)) |*age| {
+    age.* += 10;
+}
+for (slice.items(.name), slice.items(.age)) |*n,*a| {
+    try stdout.print(
+        "Name: {s}, Age: {d}\n", .{n.*, a.*}
+    );
+}
+```
+
+```
+Name: Auguste, Age: 25
+Name: Elena, Age: 36
+Name: Michael, Age: 74
+```
 
 
 ## Conclusion
