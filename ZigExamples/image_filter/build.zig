@@ -7,12 +7,15 @@ pub fn build(b: *std.Build) void {
 
     const exe = b.addExecutable(.{
         .name = "image_filter",
-        .root_source_file = b.path("src/main.zig"),
+        .root_source_file = b.path("src/image_filter.zig"),
         .target = target,
         .optimize = optimize,
     });
 
     exe.linkLibC();
+    // Link C math library:
+    exe.linkSystemLibrary("m");
+    // Link to spng library:
     exe.linkSystemLibrary("spng");
     exe.addLibraryPath(LazyPath{ .cwd_relative = "/usr/local/lib/" });
 

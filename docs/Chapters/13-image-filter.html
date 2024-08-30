@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>8&nbsp; Unit tests – An Introduction to Zig</title>
+<title>14&nbsp; Project 4 - Developing an image filter – An Introduction to Zig</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -20,40 +20,6 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-/* CSS for syntax highlighting */
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-}
 </style>
 
 
@@ -64,8 +30,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../Chapters/07-build-system.html" rel="next">
-<link href="../Chapters/04-http-server.html" rel="prev">
+<link href="../references.html" rel="next">
+<link href="../Chapters/12-file-op.html" rel="prev">
 <script src="../site_libs/quarto-html/quarto.js"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -105,6 +71,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -117,7 +112,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/03-unittests.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/13-image-filter.html"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Project 4 - Developing an image filter</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -195,7 +190,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../Chapters/03-unittests.html" class="sidebar-item-text sidebar-link active">
+  <a href="../Chapters/03-unittests.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests</span></span></a>
   </div>
 </li>
@@ -231,7 +226,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../Chapters/13-image-filter.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/13-image-filter.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Project 4 - Developing an image filter</span></span></a>
   </div>
 </li>
@@ -251,11 +246,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#introducing-the-test-block" id="toc-introducing-the-test-block" class="nav-link active" data-scroll-target="#introducing-the-test-block"><span class="header-section-number">8.1</span> Introducing the <code>test</code> block</a></li>
-  <li><a href="#how-to-run-your-tests" id="toc-how-to-run-your-tests" class="nav-link" data-scroll-target="#how-to-run-your-tests"><span class="header-section-number">8.2</span> How to run your tests</a></li>
-  <li><a href="#testing-memory-allocations" id="toc-testing-memory-allocations" class="nav-link" data-scroll-target="#testing-memory-allocations"><span class="header-section-number">8.3</span> Testing memory allocations</a></li>
-  <li><a href="#testing-errors" id="toc-testing-errors" class="nav-link" data-scroll-target="#testing-errors"><span class="header-section-number">8.4</span> Testing errors</a></li>
-  <li><a href="#testing-simple-equalities" id="toc-testing-simple-equalities" class="nav-link" data-scroll-target="#testing-simple-equalities"><span class="header-section-number">8.5</span> Testing simple equalities</a></li>
+  <li><a href="#sec-eyes" id="toc-sec-eyes" class="nav-link active" data-scroll-target="#sec-eyes"><span class="header-section-number">14.1</span> How we see things?</a></li>
+  <li><a href="#sec-digital-img" id="toc-sec-digital-img" class="nav-link" data-scroll-target="#sec-digital-img"><span class="header-section-number">14.2</span> How digital images work?</a>
+  <ul class="collapse">
+  <li><a href="#reflecting-on-image-size" id="toc-reflecting-on-image-size" class="nav-link" data-scroll-target="#reflecting-on-image-size"><span class="header-section-number">14.2.1</span> Reflecting on image size</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -264,7 +259,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><span id="sec-unittests" class="quarto-section-identifier"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests</span></span></h1>
+<h1 class="title"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Project 4 - Developing an image filter</span></h1>
 </div>
 
 
@@ -281,162 +276,68 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>In this chapter, I want to dive in on how unit tests are developed in Zig. We are going to talk about what is the testing wokflow in Zig, and also, about the <code>test</code> command from the <code>zig</code> compiler.</p>
-<section id="introducing-the-test-block" class="level2" data-number="8.1">
-<h2 data-number="8.1" class="anchored" data-anchor-id="introducing-the-test-block"><span class="header-section-number">8.1</span> Introducing the <code>test</code> block</h2>
-<p>In Zig, unit tests are written inside a <code>test</code> declaration, or, how I prefer to call it, inside a <code>test</code> block. Every <code>test</code> block is written by using the keyword <code>test</code>. You can optionally use a string literal to write a label, which is responsible for identifying the specific group of unit tests that you are writing inside this specific <code>test</code> block.</p>
-<p>In the example below, we are testing if the sum of two objects (<code>a</code> and <code>b</code>) is equal to 4. The <code>expect()</code> function from the Zig Standard Library is a function that receives a logical test as input. If this logical test results in <code>true</code>, then, the test passes. But if it results in <code>false</code>, then, the test fails.</p>
-<p>You can write any Zig code you want inside of each <code>test</code> block. Part of this code might be some necessary commands to setup your testing environment, or just initializing some necessary objects.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expect = std.testing.expect;</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"testing simple sum"</span> <span class="op">{</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> a: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> b: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect((a + b) == <span class="dv">4</span>);</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In this chapter we are going to build a new small project. The objective of this project is to build a program in Zig that applies a filter over an image. More specifically, a “grayscale filter”. This filter essentially transforms any color image into a grayscale image.</p>
+<p>We are going to use the image displayed at <a href="#fig-pascal" class="quarto-xref">Figure&nbsp;<span>14.1</span></a> as the example in this project. In other words, we are going to transform this colored image, into a grayscale image, using our “image filter program” written in Zig.</p>
+<div id="fig-pascal" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-pascal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../ZigExamples/image_filter/pedro_pascal.png" class="img-fluid figure-img">
 </div>
-<p>You can have multiple <code>test</code> blocks written on the same Zig module. Also, you can mix <code>test</code> blocks with your source code, with no problems or consequences. If you mix <code>test</code> blocks with your normal source code, when you execute the <code>build</code>, <code>build-exe</code>, <code>build-obj</code> or <code>build-lib</code> commands from the <code>zig</code> compiler that we exposed at <a href="01-zig-weird.html#sec-compile-code" class="quarto-xref"><span>Section 1.2.4</span></a>, these <code>test</code> blocks are automatically ignored by the compiler.</p>
-<p>In other words, the <code>zig</code> compiler only builds and execute your tests when you ask it to. By default, the compiler always ignore <code>test</code> blocks written in your Zig modules. The compiler normally checks only if there are any syntax errors in these <code>test</code> blocks.</p>
-<p>If you look at the source code for most of the files present in the Zig Standard Library<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, you can see that the <code>test</code> blocks are written together with the normal source code of the library. You can see this for example, at the <a href="https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig"><code>array_list</code> module</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. So, the standard that the Zig developers decided to adopt is to keep their unit tests together with the source code of the functionality that they are testing.</p>
-<p>Each programmer might have a different opinion on this. Some of them might prefer to keep unit tests separate from the actual source code of their application. If that is your case, you can simply create a separate <code>tests</code> folder in your project, and start writing Zig modules that contains only unit tests (as would normally do on a Python project with <code>pytest</code>, for example), and everything will work fine. It boils down to which is your preference here.</p>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-pascal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;14.1: A photo of the chilean-american actor Pedro Pascal. Source: Google Images.
+</figcaption>
+</figure>
+</div>
+<p>We don’t need to write a lot of code to build such “image filter program”. However, in order for us to build such program, we need to understand how digital images work. That is why we begin this chapter by explaining the theory behind digital images and how colors are represented in modern computers. We also give a brief explanation about the file format PNG (Portable Network Graphics), which is used in the example images.</p>
+<p>At the end of this chapter, we will have a full example of a program that takes the PNG image displayed at <a href="#fig-pascal" class="quarto-xref">Figure&nbsp;<span>14.1</span></a> as input, and writes a new image to the current working directory that is the grayscale version of the input image. This grayscale version of <a href="#fig-pascal" class="quarto-xref">Figure&nbsp;<span>14.1</span></a> that is written by the program is exposed at <a href="#fig-pascal-gray" class="quarto-xref">Figure&nbsp;<span>14.2</span></a>.</p>
+<div id="fig-pascal-gray" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-pascal-gray-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../ZigExamples/image_filter/pedro_pascal_filter.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-pascal-gray-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;14.2: The grayscale version of the photo.
+</figcaption>
+</figure>
+</div>
+<section id="sec-eyes" class="level2" data-number="14.1">
+<h2 data-number="14.1" class="anchored" data-anchor-id="sec-eyes"><span class="header-section-number">14.1</span> How we see things?</h2>
+<p>In this section, I want to briefly describe to you how we (humans) actually see things with our own eyes. I mean, how our eyes work? If you do have a very basic understanding of how our eyes work, you will understand more easily how digital images are made. Because the techniques used to produce a digital image were developed by taking a lot of inspiration from how our human eyes work.</p>
+<p>You can interpret a human eye as a light sensor, or, a light receptor. The eye receives some amount of light as input, and it interprets the colors that are present in this “amount of light”. If no amount of light hits the eye, then, the eye cannot extract color from it, and as result, we end up seeing nothing, or, more precisely, we see complete blackness.</p>
+<p>So everything depends on light. What we actually see are the colors (blue, red, orange, green, etc.) that are being reflected from the light that is hitting our eyes. <strong>Light is the source of all colors!</strong> This is what Isaac Newton discovered on his famous prism experiment<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> in the 1660s.</p>
+<p>Inside our eyes, we have a specific type of cell called the “cone cell”. Our eye have three different types, or, three different versions of these “cone cells”. Each of these three types of cone cell is very sensitive to a specific spectrum of the light, which are the spectrums that define the colors red, green and blue. So, in summary, our eyes have specific types of cells that are highly sensitive to the colors red, green and blue.</p>
+<p>These are the cells responsible for perceiving the color present in the light that hits our eyes. As a result, our eyes perceives color as a mixture of these colors (red, green and blue). By having an amount of each one of these three colors, and mixing them together, we can get any other visible color that we want. So every color that we see is perceived as a specific mixture of blues, greens and reds, like 30% of red, plus 20% of green, plus 50% of blue.</p>
+<p>When these cone cells perceive (or, detect) the colors that are found in the light that is hitting our eyes, these cells produce electrical signals and sent them to the brain. Our brain interprets these electrical signals, and use them to form the image that we are seeing inside our head. Perceive the colors present in light.</p>
+<p>Based on what we have discussed here, the items below describes the sequence of events that composes this simplified version of how our human eyes work:</p>
+<ol type="1">
+<li>Light hits our eyes.</li>
+<li>The cone cells perceive the colors that are present in this light.</li>
+<li>Cone cells produce electrical signals that describes the colors that were perceived in the light.</li>
+<li>The electrical signals are sent to the brain.</li>
+<li>Brain interprets these signals, and form the image based on the colors identified by these electrical signals.</li>
+</ol>
 </section>
-<section id="how-to-run-your-tests" class="level2" data-number="8.2">
-<h2 data-number="8.2" class="anchored" data-anchor-id="how-to-run-your-tests"><span class="header-section-number">8.2</span> How to run your tests</h2>
-<p>If the <code>zig</code> compiler ignores any <code>test</code> block by default, how can you compile and run your unit tests? The answer is the <code>test</code> command from the <code>zig</code> compiler. By running <code>zig test</code> command, the compiler will find every instance of <code>test</code> block in your Zig module, and, it will compile and run the unit tests you wrote.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> test simple_sum.zig</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<pre><code>1/1 simple_sum.test.testing simple sum... OK
-All 1 tests passed.</code></pre>
-</section>
-<section id="testing-memory-allocations" class="level2" data-number="8.3">
-<h2 data-number="8.3" class="anchored" data-anchor-id="testing-memory-allocations"><span class="header-section-number">8.3</span> Testing memory allocations</h2>
-<p>One of the advantages of Zig is that it offers great tools that hep us, programmers, to avoid (but also detect) memory problems, such as memory leaks and double-frees. The <code>defer</code> keyword is specially helpful in this regard.</p>
-<p>When developing your source code, you, the programmer, is responsible for making sure that your code do not produce such problems. However, you can also use a special type of allocator object in Zig, that is capable of automatically detect such problems for you. This is the <code>std.testing.allocator</code> object. This allocator object offers some basic memory safety detection features, which are capable of detecting memory leaks.</p>
-<p>As we described at <a href="01-memory.html#sec-heap" class="quarto-xref"><span>Section 3.1.5</span></a>, to allocate memory on the heap, you need to use an allocator object, and your functions that use these objects to allocate memory on the heap, should receive an allocator object as one of it’s inputs. Every memory on the heap that you allocate using these allocator objects, must also be freed using this same allocator object.</p>
-<p>So, if you want to test the memory allocations performed by your functions, and make sure that you don’t have problems in these allocations, you can simply write unit tests for these functions, where you provide the <code>std.testing.allocator</code> object as input to these functions.</p>
-<p>Look at the example below, where I’m defining a function that clearly causes a memory leak. Because we allocate memory with the allocator object, but we do not free this allocated memory in any point. So, when the function returns, we lose the reference to the <code>buffer</code> object, which contains the allocated memory, and, as a result, we can no longer free this memory.</p>
-<p>Notice that, inside a <code>test</code> block I execute this function with the <code>std.testing.allocator</code>. Since no visible errors were raised inside the <code>test</code> block, the <code>zig</code> compiler completes the process indicating that the unit tests performed inside the <code>test</code> block labeled as <code>"memory leak</code> have all passed. But despite this result, the allocator object was capable of looking deeper in our program, and detecting the memory leak. As a result, this allocator object returns a message “tests leaked memory”, and also, a stack trace showing the exact point where the memory was leaked.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Allocator = std.mem.Allocator;</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> some_memory_leak(allocator: Allocator) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> buffer = <span class="kw">try</span> allocator.alloc(<span class="dt">u32</span>, <span class="dv">10</span>);</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    _ = buffer;</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Return without freeing the</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">// allocated memory</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"memory leak"</span> <span class="op">{</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = std.testing.allocator;</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> some_memory_leak(allocator);</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>Test [1/1] leak_memory.test.memory leak...
-    [gpa] (err): memory address 0x7c1fddf39000 leaked: 
-./ZigExamples/debugging/leak_memory.zig:4:39: 0x10395f2
-    const buffer = try allocator.alloc(u32, 10);
-                                      ^
-./ZigExamples/debugging/leak_memory.zig:12:25: 0x10398ea
-    try some_memory_leak(allocator);
-
-... more stack trace</code></pre>
-</section>
-<section id="testing-errors" class="level2" data-number="8.4">
-<h2 data-number="8.4" class="anchored" data-anchor-id="testing-errors"><span class="header-section-number">8.4</span> Testing errors</h2>
-<p>One commom style of unit tests are those that look for specific errors in your functions. In other words, you write a unit test that tries to assert if a specific function call returns any error, or a specific type of error.</p>
-<p>In C++ you would normally write this stye of unit test using, for example, the functions <code>REQUIRE_THROWS()</code> or <code>CHECK_THROWS()</code> from the <a href="https://github.com/catchorg/Catch2/tree/devel"><code>Catch2</code> test framework</a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. In the case of a Python project, you would use the <a href="https://docs.pytest.org/en/7.1.x/reference/reference.html#pytest-raises"><code>raises()</code> function from <code>pytest</code></a><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>. While in Rust, you would probably use <code>assert_eq!()</code> in conjunction with <code>Err()</code>.</p>
-<p>But in Zig, we use the <code>expectError()</code> function, from the <code>std.testing</code> module. With this function, you can test if a specific function call returns the exact type of error that you expect it to return. To use this function, you first write <code>try expectError()</code>. Then, on the first argument, you provide the type of error that you are expecting from the function call. Then, on the second argument, you write the function call you expect to fail.</p>
-<p>The code example below demonstrates such type of unit test in Zig. Notice that, inside the function <code>alloc_error()</code> we are allocating 100 bytes of memory, or, an array of 100 elements, for the object <code>ibuffer</code>. However, in the <code>test</code> block, we are using the <code>FixedBufferAllocator()</code> allocator object, which is limited to 10 bytes of space, because the object <code>buffer</code>, which we provided to the allocator object, have only 10 bytes of space.</p>
-<p>That is why, the <code>alloc_error()</code> function raises an <code>OutOfMemory</code> error on this case. Because this function is trying to allocate more space than the allocator object allows. So, in essence, we are testing for a specific type of error, which is <code>OutOfMemory</code>. If the <code>alloc_error()</code> function returns any other type of error, then, the <code>expectError()</code> function would make the entire test fail.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Allocator = std.mem.Allocator;</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expectError = std.testing.expectError;</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> alloc_error(allocator: Allocator) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> ibuffer = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">100</span>);</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.free(ibuffer);</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    ibuffer[<span class="dv">0</span>] = <span class="dv">2</span>;</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"testing error"</span> <span class="op">{</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">10</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> fba = std.heap.FixedBufferAllocator.init(&amp;buffer);</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = fba.allocator();</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expectError(<span class="kw">error</span>.OutOfMemory, alloc_error(allocator));</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>1/1 oom.test.testing error... OK
-All 1 tests passed.</code></pre>
-</section>
-<section id="testing-simple-equalities" class="level2" data-number="8.5">
-<h2 data-number="8.5" class="anchored" data-anchor-id="testing-simple-equalities"><span class="header-section-number">8.5</span> Testing simple equalities</h2>
-<p>In Zig, there are some different ways you can test for an equality. You already saw that we can use <code>expect()</code> with the logical operator <code>==</code> to essentially reproduce an equality test. But we also have some helper functions that you should know about, specially <code>expectEqual()</code>, <code>expectEqualSlices()</code> and <code>expectEqualStrings()</code>.</p>
-<p>The <code>expectEqual()</code> function, as the name suggests, is a classic test equality function. It receives two objects as input. The first object is the value that you expect to be in the second object. While second object is the object you have, or, the object that your application produced as result. So, with <code>expectEqual()</code> you are essentially testing if the values stored inside the two provided objects are equal or not.</p>
-<p>You can see in the example below that, the test performed by <code>expectEqual()</code> failed. Because the objects <code>v1</code> and <code>v2</code> contain different values in them.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"values are equal?"</span> <span class="op">{</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> v1 = <span class="dv">15</span>;</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> v2 = <span class="dv">18</span>;</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqual(v1, v2);</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>1/1 ve.test.values are equal?...
-    expected 15, found 18
-    FAIL (TestExpectedEqual)
-ve.zig:5:5: test.values are equal? (test)
-    try std.testing.expectEqual(v1, v2);
-    ^
-0 passed; 0 skipped; 1 failed.</code></pre>
-<p>Although useful, the <code>expectEqual()</code> function does not work with arrays. For testing if two arrays are equal, you should use the <code>expectEqualSlices()</code> function instead. This function have three arguments. First, you provide the data type contained in both arrays that you are trying to compare. While the second and third arguments corresponds to the array objects that you want to compare.</p>
-<p>In the example below, we are using this function to test if two array objects (<code>array1</code> and <code>array2</code>) are equal or not. Since they are in fact equal, the unit test passed with no errors.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"arrays are equal?"</span> <span class="op">{</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> array1 = [<span class="dv">3</span>]<span class="dt">u32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span><span class="op">}</span>;</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> array2 = [<span class="dv">3</span>]<span class="dt">u32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span><span class="op">}</span>;</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqualSlices(</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u32</span>, &amp;array1, &amp;array2</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>1/1 oom.test.arrays are equal?... OK
-All 1 tests passed.</code></pre>
-<p>At last, you might also want to use the <code>expectEqualStrings()</code> function. As the name suggests, you can use this function to test if two strings are equal or not. Just provide the two string objects that you want to compare, as inputs to the functions.</p>
-<p>If the function finds any existing difference between the two strings, then, the function will raise an error, and also, print an error message that shows the exact difference between the two string objects provided, as the example below demonstrates:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"strings are equal?"</span> <span class="op">{</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> str1 = <span class="st">"hello, world!"</span>;</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> str2 = <span class="st">"Hello, world!"</span>;</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqualStrings(</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        str1, str2</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>1/1 t.test.strings are equal?... 
-====== expected this output: =========
-hello, world!␃
-======== instead found this: =========
-Hello, world!␃
-======================================
-First difference occurs on line 1:
-expected:
-hello, world!
-^ ('\x68')
-found:
-Hello, world!
-^ ('\x48')</code></pre>
+<section id="sec-digital-img" class="level2" data-number="14.2">
+<h2 data-number="14.2" class="anchored" data-anchor-id="sec-digital-img"><span class="header-section-number">14.2</span> How digital images work?</h2>
+<p>A digital image is a “digital representation” of an image that we see with our eyes. In other words, a digital image is a “digital representation” of the colors that we see and perceive through the light.</p>
+<p>In the digital world, we have two types of images, which are: vector image and raster image. Vector images are not described here. So just remember that every single aspect that we discuss here in this chapter about digital images <strong>are related solely to raster images</strong>, and not vector images.</p>
+<p>Raster images are digital images that are represented as a 2D (two dimensional) matrix of pixels. In other words, every raster image is basically a 2D rectangle of pixels. Each pixel have a particular color. So, the raster image is just a matrix of pixels, and each of these pixels are displayed in the screen of your computer (or the screen of any other device, e.g.&nbsp;laptop, tablet, smartphone, etc.) as colors.</p>
+<p>For example, if the digital image have dimensions of 1920 pixels of width and 1080 pixels of height, then, the image contains <span class="math inline">\(1920 \times 1080 = 2073600\)</span> pixels in total. You could also say that the “total area” of the image is of 2073600 pixels, although the concept of “area” is not very used here in computer graphics.</p>
+<p>Since most digital images uses the RGB model, the color of each pixel in these raster images are usually represented as a mixture of red, green and blue. That is, the color of each pixel is identified by a set of three different integer values. Each integer value identifies the “amount” of each color (red, green or blue). For example, the set <code>(199, 78, 70)</code> identifies a color that is very close to red. We have 199 of red, 78 of green, and 70 of blue (RGB).</p>
+<section id="reflecting-on-image-size" class="level3" data-number="14.2.1">
+<h3 data-number="14.2.1" class="anchored" data-anchor-id="reflecting-on-image-size"><span class="header-section-number">14.2.1</span> Reflecting on image size</h3>
+<p>The format that we have discussed at the previous section creates a classical problem, which is binary size. That is, when digital images are in this more “raw form” of a 2D matrix of pixels, they usually take some good megabytes of space, even if the image is relatively small in dimensions like 1000x800 pixels.</p>
+<p>Therefore, the binary size of images is a real-world problem for graphics and digital images. That is why encoding and data compression are very important fields in computer graphics. This is why researchers and developers have spent a lot of effort over the last decades developing good data compression algorithms, and clever encoding systems that reduces the necessary size to represent digital images.</p>
+<p>Just to give you a notion of the problem, we can actually calculate the necessary amount of bytes necessary to represent a 1000x800 pixels image. In this case, we have <span class="math inline">\(1000 \times 800 = 800000\)</span> pixels in total. Each pixel have a color that is identified by a set of three integer values (one for each color in the RGB model). Each integer value is usually an unsigned 8-bit integer (ranging from 0 to 255). So each integer values takes 1 byte of space. With some basic math, we reach the value of <span class="math inline">\(800000 \times 1 = 800000\)</span> bytes, or 0.8 megabytes.</p>
+<p>As we described at <a href="#sec-eyes" class="quarto-xref"><span>Section 14.1</span></a>, we see things as a mixture of reds, greens and blues, and because of that, most of the digital images that see uses the RGB model, which is a color model composed of red, green and blue.</p>
 
 
+</section>
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>
 <ol>
-<li id="fn1"><p><a href="https://github.com/ziglang/zig/tree/master/lib/std" class="uri">https://github.com/ziglang/zig/tree/master/lib/std</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2"><p><a href="https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig" class="uri">https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3"><p><a href="https://github.com/catchorg/Catch2/tree/devel" class="uri">https://github.com/catchorg/Catch2/tree/devel</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4"><p><a href="https://docs.pytest.org/en/7.1.x/reference/reference.html#pytest-raises" class="uri">https://docs.pytest.org/en/7.1.x/reference/reference.html#pytest-raises</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1"><p><a href="https://library.si.edu/exhibition/color-in-a-new-light/science" class="uri">https://library.si.edu/exhibition/color-in-a-new-light/science</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
@@ -1007,13 +908,13 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../Chapters/04-http-server.html" class="pagination-link" aria-label="Project 2 - Building a HTTP Server from scratch">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Project 2 - Building a HTTP Server from scratch</span></span>
+      <a href="../Chapters/12-file-op.html" class="pagination-link" aria-label="Filesystem and Input/Output (IO)">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Filesystem and Input/Output (IO)</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../Chapters/07-build-system.html" class="pagination-link" aria-label="Build System">
-        <span class="nav-page-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Build System</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../references.html" class="pagination-link" aria-label="References">
+        <span class="nav-page-text">References</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

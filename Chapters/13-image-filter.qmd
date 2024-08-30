@@ -21,4 +21,134 @@ this project is to build a program in Zig that applies a filter over an image.
 More specifically, a "grayscale filter". This filter essentially transforms
 any color image into a grayscale image.
 
+We are going to use the image displayed at @fig-pascal as the example in this project.
+In other words, we are going to transform this colored image, into a grayscale image,
+using our "image filter program" written in Zig.
+
+![A photo of the chilean-american actor Pedro Pascal. Source: Google Images.](../ZigExamples/image_filter/pedro_pascal.png){#fig-pascal}
+
+We don't need to write a lot of code to build such "image filter program". However, in order for us
+to build such program, we need to understand how digital images work. That is why we begin this chapter
+by explaining the theory behind digital images and how colors are represented in modern computers.
+We also give a brief explanation about the file format PNG (Portable Network Graphics), which is used
+in the example images.
+
+At the end of this chapter, we will have a full example of a program that takes the PNG image displayed at @fig-pascal
+as input, and writes a new image to the current working directory that is the grayscale version of the input image.
+This grayscale version of @fig-pascal that is written by the program is exposed at @fig-pascal-gray.
+
+![The grayscale version of the photo.](../ZigExamples/image_filter/pedro_pascal_filter.png){#fig-pascal-gray}
+
+
+## How we see things? {#sec-eyes}
+
+In this section, I want to briefly describe to you how we (humans) actually see things with our own eyes.
+I mean, how our eyes work? If you do have a very basic understanding of how our eyes work, you will understand
+more easily how digital images are made. Because the techniques used to produce a digital image
+were developed by taking a lot of inspiration from how our human eyes work.
+
+You can interpret a human eye as a light sensor, or, a light receptor. The eye receives some amount of light as input,
+and it interprets the colors that are present in this "amount of light".
+If no amount of light hits the eye, then, the eye cannot extract color from it, and as result,
+we end up seeing nothing, or, more precisely, we see complete blackness.
+
+So everything depends on light. What we actually see are the colors (blue, red, orange, green, etc.) that
+are being reflected from the light that is hitting our eyes. **Light is the source of all colors!**
+This is what Isaac Newton discovered on his famous prism experiment[^newton] in the 1660s.
+
+[^newton]: <https://library.si.edu/exhibition/color-in-a-new-light/science>
+
+Inside our eyes, we have a specific type of cell called the "cone cell".
+Our eye have three different types, or, three different versions of these "cone cells".
+Each of these three types of cone cell is very sensitive to a specific spectrum of the light,
+which are the spectrums that define the colors red, green and blue.
+So, in summary, our eyes have specific types of cells that
+are highly sensitive to the colors red, green and blue.
+
+These are the cells responsible for perceiving the color present in the light that hits our eyes.
+As a result, our eyes perceives color as a mixture of these colors (red, green and blue). By having an amount
+of each one of these three colors, and mixing them together, we can get any other visible color
+that we want. So every color that we see is perceived as a specific mixture of blues, greens and reds,
+like 30% of red, plus 20% of green, plus 50% of blue.
+
+When these cone cells perceive (or, detect) the colors that are found in the
+light that is hitting our eyes, these cells produce electrical signals and sent them to the brain.
+Our brain interprets these electrical signals, and use them to form the image that we are seeing
+inside our head. Perceive the colors present in light.
+
+Based on what we have discussed here, the items below describes the sequence of events that
+composes this simplified version of how our human eyes work:
+
+1. Light hits our eyes.
+1. The cone cells perceive the colors that are present in this light.
+1. Cone cells produce electrical signals that describes the colors that were perceived in the light.
+1. The electrical signals are sent to the brain.
+1. Brain interprets these signals, and form the image based on the colors identified by these electrical signals.
+
+
+## How digital images work? {#sec-digital-img}
+
+A digital image is a "digital representation" of an image that we see with our eyes.
+In other words, a digital image is a "digital representation" of the colors that we see
+and perceive through the light.
+
+In the digital world, we have two types of images, which are: vector image and raster image.
+Vector images are not described here. So just remember that every single aspect that we discuss
+here in this chapter about digital images **are related solely to raster images**, and not vector images.
+
+Raster images are digital images that are represented as a 2D (two dimensional) matrix
+of pixels. In other words, every raster image is basically a 2D rectangle of pixels. Each pixel have a particular color.
+So, the raster image is just a matrix of pixels, and each of these pixels are displayed in the screen of your computer (or the screen
+of any other device, e.g. laptop, tablet, smartphone, etc.) as colors.
+
+For example, if the digital image have dimensions of 1920 pixels of width and 1080 pixels of height, then, the image
+contains $1920 \times 1080 = 2073600$ pixels in total. You could also say that the "total area" of the image is
+of 2073600 pixels, although the concept of "area" is not very used here in computer graphics.
+
+Since most digital images uses the RGB model, the color of each pixel in these raster images are usually
+represented as a mixture of red, green and blue. That is, the color of each pixel is identified by a set of
+three different integer values. Each integer value identifies the "amount" of each color (red, green or blue).
+For example, the set `(199, 78, 70)` identifies a color that is very close to red. We have 199 of red, 78 of green,
+and 70 of blue (RGB).
+
+<!--
+### Reflecting on image size
+
+The format that we have discussed at the previous section creates a classical problem,
+which is binary size. That is, when digital images are in this more "raw form" of a 2D matrix of pixels,
+they usually take some good megabytes of space in our computer's memory or in the hard disk.
+
+Today, we have plenty resources to deal with this problem. In other words, this problem is not
+so big of a deal these days, because we have different techniques to reduce the impact
+of this problem. Also, hardware got cheaper over the time, so, we can afford to have
+more space in our computer by buying bigger memory cards, and bigger hard disks.
+
+But is still useful to talk about this problem to describe how we as humans and programmers
+solved this problem with data compression algorithms and digital image file formats,
+like PNG (Portable Network Graphics) and JPEG.
+
+Therefore, the binary size of images is a real-world problem for graphics and digital images.
+That is why encoding and data compression are very important fields in computer graphics.
+This is why researchers and developers have spent a lot of effort over the last decades developing
+good data compression algorithms, and clever encoding systems that reduces the necessary size
+to represent digital images.
+
+To give you a notion of the problem, we can actually calculate the necessary amount
+of bytes necessary to represent a 1000x800 pixels image. In this case, we have $1000 \times 800 = 800000$ pixels
+in total. Each pixel have a color that is identified by a set of three integer values (one for each color in the RGB model). Each
+integer value is usually an unsigned 8-bit integer (ranging from 0 to 255). So each integer values
+takes 1 byte of space. With some basic math, we reach the value of $800000 \times 1 = 800000$ bytes, or 0.8 megabytes.
+
+I mean, 0.8 megabytes of space is not so bad. But this is a case of a small image. Most device screens
+in today's modern world are at least full HD (which have dimensions of 1920x1080 pixels). Also, equipments such as
+a modern photographic camera, or, a modern smartphone, produces photos (i.e. digital images) with several megapixels
+of resolution, which increases a lot of the final size of the file.
+
+-->
+
+As we described at @sec-eyes, we see things as a mixture of reds, greens and blues,
+and because of that, most of the digital images that see uses the RGB model,
+which is a color model composed of red, green and blue.
+
+
 
