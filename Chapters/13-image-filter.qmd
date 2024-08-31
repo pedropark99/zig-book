@@ -150,7 +150,7 @@ displayed, the screen display the first row of pixels, then, the second row, the
 
 
 
-### Representing the matrix of pixels in code
+### Representing the matrix of pixels in code {#sec-pixel-repr}
 
 Ok, we know already that digital images are represented as a 2D matrix of pixels.
 But we do not have a notion of a 2D matrix in Zig. Most low-level languages in general (Zig, C, Rust, etc.) do not have such notion.
@@ -205,4 +205,74 @@ In our case here, the example image of our project (@fig-pascal) is a raster ima
 stored in a PNG file, and this specific image is using the RGBA color model. So
 each pixel in the image is represented by 4 different integer values, and, as consequence,
 to store this image in our Zig code, we need to create an array whose size is a multiple of 4.
+
+
+## The PNG library we are going to use
+
+Let's begin our project by focusing on writing the necessary Zig code to
+read the data from the PNG file. In other words, in this section, we want
+to read the PNG file exposed at @fig-pascal, and parse it's data to extract the 2D matrix of pixels
+that represents the image.
+
+As we have discussed at @sec-pixel-repr, the image that we are using as example here
+is a PNG file that uses the RGBA color model, and, threfore, each pixel of the image
+is represented by 4 integer values. You can download this image by visiting the `ZigExamples/image_filter`
+[folder at the official repository of this book](https://github.com/pedropark99/zig-book/tree/main/ZigExamples/image_filter)[^img-filter-folder].
+You can also find in this folder the complete source code of this small project that we
+are developing here.
+
+[^img-filter-folder]: <https://github.com/pedropark99/zig-book/tree/main/ZigExamples/image_filter>
+
+There are some C libraries available that we can use to read and parse PNG files.
+The most famous and used of all is the `libpng`, which is the "official library" for reading and writing
+PNG files. This C library is available in most operating system. But this C library is very known
+for being a little complex and hard to use.
+
+That is why, I'm going to use a more modern alternative here in this project, which is the `libspng` library.
+I have choose to use this C library here, because it is much, much
+simpler to use than `libpng`, and also, offers very good performance for all operations.
+You can checkout the [official website of the library](https://libspng.org/)[^libspng]
+to know more about it.
+You will also find there, some documentation that might help you to understand and
+follow the code examples exposed here.
+
+[^libspng]: <https://libspng.org/>
+
+
+First of all, remember to build and install this `libspng` into your system. Because
+if don't do this step first, then, the `zig` compiler cannot find the files and resources of
+this library in your computer, and link them with the Zig code that we are going to write here
+together. There is good information about how to build and install the library at the
+[build section of the library documentation at the official website](https://libspng.org/docs/build/)[^lib-build].
+
+[^lib-build]: <https://libspng.org/docs/build/>
+
+
+## How to call C code from Zig
+
+We have discussed at @sec-building-c-code how to build C code using the `zig` compiler.
+But we haven't discussed yet how to actually use C code in Zig. In other words,
+we haven't discussed yet how to call C code from Zig, and use C libraries in Zig, etc.
+
+Luckily enough, the small project that we are going to develop in this chapter will use and
+call some C code. So now is the opportunity that we have to demonstrate this aspect of Zig.
+So yes, you can use C code directly in Zig. Because of the very good interoperability between
+Zig and C, it is possible to use and call code from any C library that you want in Zig.
+
+This is not something new. Most high-level programming languages have FFI (foreign function interfaces),
+which can be used to call C code. For example, Python have Cython, R have `.Call()`, Javascript have `ccall()`, etc.
+But Zig integrates with C in a more direct way. You can call C functions directly without the need
+to use a FFI.
+
+Everything you have to do, is to import into your Zig code the C header file that describes the C functions
+that you are going to use, pretty much like you would do in C, by including the header files into your C module.
+After you import the header file, you can start calling and using the C functions described in this C header file
+in your Zig code.
+
+Whenever you use a C library in your Zig code, you have to link your Zig code against this
+C library in your build process. To do that, you use the techniques that we have already
+discussed across the @sec-build-system.
+
+
+
 
