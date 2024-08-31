@@ -70,8 +70,7 @@ fn _read_data_to_buffer(ctx: *png.spng_ctx, buffer: []u8) !void {
 }
 
 pub fn read_png(allocator: std.mem.Allocator, path: []const u8) !ImageData {
-    const path_cstr: [:0]const u8 = @ptrCast(path);
-    const file_descriptor = c.fopen(path_cstr, @as([*c]const u8, @ptrCast("rb")));
+    const file_descriptor = c.fopen(path, "rb");
     const ctx = png.spng_ctx_new(0) orelse unreachable;
     defer png.spng_ctx_free(ctx);
     _ = png.spng_set_png_file(ctx, @ptrCast(file_descriptor));

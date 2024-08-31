@@ -311,15 +311,104 @@ pub fn main() !void {
 ```
 
 
-<!--
-### About passing inputs to C functions
+### About passing Zig values to C functions
 
 Zig objects have some intrinsic differences between their C equivalents.
 Probably the most noticeable difference is the difference between C strings and Zig strings.
-Zig strings are objects that contains an arrays of arbitrary bytes and a length value.
-On the other hand, a C string is a null terminated array of arbitrary bytes.
+Zig strings are objects that contains both an arrays of arbitrary bytes and a length value.
+On the other hand, a C string is just a null terminated array of arbitrary bytes.
 
-In some cases, the `zig` compiler can complain about the use of Zig objects
-being given as input to the C function.
--->
+This might look as a subtle difference between them, but this makes all the difference.
+In some cases, the `zig` compiler, or, more specifically, the embedded C compiler, might complain about the use of Zig objects
+being given as input to C functions.
+
+As an example we will take the code exposed below. Here we are using
+the `fopen()` C function to open and close a file. Talking about how the `fopen()`
+function works in C, it takes as input two C objects of type `*const char`, which is just a C string,
+a.k.a. null-terminated array of bytes. But in this code example, we are passing the
+string literals written in Zig directly to the `fopen()` function.
+
+In other words, we are not doing any type of conversion from a Zig string to a C string.
+We are just passing the Zig string literals directly as inputs to the function. And it works just fine!
+This code example compiles and runs successfully with no problems.
+
+
+```{zig}
+#| eval: false
+const c = @cImport({
+    @cDefine("_NO_CRT_STDIO_INLINE", "1");
+    @cInclude("stdio.h");
+});
+
+pub fn main() !void {
+    const file = c.fopen("foo.txt", "rb");
+    const close_status = c.fclose(file);
+    if (close_status != 0) {
+        return error.CouldNotCloseFileDescriptor;
+    }
+}
+```
+
+If we store the path to the `build.zig` file inside
+a Zig object, like the `path` object below, and then, we pass this Zig object as input to the `fopen()` C function,
+the program still compiles successfully. I have ommitted most of the code in this example below
+just for brevitty reasons, since the remainder of the program is still the same.
+The only difference between them is just these two lines exposed below.
+
+```{zig}
+#| eval: false
+const path = "foo.txt";
+const file = c.fopen(path, "rb");
+// Remainder of the program
+```
+
+However, if I force the `zig` compiler to interpret this `path` object as a Zig string object,
+by annotating the `path` object with the data type `[]const u8`, then I actually get a compile error
+as demonstrated below. Because now I'm explicitly using a Zig object into a C function.
+
+So over the previous examples, the Zig compiler was somewhat automatically converting the string literals
+that we were providing into C strings, and passing them to the C functions. But now that we have
+declared our `path` object as a true Zig string object, we shall now properly convert it
+into C strings if we want to use it as input to a C function.
+
+```{zig}
+#| eval: false
+const path: []const u8 = "foo.txt";
+const file = c.fopen(path, "rb");
+// Remainder of the program
+```
+
+```
+t.zig:10:26: error: expected type '[*c]const u8', found '[]const u8'
+    const file = c.fopen(path, "rb");
+                         ^~~~
+```
+
+There are different ways to convert a Zig string into a C string.
+One way to solve this problem is to provide the pointer to the underlying array
+of bytes, instead of providing the Zig object directly as input.
+You can access this pointer by using the `ptr` property of the Zig string object.
+The code example below demonstrates that this strategy solves the problem.
+
+```{zig}
+#| eval: false
+const path: []const u8 = "foo.txt";
+const file = c.fopen(path.ptr, "rb");
+```
+
+This strategy works because this pointer to the underlying array found in `ptr` is identical
+to a C pointer to an array of bytes, i.e. an object of type `*const char`.
+This is why it solves the problem that we had before.
+
+Another option to solve this problem, is to convert the Zig string object into a C pointer by using the
+built-in functions `@as()` and `@ptrCast()`. With these functions we can convert
+an object of type `[]const u8` into an object of type `[*c]const u8`.
+
+We haven't
+
+
+
+### Passing C structs across Zig functions
+
+
 
