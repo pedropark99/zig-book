@@ -20,6 +20,40 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -249,7 +283,7 @@ window.Quarto = {
   <li><a href="#sec-eyes" id="toc-sec-eyes" class="nav-link active" data-scroll-target="#sec-eyes"><span class="header-section-number">14.1</span> How we see things?</a></li>
   <li><a href="#sec-digital-img" id="toc-sec-digital-img" class="nav-link" data-scroll-target="#sec-digital-img"><span class="header-section-number">14.2</span> How digital images work?</a>
   <ul class="collapse">
-  <li><a href="#reflecting-on-image-size" id="toc-reflecting-on-image-size" class="nav-link" data-scroll-target="#reflecting-on-image-size"><span class="header-section-number">14.2.1</span> Reflecting on image size</a></li>
+  <li><a href="#matrix-of-pixels" id="toc-matrix-of-pixels" class="nav-link" data-scroll-target="#matrix-of-pixels"><span class="header-section-number">14.2.1</span> Matrix of pixels</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -288,7 +322,7 @@ Figure&nbsp;14.1: A photo of the chilean-american actor Pedro Pascal. Source: Go
 </figcaption>
 </figure>
 </div>
-<p>We don’t need to write a lot of code to build such “image filter program”. However, in order for us to build such program, we need to understand how digital images work. That is why we begin this chapter by explaining the theory behind digital images and how colors are represented in modern computers. We also give a brief explanation about the file format PNG (Portable Network Graphics), which is used in the example images.</p>
+<p>We don’t need to write a lot of code to build such “image filter program”. However, in order for us to build such program, we first need to understand how digital images work. That is why we begin this chapter by explaining the theory behind digital images and how colors are represented in modern computers. We also give a brief explanation about the file format PNG (Portable Network Graphics), which is used in the example images.</p>
 <p>At the end of this chapter, we will have a full example of a program that takes the PNG image displayed at <a href="#fig-pascal" class="quarto-xref">Figure&nbsp;<span>14.1</span></a> as input, and writes a new image to the current working directory that is the grayscale version of the input image. This grayscale version of <a href="#fig-pascal" class="quarto-xref">Figure&nbsp;<span>14.1</span></a> that is written by the program is exposed at <a href="#fig-pascal-gray" class="quarto-xref">Figure&nbsp;<span>14.2</span></a>.</p>
 <div id="fig-pascal-gray" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
@@ -304,11 +338,11 @@ Figure&nbsp;14.2: The grayscale version of the photo.
 <h2 data-number="14.1" class="anchored" data-anchor-id="sec-eyes"><span class="header-section-number">14.1</span> How we see things?</h2>
 <p>In this section, I want to briefly describe to you how we (humans) actually see things with our own eyes. I mean, how our eyes work? If you do have a very basic understanding of how our eyes work, you will understand more easily how digital images are made. Because the techniques used to produce a digital image were developed by taking a lot of inspiration from how our human eyes work.</p>
 <p>You can interpret a human eye as a light sensor, or, a light receptor. The eye receives some amount of light as input, and it interprets the colors that are present in this “amount of light”. If no amount of light hits the eye, then, the eye cannot extract color from it, and as result, we end up seeing nothing, or, more precisely, we see complete blackness.</p>
-<p>So everything depends on light. What we actually see are the colors (blue, red, orange, green, etc.) that are being reflected from the light that is hitting our eyes. <strong>Light is the source of all colors!</strong> This is what Isaac Newton discovered on his famous prism experiment<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> in the 1660s.</p>
-<p>Inside our eyes, we have a specific type of cell called the “cone cell”. Our eye have three different types, or, three different versions of these “cone cells”. Each of these three types of cone cell is very sensitive to a specific spectrum of the light, which are the spectrums that define the colors red, green and blue. So, in summary, our eyes have specific types of cells that are highly sensitive to the colors red, green and blue.</p>
-<p>These are the cells responsible for perceiving the color present in the light that hits our eyes. As a result, our eyes perceives color as a mixture of these colors (red, green and blue). By having an amount of each one of these three colors, and mixing them together, we can get any other visible color that we want. So every color that we see is perceived as a specific mixture of blues, greens and reds, like 30% of red, plus 20% of green, plus 50% of blue.</p>
-<p>When these cone cells perceive (or, detect) the colors that are found in the light that is hitting our eyes, these cells produce electrical signals and sent them to the brain. Our brain interprets these electrical signals, and use them to form the image that we are seeing inside our head. Perceive the colors present in light.</p>
-<p>Based on what we have discussed here, the items below describes the sequence of events that composes this simplified version of how our human eyes work:</p>
+<p>So everything depends on light. What we actually see are the colors (blue, red, orange, green, purple, yellow, etc.) that are being reflected from the light that is hitting our eyes. <strong>Light is the source of all colors!</strong> This is what Isaac Newton discovered on his famous prism experiment<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> in the 1660s.</p>
+<p>Inside our eyes, we have a specific type of cell called the “cone cell”. Our eye have three different types, or, three different versions of these “cone cells”. Each of these three types of cone cell is very sensitive to a specific spectrum of the light, which are the spectrums that define the colors red, green and blue. So, in summary, our eyes have specific types of cells that are highly sensitive to these three colors (red, green and blue).</p>
+<p>These are the cells responsible for perceiving the color present in the light that hits our eyes. As a result, our eyes perceives color as a mixture of these three colors (red, green and blue). By having an amount of each one of these three colors, and mixing them together, we can get any other visible color that we want. So every color that we see is perceived as a specific mixture of blues, greens and reds, like 30% of red, plus 20% of green, plus 50% of blue.</p>
+<p>When these cone cells perceive (or, detect) the colors that are found in the light that is hitting our eyes, these cells produce electrical signals and sent them to the brain. Our brain interprets these electrical signals, and use them to form the image that we are seeing inside our head.</p>
+<p>Based on what we have discussed here, the items below describes the sequence of events that composes this very simplified version of how our human eyes work:</p>
 <ol type="1">
 <li>Light hits our eyes.</li>
 <li>The cone cells perceive the colors that are present in this light.</li>
@@ -319,17 +353,30 @@ Figure&nbsp;14.2: The grayscale version of the photo.
 </section>
 <section id="sec-digital-img" class="level2" data-number="14.2">
 <h2 data-number="14.2" class="anchored" data-anchor-id="sec-digital-img"><span class="header-section-number">14.2</span> How digital images work?</h2>
-<p>A digital image is a “digital representation” of an image that we see with our eyes. In other words, a digital image is a “digital representation” of the colors that we see and perceive through the light.</p>
-<p>In the digital world, we have two types of images, which are: vector image and raster image. Vector images are not described here. So just remember that every single aspect that we discuss here in this chapter about digital images <strong>are related solely to raster images</strong>, and not vector images.</p>
-<p>Raster images are digital images that are represented as a 2D (two dimensional) matrix of pixels. In other words, every raster image is basically a 2D rectangle of pixels. Each pixel have a particular color. So, the raster image is just a matrix of pixels, and each of these pixels are displayed in the screen of your computer (or the screen of any other device, e.g.&nbsp;laptop, tablet, smartphone, etc.) as colors.</p>
+<p>A digital image is a “digital representation” of an image that we see with our eyes. In other words, a digital image is a “digital representation” of the colors that we see and perceive through the light. In the digital world, we have two types of images, which are: vector image and raster image. Vector images are not described here. So just remember that every single aspect that we discuss here in this chapter about digital images <strong>are related solely to raster images</strong>, and not vector images.</p>
+<p>Raster images are digital images that are represented as a 2D (two dimensional) matrix of pixels. In other words, every raster image is basically a rectangle of pixels. Each pixel have a particular color. So, the raster image is just a 2D matrix of pixels, and each of these pixels are displayed in the screen of your computer (or the screen of any other device, e.g.&nbsp;laptop, tablet, smartphone, etc.) as colors.</p>
 <p>For example, if the digital image have dimensions of 1920 pixels of width and 1080 pixels of height, then, the image contains <span class="math inline">\(1920 \times 1080 = 2073600\)</span> pixels in total. You could also say that the “total area” of the image is of 2073600 pixels, although the concept of “area” is not very used here in computer graphics.</p>
-<p>Since most digital images uses the RGB model, the color of each pixel in these raster images are usually represented as a mixture of red, green and blue. That is, the color of each pixel is identified by a set of three different integer values. Each integer value identifies the “amount” of each color (red, green or blue). For example, the set <code>(199, 78, 70)</code> identifies a color that is very close to red. We have 199 of red, 78 of green, and 70 of blue (RGB).</p>
-<section id="reflecting-on-image-size" class="level3" data-number="14.2.1">
-<h3 data-number="14.2.1" class="anchored" data-anchor-id="reflecting-on-image-size"><span class="header-section-number">14.2.1</span> Reflecting on image size</h3>
-<p>The format that we have discussed at the previous section creates a classical problem, which is binary size. That is, when digital images are in this more “raw form” of a 2D matrix of pixels, they usually take some good megabytes of space, even if the image is relatively small in dimensions like 1000x800 pixels.</p>
-<p>Therefore, the binary size of images is a real-world problem for graphics and digital images. That is why encoding and data compression are very important fields in computer graphics. This is why researchers and developers have spent a lot of effort over the last decades developing good data compression algorithms, and clever encoding systems that reduces the necessary size to represent digital images.</p>
-<p>Just to give you a notion of the problem, we can actually calculate the necessary amount of bytes necessary to represent a 1000x800 pixels image. In this case, we have <span class="math inline">\(1000 \times 800 = 800000\)</span> pixels in total. Each pixel have a color that is identified by a set of three integer values (one for each color in the RGB model). Each integer value is usually an unsigned 8-bit integer (ranging from 0 to 255). So each integer values takes 1 byte of space. With some basic math, we reach the value of <span class="math inline">\(800000 \times 1 = 800000\)</span> bytes, or 0.8 megabytes.</p>
-<p>As we described at <a href="#sec-eyes" class="quarto-xref"><span>Section 14.1</span></a>, we see things as a mixture of reds, greens and blues, and because of that, most of the digital images that see uses the RGB model, which is a color model composed of red, green and blue.</p>
+<p>Most digital images we see in the world uses the RGB color model. RGB stands for (red, green and blue) if you did not detected that yet. So the color of each pixel in these raster images are usually represented as a mixture of red, green and blue, just like in our eyes. That is, the color of each pixel is identified by a set of three different integer values. Each integer value identifies the “amount” of each color (red, green or blue). For example, the set <code>(199, 78, 70)</code> identifies a color that is close to red. We have 199 of red, 78 of green, and 70 of blue (RGB). In contrast, the set <code>(129, 77, 250)</code> describes a color close to purple.</p>
+<section id="matrix-of-pixels" class="level3" data-number="14.2.1">
+<h3 data-number="14.2.1" class="anchored" data-anchor-id="matrix-of-pixels"><span class="header-section-number">14.2.1</span> Matrix of pixels</h3>
+<p>Ok, we know already that digital images are represented as a 2D matrix of pixels. But we do not have a notion of a 2D matrix in Zig. Most low-level languages in general (Zig, C, Rust, etc.) do not have such notion. As consequence, when programmers need to create a 2D matrix in low-level languages, they usually a normal 1D array to do so. You just create an normal 1D array, and store all values from both dimensions into this 1D array.</p>
+<p>When we use such strategy, indexing the values from a specific dimension becomes a little harder. But with some basic math we can solve this problem. As an example, let’s use a very small image of 4x3 pixels, which have 12 pixels in total, that is represented by <span class="math inline">\(3 \times 12 = 36\)</span> integer values. So, we need to create an array of 36 unsigned 8-bit integer (<code>u8</code>) values to store the entire 2D matrix of pixels of this particular image.</p>
+<p>The reason why unsigned 8-bit integer (<code>u8</code>) values are used to represent the amounts of each color, instead of any other integer type, is because they take the minimum amount of space as possible, or, the minimum amount of bits as possible. Which helps to reduces the binary size of the image, i.e.&nbsp;of the 2D matrix. Also, they convey a good amount of precision and detail about the colors, even though they can represent a relatively small range (from 0 to 255) of “color amounts”.</p>
+<p>Now, suppose that we have this 1D array that represents a 2D matrix of 4x3 pixels, like the <code>matrix</code> object below. How can we access the pixel at the 2nd row, and 3rd column of the matrix? We just calculate the 1D index of this particular pixel by multiplying the number of the row by the width of the matrix (e.g.&nbsp;the width of the image), and adds the number of the column to it.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> matrix = []<span class="dt">u8</span><span class="op">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="dv">201</span>, <span class="dv">10</span>, <span class="dv">25</span>, <span class="dv">185</span>, <span class="dv">65</span>, <span class="dv">70</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="dv">65</span>, <span class="dv">120</span>, <span class="dv">110</span>, <span class="dv">65</span>, <span class="dv">120</span>, <span class="dv">117</span>,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="dv">98</span>, <span class="dv">95</span>, <span class="dv">12</span>, <span class="dv">213</span>, <span class="dv">26</span>, <span class="dv">88</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="dv">143</span>, <span class="dv">112</span>, <span class="dv">65</span>, <span class="dv">97</span>, <span class="dv">99</span>, <span class="dv">205</span>,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="dv">234</span>, <span class="dv">105</span>, <span class="dv">56</span>, <span class="dv">43</span>, <span class="dv">44</span>, <span class="dv">216</span>,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="dv">45</span>, <span class="dv">59</span>, <span class="dv">243</span>, <span class="dv">211</span>, <span class="dv">209</span>, <span class="dv">54</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> row_num = <span class="dv">2</span>;</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> col_num = <span class="dv">3</span>;</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> index = (row_num * <span class="dv">4</span>) + col_num;</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"Pixel at 2nd row and 3rd column: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>matrix[index]<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 
 
 </section>

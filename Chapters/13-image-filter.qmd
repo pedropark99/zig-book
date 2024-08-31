@@ -28,7 +28,7 @@ using our "image filter program" written in Zig.
 ![A photo of the chilean-american actor Pedro Pascal. Source: Google Images.](../ZigExamples/image_filter/pedro_pascal.png){#fig-pascal}
 
 We don't need to write a lot of code to build such "image filter program". However, in order for us
-to build such program, we need to understand how digital images work. That is why we begin this chapter
+to build such program, we first need to understand how digital images work. That is why we begin this chapter
 by explaining the theory behind digital images and how colors are represented in modern computers.
 We also give a brief explanation about the file format PNG (Portable Network Graphics), which is used
 in the example images.
@@ -52,7 +52,7 @@ and it interprets the colors that are present in this "amount of light".
 If no amount of light hits the eye, then, the eye cannot extract color from it, and as result,
 we end up seeing nothing, or, more precisely, we see complete blackness.
 
-So everything depends on light. What we actually see are the colors (blue, red, orange, green, etc.) that
+So everything depends on light. What we actually see are the colors (blue, red, orange, green, purple, yellow, etc.) that
 are being reflected from the light that is hitting our eyes. **Light is the source of all colors!**
 This is what Isaac Newton discovered on his famous prism experiment[^newton] in the 1660s.
 
@@ -63,10 +63,10 @@ Our eye have three different types, or, three different versions of these "cone 
 Each of these three types of cone cell is very sensitive to a specific spectrum of the light,
 which are the spectrums that define the colors red, green and blue.
 So, in summary, our eyes have specific types of cells that
-are highly sensitive to the colors red, green and blue.
+are highly sensitive to these three colors (red, green and blue).
 
 These are the cells responsible for perceiving the color present in the light that hits our eyes.
-As a result, our eyes perceives color as a mixture of these colors (red, green and blue). By having an amount
+As a result, our eyes perceives color as a mixture of these three colors (red, green and blue). By having an amount
 of each one of these three colors, and mixing them together, we can get any other visible color
 that we want. So every color that we see is perceived as a specific mixture of blues, greens and reds,
 like 30% of red, plus 20% of green, plus 50% of blue.
@@ -74,10 +74,10 @@ like 30% of red, plus 20% of green, plus 50% of blue.
 When these cone cells perceive (or, detect) the colors that are found in the
 light that is hitting our eyes, these cells produce electrical signals and sent them to the brain.
 Our brain interprets these electrical signals, and use them to form the image that we are seeing
-inside our head. Perceive the colors present in light.
+inside our head.
 
 Based on what we have discussed here, the items below describes the sequence of events that
-composes this simplified version of how our human eyes work:
+composes this very simplified version of how our human eyes work:
 
 1. Light hits our eyes.
 1. The cone cells perceive the colors that are present in this light.
@@ -91,25 +91,25 @@ composes this simplified version of how our human eyes work:
 A digital image is a "digital representation" of an image that we see with our eyes.
 In other words, a digital image is a "digital representation" of the colors that we see
 and perceive through the light.
-
 In the digital world, we have two types of images, which are: vector image and raster image.
 Vector images are not described here. So just remember that every single aspect that we discuss
 here in this chapter about digital images **are related solely to raster images**, and not vector images.
 
 Raster images are digital images that are represented as a 2D (two dimensional) matrix
-of pixels. In other words, every raster image is basically a 2D rectangle of pixels. Each pixel have a particular color.
-So, the raster image is just a matrix of pixels, and each of these pixels are displayed in the screen of your computer (or the screen
+of pixels. In other words, every raster image is basically a rectangle of pixels. Each pixel have a particular color.
+So, the raster image is just a 2D matrix of pixels, and each of these pixels are displayed in the screen of your computer (or the screen
 of any other device, e.g. laptop, tablet, smartphone, etc.) as colors.
 
 For example, if the digital image have dimensions of 1920 pixels of width and 1080 pixels of height, then, the image
 contains $1920 \times 1080 = 2073600$ pixels in total. You could also say that the "total area" of the image is
 of 2073600 pixels, although the concept of "area" is not very used here in computer graphics.
 
-Since most digital images uses the RGB model, the color of each pixel in these raster images are usually
-represented as a mixture of red, green and blue. That is, the color of each pixel is identified by a set of
+Most digital images we see in the world uses the RGB color model. RGB stands for (red, green and blue) if you did not
+detected that yet. So the color of each pixel in these raster images are usually
+represented as a mixture of red, green and blue, just like in our eyes. That is, the color of each pixel is identified by a set of
 three different integer values. Each integer value identifies the "amount" of each color (red, green or blue).
-For example, the set `(199, 78, 70)` identifies a color that is very close to red. We have 199 of red, 78 of green,
-and 70 of blue (RGB).
+For example, the set `(199, 78, 70)` identifies a color that is close to red. We have 199 of red, 78 of green,
+and 70 of blue (RGB). In contrast, the set `(129, 77, 250)` describes a color close to purple.
 
 
 
@@ -117,18 +117,66 @@ and 70 of blue (RGB).
 
 Ok, we know already that digital images are represented as a 2D matrix of pixels.
 But we do not have a notion of a 2D matrix in Zig. Most low-level languages in general (Zig, C, Rust, etc.) do not have such notion.
-As consequence, a 2D matrix is usually represented in low-level languages inside a 1D array.
+As consequence, when programmers need to create a 2D matrix in low-level languages, they usually a normal 1D array
+to do so.
 You just create an normal 1D array, and store all values from both dimensions into this 1D array.
 
-When we use such strategy, indexing values from a specific dimension becomes a little harder.
-But with some basic math we can solve this problem. As an example, let's use a very small image of 5x5 pixels,
-which have 25 pixels in total, that is represented by $3 \times 25 = 75$ integer values.
-So, we need to create an array of 75 unsigned 8-bit integer (`u8`) values to store the 2D matrix of pixels
+When we use such strategy, indexing the values from a specific dimension becomes a little harder.
+But with some basic math we can solve this problem. As an example, let's use a very small image of 4x3 pixels,
+which have 12 pixels in total, that is represented by $3 \times 12 = 36$ integer values.
+So, we need to create an array of 36 unsigned 8-bit integer (`u8`) values to store the entire 2D matrix of pixels
 of this particular image.
 
-To represent the amounts of each color, unsigned 8-bit integer (`u8`) values because they take the minimum amount
-of space as possible, which reduces the binary size of the image, i.e. of the 2D matrix.
+The reason why unsigned 8-bit integer (`u8`) values are used to represent the amounts of each color,
+instead of any other integer type, is because they take the minimum amount of space as possible, or,
+the minimum amount of bits as possible. Which helps to reduces the binary size of the image, i.e. of the 2D matrix.
+Also, they convey a good amount of precision and detail about the colors, even though they can represent
+a relatively small range (from 0 to 255) of "color amounts".
 
+Now, suppose that we have this 1D array that represents a 2D matrix of 4x3 pixels, like the `matrix` object below.
+How can we access the pixel at the 2nd row, and 3rd column of the matrix?
+We just calculate the 1D index of this particular pixel by multiplying the number of the row
+by the width of the matrix (e.g. the width of the image), and adds the number of the column to it.
 
+```{zig}
+#| auto_main: true
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+fn p(r: u8, g: u8, b: u8) Pixel {
+    return Pixel{
+        .red = r,
+        .green = g,
+        .blue = b,
+    };
+}
+const Pixel = struct {
+    red: u8,
+    green: u8,
+    blue: u8,
+};
 
+pub fn main() !void {
+    const matrix = [_]Pixel{
+        p(201, 10, 25),  p(185, 65, 70),
+        p(65, 120, 110), p(65, 120, 117),
+        p(98, 95, 12),   p(213, 26, 88),
+        p(143, 112, 65), p(97, 99, 205),
+        p(234, 105, 56), p(43, 44, 216),
+        p(45, 59, 243),  p(211, 209, 54),
+    };
+    const row_num = 1;
+    const col_num = 2;
+    const index = (row_num * 4) + col_num;
+    try stdout.print(
+        "Pixel at 2nd row and 3rd column: {any}\n",
+        .{ matrix[index] }
+    );
+}
+```
+
+```
+Pixel at 2nd row and 3rd column: Pixel{
+    .red = 143, .green = 112, .blue = 65
+}
+```
 
