@@ -252,7 +252,8 @@ together. There is good information about how to build and install the library a
 
 We have discussed at @sec-building-c-code how to build C code using the `zig` compiler.
 But we haven't discussed yet how to actually use C code in Zig. In other words,
-we haven't discussed yet how to call C code from Zig, and use C libraries in Zig, etc.
+we haven't discussed yet how to call C code from Zig, or, how to use C libraries in your Zig code,
+etc.
 
 Luckily enough, the small project that we are going to develop in this chapter will use and
 call some C code. So now is the opportunity that we have to demonstrate this aspect of Zig.
@@ -261,18 +262,56 @@ Zig and C, it is possible to use and call code from any C library that you want 
 
 This is not something new. Most high-level programming languages have FFI (foreign function interfaces),
 which can be used to call C code. For example, Python have Cython, R have `.Call()`, Javascript have `ccall()`, etc.
-But Zig integrates with C in a more direct way. You can call C functions directly without the need
+But Zig integrates with C in a more direct way. You can call C functions directly in your Zig code without the need
 to use a FFI.
 
 Everything you have to do, is to import into your Zig code the C header file that describes the C functions
 that you are going to use, pretty much like you would do in C, by including the header files into your C module.
 After you import the header file, you can start calling and using the C functions described in this C header file
 in your Zig code.
-
-Whenever you use a C library in your Zig code, you have to link your Zig code against this
+But remember, whenever you use a C library in your Zig code, you have to link your Zig code with this
 C library in your build process. To do that, you use the techniques that we have already
 discussed across the @sec-build-system.
 
+
+### Importing C header files
+
+To import C header files into our Zig code, we use the built-in functions `@cInclude()` and `@cImport()`.
+Inside the `@cImport()` function, we open a block (with a pair of curly braces). Inside this block
+we can include `@cDefine()` calls to define C macros when including this specific C header.
+But we can also include a single `@cInclude()` call inside `@cImport()`.
+
+You provide the name of the C header that you want to include as input to `@cInclude()`.
+Take the example below, where we are importing the Standard IO C Library (`stdio.h`),
+and calling the `printf()` C function. Notice that we have also used the C function `powf()`,
+which comes from the C Math Library (`math.h`).
+In order to compile this example, you have to link this Zig code with both
+the C Standard Library and the C Math Library, by passing the flags `-lc` and `-lm`
+to the `zig` compiler.
+
+```{zig}
+#| eval: false
+const cmath = @cImport({
+    @cInclude("math.h");
+});
+const stdio = @cImport({
+    @cDefine("_NO_CRT_STDIO_INLINE", "1");
+    @cInclude("stdio.h");
+});
+
+pub fn main() !void {
+    const x: f32 = 15.2;
+    const y = cmath.powf(x, @as(f32, 2.6));
+    _ = stdio.printf("%.3f\n", y);
+}
+```
+
+```
+1182.478
+```
+
+
+### About passing inputs to C functions
 
 
 

@@ -287,7 +287,11 @@ window.Quarto = {
   <li><a href="#sec-pixel-repr" id="toc-sec-pixel-repr" class="nav-link" data-scroll-target="#sec-pixel-repr"><span class="header-section-number">14.2.2</span> Representing the matrix of pixels in code</a></li>
   </ul></li>
   <li><a href="#the-png-library-we-are-going-to-use" id="toc-the-png-library-we-are-going-to-use" class="nav-link" data-scroll-target="#the-png-library-we-are-going-to-use"><span class="header-section-number">14.3</span> The PNG library we are going to use</a></li>
-  <li><a href="#how-to-call-c-code-from-zig" id="toc-how-to-call-c-code-from-zig" class="nav-link" data-scroll-target="#how-to-call-c-code-from-zig"><span class="header-section-number">14.4</span> How to call C code from Zig</a></li>
+  <li><a href="#how-to-call-c-code-from-zig" id="toc-how-to-call-c-code-from-zig" class="nav-link" data-scroll-target="#how-to-call-c-code-from-zig"><span class="header-section-number">14.4</span> How to call C code from Zig</a>
+  <ul class="collapse">
+  <li><a href="#importing-c-header-files" id="toc-importing-c-header-files" class="nav-link" data-scroll-target="#importing-c-header-files"><span class="header-section-number">14.4.1</span> Importing C header files</a></li>
+  <li><a href="#about-passing-inputs-to-c-functions" id="toc-about-passing-inputs-to-c-functions" class="nav-link" data-scroll-target="#about-passing-inputs-to-c-functions"><span class="header-section-number">14.4.2</span> About passing inputs to C functions</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -418,13 +422,36 @@ Figure&nbsp;14.4: How the pixels of raster images are displayed.
 </section>
 <section id="how-to-call-c-code-from-zig" class="level2" data-number="14.4">
 <h2 data-number="14.4" class="anchored" data-anchor-id="how-to-call-c-code-from-zig"><span class="header-section-number">14.4</span> How to call C code from Zig</h2>
-<p>We have discussed at <a href="07-build-system.html#sec-building-c-code" class="quarto-xref"><span>Section 9.11</span></a> how to build C code using the <code>zig</code> compiler. But we haven’t discussed yet how to actually use C code in Zig. In other words, we haven’t discussed yet how to call C code from Zig, and use C libraries in Zig, etc.</p>
+<p>We have discussed at <a href="07-build-system.html#sec-building-c-code" class="quarto-xref"><span>Section 9.11</span></a> how to build C code using the <code>zig</code> compiler. But we haven’t discussed yet how to actually use C code in Zig. In other words, we haven’t discussed yet how to call C code from Zig, or, how to use C libraries in your Zig code, etc.</p>
 <p>Luckily enough, the small project that we are going to develop in this chapter will use and call some C code. So now is the opportunity that we have to demonstrate this aspect of Zig. So yes, you can use C code directly in Zig. Because of the very good interoperability between Zig and C, it is possible to use and call code from any C library that you want in Zig.</p>
-<p>This is not something new. Most high-level programming languages have FFI (foreign function interfaces), which can be used to call C code. For example, Python have Cython, R have <code>.Call()</code>, Javascript have <code>ccall()</code>, etc. But in Zig integrates with C in a more direct way. You can call C functions directly without the need to use a FFI.</p>
-<p>Everything you have to do, is to import into your Zig code the C header file that describes the C functions that you are going to use, pretty much like you would do in C, by including the header files into your C module. After you import the header file, you can start calling and using the C functions described in this C header file in your Zig code.</p>
-<p>Whenever you use a C library in your Zig code, you have to link your Zig code against this C library in your build process. To do that, you use the techniques that we have already discussed across the <a href="07-build-system.html" class="quarto-xref"><span>Chapter 9</span></a>.</p>
+<p>This is not something new. Most high-level programming languages have FFI (foreign function interfaces), which can be used to call C code. For example, Python have Cython, R have <code>.Call()</code>, Javascript have <code>ccall()</code>, etc. But Zig integrates with C in a more direct way. You can call C functions directly in your Zig code without the need to use a FFI.</p>
+<p>Everything you have to do, is to import into your Zig code the C header file that describes the C functions that you are going to use, pretty much like you would do in C, by including the header files into your C module. After you import the header file, you can start calling and using the C functions described in this C header file in your Zig code. But remember, whenever you use a C library in your Zig code, you have to link your Zig code with this C library in your build process. To do that, you use the techniques that we have already discussed across the <a href="07-build-system.html" class="quarto-xref"><span>Chapter 9</span></a>.</p>
+<section id="importing-c-header-files" class="level3" data-number="14.4.1">
+<h3 data-number="14.4.1" class="anchored" data-anchor-id="importing-c-header-files"><span class="header-section-number">14.4.1</span> Importing C header files</h3>
+<p>To import C header files into our Zig code, we use the built-in functions <code>@cInclude()</code> and <code>@cImport()</code>. Inside the <code>@cImport()</code> function, we open a block (with a pair of curly braces). Inside this block we can include <code>@cDefine()</code> calls to define C macros when including this specific C header. But we can also include a single <code>@cInclude()</code> call inside <code>@cImport()</code>.</p>
+<p>You provide the name of the C header that you want to include as input to <code>@cInclude()</code>. Take the example below, where we are importing the Standard IO C Library (<code>stdio.h</code>), and calling the <code>printf()</code> C function. Notice that we have also used the C function <code>powf()</code>, which comes from the C Math Library (<code>math.h</code>). In order to compile this example, you have to link this Zig code with both the C Standard Library and the C Math Library, by passing the flags <code>-lc</code> and <code>-lm</code> to the <code>zig</code> compiler.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cmath = <span class="bu">@cImport</span>(<span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"math.h"</span>);</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdio = <span class="bu">@cImport</span>(<span class="op">{</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cDefine</span>(<span class="st">"_NO_CRT_STDIO_INLINE"</span>, <span class="st">"1"</span>);</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"stdio.h"</span>);</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x: <span class="dt">f32</span> = <span class="fl">15.2</span>;</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> y = cmath.powf(x, <span class="bu">@as</span>(<span class="dt">f32</span>, <span class="fl">2.6</span>));</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    _ = stdio.printf(<span class="st">"%.3f</span><span class="sc">\n</span><span class="st">"</span>, y);</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>1182.478</code></pre>
+</section>
+<section id="about-passing-inputs-to-c-functions" class="level3" data-number="14.4.2">
+<h3 data-number="14.4.2" class="anchored" data-anchor-id="about-passing-inputs-to-c-functions"><span class="header-section-number">14.4.2</span> About passing inputs to C functions</h3>
 
 
+</section>
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>
