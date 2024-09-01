@@ -421,21 +421,32 @@ is semantically identical to a C pointer to an array of bytes, i.e. a C object o
 This is why this option also solves the problem of passing C strings to the C function.
 
 Another option is to explicitly convert the Zig string object into a C pointer by using the
-built-in functions `@as()` or `@ptrCast()`. With these functions we can convert
+built-in function `@ptrCast()`. With these functions we can convert
 an object of type `[]const u8` into an object of type `[*c]const u8`.
 Remember, as I described over the previous paragraphs, the `[*c]` portion of the type
 means that it is a C pointer.
 
-We use the `@as()` function to explicit convert (or cast) a Zig value from a type `x`
+You may recall of the `@as()` built-in function, which is used to explicit convert (or cast) a Zig value from a type `x`
 to a type `y`, etc. That is, this `@as()` Zig function is equivalent to the
 `as` keyword in Rust, and the C type casting syntax (e.g. `(int) x`).
-But in this case, we are not converting any type of object.
-More specifically, we are converting something into a pointer.
+But in our case here, we are not converting any type of object.
+More specifically, we are converting something into a pointer, or, a C pointer more specifically.
 Everytime a pointer is involved in some "type casting operation" in Zig,
-the `@ptrCast()` function is used. This `@ptrCast()` function is responsible
+the `@ptrCast()` function is involved. This `@ptrCast()` function is responsible
 for converting a pointer of one type to a pointer of another type.
 
+In the example below, we are using this function to cast our `path` object
+into a C pointer to an array of bytes. Then, we pass this C pointer as input
+to the `fopen()` function. Notice that this code example compiles succesfully
+with no errors.
 
+```{zig}
+#| eval: false
+const path: []const u8 = "foo.txt";
+const c_path: [*c]const u8 = @ptrCast(path);
+const file = c.fopen(c_path, "rb");
+// Remainder of the program
+```
 
 
 ### Passing C structs across Zig functions
