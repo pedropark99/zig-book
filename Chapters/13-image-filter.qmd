@@ -255,34 +255,43 @@ But we haven't discussed yet how to actually use C code in Zig. In other words,
 we haven't discussed yet how to call C code from Zig, or, how to use C libraries in your Zig code,
 etc.
 
-Luckily enough, the small project that we are going to develop in this chapter will use and
-call some C code. So now is the opportunity that we have to demonstrate this aspect of Zig.
-So yes, you can use C code directly in Zig. Because of the very good interoperability between
-Zig and C, it is possible to use and call code from any C library that you want in Zig.
+Luckily, Zig have a great interoperability with C, and our small project here is a great oportunitty
+to demonstrate that, because we are going use some C code in it.
+So yes, you can use C code directly in Zig, and because of the very good interoperability between
+Zig and C, it is possible to use and call code from virtually any C library that you want in Zig.
 
-This is not something new. Most high-level programming languages have FFI (foreign function interfaces),
+Interop with C is not something new. Most high-level programming languages have FFI (foreign function interfaces),
 which can be used to call C code. For example, Python have Cython, R have `.Call()`, Javascript have `ccall()`, etc.
-But Zig integrates with C in a more direct way. You can call C functions directly in your Zig code without the need
-to use a FFI.
+But the innovation that Zig brings to the table is that it integrates with C in a more direct way. Is almost like "C is a part
+of the Zig language", if that makes sense to you. So, you don't need to use a FFI to call a C function
+in your Zig code.
 
-Everything you have to do, is to import into your Zig code the C header file that describes the C functions
-that you are going to use, pretty much like you would do in C, by including the header files into your C module.
+All you have to do, is to import into your Zig code the C header file that describes the C functions
+that you are going to use. Which is pretty much like you would do in C, by including the header files into your C module.
 After you import the header file, you can start calling and using the C functions described in this C header file
 in your Zig code.
-But remember, whenever you use a C library in your Zig code, you have to link your Zig code with this
-C library in your build process. To do that, you use the techniques that we have already
-discussed across the @sec-build-system.
+
+But remember, whenever you use a C library in your Zig code, you introduce a dependency in your build process.
+As a result, you have to build and link your Zig code with this C library in your build process.
+To do that, you use the techniques that we have already discussed across the @sec-build-system.
+This is no different in C. That is, when you use a C library in your C code, you also
+have to build and link your C code with this C library that you are using.
 
 
 ### Importing C header files
 
 To import C header files into our Zig code, we use the built-in functions `@cInclude()` and `@cImport()`.
 Inside the `@cImport()` function, we open a block (with a pair of curly braces). Inside this block
-we can include `@cDefine()` calls to define C macros when including this specific C header.
-But we can also include a single `@cInclude()` call inside `@cImport()`.
+we can include multiple `@cDefine()` calls to define C macros when including this specific C header.
+But for the most part, you will only need to include a single call inside this `@cImport()`,
+which is a call to `@cInclude()`.
 
-You provide the name of the C header that you want to include as input to `@cInclude()`.
-Take the example below, where we are importing the Standard IO C Library (`stdio.h`),
+This `@cInclude()` function is equivalent to the `#include` statement in C.
+You provide the name of the C header that you want to include as input to this `@cInclude()` function.
+As consequence, this function, in conjunction with `@cImport()`, will perform the necessary steps
+to include this C header file into your Zig code.
+
+Look at the code example below, where we are importing the Standard I/O C Library (`stdio.h`),
 and calling the `printf()`[^printf] C function. Notice that we have also used the C function `powf()`[^powf],
 which comes from the C Math Library (`math.h`).
 In order to compile this example, you have to link this Zig code with both
@@ -325,6 +334,14 @@ On the other hand, a C string is just a null terminated array of arbitrary bytes
 This might look subtle, but it makes all the difference.
 In some cases, the `zig` compiler, or, more specifically, the embedded C compiler, might complain about the use of Zig objects
 being given as input to C functions. In this section I want to give you some context about this problem.
+In summary, what you will discover in this section is that the `zig` compiler is
+capable of safely converting Zig objects into C compatible values in some specific cases.
+
+Most of these specific cases happen when you do not give an explicit Zig type to this Zig value.
+You let the `zig` compiler to infer which is the appropriate data type to use in that situation.
+In constrast, when you give an explicit Zig type to a Zig value, the compiler is forced to interpret
+that particular value in the "zig way". As consequence, the responsibility to explicitly convert
+this Zig value into a C compatible value passes from the compiler to you, the programmer.
 
 As an example we will take the code exposed below. Here we are using
 the `fopen()` C function to simply open and close a file. If you do not know how this `fopen()`
@@ -450,6 +467,11 @@ const file = c.fopen(c_path, "rb");
 
 
 ### Passing C structs across Zig functions
+
+Besides C pointers, C structs are the other key component behind using C code in
+Zig. Most C libraries out there in the wild are heavily users of C structs,
+so we need to know a way to use C structs in Zig. We need to know how to
+create C structs and use them inside Zig.
 
 
 

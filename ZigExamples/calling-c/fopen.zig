@@ -6,8 +6,7 @@ const c = @cImport({
 });
 
 pub fn main() !void {
-    const path: []const u8 = "ZigExamples/image_filter/build.zig";
-    const file = c.fopen(path.ptr, "rb");
+    const file = c.fopen("ZigExamples/image_filter/build.zig", "rb");
     const close_status = c.fclose(file);
     if (close_status != 0) {
         return error.CouldNotCloseFileDescriptor;
