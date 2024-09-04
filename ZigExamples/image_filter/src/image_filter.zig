@@ -63,14 +63,18 @@ fn calc_output_size(ctx: *png.spng_ctx) !u64 {
 }
 
 fn _read_data_to_buffer(ctx: *png.spng_ctx, buffer: []u8) !void {
-    const status = png.spng_decode_image(ctx, @as([*c]u8, @ptrCast(buffer)), buffer.len, png.SPNG_FMT_RGBA8, 0);
+    const status = png.spng_decode_image(ctx, buffer.ptr, buffer.len, png.SPNG_FMT_RGBA8, 0);
     if (status != 0) {
         return error.CouldNotDecodeImage;
     }
 }
 
 pub fn read_png(allocator: std.mem.Allocator, path: []const u8) !ImageData {
-    const file_descriptor = c.fopen(path, "rb");
+    const file_descriptor = c.fopen(path.ptr, "rb");
+    if (file_descriptor == null) {
+        return error.CouldNotOpenFile;
+    }
+
     const ctx = png.spng_ctx_new(0) orelse unreachable;
     defer png.spng_ctx_free(ctx);
     _ = png.spng_set_png_file(ctx, @ptrCast(file_descriptor));
@@ -148,6 +152,7 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     var image_data = try read_png(allocator, "pedro_pascal.png");
+    try stdout.print("{any}\n", .{image_data.data[0..15]});
     try apply_image_filter(&image_data);
 
     try save_png(&image_data);
