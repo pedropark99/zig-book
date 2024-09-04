@@ -36,6 +36,9 @@ in the example images.
 At the end of this chapter, we will have a full example of a program that takes the PNG image displayed at @fig-pascal
 as input, and writes a new image to the current working directory that is the grayscale version of the input image.
 This grayscale version of @fig-pascal that is written by the program is exposed at @fig-pascal-gray.
+You can find the full source code of this small project at the `ZigExamples/image_filter`
+[folder at the official repository of this book](https://github.com/pedropark99/zig-book/tree/main/ZigExamples/image_filter)[^img-filter-folder].
+
 
 ![The grayscale version of the photo.](../ZigExamples/image_filter/pedro_pascal_filter.png){#fig-pascal-gray}
 
@@ -170,7 +173,10 @@ instead of any other integer type, is because they take the minimum amount of sp
 the minimum amount of bits as possible. Which helps to reduces the binary size of the image, i.e. of the 2D matrix.
 Also, they convey a good amount of precision and detail about the colors, even though they can represent
 a relatively small range (from 0 to 255) of "color amounts".
-The `matrix` object exposed below could be an example of this 4x3 image.
+
+Coming back to our initial example of a 4x3 image,
+the `matrix` object exposed below could be an example of an 1D array that stores
+the data that represents this 4x3 image.
 
 ```{zig}
 #| auto_main: false
@@ -184,14 +190,15 @@ const matrix = [_]u8{
 };
 ```
 
-The three first integer values are the color amounts of the first pixel.
+The first three integer values in this array are the color amounts of the first pixel in the image.
 While the next three integer are the colors amounts for the second pixel.
 And the sequence goes on in this pattern. So the size of the array that stores
-the values of the pixels from a raster image is a multiple of 3.
-In this case, the array have size of 36.
+the values of the pixels from a raster image is usually a multiple of 3.
+In this case, the array have a size of 36.
 
-The size of the array can also be a multiple of 4 if a transparency amount is
-also included into the raster image. In other words, there are some raster images
+I mean, the size of the array is **usually** a multiple of 3, because in specific circumstances,
+it can also be a multiple of 4. This happens when a transparency amount is
+also included into the raster image. In other words, there are some types of raster images
 that follow a different color model, which is the RGBA (red, green, blue and alpha)
 color model. The "alpha" corresponds to an amount of transparency in the pixel.
 So every pixel in a RGBA image is represented by a red, green, blue and alpha values.
@@ -248,110 +255,30 @@ together. There is good information about how to build and install the library a
 [^lib-build]: <https://libspng.org/docs/build/>
 
 
-## How to call C code from Zig
-
-We have discussed at @sec-building-c-code how to build C code using the `zig` compiler.
-But we haven't discussed yet how to actually use C code in Zig. In other words,
-we haven't discussed yet how to call C code from Zig, or, how to use C libraries in your Zig code,
-etc.
-
-Luckily, Zig have a great interoperability with C, and our small project here is a great oportunitty
-to demonstrate that, because we are going use some C code in it.
-So yes, you can use C code directly in Zig, and because of the very good interoperability between
-Zig and C, it is possible to use and call code from virtually any C library that you want in Zig.
-
-Interop with C is not something new. Most high-level programming languages have FFI (foreign function interfaces),
-which can be used to call C code. For example, Python have Cython, R have `.Call()`, Javascript have `ccall()`, etc.
-But the innovation that Zig brings to the table is that it integrates with C in a more direct way. Is almost like "C is a part
-of the Zig language", if that makes sense to you. So, you don't need to use a FFI to call a C function
-in your Zig code.
-
-All you have to do, is to import into your Zig code the C header file that describes the C functions
-that you are going to use. Which is pretty much like you would do in C, by including the header files into your C module.
-After you import the header file, you can start calling and using the C functions described in this C header file
-in your Zig code.
-
-But remember, whenever you use a C library in your Zig code, you introduce a dependency in your build process.
-As a result, you have to build and link your Zig code with this C library in your build process.
-To do that, you use the techniques that we have already discussed across the @sec-build-system.
-This is no different in C. That is, when you use a C library in your C code, you also
-have to build and link your C code with this C library that you are using.
 
 
-### Importing C header files
+## Reading the PNG file
 
-To import C header files into our Zig code, we use the built-in functions `@cInclude()` and `@cImport()`.
-Inside the `@cImport()` function, we open a block (with a pair of curly braces). Inside this block
-we can include multiple `@cDefine()` calls to define C macros when including this specific C header.
-But for the most part, you will only need to include a single call inside this `@cImport()`,
-which is a call to `@cInclude()`.
+In order to extract the pixel data from the PNG file, we need to read and decode the file.
+A PNG file is just a binary file written in the "PNG standard", so we need to decode the
+file in order to extract the pixel data from it. Luckily, the `libspng` library offers
+a function called `spng_decode_image()` that does all this heavy work for us.
 
-This `@cInclude()` function is equivalent to the `#include` statement in C.
-You provide the name of the C header that you want to include as input to this `@cInclude()` function.
-As consequence, this function, in conjunction with `@cImport()`, will perform the necessary steps
-to include this C header file into your Zig code.
+Now, since `libspng` is a C library, most of the file and I/O operations in this library are made by using
+a `FILE` C pointer. Because of that, is probably a better idea to use the `fopen()` C function
+to open our PNG file, instead of using the `openFile()` method that I introduced at @sec-filesystem.
+That is why I'm importing the `stdio.h` header in this project, and using the `fopen()` C function to open the file.
 
-Look at the code example below, where we are importing the Standard I/O C Library (`stdio.h`),
-and calling the `printf()`[^printf] C function. Notice that we have also used the C function `powf()`[^powf],
-which comes from the C Math Library (`math.h`).
-In order to compile this example, you have to link this Zig code with both
-the C Standard Library and the C Math Library, by passing the flags `-lc` and `-lm`
-to the `zig` compiler.
+If you look at the snippet below, you can see that we are:
 
-[^printf]: <https://cplusplus.com/reference/cstdio/printf/>
-[^powf]: <https://en.cppreference.com/w/c/numeric/math/pow>
+1. opening the PNG file with `fopen()`.
+1. creating the `libspng` context with `spng_ctx_new()`.
+1. using `spng_set_png_file()` to specify the `FILE` object that reads the PNG file that we are going to use.
 
-
-```{zig}
-#| eval: false
-const cmath = @cImport({
-    @cInclude("math.h");
-});
-const stdio = @cImport({
-    @cDefine("_NO_CRT_STDIO_INLINE", "1");
-    @cInclude("stdio.h");
-});
-
-pub fn main() !void {
-    const x: f32 = 15.2;
-    const y = cmath.powf(x, @as(f32, 2.6));
-    _ = stdio.printf("%.3f\n", y);
-}
-```
-
-```
-1182.478
-```
-
-
-### About passing Zig values to C functions
-
-Zig objects have some intrinsic differences between their C equivalents.
-Probably the most noticeable difference is the difference between C strings and Zig strings.
-Zig strings are objects that contains both an arrays of arbitrary bytes and a length value.
-On the other hand, a C string is just a null terminated array of arbitrary bytes.
-
-In some cases, you may have troubles when passing Zig objects directly as inputs to a C function.
-In this section I want to give you some more context about this. In summary, what you will discover
-in this section is that the `zig` compiler is capable of safely converting Zig objects
-into C compatible values in some specific cases.
-
-Most of these specific cases happen when you do not give an explicit Zig type to this Zig value.
-This is when you let the `zig` compiler to infer which is the appropriate data type to use in that situation.
-In constrast, when you do give an explicit Zig type to a Zig value, then, the compiler is forced to interpret
-that particular value in the "zig way". As consequence, the responsibility to explicitly convert
-this Zig value into a C compatible value passes from the compiler to you, the programmer.
-You become responsible for converting
-
-As an example we will take the code exposed below. Here we are using
-the `fopen()` C function to simply open and close a file. If you do not know how this `fopen()`
-function works in C, it takes as input two C strings (i.e. C objects of type `*const char`),
-a.k.a. null-terminated array of bytes. But in this code example, we are passing some
-string literals written in Zig directly as inputs to this `fopen()` C function.
-
-In other words, we are not doing any type of conversion from a Zig string to a C string.
-We are just passing the Zig string literals directly as inputs to the function. And it works just fine!
-This code example compiles and runs successfully with no problems.
+Every operation in `libspng` is made through a "context object". In our snippet below, this object is `ctx`.
+Also, to perform an operation over a PNG file, we need to specify which PNG file we are referring to.
+This is the job of `spng_set_png_file()`. We are using this function to specify the file descriptor
+object that reads the PNG file that we want to use.
 
 
 ```{zig}
@@ -360,118 +287,66 @@ const c = @cImport({
     @cDefine("_NO_CRT_STDIO_INLINE", "1");
     @cInclude("stdio.h");
 });
+const png = @cImport({
+    @cInclude("spng.h");
+});
 
-pub fn main() !void {
-    const file = c.fopen("foo.txt", "rb");
-    const close_status = c.fclose(file);
-    if (close_status != 0) {
-        return error.CouldNotCloseFileDescriptor;
+const path = "pedro_pascal.png";
+const file_descriptor = c.fopen(path, "rb");
+const ctx = png.spng_ctx_new(0) orelse unreachable;
+defer png.spng_ctx_free(ctx);
+_ = png.spng_set_png_file(
+    ctx, @ptrCast(file_descriptor)
+);
+```
+
+
+### Reading the image header section
+
+Now, the context object `ctx` is aware of our PNG file `pedro_pascal.png`, and it has access to
+a file descriptor object to this file. We can start doing operations in this file. The first thing that we
+are going to do is to read the "image header section" of the PNG file. This "image header section" is the section
+of the file that contains some basic information about the PNG file, like, the bit depth of the pixel data
+of the image, the color model used in the file, the dimensions of the image (height and width in number of pixels),
+etc.
+
+To make things easier, I will encapsulate this "read image header" operation in a
+nice small function called `get_image_header()`. All that this function needs to do
+is to use call the `spng_get_ihdr()` function. This function from `libspng` is responsible
+for reading the image header data, and storing it into a C struct object called `spng_ihdr`.
+Thus, an object of type `spng_ihdr` is a C struct that contains the data from the
+image header section of the file.
+
+Since this function is receiving a C object (the `libspng` context object) as input, I marked
+the function argument `ctx` as "a pointer to the context object" (`*png.spng_ctx`), following the recommendations
+that I have described at @sec-pass-c-structs.
+
+```zig
+fn get_image_header(ctx: *png.spng_ctx) !png.spng_ihdr {
+    var image_header: png.spng_ihdr = undefined;
+    if (png.spng_get_ihdr(ctx, &image_header) != 0) {
+        return error.CouldNotGetImageHeader;
     }
+
+    return image_header;
 }
+
+const image_header = try get_image_header(ctx);
 ```
 
-But let's make some experiments. We try to write the same code in different manners, and we
-see how this affects the program. As a starting point, let's store the `"foo.txt"` string inside
-a Zig object, like the `path` object below, and then, we pass this Zig object as input to the `fopen()` C function.
-
-If we do this, the program still compiles successfully. Notice that I have ommitted most of the code in this example below.
-This is just for brevitty reasons, because the remainder of the program is still the same.
-The only difference between this example and the previous example is just these two lines exposed below.
-
-```{zig}
-#| eval: false
-const path = "foo.txt";
-const file = c.fopen(path, "rb");
-// Remainder of the program
-```
-
-Now, what happens if give an explicit data type to the `path` object? Well, if I force
-the `zig` compiler to interpret this `path` object as a Zig string object,
-by annotating the `path` object with the data type `[]const u8`, then, I actually get a compile error
-as demonstrated below. We get this compile error because now I'm explicitly passing
-a Zig string into a C function.
-
-According to the error message, the `fopen()` C function was expecting to receive an
-input value of type `[*c]const u8` (C string) instead of a value of type `[]const u8` (Zig string).
-In more details, this shlightly different Zig type `[*c]const u8` is actually the Zig representation of a C string.
-The `[*c]` portion of this type identifies a C pointer. So, this Zig type essentially means: a C pointer to an array (`[*c]`) of
-constant bytes (`const u8`).
+Also notice in this function, that I'm checking
+if the `spng_get_ihdr()` function call have returned or not an integer value that is different than zero.
+Most functions from the `libspng` library return a code status as result, and the code status zero means
+"success". So any code status that is different than zero means an error or a problem in the code.
+That is why I'm returning an error value from the function in case the code status returned by the function
+is different than zero.
 
 
-```{zig}
-#| eval: false
-const path: []const u8 = "foo.txt";
-const file = c.fopen(path, "rb");
-// Remainder of the program
-```
+### Allocating space for the pixel data
+
+Before we read the pixel data from the PNG file, we need to allocate space to hold this data.
+
+
+```zig
 
 ```
-t.zig:10:26: error: expected type '[*c]const u8', found '[]const u8'
-    const file = c.fopen(path, "rb");
-                         ^~~~
-```
-
-Therefore, we are got this compile error in the previous example, because the Zig compiler identified that we are passing
-a Zig string to a C function that is expecting to receive a C string as input instead.
-This also means that over the previous examples of `fopen()`, the Zig compiler was somewhat able
-to automatically convert the Zig string literals that we were providing into C strings,
-before passing them to the C functions.
-At the moment that we have given an explicit data type to our `path` object, we have lost this luxury.
-Because of that, we shall now properly convert this `path` object
-into C strings if we want to use it as input to `fopen()`.
-
-There are different ways to convert a Zig string into a C string.
-One way to solve this problem is to provide the pointer to the underlying array
-of bytes, instead of providing the Zig object directly as input.
-You can access this pointer by using the `ptr` property of the Zig string object.
-The code example below demonstrates that this strategy solves the problem.
-
-```{zig}
-#| eval: false
-const path: []const u8 = "foo.txt";
-const file = c.fopen(path.ptr, "rb");
-// Remainder of the program
-```
-
-This strategy works because this pointer to the underlying array found in the `ptr` property,
-is semantically identical to a C pointer to an array of bytes, i.e. a C object of type `*const char`.
-This is why this option also solves the problem of passing C strings to the C function.
-
-Another option is to explicitly convert the Zig string object into a C pointer by using the
-built-in function `@ptrCast()`. With these functions we can convert
-an object of type `[]const u8` into an object of type `[*c]const u8`.
-Remember, as I described over the previous paragraphs, the `[*c]` portion of the type
-means that it is a C pointer.
-
-You may recall of the `@as()` built-in function, which is used to explicit convert (or cast) a Zig value from a type `x`
-to a type `y`, etc. That is, this `@as()` Zig function is equivalent to the
-`as` keyword in Rust, and the C type casting syntax (e.g. `(int) x`).
-But in our case here, we are not converting any type of object.
-More specifically, we are converting something into a pointer, or, a C pointer more specifically.
-Everytime a pointer is involved in some "type casting operation" in Zig,
-the `@ptrCast()` function is involved. This `@ptrCast()` function is responsible
-for converting a pointer of one type to a pointer of another type.
-
-In the example below, we are using this function to cast our `path` object
-into a C pointer to an array of bytes. Then, we pass this C pointer as input
-to the `fopen()` function. Notice that this code example compiles succesfully
-with no errors.
-
-```{zig}
-#| eval: false
-const path: []const u8 = "foo.txt";
-const c_path: [*c]const u8 = @ptrCast(path);
-const file = c.fopen(c_path, "rb");
-// Remainder of the program
-```
-
-
-### Passing C structs across Zig functions
-
-Besides C pointers, C structs are the other key component behind using C code in
-Zig. Most C libraries out there in the wild are heavily users of C structs,
-so we need to know a way to use C structs in Zig. We need to know how to
-create C structs and use them inside Zig.
-
-
-
