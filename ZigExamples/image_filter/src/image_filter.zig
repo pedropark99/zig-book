@@ -152,7 +152,6 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     var image_data = try read_png(allocator, "pedro_pascal.png");
-    try stdout.print("{any}\n", .{image_data.data[0..15]});
     try apply_image_filter(&image_data);
 
     try save_png(&image_data);

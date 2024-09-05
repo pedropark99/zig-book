@@ -178,8 +178,7 @@ Coming back to our initial example of a 4x3 image,
 the `matrix` object exposed below could be an example of an 1D array that stores
 the data that represents this 4x3 image.
 
-```{zig}
-#| auto_main: false
+```zig
 const matrix = [_]u8{
     201, 10, 25, 185, 65, 70,
     65, 120, 110, 65, 120, 117,
@@ -281,8 +280,7 @@ This is the job of `spng_set_png_file()`. We are using this function to specify 
 object that reads the PNG file that we want to use.
 
 
-```{zig}
-#| eval: false
+```zig
 const c = @cImport({
     @cDefine("_NO_CRT_STDIO_INLINE", "1");
     @cInclude("stdio.h");
@@ -293,12 +291,30 @@ const png = @cImport({
 
 const path = "pedro_pascal.png";
 const file_descriptor = c.fopen(path, "rb");
+if (file_descriptor == null) {
+    @panic("Could not open file!");
+}
 const ctx = png.spng_ctx_new(0) orelse unreachable;
 defer png.spng_ctx_free(ctx);
 _ = png.spng_set_png_file(
     ctx, @ptrCast(file_descriptor)
 );
 ```
+
+Now, before we continue, since we have opened the file with `fopen()`, is important
+for you to remember to close the file at the end of the program, with `fclose()`.
+In other words, after we have done everything that we wanted to do with the PNG file
+`pedro_pascal.png`, we need to close the file, by applying `fclose()` over the file descriptor object.
+This code snippet below demonstrates this step:
+
+```zig
+const close_status = c.fclose(file_descriptor);
+if (close_status != 0) {
+    return error.CouldNotCloseFileDescriptor;
+}
+```
+
+
 
 
 ### Reading the image header section
@@ -341,12 +357,160 @@ Most functions from the `libspng` library return a code status as result, and th
 That is why I'm returning an error value from the function in case the code status returned by the function
 is different than zero.
 
+<!--
+Now, because we are going to use this image header data later in our program, to save the results
+back into a new PNG file, w.
+-->
 
 ### Allocating space for the pixel data
 
 Before we read the pixel data from the PNG file, we need to allocate space to hold this data.
+But in order to allocate such space, we first need to know how much space we need to allocate.
+The image dimension is obviously needed to calculate the size of this space. But there are
+other elements affecting this number, such as the color model used in the image, the bit depth, and others.
+
+Anyway, all this means that calculating the size of the space we need is not simple, or,
+straightforward. That is why the `libspng` library offers a utility function named
+`spng_decoded_image_size()` to calculate this size.
 
 
 ```zig
+fn calc_output_size(ctx: *png.spng_ctx) !u64 {
+    var output_size: u64 = 0;
+    const status = png.spng_decoded_image_size(
+        ctx, png.SPNG_FMT_RGBA8, &output_size
+    );
+    if (status != 0) {
+        return error.CouldNotCalcOutputSize;
+    }
+    return output_size;
+}
+```
+
+
+In the snippet exposed above, you can see that I have created another small function named `calc_output_size()`, which encapsulates
+the logic around this utility function, and returns a nice integer value as result, informing
+the size of the space that we need to allocate.
+
+You might quest yourself what the value `SPNG_FMT_RGBA8` means. This value is actually a macro defined in the `spng.h` header file.
+This macro is used to identify a "PNG format". More precisely, it identifies a PNG file
+that uses the RGBA color model and 8 bit depth. So by providing this macro as input to the `spng_decoded_image_size()` function,
+we are saying to this function to calculate the size of the decoded pixel data considering a PNG file that follows this "PNG format".
+
+Having this function, we can use it in conjunction with an allocator object, to allocate an array of bytes (`u8` values) that is big enough
+to store the decoded pixel data of the image. Notice that I'm using `@memset()` to properly initialize
+the entire array to zero.
+
+```zig
+const output_size = try calc_output_size(ctx);
+var buffer = try allocator.alloc(u8, output_size);
+@memset(buffer[0..], 0);
+```
+
+
+### Decoding the image data
+
+Now that we have the necessary space to store the decoded pixel data of the image,
+we can start to actually decode and extract this pixel data from the image,
+by using the `spng_decode_image()` function.
+
+The `read_data_to_buffer()` function exposed below summarises the necessary
+steps to read this decoded pixel data, and store it into an input buffer.
+Notice that this function is encapsulating the logic around the `spng_decode_image()`.
+Also, we are using the `SPNG_FMT_RGBA8` macro once again to inform the corresponding function,
+that the PNG image being decoded, uses the RGBA color model and 8 bit depth.
+
+```zig
+fn read_data_to_buffer(ctx: *png.spng_ctx, buffer: []u8) !void {
+    const status = png.spng_decode_image(
+        ctx,
+        buffer.ptr,
+        buffer.len,
+        png.SPNG_FMT_RGBA8,
+        0
+    );
+
+    if (status != 0) {
+        return error.CouldNotDecodeImage;
+    }
+}
+```
+
+Having this function at hand, we can apply it over our context object, and also, over
+the buffer object that we have created in the previous section to hold the decoded pixel data
+of the image:
+
+```zig
+try read_data_to_buffer(ctx, buffer[0..]);
+```
+
+
+### Looking at the pixel data
+
+Now that we have the pixel data stored in our "buffer object", we can take just
+a quick look at the bytes. In the example below, we are looking at the first
+12 bytes in the decoded pixel data.
+
+If you take a close look at these values, you might notice that every 4 bytes
+in the sequence is 255. Which, coincidentally is the maximum possible integer value
+to be represented by a `u8` value. So, if the range from 0 to 255, which is the range
+of integer values that can be represented by an `u8` value, can be represented as a scale from 0% to 100%,
+these 255 values are essentially 100% in that scale.
+
+If you recall from @sec-pixel-repr, I have
+described in that section that our `pedro_pascal.png` PNG file uses the RGBA color model,
+which adds an alpha (or transparency) byte to each pixel in the image.
+As consequence, each pixel in the image is represented by 4 bytes. Since we are looking
+here are the first 12 bytes in the image, it means that we are looking at the data of
+the first $12 / 4 = 3$ pixels in the image.
+
+So, based on how these first 12 bytes (or these 3 pixels) look, we can say that is likely
+that every pixel in the image have alpha (or transparency) setted to 100%. This might not be true,
+but, is the most likely possibility. Also, if we look at the image itself, which if your recall is
+exposed at @fig-pascal, we can see that the transparency of the image does not change across the image,
+which enforces this theory.
+
+
+```zig
+try stdout.print(
+    "{any}\n", .{buffer[0..12]}
+);
+```
 
 ```
+{
+    200, 194, 216, 255, 203, 197,
+    219, 255, 206, 200, 223, 255
+}
+```
+
+
+Now, we can see that, in the first pixel in this image, we have 200 of red, 194 of green, and 216 of blue.
+How do I know the order in which the colors appears in the sequence? If you have not guessed that yet,
+is because of the acronym RGB. First RED, then GREEN, then BLUE. If we scale these integer values
+according to our scale of 0% to 100% (0 to 255), we get 78% of red, 76% of green and 85% of blue.
+
+
+
+## Applying the image filter
+
+Now that we have the data of each pixel in the image, we can focus on applying our image
+filter over these pixels. Remember, our objective here is to apply a grayscale filter over
+the image. A grayscale filter is a filter that transforms a colored image into a grayscale image.
+
+There are different formulas and strategies to transform a colored image into a grayscale image.
+But all of these different strategies involve
+applying some math over the colors of each pixel. In this project, we are going to use the
+most general formula, which is exposed below.
+This formula considers $r$ as the red of the pixel, $g$ as the green, $b$ as the blue, and $p'$ as the
+grayscale version of the pixel.
+
+$$
+    p' = (0.2126 \times r) + (0.7152 \times g) + (0.0722 \times b)
+$${#eq-grayscale}
+
+This @eq-grayscale is the formula to calculate the linear luminance of a pixel. Is worth noting that this formula
+works only for images whose pixels are using the sRGB color space, which is the standard color space
+for the web. This means that, ideally, all images on the web should use this color space. Luckily,
+this is our case here, i.e. the `pedro_pascal.png` image is using this sRGB color space, and, as consequence,
+we can use the @eq-grayscale.
