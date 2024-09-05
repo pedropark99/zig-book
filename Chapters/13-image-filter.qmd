@@ -216,7 +216,7 @@ to store this image in our Zig code, we need to create an array whose size is a 
 ## The PNG library we are going to use
 
 Let's begin our project by focusing on writing the necessary Zig code to
-read the data from the PNG file. In other words, in this section, we want
+read the data from the PNG file. In other words, we want
 to read the PNG file exposed at @fig-pascal, and parse it's data to extract the 2D matrix of pixels
 that represents the image.
 
@@ -246,7 +246,7 @@ follow the code examples exposed here.
 
 
 First of all, remember to build and install this `libspng` into your system. Because
-if don't do this step first, then, the `zig` compiler cannot find the files and resources of
+if you don't do this step, the `zig` compiler will not find the files and resources of
 this library in your computer, and link them with the Zig code that we are going to write here
 together. There is good information about how to build and install the library at the
 [build section of the library documentation at the official website](https://libspng.org/docs/build/)[^lib-build].
@@ -259,7 +259,7 @@ together. There is good information about how to build and install the library a
 ## Reading the PNG file
 
 In order to extract the pixel data from the PNG file, we need to read and decode the file.
-A PNG file is just a binary file written in the "PNG standard", so we need to decode the
+A PNG file is just a binary file written in the "PNG format". We need to decode the
 file in order to extract the pixel data from it. Luckily, the `libspng` library offers
 a function called `spng_decode_image()` that does all this heavy work for us.
 
@@ -300,15 +300,15 @@ _ = png.spng_set_png_file(
 );
 ```
 
-Now, before we continue, since we have opened the file with `fopen()`, is important
-for you to remember to close the file at the end of the program, with `fclose()`.
+Before we continue, is important to emphasize the following: since we have opened the file with `fopen()`,
+we have to remember to close the file at the end of the program, with `fclose()`.
 In other words, after we have done everything that we wanted to do with the PNG file
 `pedro_pascal.png`, we need to close the file, by applying `fclose()` over the file descriptor object.
+We could use also the `defer` keyword to help us in this task, if we want to.
 This code snippet below demonstrates this step:
 
 ```zig
-const close_status = c.fclose(file_descriptor);
-if (close_status != 0) {
+if (c.fclose(file_descriptor) != 0) {
     return error.CouldNotCloseFileDescriptor;
 }
 ```
@@ -319,22 +319,22 @@ if (close_status != 0) {
 ### Reading the image header section
 
 Now, the context object `ctx` is aware of our PNG file `pedro_pascal.png`, and it has access to
-a file descriptor object to this file. We can start doing operations in this file. The first thing that we
+a file descriptor object to this file, and we can start doing operations in this file. The first thing that we
 are going to do is to read the "image header section" of the PNG file. This "image header section" is the section
 of the file that contains some basic information about the PNG file, like, the bit depth of the pixel data
 of the image, the color model used in the file, the dimensions of the image (height and width in number of pixels),
 etc.
 
-To make things easier, I will encapsulate this "read image header" operation in a
+To make things easier, I will encapsulate this "read image header" operation into a
 nice small function called `get_image_header()`. All that this function needs to do
-is to use call the `spng_get_ihdr()` function. This function from `libspng` is responsible
-for reading the image header data, and storing it into a C struct object called `spng_ihdr`.
+is to call the `spng_get_ihdr()` function. This function from `libspng` is responsible
+for reading the image header data, and storing it into a C struct named `spng_ihdr`.
 Thus, an object of type `spng_ihdr` is a C struct that contains the data from the
-image header section of the file.
+image header section of the PNG file.
 
-Since this function is receiving a C object (the `libspng` context object) as input, I marked
+Since this Zig function is receiving a C object (the `libspng` context object) as input, I marked
 the function argument `ctx` as "a pointer to the context object" (`*png.spng_ctx`), following the recommendations
-that I have described at @sec-pass-c-structs.
+that we have discussed at @sec-pass-c-structs.
 
 ```zig
 fn get_image_header(ctx: *png.spng_ctx) !png.spng_ihdr {
@@ -352,25 +352,25 @@ const image_header = try get_image_header(ctx);
 Also notice in this function, that I'm checking
 if the `spng_get_ihdr()` function call have returned or not an integer value that is different than zero.
 Most functions from the `libspng` library return a code status as result, and the code status zero means
-"success". So any code status that is different than zero means an error or a problem in the code.
-That is why I'm returning an error value from the function in case the code status returned by the function
+"success". So any code status that is different than zero means that an error occurred while running `spng_get_ihdr()`.
+This is why I'm returning an error value from the function in case the code status returned by the function
 is different than zero.
 
-<!--
-Now, because we are going to use this image header data later in our program, to save the results
-back into a new PNG file, w.
--->
 
 ### Allocating space for the pixel data
 
-Before we read the pixel data from the PNG file, we need to allocate space to hold this data.
+Before we read the pixel data from the PNG file, we need to allocate enough space to hold this data.
 But in order to allocate such space, we first need to know how much space we need to allocate.
 The image dimension is obviously needed to calculate the size of this space. But there are
-other elements affecting this number, such as the color model used in the image, the bit depth, and others.
+other elements that also affect this number, such as the color model used in the image, the bit depth, and others.
 
-Anyway, all this means that calculating the size of the space we need is not simple, or,
-straightforward. That is why the `libspng` library offers a utility function named
-`spng_decoded_image_size()` to calculate this size.
+Anyway, all of this means that calculating the size of the space that we need, is not a simple task.
+That is why the `libspng` library offers a utility function named
+`spng_decoded_image_size()` to calculate this size for us. Once again, I'm going
+to encapsulate the logic around this function into a nice small Zig function
+named `calc_output_size()`.
+You can see that this function returns a nice integer value as result, informing
+the size of the space that we need to allocate.
 
 
 ```zig
@@ -387,14 +387,12 @@ fn calc_output_size(ctx: *png.spng_ctx) !u64 {
 ```
 
 
-In the snippet exposed above, you can see that I have created another small function named `calc_output_size()`, which encapsulates
-the logic around this utility function, and returns a nice integer value as result, informing
-the size of the space that we need to allocate.
 
-You might quest yourself what the value `SPNG_FMT_RGBA8` means. This value is actually a macro defined in the `spng.h` header file.
-This macro is used to identify a "PNG format". More precisely, it identifies a PNG file
-that uses the RGBA color model and 8 bit depth. So by providing this macro as input to the `spng_decoded_image_size()` function,
-we are saying to this function to calculate the size of the decoded pixel data considering a PNG file that follows this "PNG format".
+You might quest yourself what the value `SPNG_FMT_RGBA8` means. This value is actually an enum value defined in the `spng.h` header file.
+This enum is used to identify a "PNG format". More precisely, it identifies a PNG file
+that uses the RGBA color model and 8 bit depth. So by providing this enum value as input to the `spng_decoded_image_size()` function,
+we are saying to this function to calculate the size of the decoded pixel data considering a PNG file that follows this
+"RGBA color model with 8 bit depth format".
 
 Having this function, we can use it in conjunction with an allocator object, to allocate an array of bytes (`u8` values) that is big enough
 to store the decoded pixel data of the image. Notice that I'm using `@memset()` to properly initialize
@@ -415,8 +413,8 @@ by using the `spng_decode_image()` function.
 
 The `read_data_to_buffer()` function exposed below summarises the necessary
 steps to read this decoded pixel data, and store it into an input buffer.
-Notice that this function is encapsulating the logic around the `spng_decode_image()`.
-Also, we are using the `SPNG_FMT_RGBA8` macro once again to inform the corresponding function,
+Notice that this function is encapsulating the logic around the `spng_decode_image()` function.
+Also, we are using the `SPNG_FMT_RGBA8` enum value once again to inform the corresponding function,
 that the PNG image being decoded, uses the RGBA color model and 8 bit depth.
 
 ```zig
@@ -463,7 +461,7 @@ As consequence, each pixel in the image is represented by 4 bytes. Since we are 
 here are the first 12 bytes in the image, it means that we are looking at the data of
 the first $12 / 4 = 3$ pixels in the image.
 
-So, based on how these first 12 bytes (or these 3 pixels) look, we can say that is likely
+So, based on how these first 12 bytes (or these 3 pixels) look, with these 255 values at every 4 bytes, we can say that is likely
 that every pixel in the image have alpha (or transparency) setted to 100%. This might not be true,
 but, is the most likely possibility. Also, if we look at the image itself, which if your recall is
 exposed at @fig-pascal, we can see that the transparency of the image does not change across the image,
@@ -484,7 +482,7 @@ try stdout.print(
 ```
 
 
-Now, we can see that, in the first pixel in this image, we have 200 of red, 194 of green, and 216 of blue.
+We can see in the above result that the first pixel in this image have 200 of red, 194 of green, and 216 of blue.
 How do I know the order in which the colors appears in the sequence? If you have not guessed that yet,
 is because of the acronym RGB. First RED, then GREEN, then BLUE. If we scale these integer values
 according to our scale of 0% to 100% (0 to 255), we get 78% of red, 76% of green and 85% of blue.
@@ -512,7 +510,7 @@ This @eq-grayscale is the formula to calculate the linear luminance of a pixel. 
 works only for images whose pixels are using the sRGB color space, which is the standard color space
 for the web. This means that, ideally, all images on the web should use this color space. Luckily,
 this is our case here, i.e. the `pedro_pascal.png` image is using this sRGB color space, and, as consequence,
-we can use the @eq-grayscale. You can read more about at the Wikipedia page for Grayscale [@wiki_grayscale].
+we can use the @eq-grayscale. You can read more about this at the Wikipedia page for grayscale [@wiki_grayscale].
 
 The `apply_image_filter()` function exposed below summarises the necessary steps to
 apply @eq-grayscale over the pixels in the image. We just apply this function
@@ -545,18 +543,124 @@ try apply_image_filter(buffer[0..]);
 
 
 
-## Saving the results
+## Saving the grayscale version of the image
 
 Since we have now the grayscale version of our image stored in our buffer object,
-we need to encode this buffer object back into a "PNG format", and save the encoded data into
+we need to encode this buffer object back into the "PNG format", and save the encoded data into
 a new PNG file in our filesystem, so that we can access and see the grayscale version of our image
 that was produced by our small program.
 
 To do that, the `libspng` library help us once again by offering an "encode data to PNG" type of function,
 which is the `spng_encode_image()` function. But in order to "encode data to PNG" with `libspng`, we need
-to create a new context object, with a .
+to create a new context object. This new context object must use a "encoder context", which
+is identified by the enum value `SPNG_CTX_ENCODER`.
+
+The `save_png()` function exposed below, summarises all the necessary steps to save the
+grayscale version of our image into a new PNG file in the filesystem. By default, this
+function will save the grayscale image into a file named `pedro_pascal_filter.png` in the CWD.
+
+Notice in this code example that we are using the same image header object (`image_header`) that we have
+collected previously with the `get_image_header()` function. Remember, this image header object
+is a C struct (`spng_ihdr`) that contains basic information about our PNG file, specially
+the dimensions of the image, the color model used, etc.
+
+If we wanted to save a very different image in this new PNG file, e.g. an image
+with different dimensions, or, an image that uses a different color model, a different bit depth, etc.
+we would need to create a new image header (`spng_ihdr`) object that describes the properties
+of this new image.
+
+But we are essentially saving the same image that we have begin with here (the dimensions of
+the image, the color model, etc. are all still the same). The only difference
+between the two images are the colors of the pixels, which are now shades of gray.
+As consequence, we can safely use the exact same image header data
+in this new PNG file.
 
 
 
+```zig
+fn save_png(ctx: *png.spng_ctx,
+            image_header: *png.spng_ihdr,
+            buffer: []u8) !void {
+    const path = "pedro_pascal_filter.png";
+    const file_descriptor = c.fopen(path.ptr, "wb");
+    if (file_descriptor == null) {
+        return error.CouldNotOpenFile;
+    }
+    const ctx = (
+        png.spng_ctx_new(png.SPNG_CTX_ENCODER)
+        orelse unreachable
+    );
+    defer png.spng_ctx_free(ctx);
+    _ = png.spng_set_png_file(ctx, @ptrCast(file_descriptor));
+    _ = png.spng_set_ihdr(ctx, image_header);
+
+    const encode_status = png.spng_encode_image(
+        ctx,
+        buffer.ptr,
+        buffer.len,
+        png.SPNG_FMT_PNG,
+        png.SPNG_ENCODE_FINALIZE
+    );
+    if (encode_status != 0) {
+        return error.CouldNotEncodeImage;
+    }
+    if (c.fclose(file_descriptor) != 0) {
+        return error.CouldNotCloseFileDescriptor;
+    }
+}
+
+try save_png(ctx, image_header, buffer[0..]);
+```
+
+After we execute this `save_png()` function, we should have a new PNG file
+inside our CWD, named `pedro_pascal_filter.png`. If we open this PNG file,
+we will see the same image exposed at @fig-pascal-gray.
+
+
+## Building our project
+
+Now that we have written the code, let's discuss how can we build/compile this project.
+To do that, I'm going to create a `build.zig` file in the root directory of our project,
+and start writing the necessary code to compile the project, using the knowledge
+that we have acquired from @sec-build-system.
+
+
+We first create the build target for our executable file, that executes our
+Zig code. Let's suppose that all of our Zig code was written into a Zig module
+named `image_filter.zig`, then, the `exe` object described in the build script below
+describes the build target for our executable file.
+
+Since we have used C code from the `libspng` library in our Zig code,
+we need to link our Zig code (which is in the `exe` build target) to both
+the C Standard Library, and, to the `libspng` library. We do that, by calling
+the `linkLibC()` and `linkSystemLibrary()` methods from our `exe` build target.
+
+```zig
+const std = @import("std");
+pub fn build(b: *std.Build) void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+    const exe = b.addExecutable(.{
+        .name = "image_filter",
+        .root_source_file = b.path("src/image_filter.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    exe.linkLibC();
+    // Link to spng library:
+    exe.linkSystemLibrary("spng");
+    b.installArtifact(exe);
+}
+```
+
+Because we are using the `linkSystemLibrary()` method, it means that the library
+files for `libspng` are searched in your system to be linked with the `exe` build target.
+If you have not yet built and installed the `libspng` library into your system, this
+linkage step will likely not work. Because it will not find the library files.
+
+
+So, just remember to install `libspng` in your system, if you want to build this project.
+Having this build script above written, we can finally build our project by
+running the `zig build` command in the terminal.
 
 
