@@ -54,7 +54,27 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="../site_libs/quarto-nav/quarto-nav.js"></script>
@@ -301,6 +321,7 @@ window.Quarto = {
   <li><a href="#looking-at-the-pixel-data" id="toc-looking-at-the-pixel-data" class="nav-link" data-scroll-target="#looking-at-the-pixel-data"><span class="header-section-number">15.4.4</span> Looking at the pixel data</a></li>
   </ul></li>
   <li><a href="#applying-the-image-filter" id="toc-applying-the-image-filter" class="nav-link" data-scroll-target="#applying-the-image-filter"><span class="header-section-number">15.5</span> Applying the image filter</a></li>
+  <li><a href="#saving-the-results" id="toc-saving-the-results" class="nav-link" data-scroll-target="#saving-the-results"><span class="header-section-number">15.6</span> Saving the results</a></li>
   </ul>
 </nav>
     </div>
@@ -543,13 +564,44 @@ back into a new PNG file, w.
 <section id="applying-the-image-filter" class="level2" data-number="15.5">
 <h2 data-number="15.5" class="anchored" data-anchor-id="applying-the-image-filter"><span class="header-section-number">15.5</span> Applying the image filter</h2>
 <p>Now that we have the data of each pixel in the image, we can focus on applying our image filter over these pixels. Remember, our objective here is to apply a grayscale filter over the image. A grayscale filter is a filter that transforms a colored image into a grayscale image.</p>
-<p>There are different formulas and strategies to transform a colored image into a grayscale image. But all of these different strategies involve applying some math over the colors of each pixel. In this project, we are going to use the most general formula, which is exposed below. This formula considers <span class="math inline">\(r\)</span> as the red of the pixel, <span class="math inline">\(g\)</span> as the green, <span class="math inline">\(b\)</span> as the blue, and <span class="math inline">\(p'\)</span> as the grayscale version of the pixel.</p>
+<p>There are different formulas and strategies to transform a colored image into a grayscale image. But all of these different strategies involve applying some math over the colors of each pixel. In this project, we are going to use the most general formula, which is exposed below. This formula considers <span class="math inline">\(r\)</span> as the red of the pixel, <span class="math inline">\(g\)</span> as the green, <span class="math inline">\(b\)</span> as the blue, and <span class="math inline">\(p'\)</span> as the linear luminance of the pixel.</p>
 <p><span id="eq-grayscale"><span class="math display">\[
     p' = (0.2126 \times r) + (0.7152 \times g) + (0.0722 \times b)
 \tag{15.1}\]</span></span></p>
-<p>This <a href="#eq-grayscale" class="quarto-xref">Equation&nbsp;<span>15.1</span></a> is the formula to calculate the linear luminance of a pixel. Is worth noting that this formula works only for images whose pixels are using the sRGB color space, which is the standard color space for the web. This means that, ideally, all images on the web should use this color space. Luckily, this is our case here, i.e.&nbsp;the <code>pedro_pascal.png</code> image is using this sRGB color space, and, as consequence, we can use the <a href="#eq-grayscale" class="quarto-xref">Equation&nbsp;<span>15.1</span></a>.</p>
+<p>This <a href="#eq-grayscale" class="quarto-xref">Equation&nbsp;<span>15.1</span></a> is the formula to calculate the linear luminance of a pixel. Is worth noting that this formula works only for images whose pixels are using the sRGB color space, which is the standard color space for the web. This means that, ideally, all images on the web should use this color space. Luckily, this is our case here, i.e.&nbsp;the <code>pedro_pascal.png</code> image is using this sRGB color space, and, as consequence, we can use the <a href="#eq-grayscale" class="quarto-xref">Equation&nbsp;<span>15.1</span></a>. You can read more about at the Wikipedia page for Grayscale <span class="citation" data-cites="wiki_grayscale">(<a href="../references.html#ref-wiki_grayscale" role="doc-biblioref">Wikipedia 2024</a>)</span>.</p>
+<p>The <code>apply_image_filter()</code> function exposed below summarises the necessary steps to apply <a href="#eq-grayscale" class="quarto-xref">Equation&nbsp;<span>15.1</span></a> over the pixels in the image. We just apply this function over our buffer object that contains our pixel data, and, as result, the pixel data stored in this buffer object should now represent the grayscale version of our image.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> apply_image_filter(buffer:[]<span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> len = buffer.len;</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> red_factor: <span class="dt">f16</span> = <span class="fl">0.2126</span>;</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> green_factor: <span class="dt">f16</span> = <span class="fl">0.7152</span>;</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> blue_factor: <span class="dt">f16</span> = <span class="fl">0.0722</span>;</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> index: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (index &lt; (len - <span class="dv">4</span>)) : (index += <span class="dv">4</span>) <span class="op">{</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> rf: <span class="dt">f16</span> = <span class="bu">@floatFromInt</span>(buffer[index]);</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> gf: <span class="dt">f16</span> = <span class="bu">@floatFromInt</span>(buffer[index + <span class="dv">1</span>]);</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> bf: <span class="dt">f16</span> = <span class="bu">@floatFromInt</span>(buffer[index + <span class="dv">2</span>]);</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> y_linear: <span class="dt">f16</span> = (</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>            (rf * red_factor) + (gf * green_factor)</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>            + (bf * blue_factor)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>        buffer[index] = <span class="bu">@intFromFloat</span>(y_linear);</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>        buffer[index + <span class="dv">1</span>] = <span class="bu">@intFromFloat</span>(y_linear);</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>        buffer[index + <span class="dv">2</span>] = <span class="bu">@intFromFloat</span>(y_linear);</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> apply_image_filter(buffer[<span class="dv">0</span>..]);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="saving-the-results" class="level2" data-number="15.6">
+<h2 data-number="15.6" class="anchored" data-anchor-id="saving-the-results"><span class="header-section-number">15.6</span> Saving the results</h2>
+<p>Since we have now the grayscale version of our image represented in our buffer object, we need to encode this buffer object back into a “PNG format”, and save the encoded data into a new PNG file in our filesystem, so that we can access and see the grayscale version of our image that was produced by our small program.</p>
 
 
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-wiki_grayscale" class="csl-entry" role="listitem">
+Wikipedia. 2024. <span>“Grayscale.”</span> Wikipedia. <a href="https://en.wikipedia.org/wiki/Grayscale">https://en.wikipedia.org/wiki/Grayscale</a>.
+</div>
+</div>
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>

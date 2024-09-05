@@ -115,8 +115,8 @@ fn apply_image_filter(image_data: *ImageData) !void {
 }
 
 fn save_png(image_data: *ImageData) !void {
-    const path_cstr: [:0]const u8 = @ptrCast("pedro_pascal_filter.png");
-    const file_descriptor = c.fopen(path_cstr, @as([*c]const u8, @ptrCast("wb")));
+    const path = "pedro_pascal_filter.png";
+    const file_descriptor = c.fopen(path.ptr, "wb");
     const ctx = png.spng_ctx_new(png.SPNG_CTX_ENCODER) orelse unreachable;
     defer png.spng_ctx_free(ctx);
     _ = png.spng_set_png_file(ctx, @ptrCast(file_descriptor));

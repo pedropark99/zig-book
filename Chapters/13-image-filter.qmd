@@ -503,7 +503,7 @@ But all of these different strategies involve
 applying some math over the colors of each pixel. In this project, we are going to use the
 most general formula, which is exposed below.
 This formula considers $r$ as the red of the pixel, $g$ as the green, $b$ as the blue, and $p'$ as the
-grayscale version of the pixel.
+linear luminance of the pixel.
 
 $$
     p' = (0.2126 \times r) + (0.7152 \times g) + (0.0722 \times b)
@@ -513,4 +513,48 @@ This @eq-grayscale is the formula to calculate the linear luminance of a pixel. 
 works only for images whose pixels are using the sRGB color space, which is the standard color space
 for the web. This means that, ideally, all images on the web should use this color space. Luckily,
 this is our case here, i.e. the `pedro_pascal.png` image is using this sRGB color space, and, as consequence,
-we can use the @eq-grayscale.
+we can use the @eq-grayscale. You can read more about at the Wikipedia page for Grayscale [@wiki_grayscale].
+
+The `apply_image_filter()` function exposed below summarises the necessary steps to
+apply @eq-grayscale over the pixels in the image. We just apply this function
+over our buffer object that contains our pixel data, and, as result, the pixel
+data stored in this buffer object should now represent the grayscale version of our image.
+
+```zig
+fn apply_image_filter(buffer:[]u8) !void {
+    const len = buffer.len;
+    const red_factor: f16 = 0.2126;
+    const green_factor: f16 = 0.7152;
+    const blue_factor: f16 = 0.0722;
+    var index: u64 = 0;
+    while (index < (len - 4)) : (index += 4) {
+        const rf: f16 = @floatFromInt(buffer[index]);
+        const gf: f16 = @floatFromInt(buffer[index + 1]);
+        const bf: f16 = @floatFromInt(buffer[index + 2]);
+        const y_linear: f16 = (
+            (rf * red_factor) + (gf * green_factor)
+            + (bf * blue_factor)
+        );
+        buffer[index] = @intFromFloat(y_linear);
+        buffer[index + 1] = @intFromFloat(y_linear);
+        buffer[index + 2] = @intFromFloat(y_linear);
+    }
+}
+
+try apply_image_filter(buffer[0..]);
+```
+
+
+
+## Saving the results
+
+Since we have now the grayscale version of our image represented in our buffer object,
+we need to encode this buffer object back into a "PNG format", and save the encoded data into
+a new PNG file in our filesystem, so that we can access and see the grayscale version of our image
+that was produced by our small program.
+
+
+
+
+
+
