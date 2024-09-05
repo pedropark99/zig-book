@@ -295,7 +295,6 @@ if (file_descriptor == null) {
     @panic("Could not open file!");
 }
 const ctx = png.spng_ctx_new(0) orelse unreachable;
-defer png.spng_ctx_free(ctx);
 _ = png.spng_set_png_file(
     ctx, @ptrCast(file_descriptor)
 );
@@ -548,11 +547,14 @@ try apply_image_filter(buffer[0..]);
 
 ## Saving the results
 
-Since we have now the grayscale version of our image represented in our buffer object,
+Since we have now the grayscale version of our image stored in our buffer object,
 we need to encode this buffer object back into a "PNG format", and save the encoded data into
 a new PNG file in our filesystem, so that we can access and see the grayscale version of our image
 that was produced by our small program.
 
+To do that, the `libspng` library help us once again by offering an "encode data to PNG" type of function,
+which is the `spng_encode_image()` function. But in order to "encode data to PNG" with `libspng`, we need
+to create a new context object, with a .
 
 
 
