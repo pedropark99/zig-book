@@ -635,7 +635,7 @@ Exiting function ...</code></pre>
 <h3 data-number="2.3.2" class="anchored" data-anchor-id="struct-declarations-must-be-constant"><span class="header-section-number">2.3.2</span> Struct declarations must be constant</h3>
 <p>Types in Zig must be <code>const</code> or <code>comptime</code> (we are going to talk more about comptime at <a href="10-stack-project.html#sec-comptime" class="quarto-xref"><span>Section 12.1</span></a>). What this means is that you cannot create a new data type, and mark it as variable with the <code>var</code> keyword. So struct declarations are always constant. You cannot declare a new struct using the <code>var</code> keyword. It must be <code>const</code>.</p>
 <p>In the <code>Vec3</code> example below, this declaration is allowed because I’m using the <code>const</code> keyword to declare this new data type.</p>
-<div class="cell" data-build_type="lib">
+<div class="cell">
 <div class="sourceCode cell-code" id="cb32"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Vec3 = <span class="kw">struct</span> <span class="op">{</span></span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    x: <span class="dt">f64</span>,</span>
 <span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    y: <span class="dt">f64</span>,</span>
@@ -648,7 +648,7 @@ Exiting function ...</code></pre>
 <p>In every language that have OOP, when we declare a method of some class or struct, we usually declare this method as a function that have a <code>self</code> argument. This <code>self</code> argument is the reference to the object itself from which the method is being called from.</p>
 <p>Is not mandatory to use this <code>self</code> argument. But why would you not use this <code>self</code> argument? There is no reason to not use it. Because the only way to get access to the data stored in the data members of your struct is to access them through this <code>self</code> argument. If you don’t need to use the data in the data members of your struct inside your method, then, you very likely don’t need a method, you can just simply declare this logic as a simple function, outside of your struct declaration.</p>
 <p>Take the <code>Vec3</code> struct below. Inside this <code>Vec3</code> struct we declared a method named <code>distance()</code>. This method calculates the distance between two <code>Vec3</code> objects, by following the distance formula in euclidean space. Notice that this <code>distance()</code> method takes two <code>Vec3</code> objects as input, <code>self</code> and <code>other</code>.</p>
-<div class="cell" data-build_type="lib">
+<div class="cell">
 <div class="sourceCode cell-code" id="cb33"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> m = std.math;</span>
 <span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Vec3 = <span class="kw">struct</span> <span class="op">{</span></span>
@@ -690,7 +690,7 @@ Exiting function ...</code></pre>
 <p>If we take the <code>Vec3</code> struct that we defined in the previous section as an example, we can see in the <code>distance()</code> method that this <code>self</code> argument is annotated as <code>self: Vec3</code>. Because the state of the <code>Vec3</code> object is never altered by this method.</p>
 <p>But what if we do have a method that alters the state of the object, by altering the values of it’s data members. How should we annotate <code>self</code> in this instance? The answer is: “we should annotate <code>self</code> as a pointer of <code>x</code>, instead of just <code>x</code>”. In other words, you should annotate <code>self</code> as <code>self: *x</code>, instead of annotating it as <code>self: x</code>.</p>
 <p>If we create a new method inside the <code>Vec3</code> object that, for example, expands the vector by multiplying it’s coordinates by a factor o two, then, we need to follow this rule specified in the previous paragraph. The code example below demonstrates this idea:</p>
-<div class="cell" data-build_type="lib">
+<div class="cell">
 <div class="sourceCode cell-code" id="cb36"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> m = std.math;</span>
 <span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Vec3 = <span class="kw">struct</span> <span class="op">{</span></span>
