@@ -4,13 +4,16 @@ knitr: true
 syntax-definition: "../Assets/zig.xml"
 ---
 
+
 ```{r}
 #| include: false
 source("../zig_engine.R")
 knitr::opts_chunk$set(
-    auto_main=TRUE
+    auto_main = FALSE,
+    build_type = "lib"
 )
 ```
+
 
 # Memory and Allocators
 
@@ -92,6 +95,8 @@ whose value can be identified at compile time.
 
 
 ```{zig}
+#| auto_main: true
+#| build_type: "run"
 // ======== Variables
 const name = "Pedro";
 const array = [_]u8{1, 2, 3, 4};
@@ -195,6 +200,8 @@ But since it is declared in the "outer" scope, this object is stored in the
 stack space that belongs to this outer scope.
 
 ```{zig}
+#| auto_main: true
+#| build_type: "run"
 // ==== Variable
 const r = add(5, 27);
 _ = r;
@@ -239,6 +246,8 @@ reserved for this for loop is freed.
 The example below demonstrates this idea.
 
 ```{zig}
+#| auto_main: true
+#| build_type: "run"
 #| eval: false
 // This does not compile succesfully!
 const a = [_]u8{0, 1, 2, 3, 4};
@@ -285,6 +294,8 @@ bugs in your program [@zigdocs, see "Lifetime and Ownership"[^life] and "Undefin
 
 
 ```{zig}
+#| auto_main: true
+#| build_type: "run"
 // This code compiles succesfully. But it has
 // undefined behaviour. Never do this!!!
 // ==== Variable
@@ -407,6 +418,7 @@ object. But I could easily use any other type of allocator object from the Zig s
 
 ```{zig}
 #| auto_main: true
+#| build_type: "run"
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 const name = "Pedro";
@@ -497,6 +509,7 @@ of task. In the example below, I'm allocating enough space to store a single int
 
 ```{zig}
 #| auto_main: false
+#| build_type: "run"
 const std = @import("std");
 
 pub fn main() !void {
@@ -543,6 +556,8 @@ I cannot allocate more than 10 elements with this allocator object. If I try to
 allocate more than that, the `alloc()` method will return an `OutOfMemory` error value.
 
 ```{zig}
+#| auto_main: true
+#| build_type: "run"
 var buffer: [10]u8 = undefined;
 for (0..buffer.len) |i| {
     buffer[i] = 0; // Initialize to zero
@@ -575,6 +590,7 @@ below, I called `alloc()` 3 times. So, if I did not used an arena allocator, the
 ```{zig}
 #| eval: false
 #| auto_main: true
+#| build_type: "run"
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var aa = std.heap.ArenaAllocator.init(gpa.allocator());
 defer aa.deinit();
@@ -618,6 +634,7 @@ can allocate the same array in the heap by using the expression `var input = try
 
 ```{zig}
 #| auto_main: false
+#| build_type: "run"
 const std = @import("std");
 const stdin = std.io.getStdIn();
 
@@ -674,6 +691,7 @@ used by this object at the end of the scope.
 
 ```{zig}
 #| auto_main: false
+#| build_type: "run"
 const std = @import("std");
 const User = struct {
     id: usize,
