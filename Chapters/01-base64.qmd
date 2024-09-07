@@ -14,6 +14,7 @@ knitr::opts_chunk$set(
 ```
 
 
+
 # Project 1 - Building a base64 encoder/decoder {#sec-base64}
 
 As our first small project, I want to implement with you a base64 encoder/decoder in Zig.
@@ -389,61 +390,22 @@ byte in the output.
 
 ::: {#tbl-transf-6bit}
 
-```{r}
-#| echo: false
-library(gt)
-library(tibble)
+| Number of bytes in the window | Byte index in the output | In code                                    |
+|-------------------------------|--------------------------|--------------------------------------------|
+| 3                             | 0                        | input[0] >> 2                              |
+| 3                             | 1                        | ((input[0] & 0x03) << 4) + (input[1] >> 4) |
+| 3                             | 2                        | ((input[1] & 0x0f) << 2) + (input[2] >> 6) |
+| 3                             | 3                        | input[2] & 0x3f                            |
+| 2                             | 0                        | input[0] >> 2                              |
+| 2                             | 1                        | ((input[0] & 0x03) << 4) + (input[1] >> 4) |
+| 2                             | 2                        | ((input[1] & 0x0f) << 2)                   |
+| 2                             | 3                        | '='                                        |
+| 1                             | 0                        | input[0] >> 2                              |
+| 1                             | 1                        | ((input[0] & 0x03) << 4)                   |
+| 1                             | 2                        | '='                                        |
+| 1                             | 3                        | '='                                        |
 
-table_data <- tibble(
-  "Number of bytes in the window" = c(3L, 3L, 3L, 3L,
-                                      2L, 2L, 2L, 2L,
-                                      1L, 1L, 1L, 1L),
-  "Byte index in the output" = c(0:3, 0:3, 0:3),
-  "In code" = c(
-    "`input[0] >> 2`",
-    "`((input[0] & 0x03) << 4) +`\n\n`(input[1] >> 4)`",
-    "`((input[1] & 0x0f) << 2) +`\n\n`(input[2] >> 6)`",
-    "`input[2] & 0x3f`",
-
-    "`input[0] >> 2`",
-    "`((input[0] & 0x03) << 4) +`\n\n`(input[1] >> 4)`",
-    "`((input[1] & 0x0f) << 2)`",
-    "`'='`",
-
-    "`input[0] >> 2`",
-    "`((input[0] & 0x03) << 4)`",
-    "`'='`",
-    "`'='`"
-  )
-)
-
-
-table <- table_data |>
-  gt() |> 
-  fmt_markdown(columns = "In code") |>
-  cols_align(align="left") |>
-  # cols_width(
-  #   `Number of bytes in the window` ~ px(150),
-  #   `Byte index in the output` ~ px(150)
-  # ) |> 
-  cols_label(
-    `Number of bytes in the window` = md("**Number of bytes in the window**"),
-    `Byte index in the output` = md("**Byte index in the output**"),
-    `In code` = md("**In code**")
-  )
-
-
-
-
-if (knitr::is_html_output()) {
-  table |> gt::as_raw_html()
-} else {
-  table |> gt::as_latex()
-}
-
-```
-
-How the 6-bit transformation translates into code in different window settings.
+: How the 6-bit transformation translates into code in different window settings.
 
 :::
 
@@ -792,44 +754,18 @@ Notice that the output byte is the sequence `ABCDEFGH`, which is the original by
 
 The @tbl-6bit-decode presents how the three steps described ealier translate into Zig code:
 
+
+
 ::: {#tbl-6bit-decode}
 
-```{r}
-#| echo: false
-library(gt)
-library(tibble)
+| Byte index in the output | In code                       |
+|--------------------------|-------------------------------|
+| 0                        | (buf[0] << 2) + (buf[1] >> 4) |
+| 1                        | (buf[1] << 4) + (buf[2] >> 2) |
+| 2                        | (buf[2] << 6) + buf[3]        |
 
-table_data <- tibble(
-  `Byte index in the output` = c(0:2),
-  `In code` = c(
-    "`(buf[0] << 2) + (buf[1] >> 4)`",
-    "`(buf[1] << 4) + (buf[2] >> 2)`",
-    "`(buf[2] << 6) + buf[3]`"
-  )
-)
+: The necessary steps for the 6-transformation in the decode process.
 
-
-table <- table_data |>
-  gt() |> 
-  fmt_markdown(columns = "In code") |>
-  cols_align(align="left") |>
-  cols_label(
-    `Byte index in the output` = md("**Byte index in the output**"),
-    `In code` = md("**In code**")
-  )
-
-
-
-
-if (knitr::is_html_output()) {
-  table |> gt::as_raw_html()
-} else {
-  table |> gt::as_latex()
-}
-
-```
-
-The necessary steps for the 6-transformation in the decode process.
 
 :::
 
