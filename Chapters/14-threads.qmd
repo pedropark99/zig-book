@@ -28,7 +28,16 @@ thread is used in Zig.
 
 ## What are threads?
 
+Threads create concurrency. In other words, they create certain amount of confusion and complexity,
+because we get different tasks being performed at the same time. As consequence, depending on the
+size, or, the complexity of your program, or the amount of threads created, it might be difficult
+to track the tasks, and understand what is happening in a particular moment inside your program.
 
+A hole set of problems emerge from concurrency and multi-threaded programming, which are usually
+categorized as "race conditions". A race condition problem is any bug in your program that depends
+on "who get's there first". In other words, in each execution of your program,
+you get a different answer, because a different person, or, a different function, or, a different part of the code is finishing
+its tasks (or it is reaching a location) first than the others.
 
 ```{zig}
 #| eval: false
@@ -134,26 +143,29 @@ object (which is just an object of type `Thread`) to this new thread. You can us
 this handler object to effectively control all aspects of the thread, e.g. to kill the thread,
 or, to make it yield, to detach it from it's "parent thread", etc.
 
+The instant that you create the new thread, the function that you provided as input to `spawn()`
+get's invoked (i.e. get's called) to start the execution on this new thread.
+In other words, everytime you call `spawn()`, not only a new thread get's created,
+but also, the "start work button" of this thread get's automatically pressed.
+So the work being performed in this thread starts at the moment that the thread is created.
+This is similar to how `pthread_create()` from the `pthreads` library in C works,
+which also starts the execution at the moment that the thread get's created.
+
 
 ## Syncronizing threads
 
-Threads create concurrency. In other words, they create certain amount of confusion and complexity,
-because we get different tasks being performed at the same time. As consequence, depending on the
-size, or, the complexity of your program, or the amount of threads created, it might be difficult
-to track the tasks, and understand what is happening in a particular moment inside your program.
+We learned in the previous section that the execution of the thread starts at the moment
+that the thread get's created. So now, we need learn how to syncronize the execution of the new thread
+with the execution of our main thread, or, the main process in our program.
 
-A hole set of problems emerge from concurrency and multi-threaded programming, which are usually
-categorized as "race conditions". A race condition problem is any bug in your program that depends
-on "who get's there first". In other words, in each execution of your program,
-you get a different answer, because a different person, or, a different function, or, a different part of the code is finishing
-its tasks (or it is reaching a location) first than the others.
+In essence, syncronizing threads
+is made through the `join()` and `detach()` methods from the thread handler object.
 
-The instant that you create a new thread, this 
 
-In other words, everytime you call `spawn()`, not only a new thread get's created,
-but also, the "start work button" of this thread get's automatically pressed.
-So the work being performed in this thread starts at the moment that this thread is created.
+## Potential problems in threads
 
+TODO: joining with a thread that has already been joined leads to undefined behaviour.
+TODO: talk about zombie threads.
 
 ## Killing a particular thread
 
