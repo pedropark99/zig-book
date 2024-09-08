@@ -1240,6 +1240,26 @@
     ]
   },
   {
+    "objectID": "Chapters/14-threads.html",
+    "href": "Chapters/14-threads.html",
+    "title": "16  Introducing threads and concurrency in Zig",
+    "section": "",
+    "text": "16.1 What are threads?\nconst std = @import(\"std\");\nconst stdout = std.io.getStdOut().writer();\nconst Thread = std.Thread;\nfn do_some_work(thread_id: *const u8) !void {\n    _ = try stdout.print(\"Starting thread {d}.\\n\", .{thread_id.*});\n    std.time.sleep(100 * std.time.ns_per_ms);\n    _ = try stdout.print(\"Finishing thread {d}.\\n\", .{thread_id.*});\n}\n\npub fn main() !void {\n    const id1: u8 = 1;\n    const id2: u8 = 2;\n    const thread1 = try Thread.spawn(.{}, do_some_work, .{&id1});\n    const thread2 = try Thread.spawn(.{}, do_some_work, .{&id2});\n    thread1.join();\n    thread2.join();\n}",
+    "crumbs": [
+      "<span class='chapter-number'>16</span>  <span class='chapter-title'>Introducing threads and concurrency in Zig</span>"
+    ]
+  },
+  {
+    "objectID": "Chapters/14-threads.html#creating-a-thread",
+    "href": "Chapters/14-threads.html#creating-a-thread",
+    "title": "16  Introducing threads and concurrency in Zig",
+    "section": "16.2 Creating a thread",
+    "text": "16.2 Creating a thread\nWe create new threads in Zig, by first, importing the Thread struct into our current Zig module, and then, calling the spawn() method of this struct, which creates (or, “spawns”) a new thread of execution. This method have three arguments, which are, respectively:\n\na SpawnConfig object, which contains configurations for the spawn process.\nthe name of the function that is going to be executed (or, that is going to be “called”) in this new thread.\na list of arguments (or inputs) to be passed to the function provided in the second argument.\n\nWith these three arguments, you can control how the thread get’s created, and also, specify which work will be performed (or executed) inside this new thread. A thread is just a separate context of execution, and we usually create new threads in our code, because we want to perform some work inside this new context of execution. And we specify which exact work, or, which exact steps that are going to be performed inside this context, by providing the name of a function on the second argument of the spawn() method.\nThus, when this new thread get’s created, this function that you provided as input to the spawn() method get’s called, or, get’s executed inside this new thread. You can control the arguments, or, the inputs that are passed to this function when it get’s called, by providing a list of arguments (or a list of inputs) on the third argument of the spawn() method. These arguments are passed to the function in the same order that they are provided to spawn().\nFurthermore, the SpawnConfig is a struct object with only two possible fields, or, two possible members, that you can set to tailor the spawn behaviour. These fields are:\n\nstack_size: you can provide an usize value to specify the size (in bytes) of the thread’s stack frame. By default, this value is: \\(16 \\times 1024 \\times 1024\\).\nallocator: you can provide an allocator object to be used when allocating memory for the thread.\n\nTo use one of these two fields (or, “configs”) you just have to create a new object of type SpawnConfig, and provide this object as input to the spawn() method. But, if you are not interested in using one of these configs, and you are ok with using just the defaults, you can just provide a anonymous struct literal (.{}) in the place of this SpawnConfig argument.\nAs our first, and very simple example, consider the code exposed below. Inside the same program, you can create multiple threads of execution if you want to. But, in this first example, we are creating just a single thread of execution, because we call spawn() only once.\nAlso, notice in this example that we are executing the function do_some_work() inside the new thread. Since this function receives no inputs, because it has no arguments, in this instance, we have passed an empty list, or, more precisely, an empty struct object in the third argument of spawn().\n\nconst std = @import(\"std\");\nconst stdout = std.io.getStdOut().writer();\nconst Thread = std.Thread;\nfn do_some_work() !void {\n    _ = try stdout.write(\"Starting the work.\\n\");\n    std.time.sleep(100 * std.time.ns_per_ms);\n    _ = try stdout.write(\"Finishing the work.\\n\");\n}\n\npub fn main() !void {\n    const thread = try Thread.spawn(.{}, do_some_work, .{});\n    thread.join();\n}\n\nStarting the work.Finishing the work.\n\n\nNotice the use of try when calling the spawn() method. This means that this method can return an error in some circunstances. One circunstance in particular is when you attempt to create a new thread, when you have already created too much (i.e. you have excedeed the quota of concurrent threads in your system).\nIf the new thread is succesfully created, the spawn() method returns a handler object (which is just an object of type Thread) to this new thread.",
+    "crumbs": [
+      "<span class='chapter-number'>16</span>  <span class='chapter-title'>Introducing threads and concurrency in Zig</span>"
+    ]
+  },
+  {
     "objectID": "references.html",
     "href": "references.html",
     "title": "References",
@@ -1247,6 +1267,16 @@
     "text": "Chen, Jenny, and Ruohao Guo. 2022. “Stack and Heap Memory.”\nIntroduction to Data Structures and Algorithms with C++. https://courses.engr.illinois.edu/cs225/fa2022/resources/stack-heap/.\n\n\nGeeks for Geeks. 2024. “Generics in c++.” Geeks for\nGeeks. https://www.geeksforgeeks.org/generics-in-c/.\n\n\nKim, Juhee, Jinbum Park, Sihyeon Roh, Jaeyoung Chung, Youngjoo Lee,\nTaesoo Kim, and Byoungyoung Lee. 2024. “TikTag: Breaking ARM’s\nMemory Tagging Extension with Speculative Execution.” https://arxiv.org/abs/2406.08719.\n\n\nMeehan, Eric. 2021. “Creating a Web Server from Scratch in\nc.” Youtube. https://www.youtube.com/watch?v=gk6NL1pZi1M&ab_channel=EricOMeehan.\n\n\nMicrosoft. 2021. “Bitwise AND Operator: &.” Microsoft\nLearn. https://learn.microsoft.com/en-us/cpp/cpp/bitwise-and-operator-amp?view=msvc-170.\n\n\nSeguin, Karl. 2024. “Generics.” https://www.openmymind.net/learning_zig/generics/.\n\n\nSobeston. 2024. “Zig Guide.” https://zig.guide/.\n\n\nWeerasiri, Nipun Chamikara. 2023. “A Simple Web Server Written in\nc.” Medium. https://medium.com/@nipunweerasiri/a-simple-web-server-written-in-c-cf7445002e6.\n\n\nWikipedia. 2024a. “File Descriptor.” Wikipedia. https://en.wikipedia.org/wiki/File_descriptor.\n\n\n———. 2024b. “Grayscale.” Wikipedia. https://en.wikipedia.org/wiki/Grayscale.\n\n\n———. 2024c. “Hash Tables.” Wikipedia. https://en.wikipedia.org/wiki/Hash_table.\n\n\n———. 2024d. “Port (Computer Networking).” Wikipedia. https://en.wikipedia.org/wiki/Port_(computer_networking).\n\n\nYu, Jeffrey. 2023. “How i Built a Simple HTTP Server from Scratch\nUsing c.” DEV Community. https://dev.to/jeffreythecoder/how-i-built-a-simple-http-server-from-scratch-using-c-739.\n\n\nZig Software Foundation. 2024a. “In-Depth Overview.” Zig\nSoftware Foundation. https://ziglang.org/learn/overview/.\n\n\n———. 2024b. “Language Reference.” Zig Software Foundation.\nhttps://ziglang.org/documentation/master/.",
     "crumbs": [
       "References"
+    ]
+  },
+  {
+    "objectID": "Chapters/14-threads.html#what-are-threads",
+    "href": "Chapters/14-threads.html#what-are-threads",
+    "title": "16  Introducing threads and concurrency in Zig",
+    "section": "",
+    "text": "Starting thread 1.\nStarting thread 2.\nFinishing thread Finishing thread 2.\n1.",
+    "crumbs": [
+      "<span class='chapter-number'>16</span>  <span class='chapter-title'>Introducing threads and concurrency in Zig</span>"
     ]
   }
 ]

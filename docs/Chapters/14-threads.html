@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>8&nbsp; Unit tests – Introduction to Zig: a project-based book</title>
+<title>16&nbsp; Introducing threads and concurrency in Zig – Introduction to Zig: a project-based book</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -64,8 +64,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../Chapters/07-build-system.html" rel="next">
-<link href="../Chapters/04-http-server.html" rel="prev">
+<link href="../references.html" rel="next">
+<link href="../Chapters/13-image-filter.html" rel="prev">
 <script src="../site_libs/quarto-html/quarto.js"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -105,6 +105,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -117,7 +146,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/03-unittests.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/14-threads.html"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Introducing threads and concurrency in Zig</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -195,7 +224,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../Chapters/03-unittests.html" class="sidebar-item-text sidebar-link active">
+  <a href="../Chapters/03-unittests.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests</span></span></a>
   </div>
 </li>
@@ -243,7 +272,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../Chapters/14-threads.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/14-threads.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Introducing threads and concurrency in Zig</span></span></a>
   </div>
 </li>
@@ -263,11 +292,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#introducing-the-test-block" id="toc-introducing-the-test-block" class="nav-link active" data-scroll-target="#introducing-the-test-block"><span class="header-section-number">8.1</span> Introducing the <code>test</code> block</a></li>
-  <li><a href="#how-to-run-your-tests" id="toc-how-to-run-your-tests" class="nav-link" data-scroll-target="#how-to-run-your-tests"><span class="header-section-number">8.2</span> How to run your tests</a></li>
-  <li><a href="#testing-memory-allocations" id="toc-testing-memory-allocations" class="nav-link" data-scroll-target="#testing-memory-allocations"><span class="header-section-number">8.3</span> Testing memory allocations</a></li>
-  <li><a href="#testing-errors" id="toc-testing-errors" class="nav-link" data-scroll-target="#testing-errors"><span class="header-section-number">8.4</span> Testing errors</a></li>
-  <li><a href="#testing-simple-equalities" id="toc-testing-simple-equalities" class="nav-link" data-scroll-target="#testing-simple-equalities"><span class="header-section-number">8.5</span> Testing simple equalities</a></li>
+  <li><a href="#what-are-threads" id="toc-what-are-threads" class="nav-link active" data-scroll-target="#what-are-threads"><span class="header-section-number">16.1</span> What are threads?</a></li>
+  <li><a href="#creating-a-thread" id="toc-creating-a-thread" class="nav-link" data-scroll-target="#creating-a-thread"><span class="header-section-number">16.2</span> Creating a thread</a></li>
   </ul>
 </nav>
     </div>
@@ -276,7 +302,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><span id="sec-unittests" class="quarto-section-identifier"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests</span></span></h1>
+<h1 class="title"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Introducing threads and concurrency in Zig</span></h1>
 </div>
 
 
@@ -293,163 +319,74 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>In this chapter, I want to dive in on how unit tests are developed in Zig. We are going to talk about what is the testing wokflow in Zig, and also, about the <code>test</code> command from the <code>zig</code> compiler.</p>
-<section id="introducing-the-test-block" class="level2" data-number="8.1">
-<h2 data-number="8.1" class="anchored" data-anchor-id="introducing-the-test-block"><span class="header-section-number">8.1</span> Introducing the <code>test</code> block</h2>
-<p>In Zig, unit tests are written inside a <code>test</code> declaration, or, how I prefer to call it, inside a <code>test</code> block. Every <code>test</code> block is written by using the keyword <code>test</code>. You can optionally use a string literal to write a label, which is responsible for identifying the specific group of unit tests that you are writing inside this specific <code>test</code> block.</p>
-<p>In the example below, we are testing if the sum of two objects (<code>a</code> and <code>b</code>) is equal to 4. The <code>expect()</code> function from the Zig Standard Library is a function that receives a logical test as input. If this logical test results in <code>true</code>, then, the test passes. But if it results in <code>false</code>, then, the test fails.</p>
-<p>You can write any Zig code you want inside of each <code>test</code> block. Part of this code might be some necessary commands to setup your testing environment, or just initializing some necessary objects.</p>
+<p>Threads and concurrency is available in Zig through the <code>Thread</code> struct from the Zig Standard Library. This struct represents a kernel thread, and it follows a POSIX Thread pattern, meaning that, it works similar to a <code>pthread</code>, which people usually recognize from the <code>pthread.h</code> header in the C Standard Library.</p>
+<p>If you are not familiar with a thread, let’s dive in first, before we show how a thread is used in Zig.</p>
+<section id="what-are-threads" class="level2" data-number="16.1">
+<h2 data-number="16.1" class="anchored" data-anchor-id="what-are-threads"><span class="header-section-number">16.1</span> What are threads?</h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expect = std.testing.expect;</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"testing simple sum"</span> <span class="op">{</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> a: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> b: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect((a + b) == <span class="dv">4</span>);</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> do_some_work(thread_id: *<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.print(<span class="st">"Starting thread {d}.</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>thread_id.*<span class="op">}</span>);</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    std.time.sleep(<span class="dv">100</span> * std.time.ns_per_ms);</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.print(<span class="st">"Finishing thread {d}.</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>thread_id.*<span class="op">}</span>);</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id1: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id2: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work, .<span class="op">{</span>&amp;id2<span class="op">}</span>);</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    thread1.join();</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    thread2.join();</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>You can have multiple <code>test</code> blocks written on the same Zig module. Also, you can mix <code>test</code> blocks with your source code, with no problems or consequences. If you mix <code>test</code> blocks with your normal source code, when you execute the <code>build</code>, <code>build-exe</code>, <code>build-obj</code> or <code>build-lib</code> commands from the <code>zig</code> compiler that we exposed at <a href="01-zig-weird.html#sec-compile-code" class="quarto-xref"><span>Section 1.2.4</span></a>, these <code>test</code> blocks are automatically ignored by the compiler.</p>
-<p>In other words, the <code>zig</code> compiler only builds and execute your tests when you ask it to. By default, the compiler always ignore <code>test</code> blocks written in your Zig modules. The compiler normally checks only if there are any syntax errors in these <code>test</code> blocks.</p>
-<p>If you look at the source code for most of the files present in the Zig Standard Library<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, you can see that the <code>test</code> blocks are written together with the normal source code of the library. You can see this for example, at the <a href="https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig"><code>array_list</code> module</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. So, the standard that the Zig developers decided to adopt is to keep their unit tests together with the source code of the functionality that they are testing.</p>
-<p>Each programmer might have a different opinion on this. Some of them might prefer to keep unit tests separate from the actual source code of their application. If that is your case, you can simply create a separate <code>tests</code> folder in your project, and start writing Zig modules that contains only unit tests (as would normally do on a Python project with <code>pytest</code>, for example), and everything will work fine. It boils down to which is your preference here.</p>
+<pre><code>Starting thread 1.
+Starting thread 2.
+Finishing thread Finishing thread 2.
+1.</code></pre>
 </section>
-<section id="how-to-run-your-tests" class="level2" data-number="8.2">
-<h2 data-number="8.2" class="anchored" data-anchor-id="how-to-run-your-tests"><span class="header-section-number">8.2</span> How to run your tests</h2>
-<p>If the <code>zig</code> compiler ignores any <code>test</code> block by default, how can you compile and run your unit tests? The answer is the <code>test</code> command from the <code>zig</code> compiler. By running <code>zig test</code> command, the compiler will find every instance of <code>test</code> block in your Zig module, and, it will compile and run the unit tests you wrote.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> test simple_sum.zig</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<pre><code>1/1 simple_sum.test.testing simple sum... OK
-All 1 tests passed.</code></pre>
-</section>
-<section id="testing-memory-allocations" class="level2" data-number="8.3">
-<h2 data-number="8.3" class="anchored" data-anchor-id="testing-memory-allocations"><span class="header-section-number">8.3</span> Testing memory allocations</h2>
-<p>One of the advantages of Zig is that it offers great tools that hep us, programmers, to avoid (but also detect) memory problems, such as memory leaks and double-frees. The <code>defer</code> keyword is specially helpful in this regard.</p>
-<p>When developing your source code, you, the programmer, is responsible for making sure that your code do not produce such problems. However, you can also use a special type of allocator object in Zig, that is capable of automatically detect such problems for you. This is the <code>std.testing.allocator</code> object. This allocator object offers some basic memory safety detection features, which are capable of detecting memory leaks.</p>
-<p>As we described at <a href="01-memory.html#sec-heap" class="quarto-xref"><span>Section 3.1.5</span></a>, to allocate memory on the heap, you need to use an allocator object, and your functions that use these objects to allocate memory on the heap, should receive an allocator object as one of it’s inputs. Every memory on the heap that you allocate using these allocator objects, must also be freed using this same allocator object.</p>
-<p>So, if you want to test the memory allocations performed by your functions, and make sure that you don’t have problems in these allocations, you can simply write unit tests for these functions, where you provide the <code>std.testing.allocator</code> object as input to these functions.</p>
-<p>Look at the example below, where I’m defining a function that clearly causes a memory leak. Because we allocate memory with the allocator object, but we do not free this allocated memory in any point. So, when the function returns, we lose the reference to the <code>buffer</code> object, which contains the allocated memory, and, as a result, we can no longer free this memory.</p>
-<p>Notice that, inside a <code>test</code> block I execute this function with the <code>std.testing.allocator</code>. Since no visible errors were raised inside the <code>test</code> block, the <code>zig</code> compiler completes the process indicating that the unit tests performed inside the <code>test</code> block labeled as <code>"memory leak</code> have all passed. But despite this result, the allocator object was capable of looking deeper in our program, and detecting the memory leak. As a result, this allocator object returns a message “tests leaked memory”, and also, a stack trace showing the exact point where the memory was leaked.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Allocator = std.mem.Allocator;</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> some_memory_leak(allocator: Allocator) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> buffer = <span class="kw">try</span> allocator.alloc(<span class="dt">u32</span>, <span class="dv">10</span>);</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    _ = buffer;</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Return without freeing the</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">// allocated memory</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"memory leak"</span> <span class="op">{</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = std.testing.allocator;</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> some_memory_leak(allocator);</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>Test [1/1] leak_memory.test.memory leak...
-    [gpa] (err): memory address 0x7c1fddf39000 leaked: 
-./ZigExamples/debugging/leak_memory.zig:4:39: 0x10395f2
-    const buffer = try allocator.alloc(u32, 10);
-                                      ^
-./ZigExamples/debugging/leak_memory.zig:12:25: 0x10398ea
-    try some_memory_leak(allocator);
-
-... more stack trace</code></pre>
-</section>
-<section id="testing-errors" class="level2" data-number="8.4">
-<h2 data-number="8.4" class="anchored" data-anchor-id="testing-errors"><span class="header-section-number">8.4</span> Testing errors</h2>
-<p>One commom style of unit tests are those that look for specific errors in your functions. In other words, you write a unit test that tries to assert if a specific function call returns any error, or a specific type of error.</p>
-<p>In C++ you would normally write this stye of unit test using, for example, the functions <code>REQUIRE_THROWS()</code> or <code>CHECK_THROWS()</code> from the <a href="https://github.com/catchorg/Catch2/tree/devel"><code>Catch2</code> test framework</a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. In the case of a Python project, you would use the <a href="https://docs.pytest.org/en/7.1.x/reference/reference.html#pytest-raises"><code>raises()</code> function from <code>pytest</code></a><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>. While in Rust, you would probably use <code>assert_eq!()</code> in conjunction with <code>Err()</code>.</p>
-<p>But in Zig, we use the <code>expectError()</code> function, from the <code>std.testing</code> module. With this function, you can test if a specific function call returns the exact type of error that you expect it to return. To use this function, you first write <code>try expectError()</code>. Then, on the first argument, you provide the type of error that you are expecting from the function call. Then, on the second argument, you write the function call you expect to fail.</p>
-<p>The code example below demonstrates such type of unit test in Zig. Notice that, inside the function <code>alloc_error()</code> we are allocating 100 bytes of memory, or, an array of 100 elements, for the object <code>ibuffer</code>. However, in the <code>test</code> block, we are using the <code>FixedBufferAllocator()</code> allocator object, which is limited to 10 bytes of space, because the object <code>buffer</code>, which we provided to the allocator object, have only 10 bytes of space.</p>
-<p>That is why, the <code>alloc_error()</code> function raises an <code>OutOfMemory</code> error on this case. Because this function is trying to allocate more space than the allocator object allows. So, in essence, we are testing for a specific type of error, which is <code>OutOfMemory</code>. If the <code>alloc_error()</code> function returns any other type of error, then, the <code>expectError()</code> function would make the entire test fail.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Allocator = std.mem.Allocator;</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expectError = std.testing.expectError;</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> alloc_error(allocator: Allocator) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> ibuffer = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">100</span>);</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.free(ibuffer);</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    ibuffer[<span class="dv">0</span>] = <span class="dv">2</span>;</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"testing error"</span> <span class="op">{</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">10</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> fba = std.heap.FixedBufferAllocator.init(&amp;buffer);</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = fba.allocator();</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expectError(<span class="kw">error</span>.OutOfMemory, alloc_error(allocator));</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>1/1 oom.test.testing error... OK
-All 1 tests passed.</code></pre>
-</section>
-<section id="testing-simple-equalities" class="level2" data-number="8.5">
-<h2 data-number="8.5" class="anchored" data-anchor-id="testing-simple-equalities"><span class="header-section-number">8.5</span> Testing simple equalities</h2>
-<p>In Zig, there are some different ways you can test for an equality. You already saw that we can use <code>expect()</code> with the logical operator <code>==</code> to essentially reproduce an equality test. But we also have some helper functions that you should know about, specially <code>expectEqual()</code>, <code>expectEqualSlices()</code> and <code>expectEqualStrings()</code>.</p>
-<p>The <code>expectEqual()</code> function, as the name suggests, is a classic test equality function. It receives two objects as input. The first object is the value that you expect to be in the second object. While second object is the object you have, or, the object that your application produced as result. So, with <code>expectEqual()</code> you are essentially testing if the values stored inside the two provided objects are equal or not.</p>
-<p>You can see in the example below that, the test performed by <code>expectEqual()</code> failed. Because the objects <code>v1</code> and <code>v2</code> contain different values in them.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"values are equal?"</span> <span class="op">{</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> v1 = <span class="dv">15</span>;</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> v2 = <span class="dv">18</span>;</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqual(v1, v2);</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>1/1 ve.test.values are equal?...
-    expected 15, found 18
-    FAIL (TestExpectedEqual)
-ve.zig:5:5: test.values are equal? (test)
-    try std.testing.expectEqual(v1, v2);
-    ^
-0 passed; 0 skipped; 1 failed.</code></pre>
-<p>Although useful, the <code>expectEqual()</code> function does not work with arrays. For testing if two arrays are equal, you should use the <code>expectEqualSlices()</code> function instead. This function have three arguments. First, you provide the data type contained in both arrays that you are trying to compare. While the second and third arguments corresponds to the array objects that you want to compare.</p>
-<p>In the example below, we are using this function to test if two array objects (<code>array1</code> and <code>array2</code>) are equal or not. Since they are in fact equal, the unit test passed with no errors.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"arrays are equal?"</span> <span class="op">{</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> array1 = [<span class="dv">3</span>]<span class="dt">u32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span><span class="op">}</span>;</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> array2 = [<span class="dv">3</span>]<span class="dt">u32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span><span class="op">}</span>;</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqualSlices(</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u32</span>, &amp;array1, &amp;array2</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>1/1 oom.test.arrays are equal?... OK
-All 1 tests passed.</code></pre>
-<p>At last, you might also want to use the <code>expectEqualStrings()</code> function. As the name suggests, you can use this function to test if two strings are equal or not. Just provide the two string objects that you want to compare, as inputs to the functions.</p>
-<p>If the function finds any existing difference between the two strings, then, the function will raise an error, and also, print an error message that shows the exact difference between the two string objects provided, as the example below demonstrates:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"strings are equal?"</span> <span class="op">{</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> str1 = <span class="st">"hello, world!"</span>;</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> str2 = <span class="st">"Hello, world!"</span>;</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqualStrings(</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        str1, str2</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>1/1 t.test.strings are equal?... 
-====== expected this output: =========
-hello, world!␃
-======== instead found this: =========
-Hello, world!␃
-======================================
-First difference occurs on line 1:
-expected:
-hello, world!
-^ ('\x68')
-found:
-Hello, world!
-^ ('\x48')</code></pre>
-
-
-</section>
-<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
-<hr>
-<ol>
-<li id="fn1"><p><a href="https://github.com/ziglang/zig/tree/master/lib/std" class="uri">https://github.com/ziglang/zig/tree/master/lib/std</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2"><p><a href="https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig" class="uri">https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3"><p><a href="https://github.com/catchorg/Catch2/tree/devel" class="uri">https://github.com/catchorg/Catch2/tree/devel</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4"><p><a href="https://docs.pytest.org/en/7.1.x/reference/reference.html#pytest-raises" class="uri">https://docs.pytest.org/en/7.1.x/reference/reference.html#pytest-raises</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<section id="creating-a-thread" class="level2" data-number="16.2">
+<h2 data-number="16.2" class="anchored" data-anchor-id="creating-a-thread"><span class="header-section-number">16.2</span> Creating a thread</h2>
+<p>We create new threads in Zig, by first, importing the <code>Thread</code> struct into our current Zig module, and then, calling the <code>spawn()</code> method of this struct, which creates (or, “spawns”) a new thread of execution. This method have three arguments, which are, respectively:</p>
+<ol type="1">
+<li>a <code>SpawnConfig</code> object, which contains configurations for the spawn process.</li>
+<li>the name of the function that is going to be executed (or, that is going to be “called”) in this new thread.</li>
+<li>a list of arguments (or inputs) to be passed to the function provided in the second argument.</li>
 </ol>
+<p>With these three arguments, you can control how the thread get’s created, and also, specify which work will be performed (or executed) inside this new thread. A thread is just a separate context of execution, and we usually create new threads in our code, because we want to perform some work inside this new context of execution. And we specify which exact work, or, which exact steps that are going to be performed inside this context, by providing the name of a function on the second argument of the <code>spawn()</code> method.</p>
+<p>Thus, when this new thread get’s created, this function that you provided as input to the <code>spawn()</code> method get’s called, or, get’s executed inside this new thread. You can control the arguments, or, the inputs that are passed to this function when it get’s called, by providing a list of arguments (or a list of inputs) on the third argument of the <code>spawn()</code> method. These arguments are passed to the function in the same order that they are provided to <code>spawn()</code>.</p>
+<p>Furthermore, the <code>SpawnConfig</code> is a struct object with only two possible fields, or, two possible members, that you can set to tailor the spawn behaviour. These fields are:</p>
+<ul>
+<li><code>stack_size</code>: you can provide an <code>usize</code> value to specify the size (in bytes) of the thread’s stack frame. By default, this value is: <span class="math inline">\(16 \times 1024 \times 1024\)</span>.</li>
+<li><code>allocator</code>: you can provide an allocator object to be used when allocating memory for the thread.</li>
+</ul>
+<p>To use one of these two fields (or, “configs”) you just have to create a new object of type <code>SpawnConfig</code>, and provide this object as input to the <code>spawn()</code> method. But, if you are not interested in using one of these configs, and you are ok with using just the defaults, you can just provide a anonymous struct literal (<code>.{}</code>) in the place of this <code>SpawnConfig</code> argument.</p>
+<p>As our first, and very simple example, consider the code exposed below. Inside the same program, you can create multiple threads of execution if you want to. But, in this first example, we are creating just a single thread of execution, because we call <code>spawn()</code> only once.</p>
+<p>Also, notice in this example that we are executing the function <code>do_some_work()</code> inside the new thread. Since this function receives no inputs, because it has no arguments, in this instance, we have passed an empty list, or, more precisely, an empty struct object in the third argument of <code>spawn()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> do_some_work() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Starting the work.</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    std.time.sleep(<span class="dv">100</span> * std.time.ns_per_ms);</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Finishing the work.</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work, .<span class="op">{}</span>);</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    thread.join();</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Starting the work.Finishing the work.</code></pre>
+</div>
+</div>
+<p>Notice the use of <code>try</code> when calling the <code>spawn()</code> method. This means that this method can return an error in some circunstances. One circunstance in particular is when you attempt to create a new thread, when you have already created too much (i.e.&nbsp;you have excedeed the quota of concurrent threads in your system).</p>
+<p>If the new thread is succesfully created, the <code>spawn()</code> method returns a handler object (which is just an object of type <code>Thread</code>) to this new thread.</p>
+
+
 </section>
 
 </main> <!-- /main -->
@@ -1019,13 +956,13 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../Chapters/04-http-server.html" class="pagination-link" aria-label="Project 2 - Building a HTTP Server from scratch">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Project 2 - Building a HTTP Server from scratch</span></span>
+      <a href="../Chapters/13-image-filter.html" class="pagination-link" aria-label="Project 4 - Developing an image filter">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Project 4 - Developing an image filter</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../Chapters/07-build-system.html" class="pagination-link" aria-label="Build System">
-        <span class="nav-page-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Build System</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../references.html" class="pagination-link" aria-label="References">
+        <span class="nav-page-text">References</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

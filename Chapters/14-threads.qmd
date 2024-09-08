@@ -26,29 +26,7 @@ If you are not familiar with a thread, let's dive in first, before we show how a
 thread is used in Zig.
 
 
-## Creating a thread
-
-We can create new threads in Zig, by first, importing the `Thread` struct into
-our current Zig module, and then, calling the `spawn()` method of this struct.
-This `spawn()` method creates (or, "spawns") a new thread of execution.
-
-```{zig}
-#| build_type: "run"
-const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-const Thread = std.Thread;
-
-fn do_some_work() !void {
-    _ = try stdout.write("Starting the work.\n");
-    std.time.sleep(100 * std.time.ns_per_ms);
-    _ = try stdout.write("Finishing the work.\n");
-}
-
-pub fn main() !void {
-    const thread = try Thread.spawn(.{}, do_some_work, .{});
-    thread.join();
-}
-```
+## What are threads?
 
 
 
@@ -79,5 +57,106 @@ Starting thread 2.
 Finishing thread Finishing thread 2.
 1.
 ```
+
+
+
+
+## Creating a thread
+
+We create new threads in Zig, by first, importing the `Thread` struct into
+our current Zig module, and then, calling the `spawn()` method of this struct,
+which creates (or, "spawns") a new thread of execution.
+This method have three arguments, which are, respectively:
+
+1. a `SpawnConfig` object, which contains configurations for the spawn process.
+1. the name of the function that is going to be executed (or, that is going to be "called") in this new thread.
+1. a list of arguments (or inputs) to be passed to the function provided in the second argument.
+
+With these three arguments, you can control how the thread get's created, and also, specify which
+work will be performed (or executed) inside this new thread. A thread is just a separate context of execution,
+and we usually create new threads in our code, because we want to perform some work inside this
+new context of execution. And we specify which exact work, or, which exact steps that are going to be
+performed inside this context, by providing the name of a function on the second argument of the `spawn()` method.
+
+Thus, when this new thread get's created, this function that you provided as input to the `spawn()`
+method get's called, or, get's executed inside this new thread. You can control the
+arguments, or, the inputs that are passed to this function when it get's called, by providing
+a list of arguments (or a list of inputs) on the third argument of the `spawn()` method.
+These arguments are passed to the function in the same order that they are
+provided to `spawn()`.
+
+Furthermore, the `SpawnConfig` is a struct object with only two possible fields, or, two possible members, that you
+can set to tailor the spawn behaviour. These fields are:
+
+- `stack_size`: you can provide an `usize` value to specify the size (in bytes) of the thread's stack frame. By default, this value is: $16 \times 1024 \times 1024$.
+- `allocator`: you can provide an allocator object to be used when allocating memory for the thread.
+
+To use one of these two fields (or, "configs") you just have to create a new object of type `SpawnConfig`,
+and provide this object as input to the `spawn()` method. But, if you are not interested in using
+one of these configs, and you are ok with using just the defaults, you can just provide a anonymous
+struct literal (`.{}`) in the place of this `SpawnConfig` argument.
+
+As our first, and very simple example, consider the code exposed below.
+Inside the same program, you can create multiple threads of execution if you want to.
+But, in this first example, we are creating just a single thread of execution, because
+we call `spawn()` only once.
+
+Also, notice in this example that we are executing the function `do_some_work()`
+inside the new thread. Since this function receives no inputs, because it has
+no arguments, in this instance, we have passed an empty list, or, more precisely, an empty struct
+object in the third argument of `spawn()`.
+
+
+```{zig}
+#| build_type: "run"
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+const Thread = std.Thread;
+fn do_some_work() !void {
+    _ = try stdout.write("Starting the work.\n");
+    std.time.sleep(100 * std.time.ns_per_ms);
+    _ = try stdout.write("Finishing the work.\n");
+}
+
+pub fn main() !void {
+    const thread = try Thread.spawn(.{}, do_some_work, .{});
+    thread.join();
+}
+```
+
+Notice the use of `try` when calling the `spawn()` method. This means
+that this method can return an error in some circunstances. One circunstance
+in particular is when you attempt to create a new thread, when you have already
+created too much (i.e. you have excedeed the quota of concurrent threads in your system).
+
+If the new thread is succesfully created, the `spawn()` method returns a handler
+object (which is just an object of type `Thread`) to this new thread. You can use
+this handler object to effectively control all aspects of the thread, e.g. to kill the thread,
+or, to make it yield, to detach it from it's "parent thread", etc.
+
+
+## Syncronizing threads
+
+Threads create concurrency. In other words, they create certain amount of confusion and complexity,
+because we get different tasks being performed at the same time. As consequence, depending on the
+size, or, the complexity of your program, or the amount of threads created, it might be difficult
+to track the tasks, and understand what is happening in a particular moment inside your program.
+
+A hole set of problems emerge from concurrency and multi-threaded programming, which are usually
+categorized as "race conditions". A race condition problem is any bug in your program that depends
+on "who get's there first". In other words, in each execution of your program,
+you get a different answer, because a different person, or, a different function, or, a different part of the code is finishing
+its tasks (or it is reaching a location) first than the others.
+
+The instant that you create a new thread, this 
+
+In other words, everytime you call `spawn()`, not only a new thread get's created,
+but also, the "start work button" of this thread get's automatically pressed.
+So the work being performed in this thread starts at the moment that this thread is created.
+
+
+## Killing a particular thread
+
+
 
 
