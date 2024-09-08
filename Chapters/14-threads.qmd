@@ -1,0 +1,83 @@
+---
+engine: knitr
+knitr: true
+syntax-definition: "../Assets/zig.xml"
+---
+
+```{r}
+#| include: false
+source("../zig_engine.R")
+knitr::opts_chunk$set(
+    auto_main = FALSE,
+    build_type = "lib"
+)
+```
+
+
+
+# Introducing threads and concurrency in Zig
+
+Threads and concurrency is available in Zig through the `Thread` struct
+from the Zig Standard Library. This struct represents a kernel thread, and it follows a POSIX Thread pattern,
+meaning that, it works similar to a `pthread`, which people usually recognize from the `pthread.h` header
+in the C Standard Library.
+
+If you are not familiar with a thread, let's dive in first, before we show how a
+thread is used in Zig.
+
+
+## Creating a thread
+
+We can create new threads in Zig, by first, importing the `Thread` struct into
+our current Zig module, and then, calling the `spawn()` method of this struct.
+This `spawn()` method creates (or, "spawns") a new thread of execution.
+
+```{zig}
+#| build_type: "run"
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+const Thread = std.Thread;
+
+fn do_some_work() !void {
+    _ = try stdout.write("Starting the work.\n");
+    std.time.sleep(100 * std.time.ns_per_ms);
+    _ = try stdout.write("Finishing the work.\n");
+}
+
+pub fn main() !void {
+    const thread = try Thread.spawn(.{}, do_some_work, .{});
+    thread.join();
+}
+```
+
+
+
+```{zig}
+#| eval: false
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+const Thread = std.Thread;
+fn do_some_work(thread_id: *const u8) !void {
+    _ = try stdout.print("Starting thread {d}.\n", .{thread_id.*});
+    std.time.sleep(100 * std.time.ns_per_ms);
+    _ = try stdout.print("Finishing thread {d}.\n", .{thread_id.*});
+}
+
+pub fn main() !void {
+    const id1: u8 = 1;
+    const id2: u8 = 2;
+    const thread1 = try Thread.spawn(.{}, do_some_work, .{&id1});
+    const thread2 = try Thread.spawn(.{}, do_some_work, .{&id2});
+    thread1.join();
+    thread2.join();
+}
+```
+
+```
+Starting thread 1.
+Starting thread 2.
+Finishing thread Finishing thread 2.
+1.
+```
+
+
