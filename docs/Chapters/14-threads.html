@@ -54,7 +54,27 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="../site_libs/quarto-nav/quarto-nav.js"></script>
@@ -294,6 +314,9 @@ window.Quarto = {
   <ul>
   <li><a href="#what-are-threads" id="toc-what-are-threads" class="nav-link active" data-scroll-target="#what-are-threads"><span class="header-section-number">16.1</span> What are threads?</a></li>
   <li><a href="#creating-a-thread" id="toc-creating-a-thread" class="nav-link" data-scroll-target="#creating-a-thread"><span class="header-section-number">16.2</span> Creating a thread</a></li>
+  <li><a href="#syncronizing-threads" id="toc-syncronizing-threads" class="nav-link" data-scroll-target="#syncronizing-threads"><span class="header-section-number">16.3</span> Syncronizing threads</a></li>
+  <li><a href="#potential-problems-in-threads" id="toc-potential-problems-in-threads" class="nav-link" data-scroll-target="#potential-problems-in-threads"><span class="header-section-number">16.4</span> Potential problems in threads</a></li>
+  <li><a href="#killing-a-particular-thread" id="toc-killing-a-particular-thread" class="nav-link" data-scroll-target="#killing-a-particular-thread"><span class="header-section-number">16.5</span> Killing a particular thread</a></li>
   </ul>
 </nav>
     </div>
@@ -319,10 +342,12 @@ window.Quarto = {
 </header>
 
 
-<p>Threads and concurrency is available in Zig through the <code>Thread</code> struct from the Zig Standard Library. This struct represents a kernel thread, and it follows a POSIX Thread pattern, meaning that, it works similar to a <code>pthread</code>, which people usually recognize from the <code>pthread.h</code> header in the C Standard Library.</p>
+<p>Threads and concurrency is available in Zig through the <code>Thread</code> struct from the Zig Standard Library. This struct represents a kernel thread, and it follows a POSIX Thread pattern, meaning that, it works similar to a thread from the <code>pthread</code> library from the C Standard Library.</p>
 <p>If you are not familiar with a thread, let’s dive in first, before we show how a thread is used in Zig.</p>
 <section id="what-are-threads" class="level2" data-number="16.1">
 <h2 data-number="16.1" class="anchored" data-anchor-id="what-are-threads"><span class="header-section-number">16.1</span> What are threads?</h2>
+<p>Threads create concurrency. In other words, they create certain amount of confusion and complexity, because we get different tasks being performed at the same time. As consequence, depending on the size, or, the complexity of your program, or the amount of threads created, it might be difficult to track the tasks, and understand what is happening in a particular moment inside your program.</p>
+<p>A hole set of problems emerge from concurrency and multi-threaded programming, which are usually categorized as “race conditions”. A race condition problem is any bug in your program that depends on “who get’s there first”. In other words, in each execution of your program, you get a different answer, because a different person, or, a different function, or, a different part of the code is finishing its tasks (or it is reaching a location) first than the others.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
@@ -384,9 +409,29 @@ Finishing thread Finishing thread 2.
 </div>
 </div>
 <p>Notice the use of <code>try</code> when calling the <code>spawn()</code> method. This means that this method can return an error in some circunstances. One circunstance in particular is when you attempt to create a new thread, when you have already created too much (i.e.&nbsp;you have excedeed the quota of concurrent threads in your system).</p>
-<p>If the new thread is succesfully created, the <code>spawn()</code> method returns a handler object (which is just an object of type <code>Thread</code>) to this new thread.</p>
+<p>If the new thread is succesfully created, the <code>spawn()</code> method returns a handler object (which is just an object of type <code>Thread</code>) to this new thread. You can use this handler object to effectively control all aspects of the thread, e.g.&nbsp;to kill the thread, or, to make it yield, to detach it from it’s “parent thread”, etc.</p>
+<p>The instant that you create the new thread, the function that you provided as input to <code>spawn()</code> get’s invoked (i.e.&nbsp;get’s called) to start the execution on this new thread. In other words, everytime you call <code>spawn()</code>, not only a new thread get’s created, but also, the “start work button” of this thread get’s automatically pressed. So the work being performed in this thread starts at the moment that the thread is created. This is similar to how <code>pthread_create()</code> from the <code>pthreads</code> library in C works, which also starts the execution at the moment that the thread get’s created.</p>
+</section>
+<section id="syncronizing-threads" class="level2" data-number="16.3">
+<h2 data-number="16.3" class="anchored" data-anchor-id="syncronizing-threads"><span class="header-section-number">16.3</span> Syncronizing threads</h2>
+<p>We learned in the previous section that the execution of the thread starts at the moment that the thread get’s created. So now, we need learn how to syncronize the execution of the new thread with the execution of our main thread, or, the main process in our program.</p>
+<p>In essence, syncronizing threads is made through the <code>join()</code> and <code>detach()</code> methods from the thread handler object. A thread may either be <em>joinable</em> or <em>detached</em> <span class="citation" data-cites="linux_pthread_create">(<a href="../references.html#ref-linux_pthread_create" role="doc-biblioref">Linux man-pages 2024</a>)</span>. In most POSIX Thread implementations, when you create a new thread, this thread is created initially with a <em>joinable</em> status. But that usually depends on the system where your program is running (Windows, MacOS, Linux, etc.). Each system have a different implementation of threads, and, thus, might work shlightly different.</p>
+<p>Either way, you can turn a thread into a <em>detached</em> thread by calling the <code>detach()</code> method from the thread handler object. But if you call the <code>join()</code> method instead, then, this thread becomes a <em>joinable</em> thread. A thread cannot be both <em>joinable</em> and <em>detached</em>. Which in general means that you cannot call both <code>join()</code> and <code>detach()</code> on the same thread.</p>
+<p>When you do not call neither of these methods (<code>join()</code> or <code>detach()</code>), then, your thread is not syncronized with the main thread, or, the main process of your program, and, as consequence, you become a hostage to your own luck, which usually does not play in favor of you. In other words, when you do not call either <code>join()</code> or <code>detach()</code> on a thread, the chances of this thread producing undefined behaviour and bugs in your program are sky-high.</p>
+</section>
+<section id="potential-problems-in-threads" class="level2" data-number="16.4">
+<h2 data-number="16.4" class="anchored" data-anchor-id="potential-problems-in-threads"><span class="header-section-number">16.4</span> Potential problems in threads</h2>
+<p>TODO: joining with a thread that has already been joined leads to undefined behaviour. TODO: talk about zombie threads.</p>
+</section>
+<section id="killing-a-particular-thread" class="level2" data-number="16.5">
+<h2 data-number="16.5" class="anchored" data-anchor-id="killing-a-particular-thread"><span class="header-section-number">16.5</span> Killing a particular thread</h2>
 
 
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-linux_pthread_create" class="csl-entry" role="listitem">
+Linux man-pages. 2024. <span>“Pthread_create(3) — Linux Manual Page.”</span> <a href="https://man7.org/linux/man-pages/man3/pthread_create.3.html">https://man7.org/linux/man-pages/man3/pthread_create.3.html</a>.
+</div>
+</div>
 </section>
 
 </main> <!-- /main -->

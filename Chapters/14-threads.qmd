@@ -19,8 +19,7 @@ knitr::opts_chunk$set(
 
 Threads and concurrency is available in Zig through the `Thread` struct
 from the Zig Standard Library. This struct represents a kernel thread, and it follows a POSIX Thread pattern,
-meaning that, it works similar to a `pthread`, which people usually recognize from the `pthread.h` header
-in the C Standard Library.
+meaning that, it works similar to a thread from the `pthread` library from the C Standard Library.
 
 If you are not familiar with a thread, let's dive in first, before we show how a
 thread is used in Zig.
@@ -160,6 +159,21 @@ with the execution of our main thread, or, the main process in our program.
 
 In essence, syncronizing threads
 is made through the `join()` and `detach()` methods from the thread handler object.
+A thread may either be *joinable* or *detached* [@linux_pthread_create].
+In most POSIX Thread implementations, when you create a new thread, this thread is
+created initially with a *joinable* status. But that usually depends on the system where your program is running (Windows, MacOS, Linux, etc.).
+Each system have a different implementation of threads, and, thus, might work shlightly different.
+
+Either way, you can turn a thread into a *detached* thread by calling the `detach()` method
+from the thread handler object. But if you call the `join()` method instead, then, this thread
+becomes a *joinable* thread. A thread cannot be both *joinable* and *detached*. Which in general means
+that you cannot call both `join()` and `detach()` on the same thread.
+
+When you do not call neither of these methods (`join()` or `detach()`), then, your thread is not syncronized
+with the main thread, or, the main process of your program, and, as consequence, you become
+a hostage to your own luck, which usually does not play in favor of you. In other words,
+when you do not call either `join()` or `detach()` on a thread, the chances of this thread
+producing undefined behaviour and bugs in your program are sky-high.
 
 
 ## Potential problems in threads
