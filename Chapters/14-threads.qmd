@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 
 
 
-# Introducing threads and concurrency in Zig
+# Introducing threads and concurrency in Zig {#sec-thread}
 
 Threads and concurrency is available in Zig through the `Thread` struct
 from the Zig Standard Library. This struct represents a kernel thread, and it follows a POSIX Thread pattern,
@@ -25,7 +25,19 @@ If you are not familiar with a thread, let's dive in first, before we show how a
 thread is used in Zig.
 
 
-## What are threads?
+## What are threads? {#sec-what-thread}
+
+Each thread that you create have a separate stack frame reserved just for that thread,
+which essentially means that each local object that you create inside this thread, is local to that
+thread, i.e. the other threads cannot see this local object. Unless this object that you have created
+is an object that lives on the heap. In other words, if the memory associated with this object
+is on the heap, then, the other threads can potentially access this object.
+
+Therefore, objects that are stored in the stack are local to the thread where they were created.
+But objects that are stored on the heap are accessible to other threads. All of this means that,
+each thread have it's own separate stack frame, but, at the same time, all threads share
+the same heap, the same standard file descriptors (which means that they share the same `stdout`, `stdin`, `stderr`),
+and the same global data section in the program.
 
 Threads create concurrency. In other words, they create certain amount of confusion and complexity,
 because we get different tasks being performed at the same time. As consequence, depending on the
@@ -111,8 +123,8 @@ we call `spawn()` only once.
 
 Also, notice in this example that we are executing the function `do_some_work()`
 inside the new thread. Since this function receives no inputs, because it has
-no arguments, in this instance, we have passed an empty list, or, more precisely, an empty struct
-object in the third argument of `spawn()`.
+no arguments, in this instance, we have passed an empty list, or, more precisely, an empty and anonymous struct (`.{}`)
+in the third argument of `spawn()`.
 
 
 ```{zig}
@@ -139,8 +151,7 @@ created too much (i.e. you have excedeed the quota of concurrent threads in your
 
 If the new thread is succesfully created, the `spawn()` method returns a handler
 object (which is just an object of type `Thread`) to this new thread. You can use
-this handler object to effectively control all aspects of the thread, e.g. to kill the thread,
-or, to make it yield, to detach it from it's "parent thread", etc.
+this handler object to effectively control all aspects of the thread.
 
 The instant that you create the new thread, the function that you provided as input to `spawn()`
 get's invoked (i.e. get's called) to start the execution on this new thread.
@@ -151,37 +162,201 @@ This is similar to how `pthread_create()` from the `pthreads` library in C works
 which also starts the execution at the moment that the thread get's created.
 
 
-## Syncronizing threads
+## Returning from a thread
 
-We learned in the previous section that the execution of the thread starts at the moment
-that the thread get's created. So now, we need learn how to syncronize the execution of the new thread
-with the execution of our main thread, or, the main process in our program.
+We have learned on the previous section that the execution of the thread starts at the moment
+that the thread get's created. Now, we will learn how to "join" or "detach" a thread in Zig.
+"Join" and "detach" are operations that control how the thread returns to
+the main thread, or, the main process in our program.
 
-In essence, syncronizing threads
-is made through the `join()` and `detach()` methods from the thread handler object.
-A thread may either be *joinable* or *detached* [@linux_pthread_create].
-In most POSIX Thread implementations, when you create a new thread, this thread is
-created initially with a *joinable* status. But that usually depends on the system where your program is running (Windows, MacOS, Linux, etc.).
-Each system have a different implementation of threads, and, thus, might work shlightly different.
-
-Either way, you can turn a thread into a *detached* thread by calling the `detach()` method
+In essence, we perform these operations by using the methods `join()` and `detach()` from the thread handler object.
+Every thread that you create can be marked as either *joinable* or *detached* [@linux_pthread_create].
+You can turn a thread into a *detached* thread by calling the `detach()` method
 from the thread handler object. But if you call the `join()` method instead, then, this thread
-becomes a *joinable* thread. A thread cannot be both *joinable* and *detached*. Which in general means
-that you cannot call both `join()` and `detach()` on the same thread.
+becomes a *joinable* thread.
 
-When you do not call neither of these methods (`join()` or `detach()`), then, your thread is not syncronized
-with the main thread, or, the main process of your program, and, as consequence, you become
-a hostage to your own luck, which usually does not play in favor of you. In other words,
-when you do not call either `join()` or `detach()` on a thread, the chances of this thread
-producing undefined behaviour and bugs in your program are sky-high.
+A thread cannot be both *joinable* and *detached*. Which in general means
+that you cannot call both `join()` and `detach()` on the same thread.
+But a thread must be one of the two, meaning that, you should always call
+either `join()` or `detach()` over a thread. If you don't call
+one of these two methods over your thread, you introduce undefined behaviour into your program,
+which is described at @sec-not-call-join-detach.
+
+Now, let's describe what each of these two methods do to your thread.
+
+
+### Joining a thread
+
+When you join a thread, you are essentially saying: "Hey! Could you please wait for the thread to finish,
+before you continue with your execution?". For example, if we comeback to our first and simpliest example
+of a thread in Zig, in that example we have created a single thread inside the `main()` function of our program,
+and just called `join()` over this thread at the end. This section of the code example is reproduced below.
+
+Because we are joining this new thread inside the `main()`'s scope, it means that the
+execution of `main()` is temporarily stopped, to wait for the execution of the thread
+to finish. That is, the execution of `main()` will continue only after the thread has finished
+it's tasks.
+
+```{zig}
+#| eval: false
+pub fn main() !void {
+    const thread = try Thread.spawn(.{}, do_some_work, .{});
+    thread.join();
+}
+```
+
+In other words, because we have joined this new thread inside `main()`, by calling `join()`, we have a
+garantee that this new thread will finish before the end of the execution of `main()`.
+Because it is garanteed that `main()` will wait for the thread to finish it's tasks.
+
+You could also interpret this as: the execution of main will hang at
+the line where `join()` is called, and the next lines of code that come after
+this `join()` call, will be executed solely after the execution of main
+is "unlocked" after the thread finish it's tasks.
+
+In the example above, there is no more expressions after the `join()` call. We just have the end
+of the `main()`'s scope, and, therefore after the thread finish it's tasks, the execution
+of our program just ends, since there is nothing more to do. But what if we had more stuff to do
+after the join call?
+
+To demonstrate this other possibility, consider the next example exposed
+below. Here, we create a `print_id()` function, that just receives an id
+as input, and prints it to `stdout`. In this example, we are creating two
+new threads, one after another. Then, we join the first thread, then,
+we wait for two hole seconds, then, at last, we join the second thread.
+
+The idea behind this example is that the last `join()` call is executed
+only after the first thread finish it's task (i.e. the first `join()` call),
+and also, after the two seconds of delay. If you compile and run this
+example, you will notice that most messages are quickly printed to `stdout`,
+i.e. they appear almost instantly on your screen.
+However, the last message ("Joining thread 2") takes aroung 2 seconds to appear
+in the screen.
+
+
+```zig
+fn print_id(id: *const u8) !void {
+    try stdout.print("Thread ID: {d}\n", .{id.*});
+}
+
+pub fn main() !void {
+    const id1: u8 = 1;
+    const id2: u8 = 2;
+    const thread1 = try Thread.spawn(.{}, print_id, .{&id1});
+    const thread2 = try Thread.spawn(.{}, print_id, .{&id2});
+
+    _ = try stdout.write("Joining thread 1\n");
+    thread1.join();
+    std.time.sleep(2 * std.time.ns_per_s);
+    _ = try stdout.write("Joining thread 2\n");
+    thread2.join();
+}
+```
+
+```
+Thread ID: Joining thread 1
+1
+Thread ID: 2
+Joining thread 2
+```
+
+This demonstrates that both threads finish their work (i.e. printing the IDs)
+very fast, before the two seconds of delay end. Because of that, the last `join()` call
+returns pretty much instantly. Because when this last `join()` call happens, the second
+thread have already finished it's task.
+
+Now, if you compile and run this example, you will also notice that, in some cases,
+the messages get intertwined with each other. In other words, you might see
+the message "Joining thread 1" inserted in the middle of the message "Thread 1",
+or vice-versa. This happens because:
+
+- the threads are executing basically at the same time as the main process of the program (i.e. the `main()` function).
+- the threads share the same `stdout` from the main process of the program, which means that the messages that the threads produce are sent to exact same place as the messages produced by the main process.
+
+Both of these points were previously at @sec-what-thread.
+Anyway, when you call `join()` over a thread, the current process will wait
+for the thread to finish before it continues, and, when the thread does finishs it's
+task, the resources associated with this thread are automatically freed, and,
+the current process continues with it's execution.
+
+
+### Detaching a thread
+
+When you detach a thread, by calling the `detach()` method, the thread is marked as *detached*.
+When a *detached* thread terminates, its resources are automatically released back to the system without
+the need for another thread to join with this terminated thread.
+
+In other words, when you call `detach()` over a thread is like when your children becomes adults,
+i.e. they become independent from you. A detached thread frees itself, and it does need to report the results back
+to you, when the thread finishs it's task. Thus, you normally mark a thread as *detached*
+when you don't need to use the return value of the thread, or, when you don't care about
+when exactly the thread finishs it's job, i.e. the thread solves everything by itself.
+
+Take the code example below. We create a new thread, detach it, and then, we just
+print a final message before we end our program. We use the same `print_id()`
+function that we have used over the previous examples.
+
+
+```zig
+fn print_id(id: *const u8) !void {
+    try stdout.print("Thread ID: {d}\n", .{id.*});
+}
+
+pub fn main() !void {
+    const id1: u8 = 1;
+    const thread1 = try Thread.spawn(.{}, print_id, .{&id1});
+    thread1.detach();
+    _ = try stdout.write("Finish main\n");
+}
+```
+
+```
+Finish main
+```
+
+Now, if you look closely at the output of this code example, you will notice
+that only the final message in main was printed to the console. The message
+that was supposed to be printed by `print_id()` did not appear in the console.
+Why? Is because the main process of our program has finished first,
+before the thread was able to say anything.
+
+And that is perfectly ok behaviour, because the thread was detached, so, it was
+able to free itself, without the need of the main process.
+If ask main to sleep (or "wait") for some nanoseconds, before it ends, you will likely
+see the message printed by `print_id()`, because in such circunstance you
+give more time for the thread to finish before the main process ends.
+
+
 
 
 ## Potential problems in threads
 
+TODO: calling functions that might return an error inside threads (`try`)
+TODO: talk about deadlocks
+TODO: talk about race conditions
 TODO: joining with a thread that has already been joined leads to undefined behaviour.
 TODO: talk about zombie threads.
 
-## Killing a particular thread
+### Not calling `join()` or `detach()` {#sec-not-call-join-detach}
+
+When you do not call neither of these methods (`join()` or `detach()`), then, your thread does not have a
+clear "return point". You could also interpret this as: "nobody is properly resposible for managing the thread".
+In more details, when we don't establish if a thread is either *joinable* or *detached*,
+nobody becomes responsible for dealing with the return value of this thread, and also,
+nobody becomes responsible for clearing (or freeing) the resources associated with this thread.
+
+You don't want to be in this situation, so remember to always use `join()` or `detach()`
+on the threads that you create. When you don't use these methods, the execution of the thread
+becomes completely independent from the execution of the main process in your program.
+This means that the main process of your program might end before the thread finish it's job,
+or vice-versa. The idea is that we have no idea of who is going to finish first. It
+becomes a race condition problem.
+In such case, we loose control over this thread, and it's resources are never freed
+(i.e. you have leaked resources in the system).
+
+
+
+## How to stop, cancel of kill a particular thread
 
 
 

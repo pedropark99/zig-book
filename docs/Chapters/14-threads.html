@@ -312,11 +312,19 @@ window.Quarto = {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#what-are-threads" id="toc-what-are-threads" class="nav-link active" data-scroll-target="#what-are-threads"><span class="header-section-number">16.1</span> What are threads?</a></li>
+  <li><a href="#sec-what-thread" id="toc-sec-what-thread" class="nav-link active" data-scroll-target="#sec-what-thread"><span class="header-section-number">16.1</span> What are threads?</a></li>
   <li><a href="#creating-a-thread" id="toc-creating-a-thread" class="nav-link" data-scroll-target="#creating-a-thread"><span class="header-section-number">16.2</span> Creating a thread</a></li>
-  <li><a href="#syncronizing-threads" id="toc-syncronizing-threads" class="nav-link" data-scroll-target="#syncronizing-threads"><span class="header-section-number">16.3</span> Syncronizing threads</a></li>
-  <li><a href="#potential-problems-in-threads" id="toc-potential-problems-in-threads" class="nav-link" data-scroll-target="#potential-problems-in-threads"><span class="header-section-number">16.4</span> Potential problems in threads</a></li>
-  <li><a href="#killing-a-particular-thread" id="toc-killing-a-particular-thread" class="nav-link" data-scroll-target="#killing-a-particular-thread"><span class="header-section-number">16.5</span> Killing a particular thread</a></li>
+  <li><a href="#returning-from-a-thread" id="toc-returning-from-a-thread" class="nav-link" data-scroll-target="#returning-from-a-thread"><span class="header-section-number">16.3</span> Returning from a thread</a>
+  <ul class="collapse">
+  <li><a href="#joining-a-thread" id="toc-joining-a-thread" class="nav-link" data-scroll-target="#joining-a-thread"><span class="header-section-number">16.3.1</span> Joining a thread</a></li>
+  <li><a href="#detaching-a-thread" id="toc-detaching-a-thread" class="nav-link" data-scroll-target="#detaching-a-thread"><span class="header-section-number">16.3.2</span> Detaching a thread</a></li>
+  </ul></li>
+  <li><a href="#yielding-a-thread" id="toc-yielding-a-thread" class="nav-link" data-scroll-target="#yielding-a-thread"><span class="header-section-number">16.4</span> Yielding a thread</a></li>
+  <li><a href="#potential-problems-in-threads" id="toc-potential-problems-in-threads" class="nav-link" data-scroll-target="#potential-problems-in-threads"><span class="header-section-number">16.5</span> Potential problems in threads</a>
+  <ul class="collapse">
+  <li><a href="#sec-not-call-join-detach" id="toc-sec-not-call-join-detach" class="nav-link" data-scroll-target="#sec-not-call-join-detach"><span class="header-section-number">16.5.1</span> Not calling <code>join()</code> or <code>detach()</code></a></li>
+  </ul></li>
+  <li><a href="#how-to-stop-cancel-of-kill-a-particular-thread" id="toc-how-to-stop-cancel-of-kill-a-particular-thread" class="nav-link" data-scroll-target="#how-to-stop-cancel-of-kill-a-particular-thread"><span class="header-section-number">16.6</span> How to stop, cancel of kill a particular thread</a></li>
   </ul>
 </nav>
     </div>
@@ -325,7 +333,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Introducing threads and concurrency in Zig</span></h1>
+<h1 class="title"><span id="sec-thread" class="quarto-section-identifier"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Introducing threads and concurrency in Zig</span></span></h1>
 </div>
 
 
@@ -344,8 +352,10 @@ window.Quarto = {
 
 <p>Threads and concurrency is available in Zig through the <code>Thread</code> struct from the Zig Standard Library. This struct represents a kernel thread, and it follows a POSIX Thread pattern, meaning that, it works similar to a thread from the <code>pthread</code> library from the C Standard Library.</p>
 <p>If you are not familiar with a thread, let’s dive in first, before we show how a thread is used in Zig.</p>
-<section id="what-are-threads" class="level2" data-number="16.1">
-<h2 data-number="16.1" class="anchored" data-anchor-id="what-are-threads"><span class="header-section-number">16.1</span> What are threads?</h2>
+<section id="sec-what-thread" class="level2" data-number="16.1">
+<h2 data-number="16.1" class="anchored" data-anchor-id="sec-what-thread"><span class="header-section-number">16.1</span> What are threads?</h2>
+<p>Each thread that you create have a separate stack frame reserved just for that thread, which essentially means that each local object that you create inside this thread, is local to that thread, i.e.&nbsp;the other threads cannot see this local object. Unless this object that you have created is an object that lives on the heap. In other words, if the memory associated with this object is on the heap, then, the other threads can potentially access this object.</p>
+<p>Therefore, objects that are stored in the stack are local to the thread where they were created. But objects that are stored on the heap are accessible to other threads. All of this means that, each thread have it’s own separate stack frame, but, at the same time, all threads share the same heap, the same standard file descriptors (which means that they share the same <code>stdout</code>, <code>stdin</code>, <code>stderr</code>), and the same global data section in the program.</p>
 <p>Threads create concurrency. In other words, they create certain amount of confusion and complexity, because we get different tasks being performed at the same time. As consequence, depending on the size, or, the complexity of your program, or the amount of threads created, it might be difficult to track the tasks, and understand what is happening in a particular moment inside your program.</p>
 <p>A hole set of problems emerge from concurrency and multi-threaded programming, which are usually categorized as “race conditions”. A race condition problem is any bug in your program that depends on “who get’s there first”. In other words, in each execution of your program, you get a different answer, because a different person, or, a different function, or, a different part of the code is finishing its tasks (or it is reaching a location) first than the others.</p>
 <div class="cell">
@@ -389,7 +399,7 @@ Finishing thread Finishing thread 2.
 </ul>
 <p>To use one of these two fields (or, “configs”) you just have to create a new object of type <code>SpawnConfig</code>, and provide this object as input to the <code>spawn()</code> method. But, if you are not interested in using one of these configs, and you are ok with using just the defaults, you can just provide a anonymous struct literal (<code>.{}</code>) in the place of this <code>SpawnConfig</code> argument.</p>
 <p>As our first, and very simple example, consider the code exposed below. Inside the same program, you can create multiple threads of execution if you want to. But, in this first example, we are creating just a single thread of execution, because we call <code>spawn()</code> only once.</p>
-<p>Also, notice in this example that we are executing the function <code>do_some_work()</code> inside the new thread. Since this function receives no inputs, because it has no arguments, in this instance, we have passed an empty list, or, more precisely, an empty struct object in the third argument of <code>spawn()</code>.</p>
+<p>Also, notice in this example that we are executing the function <code>do_some_work()</code> inside the new thread. Since this function receives no inputs, because it has no arguments, in this instance, we have passed an empty list, or, more precisely, an empty and anonymous struct (<code>.{}</code>) in the third argument of <code>spawn()</code>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
@@ -409,22 +419,94 @@ Finishing thread Finishing thread 2.
 </div>
 </div>
 <p>Notice the use of <code>try</code> when calling the <code>spawn()</code> method. This means that this method can return an error in some circunstances. One circunstance in particular is when you attempt to create a new thread, when you have already created too much (i.e.&nbsp;you have excedeed the quota of concurrent threads in your system).</p>
-<p>If the new thread is succesfully created, the <code>spawn()</code> method returns a handler object (which is just an object of type <code>Thread</code>) to this new thread. You can use this handler object to effectively control all aspects of the thread, e.g.&nbsp;to kill the thread, or, to make it yield, to detach it from it’s “parent thread”, etc.</p>
+<p>If the new thread is succesfully created, the <code>spawn()</code> method returns a handler object (which is just an object of type <code>Thread</code>) to this new thread. You can use this handler object to effectively control all aspects of the thread.</p>
 <p>The instant that you create the new thread, the function that you provided as input to <code>spawn()</code> get’s invoked (i.e.&nbsp;get’s called) to start the execution on this new thread. In other words, everytime you call <code>spawn()</code>, not only a new thread get’s created, but also, the “start work button” of this thread get’s automatically pressed. So the work being performed in this thread starts at the moment that the thread is created. This is similar to how <code>pthread_create()</code> from the <code>pthreads</code> library in C works, which also starts the execution at the moment that the thread get’s created.</p>
 </section>
-<section id="syncronizing-threads" class="level2" data-number="16.3">
-<h2 data-number="16.3" class="anchored" data-anchor-id="syncronizing-threads"><span class="header-section-number">16.3</span> Syncronizing threads</h2>
-<p>We learned in the previous section that the execution of the thread starts at the moment that the thread get’s created. So now, we need learn how to syncronize the execution of the new thread with the execution of our main thread, or, the main process in our program.</p>
-<p>In essence, syncronizing threads is made through the <code>join()</code> and <code>detach()</code> methods from the thread handler object. A thread may either be <em>joinable</em> or <em>detached</em> <span class="citation" data-cites="linux_pthread_create">(<a href="../references.html#ref-linux_pthread_create" role="doc-biblioref">Linux man-pages 2024</a>)</span>. In most POSIX Thread implementations, when you create a new thread, this thread is created initially with a <em>joinable</em> status. But that usually depends on the system where your program is running (Windows, MacOS, Linux, etc.). Each system have a different implementation of threads, and, thus, might work shlightly different.</p>
-<p>Either way, you can turn a thread into a <em>detached</em> thread by calling the <code>detach()</code> method from the thread handler object. But if you call the <code>join()</code> method instead, then, this thread becomes a <em>joinable</em> thread. A thread cannot be both <em>joinable</em> and <em>detached</em>. Which in general means that you cannot call both <code>join()</code> and <code>detach()</code> on the same thread.</p>
-<p>When you do not call neither of these methods (<code>join()</code> or <code>detach()</code>), then, your thread is not syncronized with the main thread, or, the main process of your program, and, as consequence, you become a hostage to your own luck, which usually does not play in favor of you. In other words, when you do not call either <code>join()</code> or <code>detach()</code> on a thread, the chances of this thread producing undefined behaviour and bugs in your program are sky-high.</p>
+<section id="returning-from-a-thread" class="level2" data-number="16.3">
+<h2 data-number="16.3" class="anchored" data-anchor-id="returning-from-a-thread"><span class="header-section-number">16.3</span> Returning from a thread</h2>
+<p>We have learned on the previous section that the execution of the thread starts at the moment that the thread get’s created. Now, we will learn how to “join” or “detach” a thread in Zig. “Join” and “detach” are operations that control how the thread returns to the main thread, or, the main process in our program.</p>
+<p>In essence, we perform these operations by using the methods <code>join()</code> and <code>detach()</code> from the thread handler object. Every thread that you create can be marked as either <em>joinable</em> or <em>detached</em> <span class="citation" data-cites="linux_pthread_create">(<a href="../references.html#ref-linux_pthread_create" role="doc-biblioref">Linux man-pages 2024</a>)</span>. You can turn a thread into a <em>detached</em> thread by calling the <code>detach()</code> method from the thread handler object. But if you call the <code>join()</code> method instead, then, this thread becomes a <em>joinable</em> thread.</p>
+<p>A thread cannot be both <em>joinable</em> and <em>detached</em>. Which in general means that you cannot call both <code>join()</code> and <code>detach()</code> on the same thread. But a thread must be one of the two, meaning that, you should always call either <code>join()</code> or <code>detach()</code> over a thread. If you don’t call one of these two methods over your thread, you introduce undefined behaviour into your program, which is described at <a href="#sec-not-call-join-detach" class="quarto-xref"><span>Section 16.5.1</span></a>.</p>
+<p>Now, let’s describe what each of these two methods do to your thread.</p>
+<section id="joining-a-thread" class="level3" data-number="16.3.1">
+<h3 data-number="16.3.1" class="anchored" data-anchor-id="joining-a-thread"><span class="header-section-number">16.3.1</span> Joining a thread</h3>
+<p>When you join a thread, you are essentially saying: “Hey! Could you please wait for the thread to finish, before you continue with your execution?”. For example, if we comeback to our first and simpliest example of a thread in Zig, in that example we have created a single thread inside the <code>main()</code> function of our program, and just called <code>join()</code> over this thread at the end. This section of the code example is reproduced below.</p>
+<p>Because we are joining this new thread inside the <code>main()</code>’s scope, it means that the execution of <code>main()</code> is temporarily stopped, to wait for the execution of the thread to finish. That is, the execution of <code>main()</code> will continue only after the thread has finished it’s tasks.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work, .<span class="op">{}</span>);</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    thread.join();</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In other words, because we have joined this new thread inside <code>main()</code>, by calling <code>join()</code>, we have a garantee that this new thread will finish before the end of the execution of <code>main()</code>. Because it is garanteed that <code>main()</code> will wait for the thread to finish it’s tasks.</p>
+<p>You could also interpret this as: the execution of main will hang at the line where <code>join()</code> is called, and the next lines of code that come after this <code>join()</code> call, will be executed solely after the execution of main is “unlocked” after the thread finish it’s tasks.</p>
+<p>In the example above, there is no more expressions after the <code>join()</code> call. We just have the end of the <code>main()</code>’s scope, and, therefore after the thread finish it’s tasks, the execution of our program just ends, since there is nothing more to do. But what if we had more stuff to do after the join call?</p>
+<p>To demonstrate this other possibility, consider the next example exposed below. Here, we create a <code>print_id()</code> function, that just receives an id as input, and prints it to <code>stdout</code>. In this example, we are creating two new threads, one after another. Then, we join the first thread, then, we wait for two hole seconds, then, at last, we join the second thread.</p>
+<p>The idea behind this example is that the last <code>join()</code> call is executed only after the first thread finish it’s task (i.e.&nbsp;the first <code>join()</code> call), and also, after the two seconds of delay. If you compile and run this example, you will notice that most messages are quickly printed to <code>stdout</code>, i.e.&nbsp;they appear almost instantly on your screen. However, the last message (“Joining thread 2”) takes aroung 2 seconds to appear in the screen.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> print_id(id: *<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Thread ID: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>id.*<span class="op">}</span>);</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id1: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id2: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, print_id, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, print_id, .<span class="op">{</span>&amp;id2<span class="op">}</span>);</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Joining thread 1</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    thread1.join();</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    std.time.sleep(<span class="dv">2</span> * std.time.ns_per_s);</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Joining thread 2</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    thread2.join();</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<pre><code>Thread ID: Joining thread 1
+1
+Thread ID: 2
+Joining thread 2</code></pre>
+<p>This demonstrates that both threads finish their work (i.e.&nbsp;printing the IDs) very fast, before the two seconds of delay end. Because of that, the last <code>join()</code> call returns pretty much instantly. Because when this last <code>join()</code> call happens, the second thread have already finished it’s task.</p>
+<p>Now, if you compile and run this example, you will also notice that, in some cases, the messages get intertwined with each other. In other words, you might see the message “Joining thread 1” inserted in the middle of the message “Thread 1”, or vice-versa. This happens because:</p>
+<ul>
+<li>the threads are executing basically at the same time as the main process of the program (i.e.&nbsp;the <code>main()</code> function).</li>
+<li>the threads share the same <code>stdout</code> from the main process of the program, which means that the messages that the threads produce are sent to exact same place as the messages produced by the main process.</li>
+</ul>
+<p>Both of these points were previously at <a href="#sec-what-thread" class="quarto-xref"><span>Section 16.1</span></a>. Anyway, when you call <code>join()</code> over a thread, the current process will wait for the thread to finish before it continues, and, when the thread does finishs it’s task, the resources associated with this thread are automatically freed, and, the current process continues with it’s execution.</p>
 </section>
-<section id="potential-problems-in-threads" class="level2" data-number="16.4">
-<h2 data-number="16.4" class="anchored" data-anchor-id="potential-problems-in-threads"><span class="header-section-number">16.4</span> Potential problems in threads</h2>
-<p>TODO: joining with a thread that has already been joined leads to undefined behaviour. TODO: talk about zombie threads.</p>
+<section id="detaching-a-thread" class="level3" data-number="16.3.2">
+<h3 data-number="16.3.2" class="anchored" data-anchor-id="detaching-a-thread"><span class="header-section-number">16.3.2</span> Detaching a thread</h3>
+<p>When you detach a thread, by calling the <code>detach()</code> method, the thread is marked as <em>detached</em>. When a <em>detached</em> thread terminates, its resources are automatically released back to the system without the need for another thread to join with this terminated thread.</p>
+<p>In other words, when you call <code>detach()</code> over a thread is like when your children becomes adults, i.e.&nbsp;they become independent from you. A detached thread frees itself, and it does need to report the results back to you, when the thread finishs it’s task. Thus, you normally mark a thread as <em>detached</em> when you don’t need to use the return value of the thread, or, when you don’t care about when exactly the thread finishs it’s job, i.e.&nbsp;the thread solves everything by itself.</p>
+<p>Take the code example below. We create a new thread, detach it, and then, we just print a final message before we end our program. We use the same <code>print_id()</code> function that we have used over the previous examples.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> print_id(id: *<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Thread ID: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>id.*<span class="op">}</span>);</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id1: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, print_id, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    thread1.detach();</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Finish main</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<pre><code>Finish main</code></pre>
+<p>Now, if you look closely at the output of this code example, you will notice that only the final message in main was printed to the console. The message that was supposed to be printed by <code>print_id()</code> did not appear in the console. Why? Is because the main process of our program has finished first, before the thread was able to say anything.</p>
+<p>And that is perfectly ok behaviour, because the thread was detached, so, it was able to free itself, without the need of the main process. If ask main to sleep (or “wait”) for some nanoseconds, before it ends, you will likely see the message printed by <code>print_id()</code>, because in such circunstance you give more time for the thread to finish before the main process ends.</p>
 </section>
-<section id="killing-a-particular-thread" class="level2" data-number="16.5">
-<h2 data-number="16.5" class="anchored" data-anchor-id="killing-a-particular-thread"><span class="header-section-number">16.5</span> Killing a particular thread</h2>
+</section>
+<section id="yielding-a-thread" class="level2" data-number="16.4">
+<h2 data-number="16.4" class="anchored" data-anchor-id="yielding-a-thread"><span class="header-section-number">16.4</span> Yielding a thread</h2>
+<p>You can yield a thread in Zig by calling the <code>yield()</code> method from the thread handler object. Yielding a thread means that the execution of the thread is temporarily paused, and the thread humbly asks the scheduler of your system to move the thread back into the end of the queue of priority.</p>
+<p>Every thread that you create is registered into a queue of priority that is controlled by the scheduler of your system. When you yield a thread, the thread is essentially allowing for other threads to run. Having sad that, is important to emphasize that yielding a thread is rarely used. Most programmers prefer to never use it, because there are better options to use then yielding, specially <code>join()</code>, and also, signals and mutexes.</p>
+</section>
+<section id="potential-problems-in-threads" class="level2" data-number="16.5">
+<h2 data-number="16.5" class="anchored" data-anchor-id="potential-problems-in-threads"><span class="header-section-number">16.5</span> Potential problems in threads</h2>
+<p>TODO: calling functions that might return an error inside threads (<code>try</code>) TODO: talk about deadlocks TODO: talk about race conditions TODO: joining with a thread that has already been joined leads to undefined behaviour. TODO: talk about zombie threads.</p>
+<section id="sec-not-call-join-detach" class="level3" data-number="16.5.1">
+<h3 data-number="16.5.1" class="anchored" data-anchor-id="sec-not-call-join-detach"><span class="header-section-number">16.5.1</span> Not calling <code>join()</code> or <code>detach()</code></h3>
+<p>When you do not call neither of these methods (<code>join()</code> or <code>detach()</code>), then, your thread does not have a clear “return point”. You could also interpret this as: “nobody is properly resposible for managing the thread”. In more details, when we don’t establish if a thread is either <em>joinable</em> or <em>detached</em>, nobody becomes responsible for dealing with the return value of this thread, and also, nobody becomes responsible for clearing (or freeing) the resources associated with this thread.</p>
+<p>You don’t want to be in this situation, so remember to always use <code>join()</code> or <code>detach()</code> on the threads that you create. When you don’t use these methods, the execution of the thread becomes completely independent from the execution of the main process in your program. This means that the main process of your program might end before the thread finish it’s job, or vice-versa. The idea is that we have no idea of who is going to finish first. It becomes a race condition problem. In such case, we loose control over this thread, and it’s resources are never freed (i.e.&nbsp;you have leaked resources in the system).</p>
+</section>
+</section>
+<section id="how-to-stop-cancel-of-kill-a-particular-thread" class="level2" data-number="16.6">
+<h2 data-number="16.6" class="anchored" data-anchor-id="how-to-stop-cancel-of-kill-a-particular-thread"><span class="header-section-number">16.6</span> How to stop, cancel of kill a particular thread</h2>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
