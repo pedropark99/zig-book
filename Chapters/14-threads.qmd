@@ -15,9 +15,9 @@ knitr::opts_chunk$set(
 
 
 
-# Introducing threads and concurrency in Zig {#sec-thread}
+# Introducing threads and parallelism in Zig {#sec-thread}
 
-Threads and concurrency is available in Zig through the `Thread` struct
+Threads and parallelism is available in Zig through the `Thread` struct
 from the Zig Standard Library. This struct represents a kernel thread, and it follows a POSIX Thread pattern,
 meaning that, it works similar to a thread from the `pthread` library from the C Standard Library.
 
@@ -27,24 +27,174 @@ thread is used in Zig.
 
 ## What are threads? {#sec-what-thread}
 
-Each thread that you create have a separate stack frame reserved just for that thread,
+A thread is basically a separate context of execution.
+We use threads to introduce parallelism into our program,
+which in most cases, makes the program runs faster, because we have multiple tasks
+being performed at the same time, parallel to each other.
+
+Programs are normally single-threaded by default. Which means that each program
+usually runs on a single thread, or, a single context of execution. When we have only one thread running, we have no
+parallelism. And when we don't have parallelism, the commands are executed sequentially, that is,
+only one command is executed at a time. By creating multiple threads inside our program,
+we start to execute multiple tasks and commands at the same time.
+
+Programs that create multiple threads are very commom on the wild. Because many different types
+of applications are well suited for parallelism. Good examples are video and photo-editing applications
+(e.g. Adobe Photoshop or DaVinci Resolve)
+, games (e.g. The Witcher 3), and also web browsers (e.g. Google Chrome, Firefox, Microsoft Edge, etc).
+
+For example, in web browsers, threads are normally used to implement tabs.
+In other words, tabs in web browsers run as separate threads in the main process of
+the web browser. In other words, each new tab that you open in your web browser,
+usually runs on a separate thread.
+
+By running each tab in a separate thread, we allow all open tabs in the browser to run at the same time,
+and independently from each other. For example, you might have YouTube, or Spotify, currently opened in
+a tab, and you are listening to some podcast in that tab, while, at the same time,
+you are working in another tab, writing an essay on Google Docs. Even if you are not looking
+into the YouTube tab, you can still hear the podcast only because this YouTube tab is running in parallel
+with the other tab where Google Docs is running.
+
+Without threads, the other alternative would be to run each tab as a completely separate running
+process in your computer. But that would be a bad choice, because just a few tabs would already consume
+too much power and resources from your computer. Also, the chances of you experiencing lag and overhead
+while using the browser would be high. Threads are faster to create, and they also consume
+much, much less resources from the computer, specially because they share some resources
+with the main process.
+
+Therefore, is the use of threads in modern web browsers that allows you to hear the podcast
+at the same time while you are writing something on Google Docs.
+Without threads, a web browser would probably be limited to one single tab.
+
+Threads are also good for anything that involves serving requests or orders.
+Because serving a request takes time, and usually involves a lot of "waiting time".
+In other words, we spend a lot of time in idle, waiting for something to complete.
+For example, consider a restaurant. Serving orders in a restaurant usually involves
+the following steps:
+
+1. receive order from the client.
+1. pass the order to the kitchen, and wait for the food to be cooked.
+1. start cooking the food in the kitchen.
+1. when the food is fully cooked deliver this food to the client.
+
+If you think about the bulletpoints above, you will notice that one big moment of waiting
+is present in this hole process, which is while the food is being prepared and cooked
+inside the kitchen. Because while the food is being prepped, both the waiter and the client
+itself are waiting for the food to be ready and delivered.
+
+If we write a program to represent this restaurant, more specifically, a single-threaded program, then,
+this program would be very inefficient. Because the program would stay in idle, waiting for a considerable amount
+of time on the "check if food is ready" step.
+Consider the code snippet exposed below that could potentially represent such
+program.
+
+The problem with this program is the while loop. This program will spend a lot of time
+waiting on the while loop, doing nothing more than just checking if the food is ready.
+This is waste of time. Instead of waiting for something to happen, the waiter
+could just send the order to the kitchen, and just move on, and continue with receiving
+more orders from other clients, and sending more orders to the kitchen.
+
+```zig
+const order = Order.init("Pizza Margherita", n = 1);
+const waiter = Waiter.init();
+waiter.receive_order(order)
+waiter.ask_kitchen_to_cook();
+var food_not_ready = false;
+while (food_not_ready) {
+    food_not_ready = waiter.is_food_ready();
+}
+const food = waiter.get_food_from_kitchen();
+waiter.send_food_to_client(food);
+```
+
+This is why threads would be a great fit for this program. We could use threads
+to free the waiters from their "waiting duties", so they can go on with their
+other tasks, and receive more orders. Take a look at the next example, where I have re-written the above
+program into a different program that uses threads to cook and deliver the orders.
+
+You can see in this program that when a waiter receives a new order
+from a client, this waiter executes the `send_order()` function.
+The only thing that this function does is: it creates a new thread
+and detaches it. Since creating a thread is a very fast operation,
+this `send_order()` function returns almost immediatly,
+so the waiter spends almost no time worring about the order, and just
+move on and tries to get the next order from the clients.
+
+Inside the new thread created, the order get's cooked by a chef, and when the
+food is ready, it is delivered to the client's table.
+
+
+```zig
+fn cook_and_deliver_order(order: *Order) void {
+    const chef = Chef.init()
+    const food = chef.cook(order.*);
+    chef.deliver_food(food);
+}
+fn send_order(order: Order) void {
+    const cook_thread = Thread.spawn(
+        .{}, cook_and_deliver_order, .{&order}
+    );
+    cook_thread.detach();
+}
+
+const waiter = Waiter.init()
+while (true) {
+    const order = waiter.get_new_order();
+    if (order) {
+        send_order(order);
+    }
+}
+```
+
+
+
+### Explaining threads in more technical terms
+
+When we run a program, this program is executed as a *process* in the operating system.
+This is a one to one relationship, each program or application that you execute
+is a separate process in the operating system. But each program, or each process,
+can create and contain multiple threads inside of it. Therefore,
+processes and threads have a one to many relationship.
+
+Thus, every thread that we create is always associated with a particular process in our computer.
+In other words, a thread is always a subset of an existing process.
+All threads share some of the resources associated with the process from which they were created.
+And because threads share resources with the process, they are very good for making communication
+between tasks easier.
+
+For example, suppose that you were developing a big and complex application
+that would be much simpler if you could split it in two, and make these two separate pieces talk
+with each other. Some programmers opt to effectively write these two pieces of the codebase as two
+completely separate programs, and then, they use IPC (*inter-process communication*) to make these
+two separate programs/processes talk to each other, and make them work together.
+
+However, some programmers find IPC hard to deal with, and, as consequence,
+they prefer to write one piece of the codebase as the "main part of the program",
+or, as the part of the code that runs as the process in the operating system,
+while the other piece of the codebase is written as a task to be executed in
+a new thread. A process and a thread can easily comunicate with each other
+through both control flow, and also, through data, because they share and have
+access to the same standard file descriptors and to some regions of memory.
+
+
+In more details, each thread that you create have a separate stack frame reserved just for that thread,
 which essentially means that each local object that you create inside this thread, is local to that
 thread, i.e. the other threads cannot see this local object. Unless this object that you have created
 is an object that lives on the heap. In other words, if the memory associated with this object
 is on the heap, then, the other threads can potentially access this object.
 
 Therefore, objects that are stored in the stack are local to the thread where they were created.
-But objects that are stored on the heap are accessible to other threads. All of this means that,
+But objects that are stored on the heap are potentially accessible to other threads. All of this means that,
 each thread have it's own separate stack frame, but, at the same time, all threads share
 the same heap, the same standard file descriptors (which means that they share the same `stdout`, `stdin`, `stderr`),
 and the same global data section in the program.
 
-Threads create concurrency. In other words, they create certain amount of confusion and complexity,
+Threads create parallelism. As consequence, they create certain amount of confusion and complexity,
 because we get different tasks being performed at the same time. As consequence, depending on the
 size, or, the complexity of your program, or the amount of threads created, it might be difficult
 to track the tasks, and understand what is happening in a particular moment inside your program.
 
-A hole set of problems emerge from concurrency and multi-threaded programming, which are usually
+A hole set of problems emerge from parallelism and multi-threaded programming, which are usually
 categorized as "race conditions". A race condition problem is any bug in your program that depends
 on "who get's there first". In other words, in each execution of your program,
 you get a different answer, because a different person, or, a different function, or, a different part of the code is finishing
