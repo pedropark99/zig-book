@@ -42,10 +42,9 @@ Programs that create multiple threads are very commom on the wild. Because many 
 of applications are well suited for parallelism. Good examples are video and photo-editing applications
 (e.g. Adobe Photoshop or DaVinci Resolve)
 , games (e.g. The Witcher 3), and also web browsers (e.g. Google Chrome, Firefox, Microsoft Edge, etc).
-
 For example, in web browsers, threads are normally used to implement tabs.
 In other words, tabs in web browsers run as separate threads in the main process of
-the web browser. In other words, each new tab that you open in your web browser,
+the web browser. Each new tab that you open in your web browser,
 usually runs on a separate thread.
 
 By running each tab in a separate thread, we allow all open tabs in the browser to run at the same time,
@@ -196,15 +195,15 @@ and the same global data section in the program.
 
 We create new threads in Zig, by first, importing the `Thread` struct into
 our current Zig module, and then, calling the `spawn()` method of this struct,
-which creates (or, "spawns") a new thread of execution.
+which creates (or, "spawns") a new thread of execution from our current process.
 This method have three arguments, which are, respectively:
 
 1. a `SpawnConfig` object, which contains configurations for the spawn process.
-1. the name of the function that is going to be executed (or, that is going to be "called") in this new thread.
+1. the name of the function that is going to be executed (or, that is going to be "called") inside this new thread.
 1. a list of arguments (or inputs) to be passed to the function provided in the second argument.
 
 With these three arguments, you can control how the thread get's created, and also, specify which
-work will be performed (or executed) inside this new thread. A thread is just a separate context of execution,
+work (or "tasks") will be performed inside this new thread. A thread is just a separate context of execution,
 and we usually create new threads in our code, because we want to perform some work inside this
 new context of execution. And we specify which exact work, or, which exact steps that are going to be
 performed inside this context, by providing the name of a function on the second argument of the `spawn()` method.
@@ -224,7 +223,7 @@ can set to tailor the spawn behaviour. These fields are:
 
 To use one of these two fields (or, "configs") you just have to create a new object of type `SpawnConfig`,
 and provide this object as input to the `spawn()` method. But, if you are not interested in using
-one of these configs, and you are ok with using just the defaults, you can just provide a anonymous
+one of these configs, and you are ok with using just the defaults, you can just provide an anonymous
 struct literal (`.{}`) in the place of this `SpawnConfig` argument.
 
 As our first, and very simple example, consider the code exposed below.
@@ -260,7 +259,7 @@ that this method can return an error in some circunstances. One circunstance
 in particular is when you attempt to create a new thread, when you have already
 created too much (i.e. you have excedeed the quota of concurrent threads in your system).
 
-If the new thread is succesfully created, the `spawn()` method returns a handler
+But, if the new thread is succesfully created, the `spawn()` method returns a handler
 object (which is just an object of type `Thread`) to this new thread. You can use
 this handler object to effectively control all aspects of the thread.
 
@@ -305,8 +304,8 @@ and just called `join()` over this thread at the end. This section of the code e
 
 Because we are joining this new thread inside the `main()`'s scope, it means that the
 execution of `main()` is temporarily stopped, to wait for the execution of the thread
-to finish. That is, the execution of `main()` will continue only after the thread has finished
-it's tasks.
+to finish. That is, the execution of `main()` stops temporarily at the line where `join()` get's called,
+and it will continue only after the thread has finished it's tasks.
 
 ```{zig}
 #| eval: false
@@ -316,10 +315,9 @@ pub fn main() !void {
 }
 ```
 
-In other words, because we have joined this new thread inside `main()`, by calling `join()`, we have a
+Because we have joined this new thread inside `main()`, by calling `join()`, we have a
 garantee that this new thread will finish before the end of the execution of `main()`.
 Because it is garanteed that `main()` will wait for the thread to finish it's tasks.
-
 You could also interpret this as: the execution of main will hang at
 the line where `join()` is called, and the next lines of code that come after
 this `join()` call, will be executed solely after the execution of main
@@ -384,7 +382,9 @@ or vice-versa. This happens because:
 - the threads are executing basically at the same time as the main process of the program (i.e. the `main()` function).
 - the threads share the same `stdout` from the main process of the program, which means that the messages that the threads produce are sent to exact same place as the messages produced by the main process.
 
-Both of these points were previously at @sec-what-thread.
+Both of these points were described previously at @sec-what-thread.
+So the messages might get intertwined because they are being produced and
+sent to the same `stdout` roughly at the same time.
 Anyway, when you call `join()` over a thread, the current process will wait
 for the thread to finish before it continues, and, when the thread does finishs it's
 task, the resources associated with this thread are automatically freed, and,
@@ -433,11 +433,34 @@ before the thread was able to say anything.
 
 And that is perfectly ok behaviour, because the thread was detached, so, it was
 able to free itself, without the need of the main process.
-If ask main to sleep (or "wait") for some nanoseconds, before it ends, you will likely
+If you ask main to sleep (or "wait") for some extra nanoseconds, before it ends, you will likely
 see the message printed by `print_id()`, because in such circunstance you
-give more time for the thread to finish before the main process ends.
+give enough time for the thread to finish before the main process ends.
 
 
+## Introducing thread pools
+
+There is a very commom pattern with threads with is "thread pools". A thread pool is essentially a
+set of threads, or, a "pool" of threads. Many programmers like very much to use a pool of threads,
+instead of manually create a thread here and there.
+
+People like using thread pools
+especially because it makes easier to manage multiple threads at once.
+Also, using thread pools might increase performance as well in your program,
+especially if you are constantly creating threads in your program to perform short-lived tasks.
+In these instances, thread pools might increase performance because you do not have be constantly
+creating and destroying threads all the time.
+
+The main idea behind a thread pool is to have a set of threads already created and ready to perform
+tasks at all times. So, you create a set of threads at the moment that your program starts, and keep
+these threads alive while your program runs. Each of these threads will be either performing a task, or,
+waiting for a task to be assigned.
+
+The Zig Standard Library offers a thread pool implementation on the `std.Thread.Pool` struct.
+
+
+
+## Introducing mutexes
 
 
 ## Potential problems in threads
@@ -510,6 +533,35 @@ or vice-versa. The idea is that we have no idea of who is going to finish first.
 becomes a race condition problem.
 In such case, we loose control over this thread, and it's resources are never freed
 (i.e. you have leaked resources in the system).
+
+
+
+## Yielding a thread
+
+The `Thread` struct supports yielding through the `yield()` method.
+Yielding a thread means that the execution of the thread is temporarily stopped,
+and the thread comes back to the end of the queue of priority of the scheduler from
+your operating system.
+
+That is, when you yield a thread, you are essentially saying the following to your OS:
+"Hey! Could you please stop executing this thread for now, and comeback to continue it later?".
+You could also interpret this yield operation as: "Could you please deprioritize this thread,
+to focus on doing other things instead?", i.e. you are rescheduling the execution of that thread for later.
+So this yield operation is also a way for you
+to stop a particular thread, so that you can work and prioritize other threads instead.
+
+Is important to say that, yielding a thread is a "not so commom" thread operation these days.
+In other words, not many programmers use yielding in production, simply because is hard to use
+this operation and make it work properly, and also, there
+are better alternatives. Most programmers prefer to use `join()` instead.
+In fact, most of the times, when you see somebody using yield, they are using it to help them
+debug race conditions in their applications, i.e. yield is used as a debug tool.
+
+Anyway, if you want to yield a thread, just call the `yield()` method from it.
+
+```zig
+thread.yield();
+```
 
 
 
