@@ -312,21 +312,19 @@ window.Quarto = {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#sec-what-thread" id="toc-sec-what-thread" class="nav-link active" data-scroll-target="#sec-what-thread"><span class="header-section-number">16.1</span> What are threads?</a>
+  <li><a href="#sec-what-thread" id="toc-sec-what-thread" class="nav-link active" data-scroll-target="#sec-what-thread"><span class="header-section-number">16.1</span> What are threads?</a></li>
+  <li><a href="#threads-versus-processes" id="toc-threads-versus-processes" class="nav-link" data-scroll-target="#threads-versus-processes"><span class="header-section-number">16.2</span> Threads versus processes</a></li>
+  <li><a href="#creating-a-thread" id="toc-creating-a-thread" class="nav-link" data-scroll-target="#creating-a-thread"><span class="header-section-number">16.3</span> Creating a thread</a></li>
+  <li><a href="#returning-from-a-thread" id="toc-returning-from-a-thread" class="nav-link" data-scroll-target="#returning-from-a-thread"><span class="header-section-number">16.4</span> Returning from a thread</a>
   <ul class="collapse">
-  <li><a href="#explaining-threads-in-more-technical-terms" id="toc-explaining-threads-in-more-technical-terms" class="nav-link" data-scroll-target="#explaining-threads-in-more-technical-terms"><span class="header-section-number">16.1.1</span> Explaining threads in more technical terms</a></li>
+  <li><a href="#joining-a-thread" id="toc-joining-a-thread" class="nav-link" data-scroll-target="#joining-a-thread"><span class="header-section-number">16.4.1</span> Joining a thread</a></li>
+  <li><a href="#detaching-a-thread" id="toc-detaching-a-thread" class="nav-link" data-scroll-target="#detaching-a-thread"><span class="header-section-number">16.4.2</span> Detaching a thread</a></li>
   </ul></li>
-  <li><a href="#creating-a-thread" id="toc-creating-a-thread" class="nav-link" data-scroll-target="#creating-a-thread"><span class="header-section-number">16.2</span> Creating a thread</a></li>
-  <li><a href="#returning-from-a-thread" id="toc-returning-from-a-thread" class="nav-link" data-scroll-target="#returning-from-a-thread"><span class="header-section-number">16.3</span> Returning from a thread</a>
+  <li><a href="#potential-problems-in-threads" id="toc-potential-problems-in-threads" class="nav-link" data-scroll-target="#potential-problems-in-threads"><span class="header-section-number">16.5</span> Potential problems in threads</a>
   <ul class="collapse">
-  <li><a href="#joining-a-thread" id="toc-joining-a-thread" class="nav-link" data-scroll-target="#joining-a-thread"><span class="header-section-number">16.3.1</span> Joining a thread</a></li>
-  <li><a href="#detaching-a-thread" id="toc-detaching-a-thread" class="nav-link" data-scroll-target="#detaching-a-thread"><span class="header-section-number">16.3.2</span> Detaching a thread</a></li>
+  <li><a href="#sec-not-call-join-detach" id="toc-sec-not-call-join-detach" class="nav-link" data-scroll-target="#sec-not-call-join-detach"><span class="header-section-number">16.5.1</span> Not calling <code>join()</code> or <code>detach()</code></a></li>
   </ul></li>
-  <li><a href="#potential-problems-in-threads" id="toc-potential-problems-in-threads" class="nav-link" data-scroll-target="#potential-problems-in-threads"><span class="header-section-number">16.4</span> Potential problems in threads</a>
-  <ul class="collapse">
-  <li><a href="#sec-not-call-join-detach" id="toc-sec-not-call-join-detach" class="nav-link" data-scroll-target="#sec-not-call-join-detach"><span class="header-section-number">16.4.1</span> Not calling <code>join()</code> or <code>detach()</code></a></li>
-  </ul></li>
-  <li><a href="#how-to-stop-cancel-of-kill-a-particular-thread" id="toc-how-to-stop-cancel-of-kill-a-particular-thread" class="nav-link" data-scroll-target="#how-to-stop-cancel-of-kill-a-particular-thread"><span class="header-section-number">16.5</span> How to stop, cancel of kill a particular thread</a></li>
+  <li><a href="#how-to-stop-cancel-of-kill-a-particular-thread" id="toc-how-to-stop-cancel-of-kill-a-particular-thread" class="nav-link" data-scroll-target="#how-to-stop-cancel-of-kill-a-particular-thread"><span class="header-section-number">16.6</span> How to stop, cancel of kill a particular thread</a></li>
   </ul>
 </nav>
     </div>
@@ -363,16 +361,16 @@ window.Quarto = {
 <p>By running each tab in a separate thread, we allow all open tabs in the browser to run at the same time, and independently from each other. For example, you might have YouTube, or Spotify, currently opened in a tab, and you are listening to some podcast in that tab, while, at the same time, you are working in another tab, writing an essay on Google Docs. Even if you are not looking into the YouTube tab, you can still hear the podcast only because this YouTube tab is running in parallel with the other tab where Google Docs is running.</p>
 <p>Without threads, the other alternative would be to run each tab as a completely separate running process in your computer. But that would be a bad choice, because just a few tabs would already consume too much power and resources from your computer. Also, the chances of you experiencing lag and overhead while using the browser would be high. Threads are faster to create, and they also consume much, much less resources from the computer, specially because they share some resources with the main process.</p>
 <p>Therefore, is the use of threads in modern web browsers that allows you to hear the podcast at the same time while you are writing something on Google Docs. Without threads, a web browser would probably be limited to one single tab.</p>
-<p>Threads are also good for anything that involves serving requests or orders. Because serving a request takes time, and usually involves a lot of “waiting time”. In other words, we spend a lot of time in idle, waiting for something to happen. For example, consider a restaurant. Serving orders in a restaurant usually involves:</p>
+<p>Threads are also good for anything that involves serving requests or orders. Because serving a request takes time, and usually involves a lot of “waiting time”. In other words, we spend a lot of time in idle, waiting for something to complete. For example, consider a restaurant. Serving orders in a restaurant usually involves the following steps:</p>
 <ol type="1">
 <li>receive order from the client.</li>
 <li>pass the order to the kitchen, and wait for the food to be cooked.</li>
-<li>start cooking the order in the kitchen.</li>
+<li>start cooking the food in the kitchen.</li>
 <li>when the food is fully cooked deliver this food to the client.</li>
 </ol>
-<p>If you think about the bulletpoints above, you will notice that one big moment of waiting is present in this hole process, which is while the food is being prepared and cooked inside the kitchen. Because while the food is being prepped, both the waiter and the client itself are waiting for the food to be ready.</p>
-<p>If we write a program to represent this restaurant, more specifically, a single-threaded program, then, this program would be very inefficient. Because the program would stay in idle, waiting for a considerable amount of time on the “check if food is ready” step. Consider the following code snippet that could, potentially represent such program.</p>
-<p>The problem in this program is the while loop. This program will spend a lot time waiting on the while loop, doing nothing more than just checking if the food is ready. This is waste of time. Instead of of waiting for something to happen, the waiter could just send the order to the kitchen, and just move on, and continue with receiving orders from other clients, and sending these other orders to the kitchen.</p>
+<p>If you think about the bulletpoints above, you will notice that one big moment of waiting is present in this hole process, which is while the food is being prepared and cooked inside the kitchen. Because while the food is being prepped, both the waiter and the client itself are waiting for the food to be ready and delivered.</p>
+<p>If we write a program to represent this restaurant, more specifically, a single-threaded program, then, this program would be very inefficient. Because the program would stay in idle, waiting for a considerable amount of time on the “check if food is ready” step. Consider the code snippet exposed below that could potentially represent such program.</p>
+<p>The problem with this program is the while loop. This program will spend a lot of time waiting on the while loop, doing nothing more than just checking if the food is ready. This is waste of time. Instead of waiting for something to happen, the waiter could just send the order to the kitchen, and just move on, and continue with receiving more orders from other clients, and sending more orders to the kitchen.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> order = Order.init(<span class="st">"Pizza Margherita"</span>, n = <span class="dv">1</span>);</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> waiter = Waiter.init();</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>waiter.receive_order(order)</span>
@@ -383,9 +381,9 @@ window.Quarto = {
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> food = waiter.get_food_from_kitchen();</span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>waiter.send_food_to_client(food);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>This is why threads would be a great fit for this program. We could use threads to free the waiters to go on with their tasks, and receive more orders. Take a look at the next example, where I have re-written the above program into a different program that uses threads to cook and deliver the orders.</p>
+<p>This is why threads would be a great fit for this program. We could use threads to free the waiters from their “waiting duties”, so they can go on with their other tasks, and receive more orders. Take a look at the next example, where I have re-written the above program into a different program that uses threads to cook and deliver the orders.</p>
 <p>You can see in this program that when a waiter receives a new order from a client, this waiter executes the <code>send_order()</code> function. The only thing that this function does is: it creates a new thread and detaches it. Since creating a thread is a very fast operation, this <code>send_order()</code> function returns almost immediatly, so the waiter spends almost no time worring about the order, and just move on and tries to get the next order from the clients.</p>
-<p>Inside the new thread created, the order get’s cooked by a chef, and when the food is ready, it is delivered directly by the chefs to the waiters.</p>
+<p>Inside the new thread created, the order get’s cooked by a chef, and when the food is ready, it is delivered to the client’s table.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> cook_and_deliver_order(order: *Order) <span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> chef = Chef.init()</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> food = chef.cook(order.*);</span>
@@ -405,12 +403,13 @@ window.Quarto = {
 <span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        send_order(order);</span>
 <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
 <span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<section id="explaining-threads-in-more-technical-terms" class="level3" data-number="16.1.1">
-<h3 data-number="16.1.1" class="anchored" data-anchor-id="explaining-threads-in-more-technical-terms"><span class="header-section-number">16.1.1</span> Explaining threads in more technical terms</h3>
+</section>
+<section id="threads-versus-processes" class="level2" data-number="16.2">
+<h2 data-number="16.2" class="anchored" data-anchor-id="threads-versus-processes"><span class="header-section-number">16.2</span> Threads versus processes</h2>
 <p>When we run a program, this program is executed as a <em>process</em> in the operating system. This is a one to one relationship, each program or application that you execute is a separate process in the operating system. But each program, or each process, can create and contain multiple threads inside of it. Therefore, processes and threads have a one to many relationship.</p>
-<p>Thus, every thread that we create is always associated with a particular process in our computer. In other words, a thread is always a subset of an existing process. All threads share some of the resources associated with the process from which they were created. And because threads share resources with the process, they are very good for making communication between tasks easier.</p>
+<p>This also means that every thread that we create is always associated with a particular process in our computer. In other words, a thread is always a subset (or a children) of an existing process. All threads share some of the resources associated with the process from which they were created. And because threads share resources with the process, they are very good for making communication between tasks easier.</p>
 <p>For example, suppose that you were developing a big and complex application that would be much simpler if you could split it in two, and make these two separate pieces talk with each other. Some programmers opt to effectively write these two pieces of the codebase as two completely separate programs, and then, they use IPC (<em>inter-process communication</em>) to make these two separate programs/processes talk to each other, and make them work together.</p>
-<p>However, some programmers find IPC hard to deal with, and, as consequence, they prefer to write one piece of the codebase as the “main part of the program”, or, as the part of the code that runs as the process in the operating system, while the other piece of the codebase is written as a task to be executed in a new thread. A process and a thread can easily comunicate with each other through both control flow, and also, through data, because they share and have access to the same standard file descriptors and to some regions of memory.</p>
+<p>However, some programmers find IPC hard to deal with, and, as consequence, they prefer to write one piece of the codebase as the “main part of the program”, or, as the part of the code that runs as the process in the operating system, while the other piece of the codebase is written as a task to be executed in a new thread. A process and a thread can easily comunicate with each other through both control flow, and also, through data, because they share and have access to the same standard file descriptors (<code>stdout</code>, <code>stdin</code>, <code>stderr</code>) and also to the same memory space on the heap.</p>
 <p>In more details, each thread that you create have a separate stack frame reserved just for that thread, which essentially means that each local object that you create inside this thread, is local to that thread, i.e.&nbsp;the other threads cannot see this local object. Unless this object that you have created is an object that lives on the heap. In other words, if the memory associated with this object is on the heap, then, the other threads can potentially access this object.</p>
 <p>Therefore, objects that are stored in the stack are local to the thread where they were created. But objects that are stored on the heap are potentially accessible to other threads. All of this means that, each thread have it’s own separate stack frame, but, at the same time, all threads share the same heap, the same standard file descriptors (which means that they share the same <code>stdout</code>, <code>stdin</code>, <code>stderr</code>), and the same global data section in the program.</p>
 <p>Threads create parallelism. As consequence, they create certain amount of confusion and complexity, because we get different tasks being performed at the same time. As consequence, depending on the size, or, the complexity of your program, or the amount of threads created, it might be difficult to track the tasks, and understand what is happening in a particular moment inside your program.</p>
@@ -439,9 +438,8 @@ Starting thread 2.
 Finishing thread Finishing thread 2.
 1.</code></pre>
 </section>
-</section>
-<section id="creating-a-thread" class="level2" data-number="16.2">
-<h2 data-number="16.2" class="anchored" data-anchor-id="creating-a-thread"><span class="header-section-number">16.2</span> Creating a thread</h2>
+<section id="creating-a-thread" class="level2" data-number="16.3">
+<h2 data-number="16.3" class="anchored" data-anchor-id="creating-a-thread"><span class="header-section-number">16.3</span> Creating a thread</h2>
 <p>We create new threads in Zig, by first, importing the <code>Thread</code> struct into our current Zig module, and then, calling the <code>spawn()</code> method of this struct, which creates (or, “spawns”) a new thread of execution. This method have three arguments, which are, respectively:</p>
 <ol type="1">
 <li>a <code>SpawnConfig</code> object, which contains configurations for the spawn process.</li>
@@ -480,14 +478,14 @@ Finishing thread Finishing thread 2.
 <p>If the new thread is succesfully created, the <code>spawn()</code> method returns a handler object (which is just an object of type <code>Thread</code>) to this new thread. You can use this handler object to effectively control all aspects of the thread.</p>
 <p>The instant that you create the new thread, the function that you provided as input to <code>spawn()</code> get’s invoked (i.e.&nbsp;get’s called) to start the execution on this new thread. In other words, everytime you call <code>spawn()</code>, not only a new thread get’s created, but also, the “start work button” of this thread get’s automatically pressed. So the work being performed in this thread starts at the moment that the thread is created. This is similar to how <code>pthread_create()</code> from the <code>pthreads</code> library in C works, which also starts the execution at the moment that the thread get’s created.</p>
 </section>
-<section id="returning-from-a-thread" class="level2" data-number="16.3">
-<h2 data-number="16.3" class="anchored" data-anchor-id="returning-from-a-thread"><span class="header-section-number">16.3</span> Returning from a thread</h2>
+<section id="returning-from-a-thread" class="level2" data-number="16.4">
+<h2 data-number="16.4" class="anchored" data-anchor-id="returning-from-a-thread"><span class="header-section-number">16.4</span> Returning from a thread</h2>
 <p>We have learned on the previous section that the execution of the thread starts at the moment that the thread get’s created. Now, we will learn how to “join” or “detach” a thread in Zig. “Join” and “detach” are operations that control how the thread returns to the main thread, or, the main process in our program.</p>
 <p>In essence, we perform these operations by using the methods <code>join()</code> and <code>detach()</code> from the thread handler object. Every thread that you create can be marked as either <em>joinable</em> or <em>detached</em> <span class="citation" data-cites="linux_pthread_create">(<a href="../references.html#ref-linux_pthread_create" role="doc-biblioref">Linux man-pages 2024</a>)</span>. You can turn a thread into a <em>detached</em> thread by calling the <code>detach()</code> method from the thread handler object. But if you call the <code>join()</code> method instead, then, this thread becomes a <em>joinable</em> thread.</p>
-<p>A thread cannot be both <em>joinable</em> and <em>detached</em>. Which in general means that you cannot call both <code>join()</code> and <code>detach()</code> on the same thread. But a thread must be one of the two, meaning that, you should always call either <code>join()</code> or <code>detach()</code> over a thread. If you don’t call one of these two methods over your thread, you introduce undefined behaviour into your program, which is described at <a href="#sec-not-call-join-detach" class="quarto-xref"><span>Section 16.4.1</span></a>.</p>
+<p>A thread cannot be both <em>joinable</em> and <em>detached</em>. Which in general means that you cannot call both <code>join()</code> and <code>detach()</code> on the same thread. But a thread must be one of the two, meaning that, you should always call either <code>join()</code> or <code>detach()</code> over a thread. If you don’t call one of these two methods over your thread, you introduce undefined behaviour into your program, which is described at <a href="#sec-not-call-join-detach" class="quarto-xref"><span>Section 16.5.1</span></a>.</p>
 <p>Now, let’s describe what each of these two methods do to your thread.</p>
-<section id="joining-a-thread" class="level3" data-number="16.3.1">
-<h3 data-number="16.3.1" class="anchored" data-anchor-id="joining-a-thread"><span class="header-section-number">16.3.1</span> Joining a thread</h3>
+<section id="joining-a-thread" class="level3" data-number="16.4.1">
+<h3 data-number="16.4.1" class="anchored" data-anchor-id="joining-a-thread"><span class="header-section-number">16.4.1</span> Joining a thread</h3>
 <p>When you join a thread, you are essentially saying: “Hey! Could you please wait for the thread to finish, before you continue with your execution?”. For example, if we comeback to our first and simpliest example of a thread in Zig, in that example we have created a single thread inside the <code>main()</code> function of our program, and just called <code>join()</code> over this thread at the end. This section of the code example is reproduced below.</p>
 <p>Because we are joining this new thread inside the <code>main()</code>’s scope, it means that the execution of <code>main()</code> is temporarily stopped, to wait for the execution of the thread to finish. That is, the execution of <code>main()</code> will continue only after the thread has finished it’s tasks.</p>
 <div class="cell">
@@ -529,8 +527,8 @@ Joining thread 2</code></pre>
 </ul>
 <p>Both of these points were previously at <a href="#sec-what-thread" class="quarto-xref"><span>Section 16.1</span></a>. Anyway, when you call <code>join()</code> over a thread, the current process will wait for the thread to finish before it continues, and, when the thread does finishs it’s task, the resources associated with this thread are automatically freed, and, the current process continues with it’s execution.</p>
 </section>
-<section id="detaching-a-thread" class="level3" data-number="16.3.2">
-<h3 data-number="16.3.2" class="anchored" data-anchor-id="detaching-a-thread"><span class="header-section-number">16.3.2</span> Detaching a thread</h3>
+<section id="detaching-a-thread" class="level3" data-number="16.4.2">
+<h3 data-number="16.4.2" class="anchored" data-anchor-id="detaching-a-thread"><span class="header-section-number">16.4.2</span> Detaching a thread</h3>
 <p>When you detach a thread, by calling the <code>detach()</code> method, the thread is marked as <em>detached</em>. When a <em>detached</em> thread terminates, its resources are automatically released back to the system without the need for another thread to join with this terminated thread.</p>
 <p>In other words, when you call <code>detach()</code> over a thread is like when your children becomes adults, i.e.&nbsp;they become independent from you. A detached thread frees itself, and it does need to report the results back to you, when the thread finishs it’s task. Thus, you normally mark a thread as <em>detached</em> when you don’t need to use the return value of the thread, or, when you don’t care about when exactly the thread finishs it’s job, i.e.&nbsp;the thread solves everything by itself.</p>
 <p>Take the code example below. We create a new thread, detach it, and then, we just print a final message before we end our program. We use the same <code>print_id()</code> function that we have used over the previous examples.</p>
@@ -549,17 +547,17 @@ Joining thread 2</code></pre>
 <p>And that is perfectly ok behaviour, because the thread was detached, so, it was able to free itself, without the need of the main process. If ask main to sleep (or “wait”) for some nanoseconds, before it ends, you will likely see the message printed by <code>print_id()</code>, because in such circunstance you give more time for the thread to finish before the main process ends.</p>
 </section>
 </section>
-<section id="potential-problems-in-threads" class="level2" data-number="16.4">
-<h2 data-number="16.4" class="anchored" data-anchor-id="potential-problems-in-threads"><span class="header-section-number">16.4</span> Potential problems in threads</h2>
+<section id="potential-problems-in-threads" class="level2" data-number="16.5">
+<h2 data-number="16.5" class="anchored" data-anchor-id="potential-problems-in-threads"><span class="header-section-number">16.5</span> Potential problems in threads</h2>
 <p>TODO: calling functions that might return an error inside threads (<code>try</code>) TODO: talk about deadlocks TODO: talk about race conditions TODO: joining with a thread that has already been joined leads to undefined behaviour. TODO: talk about zombie threads.</p>
-<section id="sec-not-call-join-detach" class="level3" data-number="16.4.1">
-<h3 data-number="16.4.1" class="anchored" data-anchor-id="sec-not-call-join-detach"><span class="header-section-number">16.4.1</span> Not calling <code>join()</code> or <code>detach()</code></h3>
+<section id="sec-not-call-join-detach" class="level3" data-number="16.5.1">
+<h3 data-number="16.5.1" class="anchored" data-anchor-id="sec-not-call-join-detach"><span class="header-section-number">16.5.1</span> Not calling <code>join()</code> or <code>detach()</code></h3>
 <p>When you do not call neither of these methods (<code>join()</code> or <code>detach()</code>), then, your thread does not have a clear “return point”. You could also interpret this as: “nobody is properly resposible for managing the thread”. In more details, when we don’t establish if a thread is either <em>joinable</em> or <em>detached</em>, nobody becomes responsible for dealing with the return value of this thread, and also, nobody becomes responsible for clearing (or freeing) the resources associated with this thread.</p>
 <p>You don’t want to be in this situation, so remember to always use <code>join()</code> or <code>detach()</code> on the threads that you create. When you don’t use these methods, the execution of the thread becomes completely independent from the execution of the main process in your program. This means that the main process of your program might end before the thread finish it’s job, or vice-versa. The idea is that we have no idea of who is going to finish first. It becomes a race condition problem. In such case, we loose control over this thread, and it’s resources are never freed (i.e.&nbsp;you have leaked resources in the system).</p>
 </section>
 </section>
-<section id="how-to-stop-cancel-of-kill-a-particular-thread" class="level2" data-number="16.5">
-<h2 data-number="16.5" class="anchored" data-anchor-id="how-to-stop-cancel-of-kill-a-particular-thread"><span class="header-section-number">16.5</span> How to stop, cancel of kill a particular thread</h2>
+<section id="how-to-stop-cancel-of-kill-a-particular-thread" class="level2" data-number="16.6">
+<h2 data-number="16.6" class="anchored" data-anchor-id="how-to-stop-cancel-of-kill-a-particular-thread"><span class="header-section-number">16.6</span> How to stop, cancel of kill a particular thread</h2>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">

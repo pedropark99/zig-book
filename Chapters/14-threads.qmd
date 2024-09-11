@@ -148,7 +148,7 @@ while (true) {
 
 
 
-### Explaining threads in more technical terms
+## Threads versus processes
 
 When we run a program, this program is executed as a *process* in the operating system.
 This is a one to one relationship, each program or application that you execute
@@ -156,8 +156,8 @@ is a separate process in the operating system. But each program, or each process
 can create and contain multiple threads inside of it. Therefore,
 processes and threads have a one to many relationship.
 
-Thus, every thread that we create is always associated with a particular process in our computer.
-In other words, a thread is always a subset of an existing process.
+This also means that every thread that we create is always associated with a particular process in our computer.
+In other words, a thread is always a subset (or a children) of an existing process.
 All threads share some of the resources associated with the process from which they were created.
 And because threads share resources with the process, they are very good for making communication
 between tasks easier.
@@ -174,7 +174,8 @@ or, as the part of the code that runs as the process in the operating system,
 while the other piece of the codebase is written as a task to be executed in
 a new thread. A process and a thread can easily comunicate with each other
 through both control flow, and also, through data, because they share and have
-access to the same standard file descriptors and to some regions of memory.
+access to the same standard file descriptors (`stdout`, `stdin`, `stderr`) and also to the same memory space
+on the heap.
 
 
 In more details, each thread that you create have a separate stack frame reserved just for that thread,
@@ -188,46 +189,6 @@ But objects that are stored on the heap are potentially accessible to other thre
 each thread have it's own separate stack frame, but, at the same time, all threads share
 the same heap, the same standard file descriptors (which means that they share the same `stdout`, `stdin`, `stderr`),
 and the same global data section in the program.
-
-Threads create parallelism. As consequence, they create certain amount of confusion and complexity,
-because we get different tasks being performed at the same time. As consequence, depending on the
-size, or, the complexity of your program, or the amount of threads created, it might be difficult
-to track the tasks, and understand what is happening in a particular moment inside your program.
-
-A hole set of problems emerge from parallelism and multi-threaded programming, which are usually
-categorized as "race conditions". A race condition problem is any bug in your program that depends
-on "who get's there first". In other words, in each execution of your program,
-you get a different answer, because a different person, or, a different function, or, a different part of the code is finishing
-its tasks (or it is reaching a location) first than the others.
-
-```{zig}
-#| eval: false
-const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-const Thread = std.Thread;
-fn do_some_work(thread_id: *const u8) !void {
-    _ = try stdout.print("Starting thread {d}.\n", .{thread_id.*});
-    std.time.sleep(100 * std.time.ns_per_ms);
-    _ = try stdout.print("Finishing thread {d}.\n", .{thread_id.*});
-}
-
-pub fn main() !void {
-    const id1: u8 = 1;
-    const id2: u8 = 2;
-    const thread1 = try Thread.spawn(.{}, do_some_work, .{&id1});
-    const thread2 = try Thread.spawn(.{}, do_some_work, .{&id2});
-    thread1.join();
-    thread2.join();
-}
-```
-
-```
-Starting thread 1.
-Starting thread 2.
-Finishing thread Finishing thread 2.
-1.
-```
-
 
 
 
@@ -486,6 +447,52 @@ TODO: talk about deadlocks
 TODO: talk about race conditions
 TODO: joining with a thread that has already been joined leads to undefined behaviour.
 TODO: talk about zombie threads.
+
+
+### Race conditions
+
+Threads create parallelism. As consequence, they create certain amount of confusion and complexity,
+because we get different tasks being performed at the same time. As consequence, depending on the
+size, or, the complexity of your program, or the amount of threads created, it might be difficult
+to track the tasks, and understand what is happening in a particular moment inside your program.
+
+A hole set of problems emerge from parallelism and multi-threaded programming, which are usually
+categorized as "race conditions". A race condition problem is any bug in your program that depends
+on "who get's there first". In other words, in each execution of your program,
+you get a different answer, because a different person, or, a different function, or, a different part of the code is finishing
+its tasks (or it is reaching a location) first than the others.
+
+```{zig}
+#| eval: false
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+const Thread = std.Thread;
+fn do_some_work(thread_id: *const u8) !void {
+    _ = try stdout.print("Starting thread {d}.\n", .{thread_id.*});
+    std.time.sleep(100 * std.time.ns_per_ms);
+    _ = try stdout.print("Finishing thread {d}.\n", .{thread_id.*});
+}
+
+pub fn main() !void {
+    const id1: u8 = 1;
+    const id2: u8 = 2;
+    const thread1 = try Thread.spawn(.{}, do_some_work, .{&id1});
+    const thread2 = try Thread.spawn(.{}, do_some_work, .{&id2});
+    thread1.join();
+    thread2.join();
+}
+```
+
+```
+Starting thread 1.
+Starting thread 2.
+Finishing thread Finishing thread 2.
+1.
+```
+
+
+
+
 
 ### Not calling `join()` or `detach()` {#sec-not-call-join-detach}
 
