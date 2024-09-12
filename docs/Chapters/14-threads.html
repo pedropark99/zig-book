@@ -321,7 +321,10 @@ window.Quarto = {
   <li><a href="#detaching-a-thread" id="toc-detaching-a-thread" class="nav-link" data-scroll-target="#detaching-a-thread"><span class="header-section-number">16.4.2</span> Detaching a thread</a></li>
   </ul></li>
   <li><a href="#introducing-thread-pools" id="toc-introducing-thread-pools" class="nav-link" data-scroll-target="#introducing-thread-pools"><span class="header-section-number">16.5</span> Introducing thread pools</a></li>
-  <li><a href="#introducing-mutexes" id="toc-introducing-mutexes" class="nav-link" data-scroll-target="#introducing-mutexes"><span class="header-section-number">16.6</span> Introducing mutexes</a></li>
+  <li><a href="#introducing-mutexes" id="toc-introducing-mutexes" class="nav-link" data-scroll-target="#introducing-mutexes"><span class="header-section-number">16.6</span> Introducing mutexes</a>
+  <ul class="collapse">
+  <li><a href="#critical-section" id="toc-critical-section" class="nav-link" data-scroll-target="#critical-section"><span class="header-section-number">16.6.1</span> Critical section</a></li>
+  </ul></li>
   <li><a href="#potential-problems-in-threads" id="toc-potential-problems-in-threads" class="nav-link" data-scroll-target="#potential-problems-in-threads"><span class="header-section-number">16.7</span> Potential problems in threads</a>
   <ul class="collapse">
   <li><a href="#race-conditions" id="toc-race-conditions" class="nav-link" data-scroll-target="#race-conditions"><span class="header-section-number">16.7.1</span> Race conditions</a></li>
@@ -573,6 +576,15 @@ Joining thread 2</code></pre>
 <p>The main idea behind a mutex is to help us to control the access to data, and to prevent two or more threads to read from or write to the same data at the same time. Many programmers like to compare a mutex to a bathroom door, which usually have a lock. When a thread uses the mutex to lock the data, it is like if the bathroom door was locked, and, therefore, the other people (in this case, the other threads) that wants to use the bathroom at the same time have to be patient, and simply wait for the door to be unlocked.</p>
 <p>When you have an object that is shared will all threads, and, you want to avoid two or more threads from accessing this same object at the same time, then, you want to use a mutex to lock this specific object. When a thread tries to access an object that is locked, this thread patiently waits for the object to be unlocked to continue it’s execution. In other words, the execution of the thread is paused while the object is locked by the mutex, and it is unpaused the moment that the object is unlocked by the other thread that was using this object.</p>
 <p>Notice that mutexes are used in objects that are <strong>shared</strong> with all threads. So mutexes are not used on objects that are local to the thread, only in objects that are either stored in the global data section, or, in the heap space of your program.</p>
+<section id="critical-section" class="level3" data-number="16.6.1">
+<h3 data-number="16.6.1" class="anchored" data-anchor-id="critical-section"><span class="header-section-number">16.6.1</span> Critical section</h3>
+<p>Critical section is a concept commonly associated with mutexes and thread syncronization. In essence, a critical section is the section of the program that a thread access a shared resource (i.e.&nbsp;an object, a file descriptor… something that all threads have access to). When we use mutexes, we want to lock the shared resource at the beginning of the critical section, and then, unlock it at the end of the critical section.</p>
+<p>These two bulletpoints from the “Critical Section” article from GeekFromGeeks, help us to understand the hole that a critical section plays in the thread syncronization problem <span class="citation" data-cites="geeks_critical_section">(<a href="../references.html#ref-geeks_critical_section" role="doc-biblioref">Geeks for Geeks 2024</a>)</span>.</p>
+<ol type="1">
+<li>The critical section must be executed as an atomic operation, which means that once one thread or process has entered the critical section, all other threads or processes must wait until the executing thread or process exits the critical section. The purpose of synchronization mechanisms is to ensure that only one thread or process can execute the critical section at a time.</li>
+<li>The concept of a critical section is central to synchronization in computer systems, as it is necessary to ensure that multiple threads or processes can execute concurrently without interfering with each other. Various synchronization mechanisms such as semaphores, mutexes, monitors, and condition variables are used to implement critical sections and ensure that shared resources are accessed in a mutually exclusive manner.</li>
+</ol>
+</section>
 </section>
 <section id="potential-problems-in-threads" class="level2" data-number="16.7">
 <h2 data-number="16.7" class="anchored" data-anchor-id="potential-problems-in-threads"><span class="header-section-number">16.7</span> Potential problems in threads</h2>
@@ -624,6 +636,9 @@ Finishing thread Finishing thread 2.
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-geeks_critical_section" class="csl-entry" role="listitem">
+Geeks for Geeks. 2024. <span>“Critical Section.”</span> <span>Geeks for Geeks</span>. <a href="https://www.geeksforgeeks.org/g-fact-70/">https://www.geeksforgeeks.org/g-fact-70/</a>.
+</div>
 <div id="ref-linux_pthread_create" class="csl-entry" role="listitem">
 Linux man-pages. 2024. <span>“Pthread_create(3) — Linux Manual Page.”</span> <a href="https://man7.org/linux/man-pages/man3/pthread_create.3.html">https://man7.org/linux/man-pages/man3/pthread_create.3.html</a>.
 </div>
