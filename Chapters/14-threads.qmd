@@ -440,27 +440,135 @@ give enough time for the thread to finish before the main process ends.
 
 ## Introducing thread pools
 
-There is a very commom pattern with threads with is "thread pools". A thread pool is essentially a
-set of threads, or, a "pool" of threads. Many programmers like very much to use a pool of threads,
-instead of manually create a thread here and there.
+Thread pools is a very popular programming pattern, which is used specially on servers and daemons. A thread pool is just a
+set of threads, or, a "pool" of threads. Many programmers like to use this pattern, because it makes
+easier to manage and use multiple threads, instead of manually creating the threads when you need them.
 
-People like using thread pools
-especially because it makes easier to manage multiple threads at once.
 Also, using thread pools might increase performance as well in your program,
-especially if you are constantly creating threads in your program to perform short-lived tasks.
-In these instances, thread pools might increase performance because you do not have be constantly
-creating and destroying threads all the time.
+especially if your program is constantly creating threads to perform short-lived tasks.
+In such instance, a thread pool might cause an increase in performance because you do not have be constantly
+creating and destroying threads all the time, so you don't face a lot of the overhead involved
+in this constant process of creating and destroying threads.
 
 The main idea behind a thread pool is to have a set of threads already created and ready to perform
-tasks at all times. So, you create a set of threads at the moment that your program starts, and keep
+tasks at all times. You create a set of threads at the moment that your program starts, and keep
 these threads alive while your program runs. Each of these threads will be either performing a task, or,
 waiting for a task to be assigned.
+Every time a new task emerges in your program, this task is added to a "queue of tasks".
+The moment that a thread becomes available and ready to perform a new task,
+this thread receives the next task registered in this "queue of tasks", then,
+it performs the task.
 
 The Zig Standard Library offers a thread pool implementation on the `std.Thread.Pool` struct.
+You create a new instance of a `Pool` object by providing a `Pool.Options` object
+as input to the `init()` method of this struct. A `Pool.Options` object, is a struct object that contains
+configurations for the pool of threads. The most important configuration in this struct object is
+the members `n_jobs` and `allocator`. As the name suggests, the member `allocator` is an allocator object,
+while the member `n_jobs` specifies the number of threads to be created and maintained in this pool.
+
+Consider the example exposed below, that demonstrates how can we create a new thread pool object.
+Here, we create a `Pool.Options` object that contains
+a general purpose allocator object, and also, the `n_jobs` member was set to 4, which
+means that the thread pool will create and use 4 threads.
+
+Also notice that the `pool` object was initially set to `undefined`. This allow us
+to initially declare the thread pool object, but not properly instantiate the
+underlying memory of the object. You have to initially declare your thread pool object
+by using `undefined` like this, because the `init()` method of `Pool` needs
+to have an initial pointer to properly instantiate the object.
+
+So, just
+remember to create your thread pool object by using `undefined`, and then,
+after that, you call the `init()` method over the object.
+You should also not forget to call the `deinit()` method over the thread pool
+object, once you are done with it, to release the resources allocated for the thread pool. Otherwise, you will
+have a memory leak in your program.
+
+```{zig}
+#| auto_main: false
+#| build_type: "run"
+const std = @import("std");
+const Pool = std.Thread.Pool;
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    const opt = Pool.Options{
+        .n_jobs = 4,
+        .allocator = allocator,
+    };
+    var pool: Pool = undefined;
+    _ = try pool.init(opt);
+    defer pool.deinit();
+}
+```
+
+Now that we know how to create `Pool` objects, we have
+to understand how to assign tasks to be executed by the threads in this pool object.
+To assign a task to be performed by a thread, we need to call the `spawn()` method
+from the thread pool object.
+
+This `spawn()` method works identical to the `spawn()` method from the
+`Thread` object. The method have the same arguments as the previous one, but instead of creating a new thread, this `spawn()` method from
+the thread pool object just register a new task in the internal "queue of tasks" to be performed,
+and any available thread in the pool will get this task, and it will simply perform the task.
+
+In the example below, we are using our previous `print_id()` function once again.
+But you may notice that the `print_id()` function is a little different this time,
+because now we are using `catch` instead of `try` in the `print()` call.
+Currently, the `Pool` struct only supports functions that don't return errors
+as tasks. Thus, when assigining tasks to threads in a thread pool, is essential to use functions
+that don't return errors. That is why we are using `catch` here, so that the
+`print_id()` function don't return an error.
+
+
+```{zig}
+#| eval: false
+fn print_id(id: *const u8) void {
+    _ = stdout.print("Thread ID: {d}\n", .{id.*})
+        catch void;
+}
+const id1: u8 = 1;
+const id2: u8 = 2;
+try pool.spawn(print_id, .{&id1});
+try pool.spawn(print_id, .{&id2});
+```
+
+This limitation should probably not exist, and, in fact, it is already on the radar of the
+Zig team to fix this issue, and it is being tracked on an [open issue](https://github.com/ziglang/zig/issues/18810)[^issue].
+So, if you do need to provide a function that might return an error as the task
+to be performed by the threads in the thread pool, then, you are either limited to:
+
+- implementing your own thread pool that does not have this limitation.
+- wait for the Zig team to actually fix this issue.
+
+[^issue]: <https://github.com/ziglang/zig/issues/18810>
+
 
 
 
 ## Introducing mutexes
+
+Mutexes are a classic component of every thread library. In essence, mutexes are a type of "lock", and they are related to thread syncronization.
+More specifically, they prevent you from having some classic race conditions in your program,
+and, therefore, major bugs and undefined behaviour that are usually difficult to understand.
+
+The main idea behind a mutex is to help us to control the access to data, and to
+prevent two or more threads to read from or write to the same data at the same time.
+Many programmers like to compare a mutex to a bathroom door, which usually have a lock.
+When a thread uses the mutex to lock the data, it is like if the bathroom door was locked,
+and, therefore, the other people (in this case, the other threads) that wants to use the bathroom at the same time
+have to be patient, and simply wait for the door to be unlocked.
+
+When you have an object that is shared will all threads, and, you want to avoid two or more threads from
+accessing this same object at the same time, then, you want to use a mutex to lock this specific object.
+When a thread tries to access an object that is locked, this thread patiently waits for the object to be
+unlocked to continue it's execution. In other words, the execution of the thread is paused while the object
+is locked by the mutex, and it is unpaused the moment that the object is unlocked by the other thread that
+was using this object.
+
+Notice that mutexes are used in objects that are **shared** with all threads.
+So mutexes are not used on objects that are local to the thread, only in objects
+that are either stored in the global data section, or, in the heap space of your program.
 
 
 ## Potential problems in threads
@@ -546,7 +654,7 @@ your operating system.
 That is, when you yield a thread, you are essentially saying the following to your OS:
 "Hey! Could you please stop executing this thread for now, and comeback to continue it later?".
 You could also interpret this yield operation as: "Could you please deprioritize this thread,
-to focus on doing other things instead?", i.e. you are rescheduling the execution of that thread for later.
+to focus on doing other things instead?".
 So this yield operation is also a way for you
 to stop a particular thread, so that you can work and prioritize other threads instead.
 
@@ -554,10 +662,10 @@ Is important to say that, yielding a thread is a "not so commom" thread operatio
 In other words, not many programmers use yielding in production, simply because is hard to use
 this operation and make it work properly, and also, there
 are better alternatives. Most programmers prefer to use `join()` instead.
-In fact, most of the times, when you see somebody using yield, they are using it to help them
-debug race conditions in their applications, i.e. yield is used as a debug tool.
+In fact, most of the times, when you see somebody using yield in some code example, they are mostly using it to help them
+debug race conditions in their applications. That is, yield is mostly used as a debug tool nowadays.
 
-Anyway, if you want to yield a thread, just call the `yield()` method from it.
+Anyway, if you want to yield a thread, just call the `yield()` method from it, like this:
 
 ```zig
 thread.yield();
