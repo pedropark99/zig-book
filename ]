@@ -440,7 +440,7 @@ finish before the main process ends.
 
 ## Introducing thread pools
 
-Thread pools is a very popular programming pattern, which is used specially on servers and daemons processes. A thread pool is just a
+Thread pools is a very popular programming pattern, which is used specially on servers and daemons. A thread pool is just a
 set of threads, or, a "pool" of threads. Many programmers like to use this pattern, because it makes
 easier to manage and use multiple threads, instead of manually creating the threads when you need them.
 
@@ -456,14 +456,14 @@ these threads alive while your program runs. Each of these threads will be eithe
 waiting for a task to be assigned.
 Every time a new task emerges in your program, this task is added to a "queue of tasks".
 The moment that a thread becomes available and ready to perform a new task,
-this thread takes the next task in the "queue of tasks", then,
-it simply performs the task.
+this thread receives the next task registered in this "queue of tasks", then,
+it performs the task.
 
 The Zig Standard Library offers a thread pool implementation on the `std.Thread.Pool` struct.
 You create a new instance of a `Pool` object by providing a `Pool.Options` object
 as input to the `init()` method of this struct. A `Pool.Options` object, is a struct object that contains
-configurations for the pool of threads. The most important settings in this struct object are
-the members `n_jobs` and `allocator`. As the name suggests, the member `allocator` should receive an allocator object,
+configurations for the pool of threads. The most important configuration in this struct object is
+the members `n_jobs` and `allocator`. As the name suggests, the member `allocator` is an allocator object,
 while the member `n_jobs` specifies the number of threads to be created and maintained in this pool.
 
 Consider the example exposed below, that demonstrates how can we create a new thread pool object.
@@ -508,9 +508,7 @@ To assign a task to be performed by a thread, we need to call the `spawn()` meth
 from the thread pool object.
 
 This `spawn()` method works identical to the `spawn()` method from the
-`Thread` object. The method have almost the same arguments as the previous one,
-more precisely, we don't have to provide a `SpawnConfig` object in this case.
-But instead of creating a new thread, this `spawn()` method from
+`Thread` object. The method have the same arguments as the previous one, but instead of creating a new thread, this `spawn()` method from
 the thread pool object just register a new task in the internal "queue of tasks" to be performed,
 and any available thread in the pool will get this task, and it will simply perform the task.
 
@@ -552,19 +550,19 @@ to be performed by the threads in the thread pool, then, you are either limited 
 
 Mutexes are a classic component of every thread library. In essence, mutexes are a type of "lock", and they are related to thread syncronization.
 More specifically, they prevent you from having some classic race conditions in your program,
-and, therefore, major bugs and undefined behaviour that are usually difficult to track and understand.
+and, therefore, major bugs and undefined behaviour that are usually difficult to understand.
 
 The main idea behind a mutex is to help us to control the access to data, and to
 prevent two or more threads to read from or write to the same data at the same time.
-Many programmers like to compare a mutex to a bathroom door (which usually have a lock).
+Many programmers like to compare a mutex to a bathroom door, which usually have a lock.
 When a thread uses the mutex to lock the data, it is like if the bathroom door was locked,
-and, therefore, the other people (in this case, the other threads) that wants to use the same bathroom at the same time
+and, therefore, the other people (in this case, the other threads) that wants to use the bathroom at the same time
 have to be patient, and simply wait for the door to be unlocked.
 
 When you have an object that is shared will all threads, and, you want to avoid two or more threads from
 accessing this same object at the same time, then, you want to use a mutex to lock this specific object.
-When a thread tries to access an object that is locked by a mutex, this thread stops it's execution, and patiently waits for the object to be
-unlocked to continue. In other words, the execution of the thread is paused while the object
+When a thread tries to access an object that is locked, this thread patiently waits for the object to be
+unlocked to continue it's execution. In other words, the execution of the thread is paused while the object
 is locked by the mutex, and it is unpaused the moment that the object is unlocked by the other thread that
 was using this object.
 
@@ -578,128 +576,47 @@ that are either stored in the global data section, or, in the heap space of your
 
 Critical section is a concept commonly associated with mutexes and thread syncronization.
 In essence, a critical section is the section of the program that a thread access a shared resource
-(i.e. an object, a file descriptor, something that all threads have access to). In other words,
-a critical section is the section of the program where race conditions might happen, and, therefor,
-where undefined behaviour can be introduced into the program.
-
-When we use mutexes in our program, we want to lock the shared resource at the beginning of the critical section,
+(i.e. an object, a file descriptor, something that all threads have access to).
+When we use mutexes, we want to lock the shared resource at the beginning of the critical section,
 and then, unlock it at the end of the critical section.
-The two bulletpoints exposed below comes from the "Critical Section" article from GeekFromGeeks,
-and they summarise well the role that a critical section plays in the thread syncronization problem [@geeks_critical_section].
+
+The two bulletpoints exposed below comes from the "Critical Section" article from GeekFromGeeks.
+They summarise well the role that a critical section plays in the thread syncronization problem [@geeks_critical_section].
 
 
 1. The critical section must be executed as an atomic operation, which means that once one thread or process has entered the critical section, all other threads or processes must wait until the executing thread or process exits the critical section. The purpose of synchronization mechanisms is to ensure that only one thread or process can execute the critical section at a time.
 2. The concept of a critical section is central to synchronization in computer systems, as it is necessary to ensure that multiple threads or processes can execute concurrently without interfering with each other. Various synchronization mechanisms such as semaphores, mutexes, monitors, and condition variables are used to implement critical sections and ensure that shared resources are accessed in a mutually exclusive manner.
 
 
-### Atomic operations
-
-You will also see the term "atomic operation" a lot when reading about threads, race conditions and mutexes.
-In summary, an operation is categorized as "atomic", when there is no way to happen a context switch in
-the middle of this operation. In other words, this operation is always done from beginning to end, without interruptions,
-i.e. the operation executes without the interruption of another process or operation in the middle of it's execution phase.
-
-Not many operations today are atomic. But why atomic operations matters here? Is because data races
-(which is a type of a race condition) cannot happen on operations that are atomic.
-So if a particular line in your code performs an atomic operation, then, this line will never
-suffer from a data race problem. Therefore, programmers sometimes use an atomic operation
-to avoid data race problems in their code.
-
-When you have an operation that is compiled into just one single assembly instruction, this operation might be atomic
-because is just one assembly instruction. This is usually true for old CPU architectures (such as `x86`). But nowadays, most
-assembly instructions in modern CPU architectures turn into multiple micro-tasks, which inherently makes the operation not atomic anymore,
-even though it has just one single assembly instruction.
-
-The Zig Standard Library offers some atomic operations on the `std.atomic` module. In this module, we have
-a public generic function called `Value()`. With this function we can create an "atomic value", which is
-a value that contains native atomic operations, most notably, a `load()` and a `fetchAdd()` atomic operations.
-Is important to emphasize that only primitive data types (i.e. the types presented at @sec-primitive-data-types)
-are supported by these atomic operations.
-
-
-
-
-
-### Data races and race conditions
+### Race conditions
 
 To understand why mutexes are used, we need to understand better the problem that they seek
-to solve, which can be summarized into data races problems. A data race problem is a type of a race condition,
-which happens when one thread is accessing a particular memory location (i.e. a particular shared object) at the same
-time that another thread is trying to write/save new data into this same memory location (i.e. the same shared object).
+to solve, which can be summarized into race conditions.
 
-We can simply define a race condition as any type of bug in your program that is based
-on a "who get's there first" problem. A data race problem is a type of a race condition, because it occurs when two or more parties
-are trying to read and write into the same memory location at the same time, and, therefore, the end result of this operation
-depends completely on who get's to this memory location first.
-As consequence, a program that have a data race problem will likely produce a different result each time that we execute it.
 
-Thus, race conditions produce unefined behaviour and unpredictability because the program produces a different
-a different answer in each time that a different person get's to the target location first than the others.
-And we have no easy way to either predict or control who is going to get to this target location first.
-In other words, in each execution of your program,
+
+
+## Potential problems in threads
+
+TODO: calling functions that might return an error inside threads (`try`)
+TODO: talk about deadlocks
+TODO: talk about race conditions
+TODO: joining with a thread that has already been joined leads to undefined behaviour.
+TODO: talk about zombie threads.
+
+
+### Race conditions
+
+Threads create parallelism. As consequence, they create certain amount of confusion and complexity,
+because we get different tasks being performed at the same time. As consequence, depending on the
+size, or, the complexity of your program, or the amount of threads created, it might be difficult
+to track the tasks, and understand what is happening in a particular moment inside your program.
+
+A hole set of problems emerge from parallelism and multi-threaded programming, which are usually
+categorized as "race conditions". A race condition problem is any bug in your program that depends
+on "who get's there first". In other words, in each execution of your program,
 you get a different answer, because a different person, or, a different function, or, a different part of the code is finishing
 its tasks (or it is reaching a location) first than the others.
-
-As an example, consider the code snippet exposed below. In this example, we create a global counter
-variable, and we also create a `increment()` function, whose job is to just increment this global counter
-variable in a for loop.
-
-Since the for loop iterates 1 hundred thousand times, and, we create two separate threads
-in this code example, what number do you expect to see in the final message printed to `stdout`?
-The answer should be 2 hundred thousand. Right? Well, in threory, this program was supposed
-to print 2 hundred thousand at the end, but in practice, every time that I execute this program
-I get a different answer.
-
-In the example exposed below, you can see that this time we have executed the program, the end
-result was 117254, instead of the expected 200000. The second time I have executed this program,
-I got the number 108592 as result. So the end result of this program is varying, but it never gets
-to the expected 200000 that we want.
-
-
-```{zig}
-#| auto_main: false
-#| build_type: "run"
-#| eval: false
-// Global counter variable
-var counter: usize = 0;
-// Function to increment the counter
-fn increment() void {
-    for (0..100000) |_| {
-        counter += 1;
-    }
-}
-
-pub fn main() !void {
-    const thr1 = try Thread.spawn(.{}, increment, .{});
-    const thr2 = try Thread.spawn(.{}, increment, .{});
-    thr1.join();
-    thr2.join();
-    try stdout.print("Couter value: {d}\n", .{counter});
-}
-```
-
-```
-Couter value: 117254
-```
-
-
-Why this is happening? The answer is: because this program contains a data race problem.
-This program would print the correct number 200000, if, and only if the first thread finishs
-it's tasks before the second thread starts to execute. But that is very unlikely to happen.
-Because the process of creating the thread is too fast, and therefore, both threads starts to execute roughly
-at the same time. Thus, if we add some nanoseconds of sleep between the first and the second calls to `spawn()`,
-we will increase the chances of the program producing the "correct result".
-
-
-
-## Read/Write locks
-
-The Zig Standard Library supports read/write locks through the `std.Thread.RwLock` module.
-The locks implemented in this Zig module are semantically equal to the the
-read/write locks from the `pthreads` C library, which corresponds to the `pthread_rwlock_t` C struct.
-
-As a simple example, the code below creates two separate threads, and each thread
-is trying to print stuff to the `stdout`. You can notice that 
 
 ```{zig}
 #| eval: false
@@ -728,19 +645,6 @@ Starting thread 2.
 Finishing thread Finishing thread 2.
 1.
 ```
-
-
-
-
-
-## Potential problems in threads
-
-TODO: calling functions that might return an error inside threads (`try`)
-TODO: talk about deadlocks
-TODO: talk about race conditions
-TODO: joining with a thread that has already been joined leads to undefined behaviour.
-TODO: talk about zombie threads.
-
 
 
 
