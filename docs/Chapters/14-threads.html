@@ -323,9 +323,10 @@ window.Quarto = {
   <li><a href="#introducing-thread-pools" id="toc-introducing-thread-pools" class="nav-link" data-scroll-target="#introducing-thread-pools"><span class="header-section-number">16.5</span> Introducing thread pools</a></li>
   <li><a href="#introducing-mutexes" id="toc-introducing-mutexes" class="nav-link" data-scroll-target="#introducing-mutexes"><span class="header-section-number">16.6</span> Introducing mutexes</a>
   <ul class="collapse">
-  <li><a href="#critical-section" id="toc-critical-section" class="nav-link" data-scroll-target="#critical-section"><span class="header-section-number">16.6.1</span> Critical section</a></li>
-  <li><a href="#atomic-operations" id="toc-atomic-operations" class="nav-link" data-scroll-target="#atomic-operations"><span class="header-section-number">16.6.2</span> Atomic operations</a></li>
+  <li><a href="#sec-critical-section" id="toc-sec-critical-section" class="nav-link" data-scroll-target="#sec-critical-section"><span class="header-section-number">16.6.1</span> Critical section</a></li>
+  <li><a href="#sec-atomic-operation" id="toc-sec-atomic-operation" class="nav-link" data-scroll-target="#sec-atomic-operation"><span class="header-section-number">16.6.2</span> Atomic operations</a></li>
   <li><a href="#data-races-and-race-conditions" id="toc-data-races-and-race-conditions" class="nav-link" data-scroll-target="#data-races-and-race-conditions"><span class="header-section-number">16.6.3</span> Data races and race conditions</a></li>
+  <li><a href="#using-mutexes-in-zig" id="toc-using-mutexes-in-zig" class="nav-link" data-scroll-target="#using-mutexes-in-zig"><span class="header-section-number">16.6.4</span> Using mutexes in Zig</a></li>
   </ul></li>
   <li><a href="#readwrite-locks" id="toc-readwrite-locks" class="nav-link" data-scroll-target="#readwrite-locks"><span class="header-section-number">16.7</span> Read/Write locks</a></li>
   <li><a href="#potential-problems-in-threads" id="toc-potential-problems-in-threads" class="nav-link" data-scroll-target="#potential-problems-in-threads"><span class="header-section-number">16.8</span> Potential problems in threads</a>
@@ -577,8 +578,8 @@ Joining thread 2</code></pre>
 <p>The main idea behind a mutex is to help us to control the access to data, and to prevent two or more threads to read from or write to the same data at the same time. Many programmers like to compare a mutex to a bathroom door (which usually have a lock). When a thread uses the mutex to lock the data, it is like if the bathroom door was locked, and, therefore, the other people (in this case, the other threads) that wants to use the same bathroom at the same time have to be patient, and simply wait for the door to be unlocked.</p>
 <p>When you have an object that is shared will all threads, and, you want to avoid two or more threads from accessing this same object at the same time, then, you want to use a mutex to lock this specific object. When a thread tries to access an object that is locked by a mutex, this thread stops it’s execution, and patiently waits for the object to be unlocked to continue. In other words, the execution of the thread is paused while the object is locked by the mutex, and it is unpaused the moment that the object is unlocked by the other thread that was using this object.</p>
 <p>Notice that mutexes are used in objects that are <strong>shared</strong> with all threads. So mutexes are not used on objects that are local to the thread, only in objects that are either stored in the global data section, or, in the heap space of your program.</p>
-<section id="critical-section" class="level3" data-number="16.6.1">
-<h3 data-number="16.6.1" class="anchored" data-anchor-id="critical-section"><span class="header-section-number">16.6.1</span> Critical section</h3>
+<section id="sec-critical-section" class="level3" data-number="16.6.1">
+<h3 data-number="16.6.1" class="anchored" data-anchor-id="sec-critical-section"><span class="header-section-number">16.6.1</span> Critical section</h3>
 <p>Critical section is a concept commonly associated with mutexes and thread syncronization. In essence, a critical section is the section of the program that a thread access a shared resource (i.e.&nbsp;an object, a file descriptor, something that all threads have access to). In other words, a critical section is the section of the program where race conditions might happen, and, therefor, where undefined behaviour can be introduced into the program.</p>
 <p>When we use mutexes in our program, we want to lock the shared resource at the beginning of the critical section, and then, unlock it at the end of the critical section. The two bulletpoints exposed below comes from the “Critical Section” article from GeekFromGeeks, and they summarise well the role that a critical section plays in the thread syncronization problem <span class="citation" data-cites="geeks_critical_section">(<a href="../references.html#ref-geeks_critical_section" role="doc-biblioref">Geeks for Geeks 2024</a>)</span>.</p>
 <ol type="1">
@@ -586,8 +587,8 @@ Joining thread 2</code></pre>
 <li>The concept of a critical section is central to synchronization in computer systems, as it is necessary to ensure that multiple threads or processes can execute concurrently without interfering with each other. Various synchronization mechanisms such as semaphores, mutexes, monitors, and condition variables are used to implement critical sections and ensure that shared resources are accessed in a mutually exclusive manner.</li>
 </ol>
 </section>
-<section id="atomic-operations" class="level3" data-number="16.6.2">
-<h3 data-number="16.6.2" class="anchored" data-anchor-id="atomic-operations"><span class="header-section-number">16.6.2</span> Atomic operations</h3>
+<section id="sec-atomic-operation" class="level3" data-number="16.6.2">
+<h3 data-number="16.6.2" class="anchored" data-anchor-id="sec-atomic-operation"><span class="header-section-number">16.6.2</span> Atomic operations</h3>
 <p>You will also see the term “atomic operation” a lot when reading about threads, race conditions and mutexes. In summary, an operation is categorized as “atomic”, when there is no way to happen a context switch in the middle of this operation. In other words, this operation is always done from beginning to end, without interruptions, i.e.&nbsp;the operation executes without the interruption of another process or operation in the middle of it’s execution phase.</p>
 <p>Not many operations today are atomic. But why atomic operations matters here? Is because data races (which is a type of a race condition) cannot happen on operations that are atomic. So if a particular line in your code performs an atomic operation, then, this line will never suffer from a data race problem. Therefore, programmers sometimes use an atomic operation to avoid data race problems in their code.</p>
 <p>When you have an operation that is compiled into just one single assembly instruction, this operation might be atomic because is just one assembly instruction. This is usually true for old CPU architectures (such as <code>x86</code>). But nowadays, most assembly instructions in modern CPU architectures turn into multiple micro-tasks, which inherently makes the operation not atomic anymore, even though it has just one single assembly instruction.</p>
@@ -620,7 +621,148 @@ Joining thread 2</code></pre>
 <span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Couter value: 117254</code></pre>
-<p>Why this is happening? The answer is: because this program contains a data race problem. This program would print the correct number 200000, if, and only if the first thread finishs it’s tasks before the second thread starts to execute. But that is very unlikely to happen. Because the process of creating the thread is too fast, and therefore, both threads starts to execute roughly at the same time. Thus, if we add some nanoseconds of sleep between the first and the second calls to <code>spawn()</code>, we will increase the chances of the program producing the “correct result”.</p>
+<p>Why this is happening? The answer is: because this program contains a data race problem. This program would print the correct number 200000, if, and only if the first thread finishs it’s tasks before the second thread starts to execute. But that is very unlikely to happen. Because the process of creating the thread is too fast, and therefore, both threads starts to execute roughly at the same time. If you change this code to add some microseconds of sleep between the first and the second calls to <code>spawn()</code>, we will increase the chances of the program producing the “correct result”.</p>
+<p>So the data race problem happens, because both threads are reading and writing to the same memory location at roughly the same time. In this example, each thread is essentially performing three basic operations inside the for loop, which are:</p>
+<ol type="1">
+<li>reading the current value of <code>count</code>.</li>
+<li>incrementing this value by 1.</li>
+<li>writing the result back into <code>count</code>.</li>
+</ol>
+<p>Ideally, a thread B should read the value of <code>count</code>, only after the other thread A has finished writing the incremented value back into the <code>count</code> object. Therefore, in the ideal scenario, which is demonstrated at <a href="#tbl-data-race-ideal" class="quarto-xref">Table&nbsp;<span>16.1</span></a>, the threads should work in sync with each other. But the reality is that these threads are out of sync, and because of that, they suffer from a data race problem, which is demonstrated at <a href="#tbl-data-race-not" class="quarto-xref">Table&nbsp;<span>16.2</span></a>.</p>
+<p>Notice that, in the data race scenario, the read performed by a thread B happens before the write operation of thread A, and that ultimately leads to wrong results at the end of the program. Because when the thread B reads the value from the <code>count</code> variable, the thread A is still processing the initial value from <code>count</code>, and it did not write the new and incremented value into <code>count</code> yet. So what happens is that thread B ends up reading the same initial value (the “old” value) from <code>count</code>, instead of reading the new and incremented version of this value that would be calculated by thread A.</p>
+<div id="tbl-data-race-ideal" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-data-race-ideal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;16.1: An ideal scenario for two threads incrementing the same integer value
+</figcaption>
+<div aria-describedby="tbl-data-race-ideal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Thread 1</th>
+<th>Thread 2</th>
+<th>Integer value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>read value</td>
+<td></td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>increment</td>
+<td></td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>write value</td>
+<td></td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>read value</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>increment</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>write value</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<div id="tbl-data-race-not" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-data-race-not-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;16.2: A data race scenario when two threads are incrementing the same integer value
+</figcaption>
+<div aria-describedby="tbl-data-race-not-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Thread 1</th>
+<th>Thread 2</th>
+<th>Integer value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>read value</td>
+<td></td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>read value</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td>increment</td>
+<td></td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>increment</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>write value</td>
+<td></td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>write value</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>If you think about these diagrams exposed in form of tables, you will notice that they relate back to our discussion of atomic operations at <a href="#sec-atomic-operation" class="quarto-xref"><span>Section 16.6.2</span></a>. Remember, atomic operations are operations that the CPU executes from beginning to end, without interruptions from other threads or processes. So, the scenario exposed at <a href="#tbl-data-race-ideal" class="quarto-xref">Table&nbsp;<span>16.1</span></a> do not suffer from a data race, because the operations performed by thread A are not interrupted in the middle by the operations from thread B.</p>
+<p>If we also think about the discussion of critical section from <a href="#sec-critical-section" class="quarto-xref"><span>Section 16.6.1</span></a>, we can identify the section that representes the critical section of the program, which is the section that is vulnerable to data race conditions. In this example, the critical section of the program is the line where we increment the <code>counter</code> variable. So, ideally, we want to use a mutex, and lock right before this line, and then, unlock right after this line.</p>
+</section>
+<section id="using-mutexes-in-zig" class="level3" data-number="16.6.4">
+<h3 data-number="16.6.4" class="anchored" data-anchor-id="using-mutexes-in-zig"><span class="header-section-number">16.6.4</span> Using mutexes in Zig</h3>
+<p>Now that we know the problem that mutexes seek to solve, we can learn how to use them in Zig. Mutexes in Zig are available through the <code>std.Thread.Mutex</code> struct from the Zig Standard Library. If we take the same code example from the previous example, and improve it with mutexes, to solve our data race problem, we get the code example exposed below.</p>
+<p>Notice that we had this time to alter the <code>increment()</code> function to receive a pointer to the <code>Mutex</code> object as input. All that we need to do, to make this program safe against data race problems, is to call the <code>lock()</code> method at the beginning of the critical section, and then, call <code>unlock()</code> at the end of the critical section. Notice that the output of this program is the correct number of 200000.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Mutex = std.Thread.Mutex;</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> counter: <span class="dt">usize</span> = <span class="dv">0</span>;</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> increment(mutex: *Mutex) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..<span class="dv">100000</span>) |_| <span class="op">{</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>        mutex.lock();</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>        counter += <span class="dv">1</span>;</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>        mutex.unlock();</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> mutex: Mutex = .<span class="op">{}</span>;</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, increment, .<span class="op">{</span>&amp;mutex<span class="op">}</span>);</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, increment, .<span class="op">{</span>&amp;mutex<span class="op">}</span>);</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>    thr1.join();</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Couter value: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>counter<span class="op">}</span>);</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Couter value: 200000</code></pre>
+</div>
+</div>
 </section>
 </section>
 <section id="readwrite-locks" class="level2" data-number="16.7">
@@ -628,23 +770,23 @@ Joining thread 2</code></pre>
 <p>The Zig Standard Library supports read/write locks through the <code>std.Thread.RwLock</code> module. The locks implemented in this Zig module are semantically equal to the the read/write locks from the <code>pthreads</code> C library, which corresponds to the <code>pthread_rwlock_t</code> C struct.</p>
 <p>As a simple example, the code below creates two separate threads, and each thread is trying to print stuff to the <code>stdout</code>. You can notice that</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> do_some_work(thread_id: *<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.print(<span class="st">"Starting thread {d}.</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>thread_id.*<span class="op">}</span>);</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    std.time.sleep(<span class="dv">100</span> * std.time.ns_per_ms);</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.print(<span class="st">"Finishing thread {d}.</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>thread_id.*<span class="op">}</span>);</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id1: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id2: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work, .<span class="op">{</span>&amp;id2<span class="op">}</span>);</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    thread1.join();</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    thread2.join();</span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> do_some_work(thread_id: *<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.print(<span class="st">"Starting thread {d}.</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>thread_id.*<span class="op">}</span>);</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    std.time.sleep(<span class="dv">100</span> * std.time.ns_per_ms);</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.print(<span class="st">"Finishing thread {d}.</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>thread_id.*<span class="op">}</span>);</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id1: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id2: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work, .<span class="op">{</span>&amp;id2<span class="op">}</span>);</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>    thread1.join();</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    thread2.join();</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Starting thread 1.
 Starting thread 2.
@@ -666,7 +808,7 @@ Finishing thread Finishing thread 2.
 <p>That is, when you yield a thread, you are essentially saying the following to your OS: “Hey! Could you please stop executing this thread for now, and comeback to continue it later?”. You could also interpret this yield operation as: “Could you please deprioritize this thread, to focus on doing other things instead?”. So this yield operation is also a way for you to stop a particular thread, so that you can work and prioritize other threads instead.</p>
 <p>Is important to say that, yielding a thread is a “not so commom” thread operation these days. In other words, not many programmers use yielding in production, simply because is hard to use this operation and make it work properly, and also, there are better alternatives. Most programmers prefer to use <code>join()</code> instead. In fact, most of the times, when you see somebody using yield in some code example, they are mostly using it to help them debug race conditions in their applications. That is, yield is mostly used as a debug tool nowadays.</p>
 <p>Anyway, if you want to yield a thread, just call the <code>yield()</code> method from it, like this:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>thread.yield();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>thread.yield();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="how-to-stop-cancel-of-kill-a-particular-thread" class="level2" data-number="16.10">
 <h2 data-number="16.10" class="anchored" data-anchor-id="how-to-stop-cancel-of-kill-a-particular-thread"><span class="header-section-number">16.10</span> How to stop, cancel of kill a particular thread</h2>

@@ -574,7 +574,7 @@ that are either stored in the global data section, or, in the heap space of your
 
 
 
-### Critical section
+### Critical section {#sec-critical-section}
 
 Critical section is a concept commonly associated with mutexes and thread syncronization.
 In essence, a critical section is the section of the program that a thread access a shared resource
@@ -592,7 +592,7 @@ and they summarise well the role that a critical section plays in the thread syn
 2. The concept of a critical section is central to synchronization in computer systems, as it is necessary to ensure that multiple threads or processes can execute concurrently without interfering with each other. Various synchronization mechanisms such as semaphores, mutexes, monitors, and condition variables are used to implement critical sections and ensure that shared resources are accessed in a mutually exclusive manner.
 
 
-### Atomic operations
+### Atomic operations {#sec-atomic-operation}
 
 You will also see the term "atomic operation" a lot when reading about threads, race conditions and mutexes.
 In summary, an operation is categorized as "atomic", when there is no way to happen a context switch in
@@ -687,8 +687,111 @@ Why this is happening? The answer is: because this program contains a data race 
 This program would print the correct number 200000, if, and only if the first thread finishs
 it's tasks before the second thread starts to execute. But that is very unlikely to happen.
 Because the process of creating the thread is too fast, and therefore, both threads starts to execute roughly
-at the same time. Thus, if we add some nanoseconds of sleep between the first and the second calls to `spawn()`,
+at the same time. If you change this code to add some microseconds of sleep between the first and the second calls to `spawn()`,
 we will increase the chances of the program producing the "correct result".
+
+So the data race problem happens, because both threads are reading and writing to the same
+memory location at roughly the same time. In this example, each thread is essentially performing
+three basic operations inside the for loop, which are:
+
+1. reading the current value of `count`.
+1. incrementing this value by 1.
+1. writing the result back into `count`.
+
+Ideally, a thread B should read the value of `count`, only after the other thread A has finished
+writing the incremented value back into the `count` object. Therefore, in the ideal scenario, which is demonstrated
+at @tbl-data-race-ideal, the threads should work in sync with each other. But the reality is that these
+threads are out of sync, and because of that, they suffer from a data race problem, which is demonstrated
+at @tbl-data-race-not.
+
+Notice that, in the data race scenario, the read performed by a thread B happens
+before the write operation of thread A, and that ultimately leads to wrong results at the end of the program.
+Because when the thread B reads the value from the `count` variable, the thread A is still processing
+the initial value from `count`, and it did not write the new and incremented value into `count` yet. So what
+happens is that thread B ends up reading the same initial value (the "old" value) from `count`, instead of
+reading the new and incremented version of this value that would be calculated by thread A.
+
+
+::: {#tbl-data-race-ideal}
+
+| Thread 1    | Thread 2    | Integer value |
+|-------------|-------------|---------------|
+| read value  |             | 0             |
+| increment   |             | 1             |
+| write value |             | 1             |
+|             | read value  | 1             |
+|             | increment   | 2             |
+|             | write value | 2             |
+
+: An ideal scenario for two threads incrementing the same integer value
+:::
+
+::: {#tbl-data-race-not}
+
+| Thread 1    | Thread 2    | Integer value |
+|-------------|-------------|---------------|
+| read value  |             | 0             |
+|             | read value  | 0             |
+| increment   |             | 1             |
+|             | increment   | 1             |
+| write value |             | 1             |
+|             | write value | 1             |
+
+: A data race scenario when two threads are incrementing the same integer value
+:::
+
+
+If you think about these diagrams exposed in form of tables, you will notice that they relate back to our discussion of atomic operations
+at @sec-atomic-operation. Remember, atomic operations are operations that the CPU executes
+from beginning to end, without interruptions from other threads or processes. So,
+the scenario exposed at @tbl-data-race-ideal do not suffer from a data race, because
+the operations performed by thread A are not interrupted in the middle by the operations
+from thread B.
+
+If we also think about the discussion of critical section from @sec-critical-section, we can identify
+the section that representes the critical section of the program, which is the section that is vulnerable
+to data race conditions. In this example, the critical section of the program is the line where we increment
+the `counter` variable. So, ideally, we want to use a mutex, and lock right before this line, and then,
+unlock right after this line.
+
+
+### Using mutexes in Zig
+
+Now that we know the problem that mutexes seek to solve, we can learn how to use them in Zig.
+Mutexes in Zig are available through the `std.Thread.Mutex` struct from the Zig Standard Library.
+If we take the same code example from the previous example, and improve it with mutexes, to solve
+our data race problem, we get the code example exposed below.
+
+Notice that we had this time to alter the `increment()` function to receive a pointer to
+the `Mutex` object as input. All that we need to do, to make this program safe against
+data race problems, is to call the `lock()` method at the beginning of
+the critical section, and then, call `unlock()` at the end of the critical section.
+Notice that the output of this program is the correct number of 200000.
+
+```{zig}
+#| build_type: "run"
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+const Thread = std.Thread;
+const Mutex = std.Thread.Mutex;
+var counter: usize = 0;
+fn increment(mutex: *Mutex) void {
+    for (0..100000) |_| {
+        mutex.lock();
+        counter += 1;
+        mutex.unlock();
+    }
+}
+
+pub fn main() !void {
+    var mutex: Mutex = .{};
+    const thr1 = try Thread.spawn(.{}, increment, .{&mutex});
+    const thr2 = try Thread.spawn(.{}, increment, .{&mutex});
+    thr1.join();
+    thr2.join();
+    try stdout.print("Couter value: {d}\n", .{counter});
+}
+```
 
 
 
