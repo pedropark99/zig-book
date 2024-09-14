@@ -2,12 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.5.56">
+<meta name="generator" content="quarto-1.4.554">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>16&nbsp; Introducing threads and parallelism in Zig – Introduction to Zig: a project-based book</title>
+<title>Introduction to Zig: a project-based book - 16&nbsp; Introducing threads and parallelism in Zig</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -33,7 +33,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -125,7 +125,7 @@ div.csl-indent {
   }
 }</script>
 
-  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
 <script type="text/javascript">
@@ -163,13 +163,13 @@ window.Quarto = {
   <header id="quarto-header" class="headroom fixed-top">
   <nav class="quarto-secondary-nav">
     <div class="container-fluid d-flex">
-      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
         <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/14-threads.html"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Introducing threads and parallelism in Zig</span></a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
-      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
         <i class="bi bi-search"></i>
       </button>
     </div>
@@ -574,10 +574,12 @@ Joining thread 2</code></pre>
 </section>
 <section id="introducing-mutexes" class="level2" data-number="16.6">
 <h2 data-number="16.6" class="anchored" data-anchor-id="introducing-mutexes"><span class="header-section-number">16.6</span> Introducing mutexes</h2>
-<p>Mutexes are a classic component of every thread library. In essence, mutexes are a type of “lock”, and they are related to thread syncronization. More specifically, they prevent you from having some classic race conditions in your program, and, therefore, major bugs and undefined behaviour that are usually difficult to track and understand.</p>
-<p>The main idea behind a mutex is to help us to control the access to data, and to prevent two or more threads to read from or write to the same data at the same time. Many programmers like to compare a mutex to a bathroom door (which usually have a lock). When a thread uses the mutex to lock the data, it is like if the bathroom door was locked, and, therefore, the other people (in this case, the other threads) that wants to use the same bathroom at the same time have to be patient, and simply wait for the door to be unlocked.</p>
-<p>When you have an object that is shared will all threads, and, you want to avoid two or more threads from accessing this same object at the same time, then, you want to use a mutex to lock this specific object. When a thread tries to access an object that is locked by a mutex, this thread stops it’s execution, and patiently waits for the object to be unlocked to continue. In other words, the execution of the thread is paused while the object is locked by the mutex, and it is unpaused the moment that the object is unlocked by the other thread that was using this object.</p>
-<p>Notice that mutexes are used in objects that are <strong>shared</strong> with all threads. So mutexes are not used on objects that are local to the thread, only in objects that are either stored in the global data section, or, in the heap space of your program.</p>
+<p>Mutexes are a classic component of every thread library. In essence, a mutex is a <em>Mutually Exclusive Flag</em>, and this flag acts like a type of “lock”, or as a gate keeper to a particular section of your code. Mutexes are related to thread syncronization, more specifically, they prevent you from having some classic race conditions in your program, and, therefore, major bugs and undefined behaviour that are usually difficult to track and understand.</p>
+<p>The main idea behind a mutex is to help us to control the execution of a particular section of the code, and to prevent two or more threads from executing this particular section of the code at the same time. Many programmers like to compare a mutex to a bathroom door (which usually have a lock). When a thread uses the mutex to lock the data, it is like if the bathroom door was locked, and, therefore, the other people (in this case, the other threads) that wants to use the same bathroom at the same time have to be patient, and simply wait for the door to be unlocked.</p>
+<p>Some other programmers also like to explain mutexes by using the analogy of “each person will have their turn to speak”. This is the analogy used on the <a href="https://www.youtube.com/watch?v=7ENFeb-J75k&amp;ab_channel=Computerphile"><em>Multithreading code</em> video from the Computherfile project</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. Imagine if you are in a conversation circle. There is a moderator in this circle, which is the person that decides who have the right to speak at that particular moment. The moderator gives a green card to the person that is going to speak, and, as a result, everyone else must be silent and hear this person that has the green card. When the person finishs talking, it gives the green card back to the moderator, and the moderator decides who is going to talk next, and delivers the green card to that person. And the cycle goes on like this.</p>
+<p>A mutex acts like the moderator in this conversation circle. The mutex authorizes one single thread to execute a specific section of the code, and it also blocks the other threads from executing this same section of the code. If these other threads wants to execute this same piece of the code, they are forced to wait for the the authorized thread to finish first. When the authorized thread finishs executing this code, the mutex authorizes the next thread to execute this code, and the other threads are still blocked. Therefore, a mutex is a moderator that does a “each thread will have their turn to execute this section of the code” type of control.</p>
+<p>Mutexes are specially used to prevent against data race problems, which happens when two or more threads are trying to read from or write to the same shared object at the same time. So, when you have an object that is shared will all threads, and, you want to avoid two or more threads from accessing this same object at the same time, you can use a mutex to lock this specific object. When a thread tries to access an object that is locked by a mutex, this thread stops it’s execution, and patiently waits for the object to be unlocked to continue.</p>
+<p>In other words, the execution of the thread is paused while the object is locked by the mutex, and it is unpaused the moment that the object is unlocked by the other thread that was using this object. Notice that mutexes are used in objects that are <strong>shared</strong> with all threads. So mutexes are not used on objects that are local to the thread, only in objects that are either stored in the global data section, or, in the heap space of your program.</p>
 <section id="sec-critical-section" class="level3" data-number="16.6.1">
 <h3 data-number="16.6.1" class="anchored" data-anchor-id="sec-critical-section"><span class="header-section-number">16.6.1</span> Critical section</h3>
 <p>Critical section is a concept commonly associated with mutexes and thread syncronization. In essence, a critical section is the section of the program that a thread access a shared resource (i.e.&nbsp;an object, a file descriptor, something that all threads have access to). In other words, a critical section is the section of the program where race conditions might happen, and, therefor, where undefined behaviour can be introduced into the program.</p>
@@ -621,22 +623,22 @@ Joining thread 2</code></pre>
 <span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Couter value: 117254</code></pre>
-<p>Why this is happening? The answer is: because this program contains a data race problem. This program would print the correct number 200000, if, and only if the first thread finishs it’s tasks before the second thread starts to execute. But that is very unlikely to happen. Because the process of creating the thread is too fast, and therefore, both threads starts to execute roughly at the same time. If you change this code to add some microseconds of sleep between the first and the second calls to <code>spawn()</code>, we will increase the chances of the program producing the “correct result”.</p>
-<p>So the data race problem happens, because both threads are reading and writing to the same memory location at roughly the same time. In this example, each thread is essentially performing three basic operations inside the for loop, which are:</p>
+<p>Why this is happening? The answer is: because this program contains a data race problem. This program would print the correct number 200000, if, and only if the first thread finishs it’s tasks before the second thread starts to execute. But that is very unlikely to happen. Because the process of creating the thread is too fast, and therefore, both threads starts to execute roughly at the same time. If you change this code to add some nanoseconds of sleep between the first and the second calls to <code>spawn()</code>, you will increase the chances of the program producing the “correct result”.</p>
+<p>So the data race problem happens, because both threads are reading and writing to the same memory location at roughly the same time. In this example, each thread is essentially performing three basic operations at each iteration of the for loop, which are:</p>
 <ol type="1">
 <li>reading the current value of <code>count</code>.</li>
 <li>incrementing this value by 1.</li>
 <li>writing the result back into <code>count</code>.</li>
 </ol>
 <p>Ideally, a thread B should read the value of <code>count</code>, only after the other thread A has finished writing the incremented value back into the <code>count</code> object. Therefore, in the ideal scenario, which is demonstrated at <a href="#tbl-data-race-ideal" class="quarto-xref">Table&nbsp;<span>16.1</span></a>, the threads should work in sync with each other. But the reality is that these threads are out of sync, and because of that, they suffer from a data race problem, which is demonstrated at <a href="#tbl-data-race-not" class="quarto-xref">Table&nbsp;<span>16.2</span></a>.</p>
-<p>Notice that, in the data race scenario, the read performed by a thread B happens before the write operation of thread A, and that ultimately leads to wrong results at the end of the program. Because when the thread B reads the value from the <code>count</code> variable, the thread A is still processing the initial value from <code>count</code>, and it did not write the new and incremented value into <code>count</code> yet. So what happens is that thread B ends up reading the same initial value (the “old” value) from <code>count</code>, instead of reading the new and incremented version of this value that would be calculated by thread A.</p>
-<div id="tbl-data-race-ideal" class="quarto-float quarto-figure quarto-figure-center anchored">
+<p>Notice that, in the data race scenario (#tbl-data-race-not), the read performed by a thread B happens before the write operation of thread A, and that ultimately leads to wrong results at the end of the program. Because when the thread B reads the value from the <code>count</code> variable, the thread A is still processing the initial value from <code>count</code>, and it did not write the new and incremented value into <code>count</code> yet. So what happens is that thread B ends up reading the same initial value (the “old” value) from <code>count</code>, instead of reading the new and incremented version of this value that would be calculated by thread A.</p>
+<div id="tbl-data-race-ideal" class="quarto-float anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-data-race-ideal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;16.1: An ideal scenario for two threads incrementing the same integer value
 </figcaption>
 <div aria-describedby="tbl-data-race-ideal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<table class="caption-top table">
+<table class="table">
 <thead>
 <tr class="header">
 <th>Thread 1</th>
@@ -680,13 +682,13 @@ Table&nbsp;16.1: An ideal scenario for two threads incrementing the same integer
 </div>
 </figure>
 </div>
-<div id="tbl-data-race-not" class="quarto-float quarto-figure quarto-figure-center anchored">
+<div id="tbl-data-race-not" class="quarto-float anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-data-race-not-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;16.2: A data race scenario when two threads are incrementing the same integer value
 </figcaption>
 <div aria-describedby="tbl-data-race-not-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<table class="caption-top table">
+<table class="table">
 <thead>
 <tr class="header">
 <th>Thread 1</th>
@@ -767,6 +769,8 @@ Table&nbsp;16.2: A data race scenario when two threads are incrementing the same
 </section>
 <section id="readwrite-locks" class="level2" data-number="16.7">
 <h2 data-number="16.7" class="anchored" data-anchor-id="readwrite-locks"><span class="header-section-number">16.7</span> Read/Write locks</h2>
+<p>Mutexes are a type of lock suited for objects and regions of memory. However, sometimes, we also need to use other types of locks, specially for things that are not inside memory. For example, files in the filesystem are usually stored in the hard disk of your computer, instead of in the memory.</p>
+<p>Files in the filesystem might also be the source of race condition problems in your program. In other words, you might cause different types of race conditions in your program, if two or more threads try to read from or write to the same file at the same time.</p>
 <p>The Zig Standard Library supports read/write locks through the <code>std.Thread.RwLock</code> module. The locks implemented in this Zig module are semantically equal to the the read/write locks from the <code>pthreads</code> C library, which corresponds to the <code>pthread_rwlock_t</code> C struct.</p>
 <p>As a simple example, the code below creates two separate threads, and each thread is trying to print stuff to the <code>stdout</code>. You can notice that</p>
 <div class="cell">
@@ -827,6 +831,7 @@ Linux man-pages. 2024. <span>“Pthread_create(3) — Linux Manual Page.”</spa
 <hr>
 <ol>
 <li id="fn1"><p><a href="https://github.com/ziglang/zig/issues/18810" class="uri">https://github.com/ziglang/zig/issues/18810</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p><a href="https://www.youtube.com/watch?v=7ENFeb-J75k&amp;ab_channel=Computerphile" class="uri">https://www.youtube.com/watch?v=7ENFeb-J75k&amp;ab_channel=Computerphile</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
@@ -1010,7 +1015,18 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
     return false;
   }
-  const onCopySuccess = function(e) {
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
     // button target
     const button = e.trigger;
     // don't keep focus
@@ -1042,29 +1058,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }, 1000);
     // clear code selection
     e.clearSelection();
-  }
-  const getTextToCopy = function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-  }
-  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
-    text: getTextToCopy
   });
-  clipboard.on('success', onCopySuccess);
-  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-    // For code content inside modals, clipBoardJS needs to be initialized with a container option
-    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
-    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
-      text: getTextToCopy,
-      container: window.document.getElementById('quarto-embedded-source-code-modal')
-    });
-    clipboardModal.on('success', onCopySuccess);
-  }
     var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
     var mailtoRegex = new RegExp(/^mailto:/);
       var filterRegex = new RegExp('/' + window.location.host + '/');
@@ -1072,7 +1066,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
     }
     // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
     for (var i=0; i<links.length; i++) {
       const link = links[i];
       if (!isInternal(link.href)) {

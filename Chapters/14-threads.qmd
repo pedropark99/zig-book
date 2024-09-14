@@ -550,24 +550,48 @@ to be performed by the threads in the thread pool, then, you are either limited 
 
 ## Introducing mutexes
 
-Mutexes are a classic component of every thread library. In essence, mutexes are a type of "lock", and they are related to thread syncronization.
-More specifically, they prevent you from having some classic race conditions in your program,
+Mutexes are a classic component of every thread library. In essence, a mutex is a *Mutually Exclusive Flag*, and this flag
+acts like a type of "lock", or as a gate keeper to a particular section of your code. Mutexes are related to thread syncronization,
+more specifically, they prevent you from having some classic race conditions in your program,
 and, therefore, major bugs and undefined behaviour that are usually difficult to track and understand.
 
-The main idea behind a mutex is to help us to control the access to data, and to
-prevent two or more threads to read from or write to the same data at the same time.
+The main idea behind a mutex is to help us to control the execution of a particular section of the code, and to
+prevent two or more threads from executing this particular section of the code at the same time.
 Many programmers like to compare a mutex to a bathroom door (which usually have a lock).
 When a thread uses the mutex to lock the data, it is like if the bathroom door was locked,
 and, therefore, the other people (in this case, the other threads) that wants to use the same bathroom at the same time
 have to be patient, and simply wait for the door to be unlocked.
 
-When you have an object that is shared will all threads, and, you want to avoid two or more threads from
-accessing this same object at the same time, then, you want to use a mutex to lock this specific object.
+Some other programmers also like to explain mutexes by using the analogy of "each person will have their turn to speak".
+This is the analogy used on the [*Multithreading Code* video from the Computherfile project](https://www.youtube.com/watch?v=7ENFeb-J75k&ab_channel=Computerphile)[^computerphile].
+Imagine
+if you are in a conversation circle. There is a moderator in this circle, which is the person that decides who
+have the right to speak at that particular moment. The moderator gives a green card to the person that
+is going to speak, and, as a result, everyone else must be silent and hear this person that has the green card.
+When the person finishs talking, it gives the green card back to the moderator, and the moderator decides
+who is going to talk next, and delivers the green card to that person. And the cycle goes on like this.
+
+[^computerphile]: <https://www.youtube.com/watch?v=7ENFeb-J75k&ab_channel=Computerphile>
+
+
+A mutex acts like the moderator in this conversation circle. The mutex authorizes one single thread to execute a specific section of the code,
+and it also blocks the other threads from executing this same section of the code. If these other threads wants to execute this same
+piece of the code, they are forced to wait for the the authorized thread to finish first.
+When the authorized thread finishs executing this code, the mutex authorizes the next thread to execute this code,
+and the other threads are still blocked. Therefore, a mutex is a moderator that does a "each thread will have their turn to execute this section of the code"
+type of control.
+
+
+Mutexes are specially used to prevent against data race problems, which happens when two or more threads are trying to read from or write to the same shared
+object at the same time.
+So, when you have an object that is shared will all threads, and, you want to avoid two or more threads from
+accessing this same object at the same time, you can use a mutex to lock this specific object.
 When a thread tries to access an object that is locked by a mutex, this thread stops it's execution, and patiently waits for the object to be
-unlocked to continue. In other words, the execution of the thread is paused while the object
+unlocked to continue.
+
+In other words, the execution of the thread is paused while the object
 is locked by the mutex, and it is unpaused the moment that the object is unlocked by the other thread that
 was using this object.
-
 Notice that mutexes are used in objects that are **shared** with all threads.
 So mutexes are not used on objects that are local to the thread, only in objects
 that are either stored in the global data section, or, in the heap space of your program.
@@ -687,12 +711,12 @@ Why this is happening? The answer is: because this program contains a data race 
 This program would print the correct number 200000, if, and only if the first thread finishs
 it's tasks before the second thread starts to execute. But that is very unlikely to happen.
 Because the process of creating the thread is too fast, and therefore, both threads starts to execute roughly
-at the same time. If you change this code to add some microseconds of sleep between the first and the second calls to `spawn()`,
-we will increase the chances of the program producing the "correct result".
+at the same time. If you change this code to add some nanoseconds of sleep between the first and the second calls to `spawn()`,
+you will increase the chances of the program producing the "correct result".
 
 So the data race problem happens, because both threads are reading and writing to the same
 memory location at roughly the same time. In this example, each thread is essentially performing
-three basic operations inside the for loop, which are:
+three basic operations at each iteration of the for loop, which are:
 
 1. reading the current value of `count`.
 1. incrementing this value by 1.
@@ -704,7 +728,7 @@ at @tbl-data-race-ideal, the threads should work in sync with each other. But th
 threads are out of sync, and because of that, they suffer from a data race problem, which is demonstrated
 at @tbl-data-race-not.
 
-Notice that, in the data race scenario, the read performed by a thread B happens
+Notice that, in the data race scenario (#tbl-data-race-not), the read performed by a thread B happens
 before the write operation of thread A, and that ultimately leads to wrong results at the end of the program.
 Because when the thread B reads the value from the `count` variable, the thread A is still processing
 the initial value from `count`, and it did not write the new and incremented value into `count` yet. So what
@@ -796,6 +820,14 @@ pub fn main() !void {
 
 
 ## Read/Write locks
+
+Mutexes are a type of lock suited for objects and regions of memory. However, sometimes, we also need
+to use other types of locks, specially for things that are not inside memory. For example, files in the filesystem
+are usually stored in the hard disk of your computer, instead of in the memory.
+
+Files in the filesystem might also be the source of race condition problems in your program. In other words,
+you might cause different types of race conditions in your program, if two or more threads try to read from or write to
+the same file at the same time.
 
 The Zig Standard Library supports read/write locks through the `std.Thread.RwLock` module.
 The locks implemented in this Zig module are semantically equal to the the
