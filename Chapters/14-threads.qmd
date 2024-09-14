@@ -438,7 +438,7 @@ see the message printed by `print_id()`, because you give enough time for the th
 finish before the main process ends.
 
 
-## Introducing thread pools
+## Thread pools
 
 Thread pools is a very popular programming pattern, which is used specially on servers and daemons processes. A thread pool is just a
 set of threads, or, a "pool" of threads. Many programmers like to use this pattern, because it makes
@@ -548,7 +548,7 @@ to be performed by the threads in the thread pool, then, you are either limited 
 
 
 
-## Introducing mutexes
+## Mutexes
 
 Mutexes are a classic component of every thread library. In essence, a mutex is a *Mutually Exclusive Flag*, and this flag
 acts like a type of "lock", or as a gate keeper to a particular section of your code. Mutexes are related to thread syncronization,
@@ -781,6 +781,8 @@ unlock right after this line.
 
 ### Using mutexes in Zig
 
+
+
 Now that we know the problem that mutexes seek to solve, we can learn how to use them in Zig.
 Mutexes in Zig are available through the `std.Thread.Mutex` struct from the Zig Standard Library.
 If we take the same code example from the previous example, and improve it with mutexes, to solve
@@ -821,20 +823,29 @@ pub fn main() !void {
 
 ## Read/Write locks
 
-Mutexes are a type of lock suited for objects and regions of memory. However, sometimes, we also need
-to use other types of locks, specially for things that are not inside memory. For example, files in the filesystem
-are usually stored in the hard disk of your computer, instead of in the memory.
 
-Files in the filesystem might also be the source of race condition problems in your program. In other words,
-you might cause different types of race conditions in your program, if two or more threads try to read from or write to
-the same file at the same time.
+Mutexes prevent from two or more threads executing the same piece of code at the same time, when this particular
+piece of code might cause race condition problems. But, sometimes, you do not need to always block all threads depending on
+the type of operation that this thread is performing. In other words, depending on the specific type of operation that
+the thread is doing, you don't need to block all threads from running their code.
 
-The Zig Standard Library supports read/write locks through the `std.Thread.RwLock` module.
-The locks implemented in this Zig module are semantically equal to the the
-read/write locks from the `pthreads` C library, which corresponds to the `pthread_rwlock_t` C struct.
+For example, suppose that you have multiple threads that uses the same shared file in the filesystem to store some configurations, or,
+statistics. If two or more threads try to read the data from this same file at the same time, nothing bad happens. However,
+if two or more threads try to write data into this same file at the same time, then, we cause some race conditions
+problems. More specifically, a thread might write data in the middle of the data written by the other thread.
+This process of two or more threads writing to the same location, might lead to data corruption, that is, the data in the file becomes corrupted.
+This specific situation is usually called of a *torn write*.
 
-As a simple example, the code below creates two separate threads, and each thread
-is trying to print stuff to the `stdout`. You can notice that 
+Thus, what we can extract from this is that there is certain types of operations that causes a race condition, but there
+are also other types of operations that do not cause any type of race condition problem, regardless of who get's to that
+target location first. You could also say that, there are types of operations that are susceptible to race condition problems,
+and there are other types of operations that are not.
+
+The code example below demonstrates a race condition problem that happens in a file.
+In more details, this example demonstrates two threads that are writing messages to the same file (i.e. to the same `stdout`)
+roughly at the same time, and, as a consequence of that, the messages printed by thread A are inserted in the middle of the messages
+printed by the other thread.
+
 
 ```{zig}
 #| eval: false
@@ -863,6 +874,66 @@ Starting thread 2.
 Finishing thread Finishing thread 2.
 1.
 ```
+
+
+### Exclusive lock vs shared lock
+
+Therefore, a read/write lock is a little different from a mutex. Because a mutex is always an *exclusive lock*, meaning that, only
+one thread is allowed to execute at all times. With an exclusive lock, the other threads are always "excluded", i.e. they are always blocked from executing.
+But in a read/write lock, the other threads might be authorized to run at the same time, depending on the type of lock that they acquire.
+
+We have two types of locks in a read/write lock, which are: an exclusive lock and a shared lock. An exclusive lock works exactly the same
+as a mutex, while a shared lock is a lock that does not block the other threads from running.
+In the `pthreads` C library, read/write locks are available through the `pthread_rwlock_t` C struct. With
+this C struct, you can create a "write lock", which corresponds to an exclusive lock, or, you can create a "read lock",
+which corresponds to a shared lock. The terminology might be a little different, but the meaning is the same,
+so just remember this relationship, write locks are exclusive locks, while read locks are shared locks.
+
+When a thread tries to acquire a read lock (i.e. a shared lock), this thread get's the shared lock
+if, and only if another thread does not currently holds a write lock (i.e. an exclusive lock), and also, if there are no other threads that are already in the queue,
+waiting for their turn to acquire a write lock. In other words, the thread in the queue have attempted to get a write lock earlier, but this thread was blocked
+because there was another thread running that already had a write lock. As consequence, this thread is on the queue to get a write lock,
+and it's currently waiting for the other thread with a write lock to finish it's execution.
+
+When a thread tries to acquire a read lock, but it fails in acquiring this read lock, either because there is
+a thread with a write lock already running, or, because there is a thread in the queue to get a write lock,
+the execution of this thread is instantly blocked, i.e. paused. This thread will indefinitely attempt to get the
+read lock, and it's execution will be unblocked (or unpaused) only after this thread successfully acquires the read lock.
+
+If you think deeply about this dynamic between read locks versus write locks, you might notice that a read lock is basically a safety mechanism.
+More specifically, it is a way for us to
+allow a particular thread to run together with the other threads, only when it's safe to. In other words, if there is currently
+a thread with a write lock running, then, it is very likely not safe for the thread that is trying to acquire the read lock to run now.
+As consequence, the read lock protects this thread from running into dangerous waters, and patienly waits for the "write lock" thread to finishs it's tasks
+before it continues.
+
+On the other hand, if there are only "read lock" (i.e. "shared lock") threads currently running (i.e. not a single "write lock" thread currently exists), then,
+is perfectly safe for this thread that is acquiring the read lock to run in parallel with the other threads. As a result, the read lock just
+allows for this thread to run together with the other threads.
+Thus, by using read locks (shared locks) in conjunction with write locks (exclusive locks), we can control which regions or sections
+of our multithreaded code is safe for us to have parallelism, and which sections are not safe to have parallelism.
+
+
+
+
+
+### Using read/write locks in Zig
+
+The Zig Standard Library supports read/write locks through the `std.Thread.RwLock` module.
+If you want to a particular thread to acquire a shared lock (i.e. a read lock), you should
+call the `lockShared()` method from the `RwLock` object. But, if you want for this thread
+to acquire a exclusive lock (i.e. a write lock) instead, then, you should call the
+`lock()` method from the `RwLock` object.
+
+As with mutexes, we also have to unlock the shared or exclusive locks that we acquire through a read/write lock,
+once we are at the end of our "critical section". If you have acquired an exclusive lock, then, you unlock
+this exclusive lock by calling the `unlock()` method from the read/write lock object. In contrast,
+if you have acquired a shared lock instead, then, call `unlockShared()` to unlock this shared lock.
+
+As a simple example, the code below creates two separate threads, and each thread
+is trying to print stuff to the `stdout`. You can notice that 
+
+
 
 
 
