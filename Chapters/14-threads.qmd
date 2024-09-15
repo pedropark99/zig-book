@@ -962,14 +962,65 @@ TODO: joining with a thread that has already been joined leads to undefined beha
 TODO: talk about zombie threads.
 
 
-### Careful with dead locks
+### Be careful with dead locks
 
-A deadlock occurs in a multithreaded environment when two or more threads are blocked forever,
+A deadlock occurs when two or more threads are blocked forever,
 waiting for each other to release a resource. This usually happens when multiple locks are involved,
 and the order of acquiring them is not well managed.
 
-Here’s a simple example in C where two threads cause a deadlock by acquiring locks in an inconsistent order.
+The code example below demonstrates a deadlock situation. We have two different threads that execute
+two different functions (`work1()` and `work2()`) in this example. And we also have two separate
+mutexes. If you compile and run this code example, you will notice that the program just runs indefinitely,
+without ending.
 
+When we look into the first thread, which executes the `work1()` function, we can
+notice that this function acquires the `mut1` lock first. Because this is the first operation
+that is executed inside this thread, which is the first thread created in the program.
+After that, the function sleeps for 1 second, to
+simulate some type of work, and then, the function tries to acquire the `mut2` lock.
+
+On the other hand, when we look into the second thread, which executes the `work2()` function,
+we can see that this function acquires the `mut2` lock first. Because when this thread get's created and it tries
+to acquire this `mut2` lock, the first thread is still sleeping on that "sleep 1 second" line.
+After acquiring `mut2`, the `work2()` function also sleeps for 1 second, to
+simulate some type of work, and then, the function tries to acquire the `mut1` lock.
+
+This creates a deadlock situation, because after the "sleep for 1 second" line in both threads,
+the thread 1 is trying to acquire the `mut2` lock, but this lock is currently being used by thread 2.
+However, at this moment, the thread 2 is also trying to acquire the `mut1` lock, which is currently
+being used by thread 1. Therefore, both threads end up waiting for ever. Waiting for their peer to
+free the lock that they want to acquire.
+
+
+```{zig}
+#| eval: false
+var mut1: std.Thread.Mutex = .{};
+var mut2: std.Thread.Mutex = .{};
+fn work1() !void {
+    mut1.lock();
+    std.time.sleep(1 * std.time.ns_per_s);
+    mut2.lock();
+    _ = try stdout.write("Doing some work 1\n");
+    mut2.unlock();
+    mut1.unlock();
+}
+
+fn work2() !void {
+    mut2.lock();
+    std.time.sleep(1 * std.time.ns_per_s);
+    mut1.lock();
+    _ = try stdout.write("Doing some work 1\n");
+    mut1.unlock();
+    mut2.unlock();
+}
+
+pub fn main() !void {
+    const thr1 = try Thread.spawn(.{}, work1, .{});
+    const thr2 = try Thread.spawn(.{}, work2, .{});
+    thr1.join();
+    thr2.join();
+}
+```
 
 
 ### Not calling `join()` or `detach()` {#sec-not-call-join-detach}
