@@ -953,16 +953,11 @@ pub fn main() !void {
 
 
 
-## Potential problems in threads
-
-TODO: calling functions that might return an error inside threads (`try`)
-TODO: talk about deadlocks
-TODO: talk about race conditions
-TODO: joining with a thread that has already been joined leads to undefined behaviour.
-TODO: talk about zombie threads.
+## Common problems in threads
 
 
-### Be careful with dead locks
+
+### Deadlocks
 
 A deadlock occurs when two or more threads are blocked forever,
 waiting for each other to release a resource. This usually happens when multiple locks are involved,
@@ -994,15 +989,13 @@ free the lock that they want to acquire.
 
 ```{zig}
 #| eval: false
-var mut1: std.Thread.Mutex = .{};
-var mut2: std.Thread.Mutex = .{};
+var mut1: Mutex = .{}; var mut2: Mutex = .{};
 fn work1() !void {
     mut1.lock();
     std.time.sleep(1 * std.time.ns_per_s);
     mut2.lock();
     _ = try stdout.write("Doing some work 1\n");
-    mut2.unlock();
-    mut1.unlock();
+    mut2.unlock(); mut1.unlock();
 }
 
 fn work2() !void {
@@ -1010,8 +1003,7 @@ fn work2() !void {
     std.time.sleep(1 * std.time.ns_per_s);
     mut1.lock();
     _ = try stdout.write("Doing some work 1\n");
-    mut1.unlock();
-    mut2.unlock();
+    mut1.unlock(); mut2.unlock();
 }
 
 pub fn main() !void {
@@ -1025,9 +1017,10 @@ pub fn main() !void {
 
 ### Not calling `join()` or `detach()` {#sec-not-call-join-detach}
 
-When you do not call neither of these methods (`join()` or `detach()`), then, your thread does not have a
-clear "return point". You could also interpret this as: "nobody is properly resposible for managing the thread".
-In more details, when we don't establish if a thread is either *joinable* or *detached*,
+When you do not call either `join()` or `detach()` over a thread, then, this thread becomes a "zombie thread",
+because it does not have a clear "return point".
+You could also interpret this as: "nobody is properly resposible for managing the thread".
+When we don't establish if a thread is either *joinable* or *detached*,
 nobody becomes responsible for dealing with the return value of this thread, and also,
 nobody becomes responsible for clearing (or freeing) the resources associated with this thread.
 
