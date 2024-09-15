@@ -635,9 +635,11 @@ because is just one assembly instruction. But this is not guaranteed. This is us
 assembly instructions in modern CPU architectures turn into multiple micro-tasks, which inherently makes the operation not atomic anymore,
 even though it has just one single assembly instruction.
 
-The Zig Standard Library offers a thin wrapper in the `std.atomic` module, which makes some atomic operations easy to be done.
-In this module, we have a public generic function called `Value()`. With this function we can create an "atomic value", which is
-a value that contains native atomic operations, most notably, a `load()` and a `fetchAdd()` operation.
+The Zig Standard Library offers some atomic functionality at the `std.atomic` module.
+In this module, you will find a public and generic function called `Value()`. With this function we create an "atomic object", which is
+a value that contains some native atomic operations, most notably, a `load()` and a `fetchAdd()` operation.
+If you have experience with multithreading in C++, you probably have recognized this pattern. So yes, this generic
+"atomic object" in Zig is essentially identical to the template struct `std::atomic` from the C++ Standard Library.
 Is important to emphasize that only primitive data types (i.e. the types presented at @sec-primitive-data-types)
 are supported by these atomic operations.
 
@@ -950,6 +952,35 @@ pub fn main() !void {
 ```
 
 
+## Yielding a thread
+
+The `Thread` struct supports yielding through the `yield()` method.
+Yielding a thread means that the execution of the thread is temporarily stopped,
+and the thread comes back to the end of the queue of priority of the scheduler from
+your operating system.
+
+That is, when you yield a thread, you are essentially saying the following to your OS:
+"Hey! Could you please stop executing this thread for now, and comeback to continue it later?".
+You could also interpret this yield operation as: "Could you please deprioritize this thread,
+to focus on doing other things instead?".
+So this yield operation is also a way for you
+to stop a particular thread, so that you can work and prioritize other threads instead.
+
+Is important to say that, yielding a thread is a "not so commom" thread operation these days.
+In other words, not many programmers use yielding in production, simply because is hard to use
+this operation and make it work properly, and also, there
+are better alternatives. Most programmers prefer to use `join()` instead.
+In fact, most of the times, when you see somebody using yield in some code example, they are mostly using it to help them
+debug race conditions in their applications. That is, yield is mostly used as a debug tool nowadays.
+
+Anyway, if you want to yield a thread, just call the `yield()` method from it, like this:
+
+```zig
+thread.yield();
+```
+
+
+
 
 
 
@@ -1049,35 +1080,6 @@ checking if the thread should continue running.
 If is time to cancel the thread, we could make the while loop break, and join the thread with the main thread
 by calling `join()`.
 
-
-
-
-## Yielding a thread
-
-The `Thread` struct supports yielding through the `yield()` method.
-Yielding a thread means that the execution of the thread is temporarily stopped,
-and the thread comes back to the end of the queue of priority of the scheduler from
-your operating system.
-
-That is, when you yield a thread, you are essentially saying the following to your OS:
-"Hey! Could you please stop executing this thread for now, and comeback to continue it later?".
-You could also interpret this yield operation as: "Could you please deprioritize this thread,
-to focus on doing other things instead?".
-So this yield operation is also a way for you
-to stop a particular thread, so that you can work and prioritize other threads instead.
-
-Is important to say that, yielding a thread is a "not so commom" thread operation these days.
-In other words, not many programmers use yielding in production, simply because is hard to use
-this operation and make it work properly, and also, there
-are better alternatives. Most programmers prefer to use `join()` instead.
-In fact, most of the times, when you see somebody using yield in some code example, they are mostly using it to help them
-debug race conditions in their applications. That is, yield is mostly used as a debug tool nowadays.
-
-Anyway, if you want to yield a thread, just call the `yield()` method from it, like this:
-
-```zig
-thread.yield();
-```
 
 
 

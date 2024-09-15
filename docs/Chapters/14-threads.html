@@ -2,12 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.5.56">
+<meta name="generator" content="quarto-1.4.554">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>16&nbsp; Introducing threads and parallelism in Zig – Introduction to Zig: a project-based book</title>
+<title>Introduction to Zig: a project-based book - 16&nbsp; Introducing threads and parallelism in Zig</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -33,7 +33,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -125,7 +125,7 @@ div.csl-indent {
   }
 }</script>
 
-  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
 <script type="text/javascript">
@@ -163,13 +163,13 @@ window.Quarto = {
   <header id="quarto-header" class="headroom fixed-top">
   <nav class="quarto-secondary-nav">
     <div class="container-fluid d-flex">
-      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
         <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/14-threads.html"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Introducing threads and parallelism in Zig</span></a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
-      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
         <i class="bi bi-search"></i>
       </button>
     </div>
@@ -333,13 +333,13 @@ window.Quarto = {
   <li><a href="#exclusive-lock-vs-shared-lock" id="toc-exclusive-lock-vs-shared-lock" class="nav-link" data-scroll-target="#exclusive-lock-vs-shared-lock"><span class="header-section-number">16.7.1</span> Exclusive lock vs shared lock</a></li>
   <li><a href="#using-readwrite-locks-in-zig" id="toc-using-readwrite-locks-in-zig" class="nav-link" data-scroll-target="#using-readwrite-locks-in-zig"><span class="header-section-number">16.7.2</span> Using read/write locks in Zig</a></li>
   </ul></li>
-  <li><a href="#common-problems-in-threads" id="toc-common-problems-in-threads" class="nav-link" data-scroll-target="#common-problems-in-threads"><span class="header-section-number">16.8</span> Common problems in threads</a>
+  <li><a href="#yielding-a-thread" id="toc-yielding-a-thread" class="nav-link" data-scroll-target="#yielding-a-thread"><span class="header-section-number">16.8</span> Yielding a thread</a></li>
+  <li><a href="#common-problems-in-threads" id="toc-common-problems-in-threads" class="nav-link" data-scroll-target="#common-problems-in-threads"><span class="header-section-number">16.9</span> Common problems in threads</a>
   <ul class="collapse">
-  <li><a href="#deadlocks" id="toc-deadlocks" class="nav-link" data-scroll-target="#deadlocks"><span class="header-section-number">16.8.1</span> Deadlocks</a></li>
-  <li><a href="#sec-not-call-join-detach" id="toc-sec-not-call-join-detach" class="nav-link" data-scroll-target="#sec-not-call-join-detach"><span class="header-section-number">16.8.2</span> Not calling <code>join()</code> or <code>detach()</code></a></li>
+  <li><a href="#deadlocks" id="toc-deadlocks" class="nav-link" data-scroll-target="#deadlocks"><span class="header-section-number">16.9.1</span> Deadlocks</a></li>
+  <li><a href="#sec-not-call-join-detach" id="toc-sec-not-call-join-detach" class="nav-link" data-scroll-target="#sec-not-call-join-detach"><span class="header-section-number">16.9.2</span> Not calling <code>join()</code> or <code>detach()</code></a></li>
+  <li><a href="#cancelling-or-killing-a-particular-thread" id="toc-cancelling-or-killing-a-particular-thread" class="nav-link" data-scroll-target="#cancelling-or-killing-a-particular-thread"><span class="header-section-number">16.9.3</span> Cancelling or killing a particular thread</a></li>
   </ul></li>
-  <li><a href="#yielding-a-thread" id="toc-yielding-a-thread" class="nav-link" data-scroll-target="#yielding-a-thread"><span class="header-section-number">16.9</span> Yielding a thread</a></li>
-  <li><a href="#how-to-stop-cancel-of-kill-a-particular-thread" id="toc-how-to-stop-cancel-of-kill-a-particular-thread" class="nav-link" data-scroll-target="#how-to-stop-cancel-of-kill-a-particular-thread"><span class="header-section-number">16.10</span> How to stop, cancel of kill a particular thread</a></li>
   </ul>
 </nav>
     </div>
@@ -470,7 +470,7 @@ window.Quarto = {
 <h2 data-number="16.4" class="anchored" data-anchor-id="returning-from-a-thread"><span class="header-section-number">16.4</span> Returning from a thread</h2>
 <p>We have learned on the previous section that the execution of the thread starts at the moment that the thread get’s created. Now, we will learn how to “join” or “detach” a thread in Zig. “Join” and “detach” are operations that control how the thread returns to the main thread, or, to the main process in our program.</p>
 <p>We perform these operations by using the methods <code>join()</code> and <code>detach()</code> from the thread handler object. Every thread that you create can be marked as either <em>joinable</em> or <em>detached</em> <span class="citation" data-cites="linux_pthread_create">(<a href="../references.html#ref-linux_pthread_create" role="doc-biblioref">Linux man-pages 2024</a>)</span>. You can turn a thread into a <em>detached</em> thread by calling the <code>detach()</code> method from the thread handler object. But if you call the <code>join()</code> method instead, then, this thread becomes a <em>joinable</em> thread.</p>
-<p>A thread cannot be both <em>joinable</em> and <em>detached</em>. Which in general means that you cannot call both <code>join()</code> and <code>detach()</code> on the same thread. But a thread must be one of the two, meaning that, you should always call either <code>join()</code> or <code>detach()</code> over a thread. If you don’t call one of these two methods over your thread, you introduce undefined behaviour into your program, which is described at <a href="#sec-not-call-join-detach" class="quarto-xref"><span>Section 16.8.2</span></a>.</p>
+<p>A thread cannot be both <em>joinable</em> and <em>detached</em>. Which in general means that you cannot call both <code>join()</code> and <code>detach()</code> on the same thread. But a thread must be one of the two, meaning that, you should always call either <code>join()</code> or <code>detach()</code> over a thread. If you don’t call one of these two methods over your thread, you introduce undefined behaviour into your program, which is described at <a href="#sec-not-call-join-detach" class="quarto-xref"><span>Section 16.9.2</span></a>.</p>
 <p>Now, let’s describe what each of these two methods do to your thread.</p>
 <section id="joining-a-thread" class="level3" data-number="16.4.1">
 <h3 data-number="16.4.1" class="anchored" data-anchor-id="joining-a-thread"><span class="header-section-number">16.4.1</span> Joining a thread</h3>
@@ -599,7 +599,7 @@ Joining thread 2</code></pre>
 <p>You will also see the term “atomic operation” a lot when reading about threads, race conditions and mutexes. In summary, an operation is categorized as “atomic”, when there is no way to happen a context switch in the middle of this operation. In other words, this operation is always done from beginning to end, without interruptions of another process or operation in the middle of it’s execution phase.</p>
 <p>Not many operations today are atomic. But why atomic operations matters here? Is because data races (which is a type of a race condition) cannot happen on operations that are atomic. So if a particular line in your code performs an atomic operation, then, this line will never suffer from a data race problem. Therefore, programmers sometimes use an atomic operation to protect themselves from data race problems in their code.</p>
 <p>When you have an operation that is compiled into just one single assembly instruction, this operation might be atomic, because is just one assembly instruction. But this is not guaranteed. This is usually true for old CPU architectures (such as <code>x86</code>). But nowadays, most assembly instructions in modern CPU architectures turn into multiple micro-tasks, which inherently makes the operation not atomic anymore, even though it has just one single assembly instruction.</p>
-<p>The Zig Standard Library offers a thin wrapper in the <code>std.atomic</code> module, which makes some atomic operations easy to be done. In this module, we have a public generic function called <code>Value()</code>. With this function we can create an “atomic value”, which is a value that contains native atomic operations, most notably, a <code>load()</code> and a <code>fetchAdd()</code> operation. Is important to emphasize that only primitive data types (i.e.&nbsp;the types presented at <a href="01-zig-weird.html#sec-primitive-data-types" class="quarto-xref"><span>Section 1.5</span></a>) are supported by these atomic operations.</p>
+<p>The Zig Standard Library offers some atomic functionality at the <code>std.atomic</code> module. In this module, you will find a public and generic function called <code>Value()</code>. With this function we create an “atomic object”, which is a value that contains some native atomic operations, most notably, a <code>load()</code> and a <code>fetchAdd()</code> operation. If you have experience with multithreading in C++, you probably have recognized this pattern. So yes, this generic “atomic object” in Zig is essentially identical to the template struct <code>std::atomic</code> from the C++ Standard Library. Is important to emphasize that only primitive data types (i.e.&nbsp;the types presented at <a href="01-zig-weird.html#sec-primitive-data-types" class="quarto-xref"><span>Section 1.5</span></a>) are supported by these atomic operations.</p>
 </section>
 <section id="data-races-and-race-conditions" class="level3" data-number="16.6.3">
 <h3 data-number="16.6.3" class="anchored" data-anchor-id="data-races-and-race-conditions"><span class="header-section-number">16.6.3</span> Data races and race conditions</h3>
@@ -637,13 +637,13 @@ Joining thread 2</code></pre>
 </ol>
 <p>Ideally, a thread B should read the value of <code>count</code>, only after the other thread A has finished writing the incremented value back into the <code>count</code> object. Therefore, in the ideal scenario, which is demonstrated at <a href="#tbl-data-race-ideal" class="quarto-xref">Table&nbsp;<span>16.1</span></a>, the threads should work in sync with each other. But the reality is that these threads are out of sync, and because of that, they suffer from a data race problem, which is demonstrated at <a href="#tbl-data-race-not" class="quarto-xref">Table&nbsp;<span>16.2</span></a>.</p>
 <p>Notice that, in the data race scenario (<a href="#tbl-data-race-not" class="quarto-xref">Table&nbsp;<span>16.2</span></a>), the read performed by a thread B happens before the write operation of thread A, and that ultimately leads to wrong results at the end of the program. Because when the thread B reads the value from the <code>count</code> variable, the thread A is still processing the initial value from <code>count</code>, and it did not write the new and incremented value into <code>count</code> yet. So what happens is that thread B ends up reading the same initial value (the “old” value) from <code>count</code>, instead of reading the new and incremented version of this value that would be calculated by thread A.</p>
-<div id="tbl-data-race-ideal" class="quarto-float quarto-figure quarto-figure-center anchored">
+<div id="tbl-data-race-ideal" class="quarto-float anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-data-race-ideal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;16.1: An ideal scenario for two threads incrementing the same integer value
 </figcaption>
 <div aria-describedby="tbl-data-race-ideal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<table class="caption-top table">
+<table class="table">
 <thead>
 <tr class="header">
 <th>Thread 1</th>
@@ -687,13 +687,13 @@ Table&nbsp;16.1: An ideal scenario for two threads incrementing the same integer
 </div>
 </figure>
 </div>
-<div id="tbl-data-race-not" class="quarto-float quarto-figure quarto-figure-center anchored">
+<div id="tbl-data-race-not" class="quarto-float anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-data-race-not-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;16.2: A data race scenario when two threads are incrementing the same integer value
 </figcaption>
 <div aria-describedby="tbl-data-race-not-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<table class="caption-top table">
+<table class="table">
 <thead>
 <tr class="header">
 <th>Thread 1</th>
@@ -829,57 +829,58 @@ Table&nbsp;16.2: A data race scenario when two threads are incrementing the same
 </div>
 </section>
 </section>
-<section id="common-problems-in-threads" class="level2" data-number="16.8">
-<h2 data-number="16.8" class="anchored" data-anchor-id="common-problems-in-threads"><span class="header-section-number">16.8</span> Common problems in threads</h2>
-<section id="deadlocks" class="level3" data-number="16.8.1">
-<h3 data-number="16.8.1" class="anchored" data-anchor-id="deadlocks"><span class="header-section-number">16.8.1</span> Deadlocks</h3>
+<section id="yielding-a-thread" class="level2" data-number="16.8">
+<h2 data-number="16.8" class="anchored" data-anchor-id="yielding-a-thread"><span class="header-section-number">16.8</span> Yielding a thread</h2>
+<p>The <code>Thread</code> struct supports yielding through the <code>yield()</code> method. Yielding a thread means that the execution of the thread is temporarily stopped, and the thread comes back to the end of the queue of priority of the scheduler from your operating system.</p>
+<p>That is, when you yield a thread, you are essentially saying the following to your OS: “Hey! Could you please stop executing this thread for now, and comeback to continue it later?”. You could also interpret this yield operation as: “Could you please deprioritize this thread, to focus on doing other things instead?”. So this yield operation is also a way for you to stop a particular thread, so that you can work and prioritize other threads instead.</p>
+<p>Is important to say that, yielding a thread is a “not so commom” thread operation these days. In other words, not many programmers use yielding in production, simply because is hard to use this operation and make it work properly, and also, there are better alternatives. Most programmers prefer to use <code>join()</code> instead. In fact, most of the times, when you see somebody using yield in some code example, they are mostly using it to help them debug race conditions in their applications. That is, yield is mostly used as a debug tool nowadays.</p>
+<p>Anyway, if you want to yield a thread, just call the <code>yield()</code> method from it, like this:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>thread.yield();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="common-problems-in-threads" class="level2" data-number="16.9">
+<h2 data-number="16.9" class="anchored" data-anchor-id="common-problems-in-threads"><span class="header-section-number">16.9</span> Common problems in threads</h2>
+<section id="deadlocks" class="level3" data-number="16.9.1">
+<h3 data-number="16.9.1" class="anchored" data-anchor-id="deadlocks"><span class="header-section-number">16.9.1</span> Deadlocks</h3>
 <p>A deadlock occurs when two or more threads are blocked forever, waiting for each other to release a resource. This usually happens when multiple locks are involved, and the order of acquiring them is not well managed.</p>
 <p>The code example below demonstrates a deadlock situation. We have two different threads that execute two different functions (<code>work1()</code> and <code>work2()</code>) in this example. And we also have two separate mutexes. If you compile and run this code example, you will notice that the program just runs indefinitely, without ending.</p>
 <p>When we look into the first thread, which executes the <code>work1()</code> function, we can notice that this function acquires the <code>mut1</code> lock first. Because this is the first operation that is executed inside this thread, which is the first thread created in the program. After that, the function sleeps for 1 second, to simulate some type of work, and then, the function tries to acquire the <code>mut2</code> lock.</p>
 <p>On the other hand, when we look into the second thread, which executes the <code>work2()</code> function, we can see that this function acquires the <code>mut2</code> lock first. Because when this thread get’s created and it tries to acquire this <code>mut2</code> lock, the first thread is still sleeping on that “sleep 1 second” line. After acquiring <code>mut2</code>, the <code>work2()</code> function also sleeps for 1 second, to simulate some type of work, and then, the function tries to acquire the <code>mut1</code> lock.</p>
 <p>This creates a deadlock situation, because after the “sleep for 1 second” line in both threads, the thread 1 is trying to acquire the <code>mut2</code> lock, but this lock is currently being used by thread 2. However, at this moment, the thread 2 is also trying to acquire the <code>mut1</code> lock, which is currently being used by thread 1. Therefore, both threads end up waiting for ever. Waiting for their peer to free the lock that they want to acquire.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> mut1: Mutex = .<span class="op">{}</span>; <span class="kw">var</span> mut2: Mutex = .<span class="op">{}</span>;</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> work1() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    mut1.lock();</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    std.time.sleep(<span class="dv">1</span> * std.time.ns_per_s);</span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    mut2.lock();</span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Doing some work 1</span><span class="sc">\n</span><span class="st">"</span>);</span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    mut2.unlock(); mut1.unlock();</span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> work2() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    mut2.lock();</span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    std.time.sleep(<span class="dv">1</span> * std.time.ns_per_s);</span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    mut1.lock();</span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Doing some work 1</span><span class="sc">\n</span><span class="st">"</span>);</span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    mut1.unlock(); mut2.unlock();</span>
-<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, work1, .<span class="op">{}</span>);</span>
-<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, work2, .<span class="op">{}</span>);</span>
-<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>    thr1.join();</span>
-<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
-<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> mut1: Mutex = .<span class="op">{}</span>; <span class="kw">var</span> mut2: Mutex = .<span class="op">{}</span>;</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> work1() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    mut1.lock();</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    std.time.sleep(<span class="dv">1</span> * std.time.ns_per_s);</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    mut2.lock();</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Doing some work 1</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    mut2.unlock(); mut1.unlock();</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> work2() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    mut2.lock();</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    std.time.sleep(<span class="dv">1</span> * std.time.ns_per_s);</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    mut1.lock();</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Doing some work 1</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    mut1.unlock(); mut2.unlock();</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, work1, .<span class="op">{}</span>);</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, work2, .<span class="op">{}</span>);</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    thr1.join();</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="sec-not-call-join-detach" class="level3" data-number="16.8.2">
-<h3 data-number="16.8.2" class="anchored" data-anchor-id="sec-not-call-join-detach"><span class="header-section-number">16.8.2</span> Not calling <code>join()</code> or <code>detach()</code></h3>
+<section id="sec-not-call-join-detach" class="level3" data-number="16.9.2">
+<h3 data-number="16.9.2" class="anchored" data-anchor-id="sec-not-call-join-detach"><span class="header-section-number">16.9.2</span> Not calling <code>join()</code> or <code>detach()</code></h3>
 <p>When you do not call either <code>join()</code> or <code>detach()</code> over a thread, then, this thread becomes a “zombie thread”, because it does not have a clear “return point”. You could also interpret this as: “nobody is properly resposible for managing the thread”. When we don’t establish if a thread is either <em>joinable</em> or <em>detached</em>, nobody becomes responsible for dealing with the return value of this thread, and also, nobody becomes responsible for clearing (or freeing) the resources associated with this thread.</p>
 <p>You don’t want to be in this situation, so remember to always use <code>join()</code> or <code>detach()</code> on the threads that you create. When you don’t use these methods, the execution of the thread becomes completely independent from the execution of the main process in your program. This means that the main process of your program might end before the thread finish it’s job, or vice-versa. The idea is that we have no idea of who is going to finish first. It becomes a race condition problem. In such case, we loose control over this thread, and it’s resources are never freed (i.e.&nbsp;you have leaked resources in the system).</p>
 </section>
-</section>
-<section id="yielding-a-thread" class="level2" data-number="16.9">
-<h2 data-number="16.9" class="anchored" data-anchor-id="yielding-a-thread"><span class="header-section-number">16.9</span> Yielding a thread</h2>
-<p>The <code>Thread</code> struct supports yielding through the <code>yield()</code> method. Yielding a thread means that the execution of the thread is temporarily stopped, and the thread comes back to the end of the queue of priority of the scheduler from your operating system.</p>
-<p>That is, when you yield a thread, you are essentially saying the following to your OS: “Hey! Could you please stop executing this thread for now, and comeback to continue it later?”. You could also interpret this yield operation as: “Could you please deprioritize this thread, to focus on doing other things instead?”. So this yield operation is also a way for you to stop a particular thread, so that you can work and prioritize other threads instead.</p>
-<p>Is important to say that, yielding a thread is a “not so commom” thread operation these days. In other words, not many programmers use yielding in production, simply because is hard to use this operation and make it work properly, and also, there are better alternatives. Most programmers prefer to use <code>join()</code> instead. In fact, most of the times, when you see somebody using yield in some code example, they are mostly using it to help them debug race conditions in their applications. That is, yield is mostly used as a debug tool nowadays.</p>
-<p>Anyway, if you want to yield a thread, just call the <code>yield()</code> method from it, like this:</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>thread.yield();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-<section id="how-to-stop-cancel-of-kill-a-particular-thread" class="level2" data-number="16.10">
-<h2 data-number="16.10" class="anchored" data-anchor-id="how-to-stop-cancel-of-kill-a-particular-thread"><span class="header-section-number">16.10</span> How to stop, cancel of kill a particular thread</h2>
+<section id="cancelling-or-killing-a-particular-thread" class="level3" data-number="16.9.3">
+<h3 data-number="16.9.3" class="anchored" data-anchor-id="cancelling-or-killing-a-particular-thread"><span class="header-section-number">16.9.3</span> Cancelling or killing a particular thread</h3>
+<p>When we think about the <code>pthreads</code> C library, there is a possible way to asynchronously kill or cancel a thread, which is by sending a <code>SIGTERM</code> signal to the thread through the <code>pthread_kill()</code> function. But canceling a thread like this is bad. Is dangerously bad. As consequence, the Zig implementation of threads does not have a similar function, or, a similar way to asynchronously cancel or kill a thread.</p>
+<p>Therefore, if you want to cancel a thread in the middle of it’s execution in Zig, then, one good strategy that you can take is to use control flow in your favor in conjunction with <code>join()</code>. More specifically, you can design your thread around a while loop, that is constantly checking if the thread should continue running. If is time to cancel the thread, we could make the while loop break, and join the thread with the main thread by calling <code>join()</code>.</p>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
@@ -890,6 +891,7 @@ Geeks for Geeks. 2024. <span>“Critical Section.”</span> <span>Geeks for Geek
 Linux man-pages. 2024. <span>“Pthread_create(3) — Linux Manual Page.”</span> <a href="https://man7.org/linux/man-pages/man3/pthread_create.3.html">https://man7.org/linux/man-pages/man3/pthread_create.3.html</a>.
 </div>
 </div>
+</section>
 </section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>
@@ -1079,7 +1081,18 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
     return false;
   }
-  const onCopySuccess = function(e) {
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
     // button target
     const button = e.trigger;
     // don't keep focus
@@ -1111,29 +1124,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }, 1000);
     // clear code selection
     e.clearSelection();
-  }
-  const getTextToCopy = function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-  }
-  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
-    text: getTextToCopy
   });
-  clipboard.on('success', onCopySuccess);
-  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-    // For code content inside modals, clipBoardJS needs to be initialized with a container option
-    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
-    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
-      text: getTextToCopy,
-      container: window.document.getElementById('quarto-embedded-source-code-modal')
-    });
-    clipboardModal.on('success', onCopySuccess);
-  }
     var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
     var mailtoRegex = new RegExp(/^mailto:/);
       var filterRegex = new RegExp('/' + window.location.host + '/');
@@ -1141,7 +1132,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
     }
     // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
     for (var i=0; i<links.length; i++) {
       const link = links[i];
       if (!isInternal(link.href)) {
