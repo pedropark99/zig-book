@@ -1034,6 +1034,23 @@ In such case, we loose control over this thread, and it's resources are never fr
 (i.e. you have leaked resources in the system).
 
 
+### Cancelling or killing a particular thread
+
+When we think about the `pthreads` C library, there is a possible way to asynchronously kill or cancel
+a thread, which is by sending a `SIGTERM` signal to the thread through the `pthread_kill()` function.
+But canceling a thread like this is bad. Is dangerously bad. As consequence, the Zig implementation
+of threads does not have a similar function, or, a similar way to asynchronously cancel or kill
+a thread.
+
+Therefore, if you want to cancel a thread in the middle of it's execution in Zig,
+then, one good strategy that you can take is to use control flow in your favor in conjunction with `join()`.
+More specifically, you can design your thread around a while loop, that is constantly
+checking if the thread should continue running.
+If is time to cancel the thread, we could make the while loop break, and join the thread with the main thread
+by calling `join()`.
+
+
+
 
 ## Yielding a thread
 
@@ -1061,11 +1078,6 @@ Anyway, if you want to yield a thread, just call the `yield()` method from it, l
 ```zig
 thread.yield();
 ```
-
-
-
-## How to stop, cancel of kill a particular thread
-
 
 
 
