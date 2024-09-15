@@ -825,7 +825,6 @@ pub fn main() !void {
 
 ## Read/Write locks
 
-Read/Write locks are similar to mutexes, but they work a little bit different.
 Mutexes are normally used when is always not safe to have two or more threads running the same
 piece of code at the same time. In contrast, read/write locks are normally used in situations
 where you have a mixture of scenarios, i.e. there are some pieces of the codebase that are safe to run in parallel, and other pieces that
@@ -854,7 +853,8 @@ use this type of lock to control which parts of the codebase are safe to run in 
 ### Exclusive lock vs shared lock
 
 Therefore, a read/write lock is a little different from a mutex. Because a mutex is always an *exclusive lock*, meaning that, only
-one thread is allowed to execute at all times. With an exclusive lock, the other threads are always "excluded", i.e. they are always blocked from executing.
+one thread is allowed to execute at all times. With an exclusive lock, the other threads are always "excluded",
+i.e. they are always blocked from executing.
 But in a read/write lock, the other threads might be authorized to run at the same time, depending on the type of lock that they acquire.
 
 We have two types of locks in a read/write lock, which are: an exclusive lock and a shared lock. An exclusive lock works exactly the same
@@ -865,8 +865,10 @@ which corresponds to a shared lock. The terminology might be a little different,
 so just remember this relationship, write locks are exclusive locks, while read locks are shared locks.
 
 When a thread tries to acquire a read lock (i.e. a shared lock), this thread get's the shared lock
-if, and only if another thread does not currently holds a write lock (i.e. an exclusive lock), and also, if there are no other threads that are already in the queue,
-waiting for their turn to acquire a write lock. In other words, the thread in the queue have attempted to get a write lock earlier, but this thread was blocked
+if, and only if another thread does not currently holds a write lock (i.e. an exclusive lock), and also,
+if there are no other threads that are already in the queue,
+waiting for their turn to acquire a write lock. In other words, the thread in the queue have attempted
+to get a write lock earlier, but this thread was blocked
 because there was another thread running that already had a write lock. As consequence, this thread is on the queue to get a write lock,
 and it's currently waiting for the other thread with a write lock to finish it's execution.
 
@@ -908,10 +910,44 @@ once we are at the end of our "critical section". If you have acquired an exclus
 this exclusive lock by calling the `unlock()` method from the read/write lock object. In contrast,
 if you have acquired a shared lock instead, then, call `unlockShared()` to unlock this shared lock.
 
-As a simple example, the code below creates two separate threads, and each thread
-is trying to print stuff to the `stdout`. You can notice that 
+As a simple example, the code below creates three separate threads responsible for reading the
+current value in a `counter` object, and it also creates another thread, responsible for writing
+new data into the `counter` object (incrementing it, more specifically).
 
+```{zig}
+#| eval: false
+var counter: u32 = 0;
+fn reader(lock: *RwLock) !void {
+    while (true) {
+        lock.lockShared();
+        const v: u32 = counter;
+        try stdout.print("{d}", .{v});
+        lock.unlockShared();
+        std.time.sleep(2 * std.time.ns_per_s);
+    }
+}
+fn writer(lock: *RwLock) void {
+    while (true) {
+        lock.lock();
+        counter += 1;
+        lock.unlock();
+        std.time.sleep(2 * std.time.ns_per_s);
+    }
+}
 
+pub fn main() !void {
+    var lock: RwLock = .{};
+    const thr1 = try Thread.spawn(.{}, reader, .{&lock});
+    const thr2 = try Thread.spawn(.{}, reader, .{&lock});
+    const thr3 = try Thread.spawn(.{}, reader, .{&lock});
+    const wthread = try Thread.spawn(.{}, writer, .{&lock});
+
+    thr1.join();
+    thr2.join();
+    thr3.join();
+    wthread.join();
+}
+```
 
 
 
