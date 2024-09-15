@@ -558,15 +558,15 @@ and, therefore, major bugs and undefined behaviour that are usually difficult to
 The main idea behind a mutex is to help us to control the execution of a particular section of the code, and to
 prevent two or more threads from executing this particular section of the code at the same time.
 Many programmers like to compare a mutex to a bathroom door (which usually have a lock).
-When a thread uses the mutex to lock the data, it is like if the bathroom door was locked,
+When a thread locks it's own mutex object, it is like if the bathroom door was locked,
 and, therefore, the other people (in this case, the other threads) that wants to use the same bathroom at the same time
-have to be patient, and simply wait for the door to be unlocked.
+have to be patient, and simply wait for the other person (or the other thread) to unlock the door and get out of the bathroom.
 
 Some other programmers also like to explain mutexes by using the analogy of "each person will have their turn to speak".
 This is the analogy used on the [*Multithreading Code* video from the Computherfile project](https://www.youtube.com/watch?v=7ENFeb-J75k&ab_channel=Computerphile)[^computerphile].
 Imagine
 if you are in a conversation circle. There is a moderator in this circle, which is the person that decides who
-have the right to speak at that particular moment. The moderator gives a green card to the person that
+have the right to speak at that particular moment. The moderator gives a green card (or some sort of an authorization card) to the person that
 is going to speak, and, as a result, everyone else must be silent and hear this person that has the green card.
 When the person finishs talking, it gives the green card back to the moderator, and the moderator decides
 who is going to talk next, and delivers the green card to that person. And the cycle goes on like this.
@@ -578,36 +578,37 @@ A mutex acts like the moderator in this conversation circle. The mutex authorize
 and it also blocks the other threads from executing this same section of the code. If these other threads wants to execute this same
 piece of the code, they are forced to wait for the the authorized thread to finish first.
 When the authorized thread finishs executing this code, the mutex authorizes the next thread to execute this code,
-and the other threads are still blocked. Therefore, a mutex is a moderator that does a "each thread will have their turn to execute this section of the code"
+and the other threads are still blocked. Therefore, a mutex is like a moderator that does a "each thread will have their turn to execute this section of the code"
 type of control.
 
 
-Mutexes are specially used to prevent against data race problems, which happens when two or more threads are trying to read from or write to the same shared
-object at the same time.
+Mutexes are specially used to prevent data race problems from happening. A data race problem happens when two or more threads
+are trying to read from or write to the same shared object at the same time.
 So, when you have an object that is shared will all threads, and, you want to avoid two or more threads from
-accessing this same object at the same time, you can use a mutex to lock this specific object.
-When a thread tries to access an object that is locked by a mutex, this thread stops it's execution, and patiently waits for the object to be
+accessing this same object at the same time, you can use a mutex to lock the part of the code that access this specific object.
+When a thread tries to run this code that is locked by a mutex, this thread stops it's execution, and patiently waits for this section of the codebase to be
 unlocked to continue.
 
-In other words, the execution of the thread is paused while the object
-is locked by the mutex, and it is unpaused the moment that the object is unlocked by the other thread that
-was using this object.
-Notice that mutexes are used in objects that are **shared** with all threads.
-So mutexes are not used on objects that are local to the thread, only in objects
-that are either stored in the global data section, or, in the heap space of your program.
+In other words, the execution of the thread is paused while the code section
+is locked by the mutex, and it is unpaused the moment that the code section is unlocked by the other thread that
+was executing this code section.
+Notice that mutexes are normally used to lock areas of the codebase that access/modify data that is **shared** with all threads,
+i.e. objects that are either stored in the global data section, or, in the heap space of your program.
+So mutexes are not normally used on areas of the codebase that access/modify objects that are local to the thread.
 
 
 
 ### Critical section {#sec-critical-section}
 
 Critical section is a concept commonly associated with mutexes and thread syncronization.
-In essence, a critical section is the section of the program that a thread access a shared resource
+In essence, a critical section is the section of the program that a thread access/modify a shared resource
 (i.e. an object, a file descriptor, something that all threads have access to). In other words,
-a critical section is the section of the program where race conditions might happen, and, therefor,
+a critical section is the section of the program where race conditions might happen, and, therefore,
 where undefined behaviour can be introduced into the program.
 
-When we use mutexes in our program, we want to lock the shared resource at the beginning of the critical section,
-and then, unlock it at the end of the critical section.
+When we use mutexes in our program, the critical section defines the area of the codebase that we want to lock.
+So we normally lock the mutex object at the beginning of the critical section,
+and then, we unlock it at the end of the critical section.
 The two bulletpoints exposed below comes from the "Critical Section" article from GeekFromGeeks,
 and they summarise well the role that a critical section plays in the thread syncronization problem [@geeks_critical_section].
 
@@ -620,23 +621,23 @@ and they summarise well the role that a critical section plays in the thread syn
 
 You will also see the term "atomic operation" a lot when reading about threads, race conditions and mutexes.
 In summary, an operation is categorized as "atomic", when there is no way to happen a context switch in
-the middle of this operation. In other words, this operation is always done from beginning to end, without interruptions,
-i.e. the operation executes without the interruption of another process or operation in the middle of it's execution phase.
+the middle of this operation. In other words, this operation is always done from beginning to end, without interruptions
+of another process or operation in the middle of it's execution phase.
 
 Not many operations today are atomic. But why atomic operations matters here? Is because data races
 (which is a type of a race condition) cannot happen on operations that are atomic.
 So if a particular line in your code performs an atomic operation, then, this line will never
 suffer from a data race problem. Therefore, programmers sometimes use an atomic operation
-to avoid data race problems in their code.
+to protect themselves from data race problems in their code.
 
-When you have an operation that is compiled into just one single assembly instruction, this operation might be atomic
-because is just one assembly instruction. This is usually true for old CPU architectures (such as `x86`). But nowadays, most
+When you have an operation that is compiled into just one single assembly instruction, this operation might be atomic,
+because is just one assembly instruction. But this is not guaranteed. This is usually true for old CPU architectures (such as `x86`). But nowadays, most
 assembly instructions in modern CPU architectures turn into multiple micro-tasks, which inherently makes the operation not atomic anymore,
 even though it has just one single assembly instruction.
 
-The Zig Standard Library offers some atomic operations on the `std.atomic` module. In this module, we have
-a public generic function called `Value()`. With this function we can create an "atomic value", which is
-a value that contains native atomic operations, most notably, a `load()` and a `fetchAdd()` atomic operations.
+The Zig Standard Library offers a thin wrapper in the `std.atomic` module, which makes some atomic operations easy to be done.
+In this module, we have a public generic function called `Value()`. With this function we can create an "atomic value", which is
+a value that contains native atomic operations, most notably, a `load()` and a `fetchAdd()` operation.
 Is important to emphasize that only primitive data types (i.e. the types presented at @sec-primitive-data-types)
 are supported by these atomic operations.
 
@@ -657,7 +658,7 @@ are trying to read and write into the same memory location at the same time, and
 depends completely on who get's to this memory location first.
 As consequence, a program that have a data race problem will likely produce a different result each time that we execute it.
 
-Thus, race conditions produce unefined behaviour and unpredictability because the program produces a different
+Thus, race conditions produce unefined behaviour and unpredictability because the program produces
 a different answer in each time that a different person get's to the target location first than the others.
 And we have no easy way to either predict or control who is going to get to this target location first.
 In other words, in each execution of your program,
@@ -728,7 +729,7 @@ at @tbl-data-race-ideal, the threads should work in sync with each other. But th
 threads are out of sync, and because of that, they suffer from a data race problem, which is demonstrated
 at @tbl-data-race-not.
 
-Notice that, in the data race scenario (#tbl-data-race-not), the read performed by a thread B happens
+Notice that, in the data race scenario (@tbl-data-race-not), the read performed by a thread B happens
 before the write operation of thread A, and that ultimately leads to wrong results at the end of the program.
 Because when the thread B reads the value from the `count` variable, the thread A is still processing
 the initial value from `count`, and it did not write the new and incremented value into `count` yet. So what
@@ -775,13 +776,13 @@ from thread B.
 If we also think about the discussion of critical section from @sec-critical-section, we can identify
 the section that representes the critical section of the program, which is the section that is vulnerable
 to data race conditions. In this example, the critical section of the program is the line where we increment
-the `counter` variable. So, ideally, we want to use a mutex, and lock right before this line, and then,
+the `counter` variable (`counter += 1`). So, ideally, we want to use a mutex, and lock right before this line, and then,
 unlock right after this line.
 
 
+
+
 ### Using mutexes in Zig
-
-
 
 Now that we know the problem that mutexes seek to solve, we can learn how to use them in Zig.
 Mutexes in Zig are available through the `std.Thread.Mutex` struct from the Zig Standard Library.
@@ -792,7 +793,7 @@ Notice that we had this time to alter the `increment()` function to receive a po
 the `Mutex` object as input. All that we need to do, to make this program safe against
 data race problems, is to call the `lock()` method at the beginning of
 the critical section, and then, call `unlock()` at the end of the critical section.
-Notice that the output of this program is the correct number of 200000.
+Notice that the output of this program is now the correct number of 200000.
 
 ```{zig}
 #| build_type: "run"
@@ -821,59 +822,33 @@ pub fn main() !void {
 
 
 
+
 ## Read/Write locks
 
-
-Mutexes prevent from two or more threads executing the same piece of code at the same time, when this particular
-piece of code might cause race condition problems. But, sometimes, you do not need to always block all threads depending on
-the type of operation that this thread is performing. In other words, depending on the specific type of operation that
-the thread is doing, you don't need to block all threads from running their code.
+Read/Write locks are similar to mutexes, but they work a little bit different.
+Mutexes are normally used when is always not safe to have two or more threads running the same
+piece of code at the same time. In contrast, read/write locks are normally used in situations
+where you have a mixture of scenarios, i.e. there are some pieces of the codebase that are safe to run in parallel, and other pieces that
+are not safe.
 
 For example, suppose that you have multiple threads that uses the same shared file in the filesystem to store some configurations, or,
-statistics. If two or more threads try to read the data from this same file at the same time, nothing bad happens. However,
-if two or more threads try to write data into this same file at the same time, then, we cause some race conditions
-problems. More specifically, a thread might write data in the middle of the data written by the other thread.
-This process of two or more threads writing to the same location, might lead to data corruption, that is, the data in the file becomes corrupted.
+statistics. If two or more threads try to read the data from this same file at the same time, nothing bad happens.
+So this part of the codebase is perfectly safe to be executed in parallel, with multiple threads reading the same file at the same time.
+
+However, if two or more threads try to write data into this same file at the same time, then, we cause some race conditions
+problems. So this other part of the codebase is not safe to be executed in parallel.
+More specifically, a thread might end up writing data in the middle of the data written by the other thread.
+This process of two or more threads writing to the same location, might lead to data corruption.
 This specific situation is usually called of a *torn write*.
 
 Thus, what we can extract from this is that there is certain types of operations that causes a race condition, but there
-are also other types of operations that do not cause any type of race condition problem, regardless of who get's to that
-target location first. You could also say that, there are types of operations that are susceptible to race condition problems,
+are also, other types of operations that do not cause a race condition problem.
+You could also say that, there are types of operations that are susceptible to race condition problems,
 and there are other types of operations that are not.
 
-The code example below demonstrates a race condition problem that happens in a file.
-In more details, this example demonstrates two threads that are writing messages to the same file (i.e. to the same `stdout`)
-roughly at the same time, and, as a consequence of that, the messages printed by thread A are inserted in the middle of the messages
-printed by the other thread.
+A read/write lock is a type of lock that acknowledges the existance of this specific scenario, and you can
+use this type of lock to control which parts of the codebase are safe to run in parallel, and which parts are not safe.
 
-
-```{zig}
-#| eval: false
-const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-const Thread = std.Thread;
-fn do_some_work(thread_id: *const u8) !void {
-    _ = try stdout.print("Starting thread {d}.\n", .{thread_id.*});
-    std.time.sleep(100 * std.time.ns_per_ms);
-    _ = try stdout.print("Finishing thread {d}.\n", .{thread_id.*});
-}
-
-pub fn main() !void {
-    const id1: u8 = 1;
-    const id2: u8 = 2;
-    const thread1 = try Thread.spawn(.{}, do_some_work, .{&id1});
-    const thread2 = try Thread.spawn(.{}, do_some_work, .{&id2});
-    thread1.join();
-    thread2.join();
-}
-```
-
-```
-Starting thread 1.
-Starting thread 2.
-Finishing thread Finishing thread 2.
-1.
-```
 
 
 ### Exclusive lock vs shared lock
@@ -910,6 +885,7 @@ before it continues.
 On the other hand, if there are only "read lock" (i.e. "shared lock") threads currently running (i.e. not a single "write lock" thread currently exists), then,
 is perfectly safe for this thread that is acquiring the read lock to run in parallel with the other threads. As a result, the read lock just
 allows for this thread to run together with the other threads.
+
 Thus, by using read locks (shared locks) in conjunction with write locks (exclusive locks), we can control which regions or sections
 of our multithreaded code is safe for us to have parallelism, and which sections are not safe to have parallelism.
 
@@ -922,10 +898,10 @@ of our multithreaded code is safe for us to have parallelism, and which sections
 The Zig Standard Library supports read/write locks through the `std.Thread.RwLock` module.
 If you want to a particular thread to acquire a shared lock (i.e. a read lock), you should
 call the `lockShared()` method from the `RwLock` object. But, if you want for this thread
-to acquire a exclusive lock (i.e. a write lock) instead, then, you should call the
+to acquire an exclusive lock (i.e. a write lock) instead, then, you should call the
 `lock()` method from the `RwLock` object.
 
-As with mutexes, we also have to unlock the shared or exclusive locks that we acquire through a read/write lock,
+As with mutexes, we also have to unlock the shared or exclusive locks that we acquire through a read/write lock object,
 once we are at the end of our "critical section". If you have acquired an exclusive lock, then, you unlock
 this exclusive lock by calling the `unlock()` method from the read/write lock object. In contrast,
 if you have acquired a shared lock instead, then, call `unlockShared()` to unlock this shared lock.
