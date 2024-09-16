@@ -257,38 +257,32 @@ For the encoder, the logic is the following: for each 3 bytes that we find in th
 by 3, use a ceiling function, then, we multiply the result by 4. That way, we get the total
 number of bytes that will be produced by the encoder in it's output.
 
-The `_calc_encode_length()` function below encapsulates this logic. Notice that we convert
-the `.len` property of the array, which is always a integer (more precisely, an `usize` value),
-into a floating point number of 64 bits (`f64`). We do this, because the ceiling function (`@ceil()`) works
-only with floating point numbers. So, we convert it so that the division with the number `3.0` results in
-a floating point number. Then, after the ceiling process, we can convert the result back into an
-integer value (with the `@intFromFloat()` function).
+The `_calc_encode_length()` function below encapsulates this logic.
+Inside this function, we take the length of the input array,
+we divide it by 3, and apply a ceil operation over the result by using the
+`divCeil()` function from the Zig Standard Library. Lastly, we multiply
+the end result by 4 to get the answer we need.
 
 ```{zig}
 #| auto_main: false
 #| build_type: "lib"
-fn _calc_encode_length(input: []const u8) u64 {
+const std = @import("std");
+fn _calc_encode_length(input: []const u8) !usize {
     if (input.len < 3) {
-        const n_output: u64 = 4;
+        const n_output: usize = 4;
         return n_output;
     }
-    const len_as_float: f64 = @floatFromInt(input.len);
-    const n_output: u64 = @intFromFloat(@ceil(len_as_float / 3.0) * 4.0);
-    return n_output;
+    const n_output: usize = try std.math.divCeil(
+        usize, input.len, 3
+    );
+    return n_output * 4;
 }
 ```
 
-Is important to notice that, when I am using the built-in functions from Zig to convert data types (`@floatFromInt()` and `intFromFloat()`),
-I'm always annotating explicitly the type of the variable that stores the result of these functions.
-I do that, because these functions need this information. `@floatFromInt()` needs to know
-which type of floating point number I want to use in it's output. Is it `f16`? `f32`? `f64`? etc.
-The same goes to `@intFromFloat()`.
 
-Also, you might have notice that, if the input length is less than 3 bytes, then, the output length of the encoder will
-be always 4 bytes. This is because the algorithm will always fill the gap in the input with zeroes, until it fits
-the window of 24 bits that the algorithm likes to work on, as I described at @sec-base64-encoder-algo. So the output
-of the algorithm will always be 4 bytes in this specific case.
-
+Also, you might have notice that, if the input length is less than 3 bytes, then, the output length of the encoder is
+always 4 bytes. This is the case for every input with less than 3 bytes, because, as I described at @sec-base64-encoder-algo,
+the algorithm always produces enough "padding-groups" in the end result, to complete the 4 bytes window.
 
 Now, for the decoder, we just need to apply the inverse logic: for each 4 bytes in the input, 3 bytes
 will be produced in the output of the decoder. I mean, this is roughly true, because we also need to
@@ -297,20 +291,24 @@ at @fig-base64-algo2. But we can ignore this fact for now, to make things simple
 
 So, the function `_calc_decode_length()` summarizes this logic that we described. It is very similar
 to the function `_calc_encode_length()`, only the division part is twisted, and also, in the special
-case where we have less than 4 bytes in the input to work on.
+case where we have less than 4 bytes in the input to work on. Also notice that this time, we apply
+a floor operation over the output of the division, by using the `divFloor()`
+function (instead of `divCeil()`).
 
 
 ```{zig}
 #| auto_main: false
 #| build_type: "lib"
-fn _calc_decode_length(input: []const u8) u64 {
+const std = @import("std");
+fn _calc_decode_length(input: []const u8) !usize {
     if (input.len < 4) {
-        const n_output: u64 = 3;
+        const n_output: usize = 3;
         return n_output;
     }
-    const len_as_float: f64 = @floatFromInt(input.len);
-    const n_output: u64 = @intFromFloat(@floor(len_as_float / 4.0) * 3.0);
-    return n_output;
+    const n_output: usize = try std.math.divFloor(
+        usize, input.len, 4
+    );
+    return n_output * 3;
 }
 ```
 
@@ -604,7 +602,7 @@ pub fn encode(self: Base64,
         return "";
     }
 
-    const n_out = _calc_encode_length(input);
+    const n_out = try _calc_encode_length(input);
     var out = try allocator.alloc(u8, n_out);
     var buf = [3]u8{ 0, 0, 0 };
     var count: u8 = 0;
@@ -808,7 +806,7 @@ fn decode(self: Base64,
     if (input.len == 0) {
         return "";
     }
-    const n_output = _calc_decode_length(input);
+    const n_output = try _calc_decode_length(input);
     var output = try allocator.alloc(u8, n_output);
     for (output, 0..) |_, i| {
         output[i] = 0;

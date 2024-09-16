@@ -149,6 +149,9 @@ pub fn main() !void {
 }
 ```
 
+
+#### Switch statements exhaust all possibilities
+
 Now, one very important aspect about this switch statement presented
 in the code example above, is that it exhaust all existing possibilities.
 In other words, all possible values that could be found inside the `order`
@@ -165,12 +168,17 @@ a switch statement, and leave an edge case with no expliciting action to be take
 This is a similar behaviour to switch statements in Rust, which also have to
 handle all possible cases.
 
+
+
+#### The else branch
+
 Take a look at the `dump_hex_fallible()` function below as an example. This function
-also comes from the Zig Standard Library, but this time, it comes from the [`debug.zig` module](https://github.com/ziglang/zig/blob/master/lib/std/debug.zig)[^debug-mod].
+also comes from the Zig Standard Library, but this time, it comes from the
+[`debug.zig` module](https://github.com/ziglang/zig/blob/master/lib/std/debug.zig)[^debug-mod].
 There are multiple lines in this function, but I omitted them to focus solely on the
 switch statement found in this function. Notice that this switch statement have four
 possible cases, or four explicit branches. Also, notice that we used an `else` branch
-in this case. Whenever you have multiple possible cases in your switch statement
+in this case. Whenever you have multiple cases in your switch statement
 which you want to apply the same exact action, you can use an `else` branch to do that.
 
 [^debug-mod]: <https://github.com/ziglang/zig/blob/master/lib/std/debug.zig>
@@ -222,6 +230,10 @@ t.zig:9:13: 0x1033c58 in main (switch2)
             ^
 ```
 
+
+
+#### Using ranges in switch
+
 Furthermore, you can also use ranges of values in switch statements.
 That is, you can create a branch in your switch statement that is used
 whenever the input value is contained in a range. These range
@@ -229,7 +241,7 @@ expressions are created with the operator `...`. Is important
 to emphasize that the ranges created by this operator are
 inclusive on both ends.
 
-For example, I could easily change the code example above to support all
+For example, I could easily change the previous code example to support all
 levels between 0 and 100. Like this:
 
 ```{zig}
@@ -251,6 +263,30 @@ This is neat, and it works with character ranges too. That is, I could
 simply write `'a'...'z'`, to match any character value that is a
 lowercase letter, and it would work fine.
 
+
+#### Labeled switch statements
+
+At @sec-blocks we have talked about labeling blocks, and also, about using these labels
+to return a value from the block. Well, from version 0.14.0 and onwards of the `zig` compiler,
+you can also apply labels over switch statements,
+which makes possible to implement almost a "C goto like" pattern in Zig.
+
+For example, if you give the label `xsw` to a switch statement, you can use this
+label in conjunction with the `continue` keyword to go back to the beginning of the switch
+statement. In the example below, the execution goes back to the beginning of the
+switch statement two times, before ending at the `3` branch.
+
+```{zig}
+#| auto_main: false
+#| build_type: "lib"
+#| eval: false
+xsw: switch (@as(u8, 1)) {
+    1 => continue :xsw 2,
+    2 => continue :xsw 3,
+    3 => return,
+    4 => {},
+}
+```
 
 
 ### The `defer` keyword {#sec-defer}

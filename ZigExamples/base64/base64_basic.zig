@@ -39,11 +39,11 @@ const Base64 = struct {
         if (input.len == 0)
             return "";
 
-        const n_output = _calc_encode_length(input);
+        const n_output = try _calc_encode_length(input);
         var output = try allocator.alloc(u8, n_output);
         var tmp_buffer = [3]u8{ 0, 0, 0 };
         var count: u8 = 0;
-        var output_index: u64 = 0;
+        var output_index: usize = 0;
 
         for (input, 0..) |_, i| {
             tmp_buffer[count] = input[i];
@@ -80,7 +80,7 @@ const Base64 = struct {
         if (input.len == 0)
             return "";
 
-        const n_output = _calc_decode_length(input);
+        const n_output = try _calc_decode_length(input);
         var tmp_buffer = [4]u8{ 0, 0, 0, 0 };
         var output = try allocator.alloc(u8, n_output);
         var count: u8 = 0;
@@ -109,25 +109,23 @@ const Base64 = struct {
     }
 };
 
-fn _calc_encode_length(input: []const u8) u64 {
-    const len_as_float: f64 = @floatFromInt(input.len);
+fn _calc_encode_length(input: []const u8) !usize {
     if (input.len < 3) {
-        const n_output: u64 = 4;
+        const n_output: usize = 4;
         return n_output;
     }
 
-    const n_output: u64 = @intFromFloat(@ceil(len_as_float / 3.0) * 4.0);
-    return n_output;
+    const n_output: usize = try std.math.divCeil(usize, input.len, 3);
+    return n_output * 4;
 }
 
-fn _calc_decode_length(input: []const u8) u64 {
-    const len_as_float: f64 = @floatFromInt(input.len);
+fn _calc_decode_length(input: []const u8) !usize {
     if (input.len < 4) {
-        const n_output: u64 = 3;
+        const n_output: usize = 3;
         return n_output;
     }
-    const n_output: u64 = @intFromFloat(@floor(len_as_float / 4.0) * 3.0);
-    return n_output;
+    const n_output: usize = try std.math.divFloor(usize, input.len, 4);
+    return n_output * 3;
 }
 
 pub fn main() !void {
