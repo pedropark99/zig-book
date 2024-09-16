@@ -8,9 +8,9 @@ on the official repository of the project:
   confusing to you, you can open an issue to clarify these points.
 - to give a feedback, or, a suggestion of improvement.
 - to point out an error in the book. This error can be:
-    -       a typo;
-    -       it might also be an error in the code examples (i.e. the code example doesn't work when it is supposed to work);
-    -       a knowledge error in the book, meaning that, there is a mistake in the technical explanation of a subject.
+    - a typo;
+    - it might also be an error in the code examples (i.e. the code example doesn't work when it is supposed to work);
+    - a knowledge error in the book, meaning that, there is a mistake in the technical explanation of a subject.
 
 Now, maybe, you want to do something more than just open an issue. Maybe you want to actually
 send a Pull Request to be reviewed. For example, if you spot a typo anywhere in the book,
