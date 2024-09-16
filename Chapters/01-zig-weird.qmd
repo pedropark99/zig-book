@@ -20,51 +20,66 @@ knitr::opts_chunk$set(
 # Introducing Zig
 
 In this chapter, I want to introduce you to the world of Zig.
-Zig is a very young language which is actively developed.
+Zig is a very young language that is being actively developed.
 As a consequence, it's world is still very wild and to be explored.
 This book is my attempt to help you on your personal journey for
 understanding and exploring the exciting world of Zig.
 
-This book won't teach you programming.
-You should have some experience with script languages like Python or Javascript.
-Better if you have experience with a low-level language such as C, C++ or Rust.
+I assume you have previous experience with some programming
+language in this book, not necessarily with a low-level one.
+So, if you have experience with Python, or Javascript, for example, is fine.
+But, if you do have experience with low-level languages, such as C, C++, or
+Rust, you will probably learn faster throughout this book.
 
 ## What is Zig?
 
 Zig is a modern, low-level, and general-purpose programming language. Some programmers think of
-Zig as modern better version of C.
+Zig as a modern and better version of C.
 
-The author thinks Zig follows the principle of "less is more".
+In the author's personal interpretation, Zig is tightly connected with "less is more".
 Instead of trying to become a modern language by adding more and more features,
-
-<!-- do you really want to *remove* features from C?? -->
-Zig attempts to simplify and modernize by having more consistency and robustness.
-Its goal is to make writing, reasoning and debugging easier and simpler.
+many of the core improvements that Zig brings to the
+table are actually about removing annoying and evil behaviours/features from C and C++.
+In other words, Zig tries to be better by simplifying the language, and by having more consistent and robust behaviour.
+As a result, analyzing, writing and debugging applications become much easier and simpler in Zig, than it is in C or C++.
 
 This philosophy becomes clear with the following phrase from the official website of Zig:
 
 > "Focus on debugging your application rather than debugging your programming language knowledge".
 
-<!-- I thought this would be about Zig and not about C++?? -->
-Zig is a very simple language closely related to other languages such as C and Go.
+This phrase is specially true for C++ programmers. Because C++ is a gigantic language,
+with tons of features, and also, there are lots of different "flavors of C++". These elements
+are what makes C++ so much complex and hard to learn. Zig tries to go in the opposite direction.
+Zig is a very simple language, more closely related to other simple languages such as C and Go.
 
-<!-- again ranting about C, why would you do that in Zig text? -->
-Better consistency means all coding tasks are performed in the Zig language. There are no pre processor
-statements necessary like in C.
-The Zig code you write is the actual code that get's compiled.
-Better transparency because no functions or operators from the standard library allocate memory.
+The phrase above is still important for C programmers too. Because, even C being a simple
+language, it is still hard sometimes to read and understand C code. For example, pre-processor macros in
+C are an evil source of confusion. They really makes it hard sometimes to debug
+C programs. Because macros are essentially a second language embedded in C that obscures
+your C code. With macros, you are no longer 100% sure about which pieces
+of code are being sent to the compiler. It obscures the actual source code that you wrote.
 
-Zig becomes clearer and easier to read and to write.
+You don't have macros in Zig. In Zig, the code you write, is the actual code that get's compiled by the compiler.
+You don't have evil features that obscures you code.
+You also don't have hidden control flow happening behind the scenes. And, you also
+don't have functions or operators from the standard library that make
+hidden memory allocations behind your back.Zig becomes clearer and easier to read and to write.
 It achieves a robust state with consistent behaviour in edge situations.
 
-Less is more.
+By being a simpler language, Zig becomes much more clear and easier to read/write,
+but at the same time, it also achieves a much more robust state, with more consistent
+behaviour in edge situations. Once again, less is more.
+
+
 
 ## Hello world in Zig
 
-Since the first C book by Kerninghan&Ritchie it became tradition to begin the programming journey
-with the famous "Hello World" program.
+We begin our journey in Zig by creating a small "Hello World" program.
+To start a new Zig project in your computer, you simply call the `init` command
+from the `zig` compiler.
+Just create a new directory in your computer, then, init a new Zig project
+inside this directory, like this:
 
-It's easy to start a new project. Navigate to a directory of your choice and execute the following commands.
 
 ```bash
 mkdir hello_world
@@ -82,17 +97,18 @@ info: see `zig build --help` for a menu of options
 
 ### Understanding the project files {#sec-project-files}
 
-The 'init' command creates the following structure.
+After you run the `init` command from the `zig` compiler, some new files
+are created inside of your current directory. First, a "source" (`src`) directory
+is created, containing two files, `main.zig` and `root.zig`. Each `.zig` file
+is a separate Zig module, which is simply a text file that contains some Zig code.
 
-A "source" (`src`) directory with the two text files `main.zig` and `root.zig`. Each file represents a module.
+By convention, the `main.zig` module is where your main function lives. Thus,
+if you are building an executable program in Zig, you need to declare a `main()` function,
+which represents the entrypoint of your program, i.e. it is where the execution of your program begins.
 
-By convention, `main.zig` is where your main function lives in the case that
-you are building an executable. If you are making a library, the convention
-is to delete this file and start with `root.zig` instead.
-
-By convention, root.zig is the root source file when making a library. If
-you are making an executable, the convention is to delete this file and
-start with main.zig instead.
+However, if you are building a library (instead of an executable program), then,
+the normal procedure is to delete this `main.zig` file and start with the `root.zig` module.
+By convention, the `root.zig` module is the root source file of your library.
 
 ```bash
 tree .
@@ -109,39 +125,70 @@ tree .
 1 directory, 4 files
 ```
 
-The `ìnit` command creates two additional files in the work directory - `build.zig` and `build.zig.zon`.
-`build.zig` represents the build script for your project and it is written in Zig (consistency!).
-It will be executed with the command `zig build`.
-You won't need an external build system when using Zig. The file `build.zig` brings all the code necessary to build the entire project.
+The `ìnit` command also creates two additional files in our working directory:
+`build.zig` and `build.zig.zon`. The first file (`build.zig`) represents a build script written in Zig.
+This script is executed when you call the `build` command from the `zig` compiler.
+In other words, this file contain Zig code that executes the necessary steps to build the entire project.
 
-<!-- why explaining details of other langugages? This book is about Zig, not a general introduction into programming -->
+In general, low-level languages normally use a compiler to build your
+source code into binary executables or binary libraries.
+Nevertheless, this process of compiling your source code and building
+binary executables or binary libraries from it, became a real challenge
+in the programming world, once the projects became bigger and bigger.
+As a result, programmers created "build systems", which are a second set of tools designed to make this process
+of compiling and building complex projects, easier.
 
-Instead of using a separate build system we use the
-Zig language itself to write our build scripts.
-Zig brings its own native build system.[^zig-build-system].
+Examples of build systems are CMake, GNU Make, GNU Autoconf and Ninja,
+which are used to build complex C and C++ projects.
+With these systems, you can write scripts, which are called "build scripts".
+They simply are scripts that describes the necessary steps to compile/build
+your project.
+
+However, these are separate tools, that do not
+belong to C/C++ compilers, like `gcc` or `clang`.
+As a result, in C/C++ projects, you have not only to install and
+manage your C/C++ compilers, but you also have to install and manage
+these build systems separately.
+
+But instead of using a separate build system, in Zig, we use the
+Zig language itself to write build scripts.
+In other words, Zig contains a native build system in it. And
+we can use this build system to write small scripts in Zig,
+which describes the necessary steps to build/compile our Zig project[^zig-build-system].
+So, everything you need to build a complex Zig project is the
+`zig` compiler, and nothing more.
 
 [^zig-build-system]: <https://ziglang.org/learn/overview/#zig-build-system>.
 
-The file `build.zig.zon` is the configuration file for the Zig package manager.[^similar to Python's pip, Rust's cargo, Javascript's npm or Ruby's gem]
+
+The second generated file (`build.zig.zon`) is the Zig package manager configuration file,
+where you can list and manage the dependencies of your project. Yes, Zig has
+a package manager (like `pip` in Python, `cargo` in Rust, or `npm` in Javascript) called Zon,
+and this `build.zig.zon` file is similar to the `package.json` file
+in Javascript projects, or, the `Pipfile` file in Python projects,
+or the `Cargo.toml` file in Rust projects.
+
 
 ### The file `root.zig` {#sec-root-file}
 
-Let's look into the `root.zig` file.
-Mou might notice that every line of code with an expression ends with a semicolon (`;`). This follows
-the syntax of C-family programming languages.[^https://en.wikipedia.org/wiki/List_of_C-family_programming_languages]
+Let's take a look into the `root.zig` file.
+You might have notice that every line of code with an expression ends with a semicolon (`;`).
+This follows the syntax of a C-family programming language[^c-family].
 
-Notice the `@import()` call at the first line. 
-This built-in function imports functionality from other Zig modules into the current module.
-Importing the `std` module makes the functions from the Zig standard visible.
+[^c-family]: <https://en.wikipedia.org/wiki/List_of_C-family_programming_languages>
 
-Zig's assignment operator is `=`.
-A new objecty is created by assigning a value to a name 
+Also, notice the `@import()` call at the first line. We use this built-in function
+to import functionality from other Zig modules into our current module.
+In other words, this `@import()` function works similarly to the `#include` pre-processor
+in C or C++, or, to the `import` statement in Python or Javascript code.
+In this example, we are importing the `std` module,
+which gives you access to the Zig Standard Library.
 
-```{zig}
-(const|var) name = value;
-```
-In the example below, we are creating two constant
+In this `root.zig` file, we can also see how assignments (i.e. creating new objects)
+are made in Zig. You can create a new object in Zig by using the following syntax
+`(const|var) name = value;`. In the example below, we are creating two constant
 objects (`std` and `testing`). At @sec-assignments we talk more about objects in general.
+
 
 ```{zig}
 #| eval: false
@@ -154,22 +201,32 @@ export fn add(a: i32, b: i32) i32 {
 ```
 
 Functions in Zig are declared using the `fn` keyword.
-In the example we are declaring a function called `add()`, which has two arguments named `a` and `b`.
+In this `root.zig` module, we are declaring a function called `add()`, which has two arguments named `a` and `b`.
 The function returns an integer of the type `i32` as result.
 
-Zig is not a strongly-typed language, because you can omit
-the type of an object if it can be derived from the assigned value.
 
-Remember, you do have to specify the type of each function argument and the return value.
+Zig is not exactly a strongly-typed language. Because you can (if you want to) omit
+the type of an object in your code, if this type can be derived from the assigned value.
+But there are other situations where you do need to be explicit.
+For example, you do have to explicitly specify the type of every single function argument, and also,
+the return type of every function you create in Zig. So, at least in function declarations,
+Zig is a strongly-typed language.
 
 We specify the type of an object or a function argument in Zig, by
-using a colon character (`:`) followed by the type after the name of the object.
-The expressions `a: i32` and `b: i32` define both with the type `i32`,
-which is a signed 32 bit integer.
+using a colon character (`:`) followed by the type after the name of this object/function argument.
+With the expressions `a: i32` and `b: i32`, we know that, both `a` and `b` arguments have type `i32`,
+which is a signed 32 bit integer. In this part,
+the syntax in Zig is identical to the syntax in Rust, which also specifies types by
+using the colon character.
 
-The return type of the function follows function arguments list.
+Lastly, we have the return type of the function at the end of the line, before we open
+the curly braces to start writing the function's body. In the example above, this type is also
+a signed 32 bit integer (`i32`) value.
 
-If the function is preceded by `export` keyword then it exposes the function can be called from outside the library.
+Notice that we also have an `export` keyword before the function declaration. This keyword
+is similar to the `extern` keyword in C. It exposes the function
+to make it available in the library API.
+
 
 In other words, if you have a project where you are currently building
 a library for other people to use, you need to expose your functions
@@ -180,11 +237,11 @@ by the `zig` compiler.
 
 
 Having that in mind, the keyword `export` is a keyword used in libraries written in Zig.
-So, if you are not currently writing a library in your project, then, you do not need to
+If you are not currently writing a library in your project, then, you do not need to
 care about this keyword.
 
 
-### Looking at the `main.zig` file {#sec-main-file}
+### The `main.zig` file {#sec-main-file}
 
 Now that we have learned a lot about Zig's syntax from the `root.zig` file,
 let's take a look at the `main.zig` file.
