@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 # Introducing Zig
 
 In this chapter, I want to introduce you to the world of Zig.
-Despite it's rapidly growing over the last years, Zig is, still, a very young language^[New programming languages in general, take years and years to be developed.].
+Zig is a very young language that is being actively developed.
 As a consequence, it's world is still very wild and to be explored.
 This book is my attempt to help you on your personal journey for
 understanding and exploring the exciting world of Zig.
@@ -31,13 +31,10 @@ So, if you have experience with Python, or Javascript, for example, is fine.
 But, if you do have experience with low-level languages, such as C, C++, or
 Rust, you will probably learn faster throughout this book.
 
-
-
 ## What is Zig?
 
-Zig is a modern, low-level, and general-purpose programming language. Some programmers interpret
-Zig as the "modern C language". It is a simple language like C, but with some
-modern features.
+Zig is a modern, low-level, and general-purpose programming language. Some programmers think of
+Zig as a modern and better version of C.
 
 In the author's personal interpretation, Zig is tightly connected with "less is more".
 Instead of trying to become a modern language by adding more and more features,
@@ -102,18 +99,13 @@ are created inside of your current directory. First, a "source" (`src`) director
 is created, containing two files, `main.zig` and `root.zig`. Each `.zig` file
 is a separate Zig module, which is simply a text file that contains some Zig code.
 
+By convention, the `main.zig` module is where your main function lives. Thus,
+if you are building an executable program in Zig, you need to declare a `main()` function,
+which represents the entrypoint of your program, i.e. it is where the execution of your program begins.
 
-The `main.zig` file for example, contains a `main()` function, which represents
-the entrypoint of your program. It is where the execution of your program begins.
-As you would expect from a C, C++, Rust or Go,
-to build an executabe program in Zig, you also need to declare a `main()` function in your module.
-So, the `main.zig` module represents an executable program written in Zig.
-
-On the other side, the `root.zig` module does not contain a `main()` function. Because
-it represents a library written in Zig. Libraries are different than executables.
-They don't need to have an entrypoint to work.
-So, you can choose which file (`main.zig` or `root.zig`) you want to follow depending on which type
-of project (executable or library) you want to develop.
+However, if you are building a library (instead of an executable program), then,
+the normal procedure is to delete this `main.zig` file and start with the `root.zig` module.
+By convention, the `root.zig` module is the root source file of your library.
 
 ```bash
 tree .
@@ -130,8 +122,7 @@ tree .
 1 directory, 4 files
 ```
 
-
-Now, in addition to the source directory, two other files were created in our working directory:
+The `ìnit` command also creates two additional files in our working directory:
 `build.zig` and `build.zig.zon`. The first file (`build.zig`) represents a build script written in Zig.
 This script is executed when you call the `build` command from the `zig` compiler.
 In other words, this file contain Zig code that executes the necessary steps to build the entire project.
@@ -167,34 +158,34 @@ So, everything you need to build a complex Zig project is the
 [^zig-build-system]: <https://ziglang.org/learn/overview/#zig-build-system>.
 
 
-Now that we described this topic in more depth, let's focus
-on the second generated file (`build.zig.zon`), which is the Zig package manager configuration file,
+The second generated file (`build.zig.zon`) is the Zig package manager configuration file,
 where you can list and manage the dependencies of your project. Yes, Zig has
 a package manager (like `pip` in Python, `cargo` in Rust, or `npm` in Javascript) called Zon,
 and this `build.zig.zon` file is similar to the `package.json` file
-in Javascript projects, or, the `Pipfile` file in Python projects, or the `Cargo.toml` file in Rust projects.
+in Javascript projects, or, the `Pipfile` file in Python projects,
+or the `Cargo.toml` file in Rust projects.
 
 
-### Looking at the `root.zig` file {#sec-root-file}
+### The file `root.zig` {#sec-root-file}
 
-Let's take a look at the `root.zig` file, and start to analyze some of the
-syntax of Zig.
-The first thing that you might notice, is that every line of code
-that have an expression in it, ends with a semicolon character (`;`). This is
-similar syntax to other languages such as C, C++ and Rust,
-which have the same rule.
+Let's take a look into the `root.zig` file.
+You might have notice that every line of code with an expression ends with a semicolon (`;`).
+This follows the syntax of a C-family programming language[^c-family].
+
+[^c-family]: <https://en.wikipedia.org/wiki/List_of_C-family_programming_languages>
 
 Also, notice the `@import()` call at the first line. We use this built-in function
 to import functionality from other Zig modules into our current module.
-In other words, the `@import()` function works similarly to the `#include` pre-processor
+In other words, this `@import()` function works similarly to the `#include` pre-processor
 in C or C++, or, to the `import` statement in Python or Javascript code.
 In this example, we are importing the `std` module,
-which gives you access to the Zig standard library.
+which gives you access to the Zig Standard Library.
 
 In this `root.zig` file, we can also see how assignments (i.e. creating new objects)
 are made in Zig. You can create a new object in Zig by using the following syntax
 `(const|var) name = value;`. In the example below, we are creating two constant
 objects (`std` and `testing`). At @sec-assignments we talk more about objects in general.
+
 
 ```{zig}
 #| eval: false
@@ -206,13 +197,15 @@ export fn add(a: i32, b: i32) i32 {
 }
 ```
 
-Functions in Zig are declared similarly to functions in Rust, using the `fn` keyword. In the example above,
-we are declaring a function called `add()`, which have two arguments named `a` and `b`, and returns
-a integer number (`i32`) as result.
+Functions in Zig are declared using the `fn` keyword.
+In this `root.zig` module, we are declaring a function called `add()`, which has two arguments named `a` and `b`.
+The function returns an integer of the type `i32` as result.
 
-Maybe Zig is not exactly a strongly-typed language, because you do not need
-necessarily to specify the type of every single object you create across your source code.
-But you do have to explicitly specify the type of every function argument, and also,
+
+Zig is not exactly a strongly-typed language. Because you can (if you want to) omit
+the type of an object in your code, if this type can be derived from the assigned value.
+But there are other situations where you do need to be explicit.
+For example, you do have to explicitly specify the type of every single function argument, and also,
 the return type of every function you create in Zig. So, at least in function declarations,
 Zig is a strongly-typed language.
 
@@ -224,14 +217,13 @@ the syntax in Zig is identical to the syntax in Rust, which also specifies types
 using the colon character.
 
 Lastly, we have the return type of the function at the end of the line, before we open
-the curly braces to start writing the function's body, which, in the example above is
-again a signed 32 bit integer (`i32`) value. This specific part is different than it is in Rust.
-Because in Rust, the return type of a function is specified after an arrow (`->`).
-While in Zig, we simply declare the return type directly after the parentheses with the function arguments.
+the curly braces to start writing the function's body. In the example above, this type is also
+a signed 32 bit integer (`i32`) value.
 
-We also have an `export` keyword before the function declaration. This keyword
+Notice that we also have an `export` keyword before the function declaration. This keyword
 is similar to the `extern` keyword in C. It exposes the function
 to make it available in the library API.
+
 
 In other words, if you have a project where you are currently building
 a library for other people to use, you need to expose your functions
@@ -242,11 +234,11 @@ by the `zig` compiler.
 
 
 Having that in mind, the keyword `export` is a keyword used in libraries written in Zig.
-So, if you are not currently writing a library in your project, then, you do not need to
+If you are not currently writing a library in your project, then, you do not need to
 care about this keyword.
 
 
-### Looking at the `main.zig` file {#sec-main-file}
+### The `main.zig` file {#sec-main-file}
 
 Now that we have learned a lot about Zig's syntax from the `root.zig` file,
 let's take a look at the `main.zig` file.
