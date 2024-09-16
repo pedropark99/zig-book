@@ -2,12 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.554">
+<meta name="generator" content="quarto-1.5.56">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Introduction to Zig: a project-based book - 16&nbsp; Introducing threads and parallelism in Zig</title>
+<title>16&nbsp; Introducing threads and parallelism in Zig – Introduction to Zig: a project-based book</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -33,7 +33,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -125,7 +125,7 @@ div.csl-indent {
   }
 }</script>
 
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
 <script type="text/javascript">
@@ -163,13 +163,13 @@ window.Quarto = {
   <header id="quarto-header" class="headroom fixed-top">
   <nav class="quarto-secondary-nav">
     <div class="container-fluid d-flex">
-      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
         <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/14-threads.html"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Introducing threads and parallelism in Zig</span></a></li></ol></nav>
-        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
-      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
         <i class="bi bi-search"></i>
       </button>
     </div>
@@ -637,13 +637,13 @@ Joining thread 2</code></pre>
 </ol>
 <p>Ideally, a thread B should read the value of <code>count</code>, only after the other thread A has finished writing the incremented value back into the <code>count</code> object. Therefore, in the ideal scenario, which is demonstrated at <a href="#tbl-data-race-ideal" class="quarto-xref">Table&nbsp;<span>16.1</span></a>, the threads should work in sync with each other. But the reality is that these threads are out of sync, and because of that, they suffer from a data race problem, which is demonstrated at <a href="#tbl-data-race-not" class="quarto-xref">Table&nbsp;<span>16.2</span></a>.</p>
 <p>Notice that, in the data race scenario (<a href="#tbl-data-race-not" class="quarto-xref">Table&nbsp;<span>16.2</span></a>), the read performed by a thread B happens before the write operation of thread A, and that ultimately leads to wrong results at the end of the program. Because when the thread B reads the value from the <code>count</code> variable, the thread A is still processing the initial value from <code>count</code>, and it did not write the new and incremented value into <code>count</code> yet. So what happens is that thread B ends up reading the same initial value (the “old” value) from <code>count</code>, instead of reading the new and incremented version of this value that would be calculated by thread A.</p>
-<div id="tbl-data-race-ideal" class="quarto-float anchored">
+<div id="tbl-data-race-ideal" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-data-race-ideal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;16.1: An ideal scenario for two threads incrementing the same integer value
 </figcaption>
 <div aria-describedby="tbl-data-race-ideal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<table class="table">
+<table class="caption-top table">
 <thead>
 <tr class="header">
 <th>Thread 1</th>
@@ -687,13 +687,13 @@ Table&nbsp;16.1: An ideal scenario for two threads incrementing the same integer
 </div>
 </figure>
 </div>
-<div id="tbl-data-race-not" class="quarto-float anchored">
+<div id="tbl-data-race-not" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-data-race-not-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;16.2: A data race scenario when two threads are incrementing the same integer value
 </figcaption>
 <div aria-describedby="tbl-data-race-not-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<table class="table">
+<table class="caption-top table">
 <thead>
 <tr class="header">
 <th>Thread 1</th>
@@ -881,6 +881,30 @@ Table&nbsp;16.2: A data race scenario when two threads are incrementing the same
 <h3 data-number="16.9.3" class="anchored" data-anchor-id="cancelling-or-killing-a-particular-thread"><span class="header-section-number">16.9.3</span> Cancelling or killing a particular thread</h3>
 <p>When we think about the <code>pthreads</code> C library, there is a possible way to asynchronously kill or cancel a thread, which is by sending a <code>SIGTERM</code> signal to the thread through the <code>pthread_kill()</code> function. But canceling a thread like this is bad. Is dangerously bad. As consequence, the Zig implementation of threads does not have a similar function, or, a similar way to asynchronously cancel or kill a thread.</p>
 <p>Therefore, if you want to cancel a thread in the middle of it’s execution in Zig, then, one good strategy that you can take is to use control flow in your favor in conjunction with <code>join()</code>. More specifically, you can design your thread around a while loop, that is constantly checking if the thread should continue running. If is time to cancel the thread, we could make the while loop break, and join the thread with the main thread by calling <code>join()</code>.</p>
+<p>The code example below demonstrates to some extent this strategy. Here, we are using control flow to break the while loop, and exit the thread earlier than what we have initially planned to. This example also demonstrates how can we use atomic objects in Zig with the <code>Value()</code> generic function that we have mentioned at <a href="#sec-atomic-operation" class="quarto-xref"><span>Section 16.6.2</span></a>.</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> running = std.atomic.Value(<span class="dt">bool</span>).init(<span class="cn">true</span>);</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> counter: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> do_more_work() <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    std.time.sleep(<span class="dv">2</span> * std.time.ns_per_s);</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> work() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (running.load(.monotonic)) <span class="op">{</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">for</span> (<span class="dv">0</span>..<span class="dv">10000</span>) |_| <span class="op">{</span> counter += <span class="dv">1</span>; <span class="op">}</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (counter &lt; <span class="dv">15000</span>) <span class="op">{</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>            _ = <span class="kw">try</span> stdout.write(<span class="st">"Time to cancel the thread.</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>            running.store(<span class="cn">false</span>, .monotonic);</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>            _ = <span class="kw">try</span> stdout.write(<span class="st">"Time to do more work.</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>            do_more_work();</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>            running.store(<span class="cn">false</span>, .monotonic);</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, work, .<span class="op">{}</span>);</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>    thread.join();</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
@@ -1081,18 +1105,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
     return false;
   }
-  const clipboard = new window.ClipboardJS('.code-copy-button', {
-    text: function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-    }
-  });
-  clipboard.on('success', function(e) {
+  const onCopySuccess = function(e) {
     // button target
     const button = e.trigger;
     // don't keep focus
@@ -1124,7 +1137,29 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }, 1000);
     // clear code selection
     e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
   });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
     var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
     var mailtoRegex = new RegExp(/^mailto:/);
       var filterRegex = new RegExp('/' + window.location.host + '/');
@@ -1132,7 +1167,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
     }
     // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
     for (var i=0; i<links.length; i++) {
       const link = links[i];
       if (!isInternal(link.href)) {
