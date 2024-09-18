@@ -314,6 +314,7 @@ div.csl-indent {
   <li><a href="#strings-in-c" id="toc-strings-in-c" class="nav-link" data-scroll-target="#strings-in-c"><span class="header-section-number">1.8.1</span> Strings in C</a></li>
   <li><a href="#a-better-look-at-the-object-type" id="toc-a-better-look-at-the-object-type" class="nav-link" data-scroll-target="#a-better-look-at-the-object-type"><span class="header-section-number">1.8.2</span> A better look at the object type</a></li>
   <li><a href="#byte-vs-unicode-points" id="toc-byte-vs-unicode-points" class="nav-link" data-scroll-target="#byte-vs-unicode-points"><span class="header-section-number">1.8.3</span> Byte vs unicode points</a></li>
+  <li><a href="#some-useful-functions-for-strings" id="toc-some-useful-functions-for-strings" class="nav-link" data-scroll-target="#some-useful-functions-for-strings"><span class="header-section-number">1.8.4</span> Some useful functions for strings</a></li>
   </ul></li>
   <li><a href="#safety-in-zig" id="toc-safety-in-zig" class="nav-link" data-scroll-target="#safety-in-zig"><span class="header-section-number">1.9</span> Safety in Zig</a></li>
   <li><a href="#other-parts-of-zig" id="toc-other-parts-of-zig" class="nav-link" data-scroll-target="#other-parts-of-zig"><span class="header-section-number">1.10</span> Other parts of Zig</a></li>
@@ -867,6 +868,66 @@ Type of a pointer that points to
 got codepoint E383A1
 got codepoint E383AA
 got codepoint E382AB</code></pre>
+</section>
+<section id="some-useful-functions-for-strings" class="level3" data-number="1.8.4">
+<h3 data-number="1.8.4" class="anchored" data-anchor-id="some-useful-functions-for-strings"><span class="header-section-number">1.8.4</span> Some useful functions for strings</h3>
+<p>In this section, I just want to quickly describe some functions from the Zig Standard Library that are very useful to use when working with strings. Most notably:</p>
+<ul>
+<li><code>std.mem.eql()</code>: to compare if two strings are equal.</li>
+<li><code>std.mem.splitScalar()</code>: to split a string into an array of substrings given a delimiter value.</li>
+<li><code>std.mem.splitSequence()</code>: to split a string into an array of substrings given a substring delimiter.</li>
+<li><code>std.mem.startsWith()</code>: to check if string starts with substring.</li>
+<li><code>std.mem.endsWith()</code>: to check if string starts with substring.</li>
+<li><code>std.mem.trim()</code>: to remove specific values from both start and end of the string.</li>
+<li><code>std.mem.concat()</code>: to concatenate strings together.</li>
+<li><code>std.mem.count()</code>: to count the occurrences of substring in the string.</li>
+<li><code>std.mem.replace()</code>: to replace the occurrences of substring in the string.</li>
+</ul>
+<p>Notice that all of these functions come from the <code>mem</code> module of the Zig Standard Library. This module contains multiple functions and methods that are useful to work with memory and sequences of bytes in general.</p>
+<p>The <code>eql()</code> function is used to check if two arrays of data are equal or not. Since strings are just arbitrary arrays of bytes, we can use this function to compare two strings together. This function returns a boolean value indicating if the two strings are equal or not. The first argument of this function is the data type of the elements of the arrays that are being compared.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> name: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"Pedro"</span>;</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(</span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>std.mem.eql(<span class="dt">u8</span>, name, <span class="st">"Pedro"</span>)<span class="op">}</span></span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>true</code></pre>
+</div>
+</div>
+<p>The <code>splitScalar()</code> and <code>splitSequence()</code> functions are useful to split a string into multiple fragments, like the <code>split()</code> method from Python strings. The difference between these two methods is that the <code>splitScalar()</code> uses a single character as the separator to split the string, while <code>splitSequence()</code> uses a sequence of characters (a.k.a. a substring) as the separator. There is a practical example of these functions later in the book.</p>
+<p>The <code>startsWith()</code> and <code>endsWith()</code> functions are pretty straightforward. They return a boolean value indicating if the string (or, more precisely, if the array of data) begins (<code>startsWith</code>) or ends (<code>endsWith</code>) with the sequence provided.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> name: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"Pedro"</span>;</span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(</span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>std.mem.startsWith(<span class="dt">u8</span>, name, <span class="st">"Pe"</span>)<span class="op">}</span></span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>true</code></pre>
+</div>
+</div>
+<p>The <code>concat()</code> function, as the name suggests, concatenate two or more strings together. Because the process of concatenating the strings involves allocating enough space to accomodate all the strings together, this <code>concat()</code> function receives an allocator object as input.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> str1 = <span class="st">"Hello"</span>;</span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> str2 = <span class="st">" you!"</span>;</span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> str3 = <span class="kw">try</span> std.mem.concat(</span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>    allocator, <span class="dt">u8</span>, &amp;[_][]<span class="kw">const</span> <span class="dt">u8</span><span class="op">{</span> str1, str2 <span class="op">}</span></span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>str3<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Hello you!</code></pre>
+<p>As you can imagine, the <code>replace()</code> function is used to replace substrings in a string by another substring. This function works very similarly to the <code>replace()</code> method from Python strings. Therefore, you provide a substring to search, and every time that the <code>replace()</code> function finds this substring within the input string, it replaces this substring with the “replacement substring” that you provided as input.</p>
+<p>In the example below, we are taking the input string “Hello”, and replacing all occurrences of the substring “el” inside this input string with “34”, and saving the results inside the <code>buffer</code> object. As result, the <code>replace()</code> function returns an <code>usize</code> value that indicates how many replacements were performed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> str1 = <span class="st">"Hello"</span>;</span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffer: [<span class="dv">5</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> nrep = std.mem.replace(</span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">u8</span>, str1, <span class="st">"el"</span>, <span class="st">"34"</span>, buffer[<span class="dv">0</span>..]</span>
+<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb63-6"><a href="#cb63-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"New string: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer<span class="op">}</span>);</span>
+<span id="cb63-7"><a href="#cb63-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"N of replacements: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>nrep<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>New string: H34lo
+N of replacements: 1</code></pre>
 </section>
 </section>
 <section id="safety-in-zig" class="level2" data-number="1.9">
