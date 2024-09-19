@@ -36,24 +36,64 @@ which can be used to call C code. For example, Python have Cython, R have `.Call
 But Zig integrates with C in a deeper level, which affects not only the way that C code get's called, but also,
 how this C code is compiled and incorporated into your Zig project.
 
-In summary, Zig have great interoperability with C. But if you want to call C code from Zig
-you will have to perform the following steps:
+In summary, Zig have great interoperability with C. If you want to call any C code from Zig,
+you have to perform the following steps:
 
 - import a C header file into your Zig code.
 - link your Zig code with the C library.
 
-In more details, you should begin by importing into your Zig code the C header file that describes the C functions
-that you want to call. Which is pretty much the same thing that you would do in C, by including the header files into your C module.
-After you import the C header file, you can start calling and using the C functions described in this header file
-directly in your Zig code.
+So using C code in Zig always involves performing these two steps above. However, when
+we talk specifically about the first step listed above, there are currently two
+different ways to perform this first step, which are:
 
-Everytime you use a C library in your Zig code, **you introduce a dependency in your build process**.
+- translating the C header file into Zig, through `zig translate-c`, and then, importing the translated Zig code.
+- importing the C header file directly into your Zig module through `@cImport()` built-in function.
+
+If you are not familiar with `translate-c`, this is a subcommand inside the `zig` compiler that takes C files
+as input, and outputs the Zig representation of the C code present in these C files.
+In other words, this subcommand works like a transpiler. It takes C code, and translates it into
+the equivalent Zig code.
+
+I think it would be ok to interpret `translate-c` as a tool to generate Zig bindings
+to C code, similarly to the `rust-bindgen`[^bindgen] tool, which generates Rust FFI bindings to C code.
+But that would not be a precise interpretation of `translate-c`. The idea behind this tool is
+to really translate the C code into Zig code.
+
+[^bindgen]: <https://github.com/rust-lang/rust-bindgen>
+
+Now, on a surface level, `@cImport()` versus `translate-c` look like
+two completely different strategies. But in fact, they are effectively the exact same strategy.
+Because, under the hood, the `@cImport()` built-in function is just a shortcut to `translate-c`.
+Both tools use the same C to Zig translation functionality. So when you use `@cImport()`,
+you are essentially asking the `zig` compiler to translate the C header file into Zig code, then,
+to import this Zig code into your current Zig module.
+
+There is currently an accepted proposal at the Zig project, to move `@cImport()`
+to the build system[^cimport-issue]. If this proposal is completed, then, the "use `@cImport()`"
+strategy would be transformed into "call the translate C function in your build script".
+So, the step of translating the C code into Zig code would be moved to
+the build script of your Zig project, and you would only have to import the translated Zig code into
+your Zig module to start calling C code.
+
+[^cimport-issue]: <https://github.com/ziglang/zig/issues/20630>
+
+If you think about this proposal for a minute, you will understand that this is actually
+a small change. I mean, the logic is the same, and the steps are still essentially the same.
+The only difference is that one of the steps will be moved to the build script of your Zig project.
+
+### You need to link your code with the C library
+
+Regardless of which strategy you choose to use, you will always
+have to link your Zig source code to the C library that contains the C code
+that you want to call.
+
+In other words, everytime you use a C library in your Zig code, **you introduce a dependency in your build process**.
 This should come as no surprise to anyone that have any experience with C and C++.
 Because this is no different in C. Everytime you use a C library in your C code, you also
 have to build and link your C code with this C library that you are using.
 
 When we use a C library in our Zig code, the `zig` compiler needs to access the definition of the C functions that
-are being called in your Zig code. The C header file that we have imported into our Zig code provides the
+are being called in your Zig code. The C header file of this library provides the
 declarations of these C functions, but not their definitions. So, in order to access these definitions,
 the `zig` compiler needs to build your Zig code and link it with the C library in the build process.
 
