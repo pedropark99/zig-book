@@ -42,11 +42,14 @@ you have to perform the following steps:
 - import a C header file into your Zig code.
 - link your Zig code with the C library.
 
-So using C code in Zig always involves performing these two steps above. However, when
+
+### Strategies to import C header files {#sec-strategy-c}
+
+So using C code in Zig always involves performing the two steps cited above. However, when
 we talk specifically about the first step listed above, there are currently two
 different ways to perform this first step, which are:
 
-- translating the C header file into Zig, through `zig translate-c`, and then, importing the translated Zig code.
+- translating the C header file into Zig code, through `zig translate-c`, and then, importing the translated Zig code.
 - importing the C header file directly into your Zig module through `@cImport()` built-in function.
 
 If you are not familiar with `translate-c`, this is a subcommand inside the `zig` compiler that takes C files
@@ -61,19 +64,19 @@ to really translate the C code into Zig code.
 
 [^bindgen]: <https://github.com/rust-lang/rust-bindgen>
 
-Now, on a surface level, `@cImport()` versus `translate-c` look like
+Now, on a surface level, `@cImport()` versus `translate-c` might seem like
 two completely different strategies. But in fact, they are effectively the exact same strategy.
 Because, under the hood, the `@cImport()` built-in function is just a shortcut to `translate-c`.
 Both tools use the same C to Zig translation functionality. So when you use `@cImport()`,
 you are essentially asking the `zig` compiler to translate the C header file into Zig code, then,
 to import this Zig code into your current Zig module.
 
-There is currently an accepted proposal at the Zig project, to move `@cImport()`
-to the build system[^cimport-issue]. If this proposal is completed, then, the "use `@cImport()`"
-strategy would be transformed into "call the translate C function in your build script".
+At the present moment, there is an accepted proposal at the Zig project, to move `@cImport()`
+to the Zig build system[^cimport-issue]. If this proposal is completed, then, the "use `@cImport()`"
+strategy would be transformed into "call a translate C function in your Zig build script".
 So, the step of translating the C code into Zig code would be moved to
 the build script of your Zig project, and you would only have to import the translated Zig code into
-your Zig module to start calling C code.
+your Zig module to start calling C code from Zig.
 
 [^cimport-issue]: <https://github.com/ziglang/zig/issues/20630>
 
@@ -81,11 +84,13 @@ If you think about this proposal for a minute, you will understand that this is 
 a small change. I mean, the logic is the same, and the steps are still essentially the same.
 The only difference is that one of the steps will be moved to the build script of your Zig project.
 
-### You need to link your code with the C library
 
-Regardless of which strategy you choose to use, you will always
-have to link your Zig source code to the C library that contains the C code
-that you want to call.
+
+### Linking Zig code with a C library {#sec-linking-c}
+
+Regardless of which of the two strategies mentioned in the previous section you choose,
+if you want to call C code from Zig, you will always have to link your Zig code
+with the C library that contains the C code that you want to call.
 
 In other words, everytime you use a C library in your Zig code, **you introduce a dependency in your build process**.
 This should come as no surprise to anyone that have any experience with C and C++.
@@ -106,7 +111,49 @@ installed in your system. Anyway, if you have doubts about this, comeback to @se
 
 ## Importing C header files {#sec-import-c-header}
 
-To import a C header file into our Zig code, we use the built-in functions `@cInclude()` and `@cImport()`.
+At @sec-strategy-c, we have described that, currently, there is two different paths that
+you can take to import a C header file into your Zig modules, `translate-c` or `@cImport()`.
+This section describes each strategy separately in more details.
+
+### Strategy 1: using `translate-c`
+
+When we choose this strategy, we first need to use the `translate-c` tool to translate
+the C header files that we want to use into Zig code. For example, suppose we wanted to
+use the `fopen()` C function from the `stdio.h` C header file. We can translate the
+`stdio.h` C header file through the bash command below:
+
+```bash
+zig translate-c /usr/include/stdio.h \
+    -lc -I/usr/include \
+    -D_NO_CRT_STDIO_INLINE=1 > c.zig \
+```
+
+Notice that, in this bash command, we are passing the necessary compiler flags (`-D` to define macros,
+`-l` to link libraries, `-I` to include header file) to compile and use the `stdio.h` header file.
+Also notice that we are saving the results of the translation inside a Zig module called `c.zig`.
+
+So after running this command, all we have to do is to import this `c.zig` module, and start
+calling the C functions that you want to call from it. The example below demonstrates that.
+Important to remember what we've discussed at @sec-linking-c. In order to compile this
+example you have to link this code with `libc`, by passing the flag `-lc` to the `zig` compiler.
+
+```{zig}
+#| eval: false
+const c = @import("c.zig");
+pub fn main() !void {
+    const x: f32 = 1772.94122;
+    _ = c.printf("%.3f\n", x);
+}
+```
+
+```
+1772.941
+```
+
+
+### Strategy 2: using `@cImport()`
+
+To import a C header file into our Zig code, we can use the built-in functions `@cInclude()` and `@cImport()`.
 Inside the `@cImport()` function, we open a block (with a pair of curly braces). Inside this block
 we can (if we need to) include multiple `@cDefine()` calls to define C macros when including this specific C header file.
 But for the most part, you will probably need to use just a single call inside this block at `@cImport()`,
@@ -120,7 +167,7 @@ to include this C header file into your Zig code.
 You should bind the result of `@cImport()` to a constant object, pretty much like you would do with
 `@import()`. You just assign the result to a constant object in your
 Zig code, and, as consequence, all C functions, C structs, C macros, etc. that are defined inside the
-C header file will be available through this constant object.
+C header files will be available through this constant object.
 
 Look at the code example below, where we are importing the Standard I/O C Library (`stdio.h`),
 and calling the `printf()`[^printf] C function. Notice that we have also used in this example the C function `powf()`[^powf],
@@ -135,18 +182,16 @@ to the `zig` compiler.
 
 ```{zig}
 #| eval: false
-const cmath = @cImport({
-    @cInclude("math.h");
-});
-const stdio = @cImport({
+const c = @cImport({
     @cDefine("_NO_CRT_STDIO_INLINE", "1");
     @cInclude("stdio.h");
+    @cInclude("math.h");
 });
 
 pub fn main() !void {
     const x: f32 = 15.2;
-    const y = cmath.powf(x, @as(f32, 2.6));
-    _ = stdio.printf("%.3f\n", y);
+    const y = c.powf(x, @as(f32, 2.6));
+    _ = c.printf("%.3f\n", y);
 }
 ```
 
