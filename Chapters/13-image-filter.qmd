@@ -285,8 +285,6 @@ object that reads the PNG file that we want to use.
 const c = @cImport({
     @cDefine("_NO_CRT_STDIO_INLINE", "1");
     @cInclude("stdio.h");
-});
-const png = @cImport({
     @cInclude("spng.h");
 });
 
@@ -295,8 +293,8 @@ const file_descriptor = c.fopen(path, "rb");
 if (file_descriptor == null) {
     @panic("Could not open file!");
 }
-const ctx = png.spng_ctx_new(0) orelse unreachable;
-_ = png.spng_set_png_file(
+const ctx = c.spng_ctx_new(0) orelse unreachable;
+_ = c.spng_set_png_file(
     ctx, @ptrCast(file_descriptor)
 );
 ```
@@ -334,13 +332,13 @@ Thus, an object of type `spng_ihdr` is a C struct that contains the data from th
 image header section of the PNG file.
 
 Since this Zig function is receiving a C object (the `libspng` context object) as input, I marked
-the function argument `ctx` as "a pointer to the context object" (`*png.spng_ctx`), following the recommendations
+the function argument `ctx` as "a pointer to the context object" (`*c.spng_ctx`), following the recommendations
 that we have discussed at @sec-pass-c-structs.
 
 ```zig
-fn get_image_header(ctx: *png.spng_ctx) !png.spng_ihdr {
-    var image_header: png.spng_ihdr = undefined;
-    if (png.spng_get_ihdr(ctx, &image_header) != 0) {
+fn get_image_header(ctx: *c.spng_ctx) !c.spng_ihdr {
+    var image_header: c.spng_ihdr = undefined;
+    if (c.spng_get_ihdr(ctx, &image_header) != 0) {
         return error.CouldNotGetImageHeader;
     }
 
@@ -375,10 +373,10 @@ the size of the space that we need to allocate.
 
 
 ```zig
-fn calc_output_size(ctx: *png.spng_ctx) !u64 {
+fn calc_output_size(ctx: *c.spng_ctx) !u64 {
     var output_size: u64 = 0;
-    const status = png.spng_decoded_image_size(
-        ctx, png.SPNG_FMT_RGBA8, &output_size
+    const status = c.spng_decoded_image_size(
+        ctx, c.SPNG_FMT_RGBA8, &output_size
     );
     if (status != 0) {
         return error.CouldNotCalcOutputSize;
@@ -419,12 +417,12 @@ Also, we are using the `SPNG_FMT_RGBA8` enum value once again to inform the corr
 that the PNG image being decoded, uses the RGBA color model and 8 bit depth.
 
 ```zig
-fn read_data_to_buffer(ctx: *png.spng_ctx, buffer: []u8) !void {
-    const status = png.spng_decode_image(
+fn read_data_to_buffer(ctx: *c.spng_ctx, buffer: []u8) !void {
+    const status = c.spng_decode_image(
         ctx,
         buffer.ptr,
         buffer.len,
-        png.SPNG_FMT_RGBA8,
+        c.SPNG_FMT_RGBA8,
         0
     );
 
@@ -579,26 +577,26 @@ in this new PNG file.
 
 
 ```zig
-fn save_png(image_header: *png.spng_ihdr, buffer: []u8) !void {
+fn save_png(image_header: *c.spng_ihdr, buffer: []u8) !void {
     const path = "pedro_pascal_filter.png";
     const file_descriptor = c.fopen(path.ptr, "wb");
     if (file_descriptor == null) {
         return error.CouldNotOpenFile;
     }
     const ctx = (
-        png.spng_ctx_new(png.SPNG_CTX_ENCODER)
+        c.spng_ctx_new(c.SPNG_CTX_ENCODER)
         orelse unreachable
     );
-    defer png.spng_ctx_free(ctx);
-    _ = png.spng_set_png_file(ctx, @ptrCast(file_descriptor));
-    _ = png.spng_set_ihdr(ctx, image_header);
+    defer c.spng_ctx_free(ctx);
+    _ = c.spng_set_png_file(ctx, @ptrCast(file_descriptor));
+    _ = c.spng_set_ihdr(ctx, image_header);
 
-    const encode_status = png.spng_encode_image(
+    const encode_status = c.spng_encode_image(
         ctx,
         buffer.ptr,
         buffer.len,
-        png.SPNG_FMT_PNG,
-        png.SPNG_ENCODE_FINALIZE
+        c.SPNG_FMT_PNG,
+        c.SPNG_ENCODE_FINALIZE
     );
     if (encode_status != 0) {
         return error.CouldNotEncodeImage;
