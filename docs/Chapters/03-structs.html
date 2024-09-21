@@ -266,7 +266,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#sec-zig-control-flow" id="toc-sec-zig-control-flow" class="nav-link active" data-scroll-target="#sec-zig-control-flow"><span class="header-section-number">2.1</span> Control flow</a>
   <ul class="collapse">
   <li><a href="#ifelse-statements" id="toc-ifelse-statements" class="nav-link" data-scroll-target="#ifelse-statements"><span class="header-section-number">2.1.1</span> If/else statements</a></li>
-  <li><a href="#sec-switch" id="toc-sec-switch" class="nav-link" data-scroll-target="#sec-switch"><span class="header-section-number">2.1.2</span> Swith statements</a></li>
+  <li><a href="#sec-switch" id="toc-sec-switch" class="nav-link" data-scroll-target="#sec-switch"><span class="header-section-number">2.1.2</span> Switch statements</a></li>
   <li><a href="#sec-defer" id="toc-sec-defer" class="nav-link" data-scroll-target="#sec-defer"><span class="header-section-number">2.1.3</span> The <code>defer</code> keyword</a></li>
   <li><a href="#for-loops" id="toc-for-loops" class="nav-link" data-scroll-target="#for-loops"><span class="header-section-number">2.1.4</span> For loops</a></li>
   <li><a href="#while-loops" id="toc-while-loops" class="nav-link" data-scroll-target="#while-loops"><span class="header-section-number">2.1.5</span> While loops</a></li>
@@ -282,6 +282,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#sec-type-inference" id="toc-sec-type-inference" class="nav-link" data-scroll-target="#sec-type-inference"><span class="header-section-number">2.4</span> Type inference</a></li>
   <li><a href="#modules" id="toc-modules" class="nav-link" data-scroll-target="#modules"><span class="header-section-number">2.5</span> Modules</a></li>
+  <li><a href="#sec-type-cast" id="toc-sec-type-cast" class="nav-link" data-scroll-target="#sec-type-cast"><span class="header-section-number">2.6</span> Type casting</a></li>
   </ul>
 </nav>
     </div>
@@ -337,7 +338,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 <section id="sec-switch" class="level3" data-number="2.1.2">
-<h3 data-number="2.1.2" class="anchored" data-anchor-id="sec-switch"><span class="header-section-number">2.1.2</span> Swith statements</h3>
+<h3 data-number="2.1.2" class="anchored" data-anchor-id="sec-switch"><span class="header-section-number">2.1.2</span> Switch statements</h3>
 <p>Switch statements are also available in Zig. A switch statement in Zig have a similar syntax to a switch statement in Rust. As you would expect, to write a switch statement in Zig we use the <code>switch</code> keyword. We provide the value that we want to “switch over” inside a pair of parentheses. Then, we list the possible combinations (or “branchs”) inside a pair of curly braces.</p>
 <p>Let’s take a look at the code example below. You can see in this example that, I’m creating an enum type called <code>Role</code>. We talk more about enums at <a href="04-http-server.html#sec-enum" class="quarto-xref"><span>Section 7.6</span></a>. But in essence, this <code>Role</code> type is listing different types of roles in a fictitious company, like <code>SE</code> for Software Engineer, <code>DE</code> for Data Engineer, <code>PM</code> for Product Manager, etc.</p>
 <p>Notice that we are using the value from the <code>role</code> object in the switch statement, to discover which exact area we need to store in the <code>area</code> variable object. Also notice that we are using type inference inside the switch statement, with the dot character, as we described at <a href="#sec-type-inference" class="quarto-xref"><span>Section 2.4</span></a>. This makes the <code>zig</code> compiler infer the correct data type of the values (<code>PM</code>, <code>SE</code>, etc.) for us.</p>
@@ -814,8 +815,7 @@ Note
 </section>
 <section id="modules" class="level2" data-number="2.5">
 <h2 data-number="2.5" class="anchored" data-anchor-id="modules"><span class="header-section-number">2.5</span> Modules</h2>
-<p>We already talked about what modules are, and also, how to import other modules into you current module through <em>import statements</em>, so that you can use functionality from these other modules in your current module. But in this section, I just want to make it clear that modules are actually structs in Zig.</p>
-<p>In other words, every Zig module (i.e.&nbsp;a <code>.zig</code> file) that you write in your project is internally stored as a struct object. Take the line exposed below as an example. In this line we are importing the Zig Standard Library into our current module.</p>
+<p>We already talked about what modules are, and also, how to import other modules into you current module through <em>import statements</em>. Every Zig module (i.e.&nbsp;a <code>.zig</code> file) that you write in your project is internally stored as a struct object. Take the line exposed below as an example. In this line we are importing the Zig Standard Library into our current module.</p>
 <div class="sourceCode" id="cb43"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>When we want to access the functions and objects from the standard library, we are basically accessing the data members of the struct stored in the <code>std</code> object. That is why we use the same syntax that we use in normal structs, with the dot operator (<code>.</code>) to access the data members and methods of the struct.</p>
 <p>When this “import statement” get’s executed, the result of this expression is a struct object that contains the Zig Standard Library modules, global variables, functions, etc. And this struct object get’s saved (or stored) inside the constant object named <code>std</code>.</p>
@@ -830,6 +830,46 @@ Note
 <span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pool = ThreadPool.init(</span>
 <span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> .max_threads = num_threads <span class="op">}</span></span>
 <span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="sec-type-cast" class="level2" data-number="2.6">
+<h2 data-number="2.6" class="anchored" data-anchor-id="sec-type-cast"><span class="header-section-number">2.6</span> Type casting</h2>
+<p>In this section, I want to discuss type casting (or, type conversion) with you. We use type casting when we have an object of type “x”, and we want to convert it into an object of type “y”, i.e.&nbsp;we want to change the data type of the object.</p>
+<p>Most languages have a formal way to perform type casting. In Rust for example, we normally use the keyword <code>as</code>, and in C, we normally use the type casting syntax, e.g.&nbsp;<code>(int) x</code>. In Zig, we use the <code>@as()</code> built-in function to cast an object of type “x”, into an object of type “y”.</p>
+<p>This <code>@as()</code> function is the preferred way to perform type conversion (or type casting) in Zig. Because it is explicit, and, it also performs the casting only if it is unambiguous and safe. To use this function, you just provide the target data type in the first argument, and, the object that you want cast at the second argument.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expect = std.testing.expect;</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="op">{</span></span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x: <span class="dt">usize</span> = <span class="dv">500</span>;</span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> y = <span class="bu">@as</span>(<span class="dt">u32</span>, x);</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect(<span class="bu">@TypeOf</span>(y) == <span class="dt">u32</span>);</span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This is the general way to perform type casting in Zig. But remember, <code>@as()</code> works only when casting is unambiguous and safe, and there are situations where these assumptions do not hold. For example, when casting an integer value into a float value, or vice-versa, it is not clear to the compiler how to perform this conversion safely.</p>
+<p>Therefore, we need to use specialized “casting functions” in such situations. For example, if you want to cast an integer value into a float value, then, you should use the <code>@floatFromInt()</code> function. In the inverse scenario, you should use the <code>@intFromFloat()</code> function.</p>
+<p>In these functions, you just provide the object that you want to cast as input. Then, the target data type of the “type casting operation” is determined by the type annotation of the object where you are saving the results. In the example below, we are casting the object <code>x</code> into a value of type <code>f32</code>, because the object <code>y</code>, which is where we are saving the results, is annotated as an object of type <code>f32</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expect = std.testing.expect;</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="op">{</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x: <span class="dt">usize</span> = <span class="dv">565</span>;</span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> y: <span class="dt">f32</span> = <span class="bu">@floatFromInt</span>(x);</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect(<span class="bu">@TypeOf</span>(y) == <span class="dt">f32</span>);</span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Another built-in function that is very useful when performing type casting operations is <code>@ptrCast()</code>. In essence, we use the <code>@as()</code> built-in function when we want to explicit convert (or cast) a Zig value/object from a type “x” to a type “y”, etc. However, pointers (we are going to discuss pointers in more depth at <a href="05-pointers.html" class="quarto-xref"><span>Chapter 6</span></a>) are a special type of object in Zig, i.e.&nbsp;they are treated differently from “normal objects”.</p>
+<p>Everytime a pointer is involved in some “type casting operation” in Zig, the <code>@ptrCast()</code> function is used. This function works similarly to <code>@floatFromInt()</code>. You just provide the pointer object that you want to cast as input to this function, and the target data type is, once again, determined by the type annotation of the object where the results are being stored.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expect = std.testing.expect;</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="op">{</span></span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> bytes <span class="kw">align</span>(<span class="bu">@alignOf</span>(<span class="dt">u32</span>)) = [_]<span class="dt">u8</span><span class="op">{</span></span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x12</span>, <span class="bn">0x12</span>, <span class="bn">0x12</span>, <span class="bn">0x12</span></span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>;</span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> u32_ptr: *<span class="kw">const</span> <span class="dt">u32</span> = <span class="bu">@ptrCast</span>(&amp;bytes);</span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect(<span class="bu">@TypeOf</span>(u32_ptr) == *<span class="kw">const</span> <span class="dt">u32</span>);</span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 
 
 </section>

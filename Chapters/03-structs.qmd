@@ -97,7 +97,7 @@ if (x > 10) {
 
 
 
-### Swith statements {#sec-switch}
+### Switch statements {#sec-switch}
 
 Switch statements are also available in Zig.
 A switch statement in Zig have a similar syntax to a switch statement in Rust.
@@ -1043,11 +1043,8 @@ is commonly used on switch statements in Zig.
 ## Modules
 
 We already talked about what modules are, and also, how to import other modules into
-you current module through *import statements*, so that you can use functionality from these other modules in
-your current module.
-But in this section, I just want to make it clear that modules are actually structs in Zig.
-
-In other words, every Zig module (i.e. a `.zig` file) that you write in your project
+you current module through *import statements*.
+Every Zig module (i.e. a `.zig` file) that you write in your project
 is internally stored as a struct object.
 Take the line exposed below as an example. In this line we are importing the
 Zig Standard Library into our current module.
@@ -1089,3 +1086,89 @@ const pool = ThreadPool.init(
     .{ .max_threads = num_threads }
 );
 ```
+
+
+
+## Type casting {#sec-type-cast}
+
+In this section, I want to discuss type casting (or, type conversion) with you.
+We use type casting when we have an object of type "x", and we want to convert
+it into an object of type "y", i.e. we want to change the data type of the object.
+
+Most languages have a formal way to perform type casting. In Rust for example, we normally
+use the keyword `as`, and in C, we normally use the type casting syntax, e.g. `(int) x`.
+In Zig, we use the `@as()` built-in function to cast an object of type "x", into
+an object of type "y".
+
+This `@as()` function is the preferred way to perform type conversion (or type casting)
+in Zig. Because it is explicit, and, it also performs the casting only if it
+is unambiguous and safe. To use this function, you just provide the target data type
+in the first argument, and, the object that you want cast at the second argument.
+
+```{zig}
+#| auto_main: false
+#| build_type: "test"
+const std = @import("std");
+const expect = std.testing.expect;
+test {
+    const x: usize = 500;
+    const y = @as(u32, x);
+    try expect(@TypeOf(y) == u32);
+}
+```
+
+This is the general way to perform type casting in Zig. But remember, `@as()` works only when casting
+is unambiguous and safe, and there are situations where these assumptions do not hold. For example,
+when casting an integer value into a float value, or vice-versa, it is not clear to the compiler
+how to perform this conversion safely.
+
+Therefore, we need to use specialized "casting functions" in such situations.
+For example, if you want to cast an integer value into a float value, then, you
+should use the `@floatFromInt()` function. In the inverse scenario, you should use
+the `@intFromFloat()` function.
+
+In these functions, you just provide the object that you want to
+cast as input. Then, the target data type of the "type casting operation" is determined by
+the type annotation of the object where you are saving the results.
+In the example below, we are casting the object `x` into a value of type `f32`,
+because the object `y`, which is where we are saving the results, is annotated
+as an object of type `f32`.
+
+```{zig}
+#| auto_main: false
+#| build_type: "test"
+const std = @import("std");
+const expect = std.testing.expect;
+test {
+    const x: usize = 565;
+    const y: f32 = @floatFromInt(x);
+    try expect(@TypeOf(y) == f32);
+}
+```
+
+Another built-in function that is very useful when performing type casting operations is `@ptrCast()`.
+In essence, we use the `@as()` built-in function when we want to explicit convert (or cast) a Zig value/object
+from a type "x" to a type "y", etc. However, pointers (we are going to discuss pointers
+in more depth at @sec-pointer) are a special type of object in Zig,
+i.e. they are treated differently from "normal objects".
+
+Everytime a pointer is involved in some "type casting operation" in Zig, the `@ptrCast()` function is used.
+This function works similarly to `@floatFromInt()`.
+You just provide the pointer object that you want to cast as input to this function, and the
+target data type is, once again, determined by the type annotation of the object where the results are being
+stored.
+
+```{zig}
+#| auto_main: false
+#| build_type: "test"
+const std = @import("std");
+const expect = std.testing.expect;
+test {
+    const bytes align(@alignOf(u32)) = [_]u8{
+        0x12, 0x12, 0x12, 0x12
+    };
+    const u32_ptr: *const u32 = @ptrCast(&bytes);
+    try expect(@TypeOf(u32_ptr) == *const u32);
+}
+```
+
