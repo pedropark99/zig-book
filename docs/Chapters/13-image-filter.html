@@ -470,20 +470,18 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <div class="sourceCode" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c = <span class="bu">@cImport</span>(<span class="op">{</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cDefine</span>(<span class="st">"_NO_CRT_STDIO_INLINE"</span>, <span class="st">"1"</span>);</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"stdio.h"</span>);</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> png = <span class="bu">@cImport</span>(<span class="op">{</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"spng.h"</span>);</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> path = <span class="st">"pedro_pascal.png"</span>;</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file_descriptor = c.fopen(path, <span class="st">"rb"</span>);</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> (file_descriptor == <span class="cn">null</span>) <span class="op">{</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@panic</span>(<span class="st">"Could not open file!"</span>);</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ctx = png.spng_ctx_new(<span class="dv">0</span>) <span class="kw">orelse</span> <span class="kw">unreachable</span>;</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>_ = png.spng_set_png_file(</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    ctx, <span class="bu">@ptrCast</span>(file_descriptor)</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"spng.h"</span>);</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> path = <span class="st">"pedro_pascal.png"</span>;</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file_descriptor = c.fopen(path, <span class="st">"rb"</span>);</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> (file_descriptor == <span class="cn">null</span>) <span class="op">{</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@panic</span>(<span class="st">"Could not open file!"</span>);</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ctx = c.spng_ctx_new(<span class="dv">0</span>) <span class="kw">orelse</span> <span class="kw">unreachable</span>;</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>_ = c.spng_set_png_file(</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    ctx, <span class="bu">@ptrCast</span>(file_descriptor)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Before we continue, is important to emphasize the following: since we have opened the file with <code>fopen()</code>, we have to remember to close the file at the end of the program, with <code>fclose()</code>. In other words, after we have done everything that we wanted to do with the PNG file <code>pedro_pascal.png</code>, we need to close the file, by applying <code>fclose()</code> over the file descriptor object. We could use also the <code>defer</code> keyword to help us in this task, if we want to. This code snippet below demonstrates this step:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> (c.fclose(file_descriptor) != <span class="dv">0</span>) <span class="op">{</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">error</span>.CouldNotCloseFileDescriptor;</span>
@@ -492,10 +490,10 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <h3 data-number="15.4.1" class="anchored" data-anchor-id="reading-the-image-header-section"><span class="header-section-number">15.4.1</span> Reading the image header section</h3>
 <p>Now, the context object <code>ctx</code> is aware of our PNG file <code>pedro_pascal.png</code>, and it has access to a file descriptor object to this file, and we can start doing operations in this file. The first thing that we are going to do is to read the “image header section” of the PNG file. This “image header section” is the section of the file that contains some basic information about the PNG file, like, the bit depth of the pixel data of the image, the color model used in the file, the dimensions of the image (height and width in number of pixels), etc.</p>
 <p>To make things easier, I will encapsulate this “read image header” operation into a nice small function called <code>get_image_header()</code>. All that this function needs to do is to call the <code>spng_get_ihdr()</code> function. This function from <code>libspng</code> is responsible for reading the image header data, and storing it into a C struct named <code>spng_ihdr</code>. Thus, an object of type <code>spng_ihdr</code> is a C struct that contains the data from the image header section of the PNG file.</p>
-<p>Since this Zig function is receiving a C object (the <code>libspng</code> context object) as input, I marked the function argument <code>ctx</code> as “a pointer to the context object” (<code>*png.spng_ctx</code>), following the recommendations that we have discussed at <a href="14-zig-c-interop.html#sec-pass-c-structs" class="quarto-xref"><span>Section 14.5</span></a>.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> get_image_header(ctx: *png.spng_ctx) !png.spng_ihdr <span class="op">{</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> image_header: png.spng_ihdr = <span class="cn">undefined</span>;</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (png.spng_get_ihdr(ctx, &amp;image_header) != <span class="dv">0</span>) <span class="op">{</span></span>
+<p>Since this Zig function is receiving a C object (the <code>libspng</code> context object) as input, I marked the function argument <code>ctx</code> as “a pointer to the context object” (<code>*c.spng_ctx</code>), following the recommendations that we have discussed at <a href="14-zig-c-interop.html#sec-pass-c-structs" class="quarto-xref"><span>Section 14.5</span></a>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> get_image_header(ctx: *c.spng_ctx) !c.spng_ihdr <span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> image_header: c.spng_ihdr = <span class="cn">undefined</span>;</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (c.spng_get_ihdr(ctx, &amp;image_header) != <span class="dv">0</span>) <span class="op">{</span></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">error</span>.CouldNotGetImageHeader;</span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
@@ -509,10 +507,10 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <h3 data-number="15.4.2" class="anchored" data-anchor-id="allocating-space-for-the-pixel-data"><span class="header-section-number">15.4.2</span> Allocating space for the pixel data</h3>
 <p>Before we read the pixel data from the PNG file, we need to allocate enough space to hold this data. But in order to allocate such space, we first need to know how much space we need to allocate. The image dimension is obviously needed to calculate the size of this space. But there are other elements that also affect this number, such as the color model used in the image, the bit depth, and others.</p>
 <p>Anyway, all of this means that calculating the size of the space that we need, is not a simple task. That is why the <code>libspng</code> library offers a utility function named <code>spng_decoded_image_size()</code> to calculate this size for us. Once again, I’m going to encapsulate the logic around this function into a nice small Zig function named <code>calc_output_size()</code>. You can see that this function returns a nice integer value as result, informing the size of the space that we need to allocate.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> calc_output_size(ctx: *png.spng_ctx) !<span class="dt">u64</span> <span class="op">{</span></span>
+<div class="sourceCode" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> calc_output_size(ctx: *c.spng_ctx) !<span class="dt">u64</span> <span class="op">{</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> output_size: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> status = png.spng_decoded_image_size(</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        ctx, png.SPNG_FMT_RGBA8, &amp;output_size</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> status = c.spng_decoded_image_size(</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        ctx, c.SPNG_FMT_RGBA8, &amp;output_size</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    );</span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (status != <span class="dv">0</span>) <span class="op">{</span></span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">error</span>.CouldNotCalcOutputSize;</span>
@@ -529,12 +527,12 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <h3 data-number="15.4.3" class="anchored" data-anchor-id="decoding-the-image-data"><span class="header-section-number">15.4.3</span> Decoding the image data</h3>
 <p>Now that we have the necessary space to store the decoded pixel data of the image, we can start to actually decode and extract this pixel data from the image, by using the <code>spng_decode_image()</code> function.</p>
 <p>The <code>read_data_to_buffer()</code> function exposed below summarises the necessary steps to read this decoded pixel data, and store it into an input buffer. Notice that this function is encapsulating the logic around the <code>spng_decode_image()</code> function. Also, we are using the <code>SPNG_FMT_RGBA8</code> enum value once again to inform the corresponding function, that the PNG image being decoded, uses the RGBA color model and 8 bit depth.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> read_data_to_buffer(ctx: *png.spng_ctx, buffer: []<span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> status = png.spng_decode_image(</span>
+<div class="sourceCode" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> read_data_to_buffer(ctx: *c.spng_ctx, buffer: []<span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> status = c.spng_decode_image(</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>        ctx,</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>        buffer.ptr,</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        buffer.len,</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        png.SPNG_FMT_RGBA8,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        c.SPNG_FMT_RGBA8,</span>
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        <span class="dv">0</span></span>
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    );</span>
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
@@ -600,26 +598,26 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <p>Notice in this code example that we are using the same image header object (<code>image_header</code>) that we have collected previously with the <code>get_image_header()</code> function. Remember, this image header object is a C struct (<code>spng_ihdr</code>) that contains basic information about our PNG file, specially the dimensions of the image, the color model used, etc.</p>
 <p>If we wanted to save a very different image in this new PNG file, e.g.&nbsp;an image with different dimensions, or, an image that uses a different color model, a different bit depth, etc. we would need to create a new image header (<code>spng_ihdr</code>) object that describes the properties of this new image.</p>
 <p>But we are essentially saving the same image that we have begin with here (the dimensions of the image, the color model, etc. are all still the same). The only difference between the two images are the colors of the pixels, which are now shades of gray. As consequence, we can safely use the exact same image header data in this new PNG file.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> save_png(image_header: *png.spng_ihdr, buffer: []<span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<div class="sourceCode" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> save_png(image_header: *c.spng_ihdr, buffer: []<span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> path = <span class="st">"pedro_pascal_filter.png"</span>;</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file_descriptor = c.fopen(path.ptr, <span class="st">"wb"</span>);</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (file_descriptor == <span class="cn">null</span>) <span class="op">{</span></span>
 <span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">error</span>.CouldNotOpenFile;</span>
 <span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
 <span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> ctx = (</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        png.spng_ctx_new(png.SPNG_CTX_ENCODER)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        c.spng_ctx_new(c.SPNG_CTX_ENCODER)</span>
 <span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">orelse</span> <span class="kw">unreachable</span></span>
 <span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> png.spng_ctx_free(ctx);</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    _ = png.spng_set_png_file(ctx, <span class="bu">@ptrCast</span>(file_descriptor));</span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    _ = png.spng_set_ihdr(ctx, image_header);</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> c.spng_ctx_free(ctx);</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    _ = c.spng_set_png_file(ctx, <span class="bu">@ptrCast</span>(file_descriptor));</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    _ = c.spng_set_ihdr(ctx, image_header);</span>
 <span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> encode_status = png.spng_encode_image(</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> encode_status = c.spng_encode_image(</span>
 <span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>        ctx,</span>
 <span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>        buffer.ptr,</span>
 <span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>        buffer.len,</span>
-<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>        png.SPNG_FMT_PNG,</span>
-<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>        png.SPNG_ENCODE_FINALIZE</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>        c.SPNG_FMT_PNG,</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>        c.SPNG_ENCODE_FINALIZE</span>
 <span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>    );</span>
 <span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (encode_status != <span class="dv">0</span>) <span class="op">{</span></span>
 <span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">error</span>.CouldNotEncodeImage;</span>

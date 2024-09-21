@@ -1252,6 +1252,113 @@ got codepoint E382AB
 ```
 
 
+### Some useful functions for strings
+
+In this section, I just want to quickly describe some functions from the Zig Standard Library
+that are very useful to use when working with strings. Most notably:
+
+- `std.mem.eql()`: to compare if two strings are equal.
+- `std.mem.splitScalar()`: to split a string into an array of substrings given a delimiter value.
+- `std.mem.splitSequence()`: to split a string into an array of substrings given a substring delimiter.
+- `std.mem.startsWith()`: to check if string starts with substring.
+- `std.mem.endsWith()`: to check if string starts with substring.
+- `std.mem.trim()`: to remove specific values from both start and end of the string.
+- `std.mem.concat()`: to concatenate strings together.
+- `std.mem.count()`: to count the occurrences of substring in the string.
+- `std.mem.replace()`: to replace the occurrences of substring in the string.
+
+Notice that all of these functions come from the `mem` module of
+the Zig Standard Library. This module contains multiple functions and methods
+that are useful to work with memory and sequences of bytes in general.
+
+The `eql()` function is used to check if two arrays of data are equal or not.
+Since strings are just arbitrary arrays of bytes, we can use this function to compare two strings together.
+This function returns a boolean value indicating if the two strings are equal
+or not. The first argument of this function is the data type of the elements of the arrays
+that are being compared.
+
+```{zig}
+#| auto_main: true
+#| build_type: "run"
+const name: []const u8 = "Pedro";
+try stdout.print(
+    "{any}\n", .{std.mem.eql(u8, name, "Pedro")}
+);
+```
+
+The `splitScalar()` and `splitSequence()` functions are useful to split
+a string into multiple fragments, like the `split()` method from Python strings. The difference between these two
+methods is that the `splitScalar()` uses a single character as the separator to
+split the string, while `splitSequence()` uses a sequence of characters (a.k.a. a substring)
+as the separator. There is a practical example of these functions later in the book.
+
+The `startsWith()` and `endsWith()` functions are pretty straightforward. They
+return a boolean value indicating if the string (or, more precisely, if the array of data)
+begins (`startsWith`) or ends (`endsWith`) with the sequence provided.
+
+```{zig}
+#| auto_main: true
+#| build_type: "run"
+const name: []const u8 = "Pedro";
+try stdout.print(
+    "{any}\n", .{std.mem.startsWith(u8, name, "Pe")}
+);
+```
+
+The `concat()` function, as the name suggests, concatenate two or more strings together.
+Because the process of concatenating the strings involves allocating enough space to
+accomodate all the strings together, this `concat()` function receives an allocator
+object as input.
+
+```{zig}
+#| eval: false
+#| auto_main: true
+#| build_type: "run"
+const str1 = "Hello";
+const str2 = " you!";
+const str3 = try std.mem.concat(
+    allocator, u8, &[_][]const u8{ str1, str2 }
+);
+try stdout.print("{s}\n", .{str3});
+```
+
+```
+Hello you!
+```
+
+As you can imagine, the `replace()` function is used to replace substrings in a string by another substring.
+This function works very similarly to the `replace()` method from Python strings. Therefore, you
+provide a substring to search, and every time that the `replace()` function finds
+this substring within the input string, it replaces this substring with the "replacement substring"
+that you provided as input.
+
+In the example below, we are taking the input string "Hello", and replacing all occurrences
+of the substring "el" inside this input string with "34", and saving the results inside the
+`buffer` object. As result, the `replace()` function returns an `usize` value that
+indicates how many replacements were performed.
+
+
+```{zig}
+#| auto_main: true
+#| build_type: "lib"
+const str1 = "Hello";
+var buffer: [5]u8 = undefined;
+const nrep = std.mem.replace(
+    u8, str1, "el", "34", buffer[0..]
+);
+try stdout.print("New string: {s}\n", .{buffer});
+try stdout.print("N of replacements: {d}\n", .{nrep});
+```
+
+```
+New string: H34lo
+N of replacements: 1
+```
+
+
+
+
+
 
 ## Safety in Zig
 

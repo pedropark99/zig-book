@@ -263,8 +263,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#how-to-call-c-code-from-zig" id="toc-how-to-call-c-code-from-zig" class="nav-link active" data-scroll-target="#how-to-call-c-code-from-zig"><span class="header-section-number">14.1</span> How to call C code from Zig</a></li>
-  <li><a href="#sec-import-c-header" id="toc-sec-import-c-header" class="nav-link" data-scroll-target="#sec-import-c-header"><span class="header-section-number">14.2</span> Importing C header files</a></li>
+  <li><a href="#how-to-call-c-code-from-zig" id="toc-how-to-call-c-code-from-zig" class="nav-link active" data-scroll-target="#how-to-call-c-code-from-zig"><span class="header-section-number">14.1</span> How to call C code from Zig</a>
+  <ul class="collapse">
+  <li><a href="#sec-strategy-c" id="toc-sec-strategy-c" class="nav-link" data-scroll-target="#sec-strategy-c"><span class="header-section-number">14.1.1</span> Strategies to import C header files</a></li>
+  <li><a href="#sec-linking-c" id="toc-sec-linking-c" class="nav-link" data-scroll-target="#sec-linking-c"><span class="header-section-number">14.1.2</span> Linking Zig code with a C library</a></li>
+  </ul></li>
+  <li><a href="#sec-import-c-header" id="toc-sec-import-c-header" class="nav-link" data-scroll-target="#sec-import-c-header"><span class="header-section-number">14.2</span> Importing C header files</a>
+  <ul class="collapse">
+  <li><a href="#strategy-1-using-translate-c" id="toc-strategy-1-using-translate-c" class="nav-link" data-scroll-target="#strategy-1-using-translate-c"><span class="header-section-number">14.2.1</span> Strategy 1: using <code>translate-c</code></a></li>
+  <li><a href="#strategy-2-using-cimport" id="toc-strategy-2-using-cimport" class="nav-link" data-scroll-target="#strategy-2-using-cimport"><span class="header-section-number">14.2.2</span> Strategy 2: using <code>@cImport()</code></a></li>
+  </ul></li>
   <li><a href="#sec-zig-obj-to-c" id="toc-sec-zig-obj-to-c" class="nav-link" data-scroll-target="#sec-zig-obj-to-c"><span class="header-section-number">14.3</span> About passing Zig values to C functions</a>
   <ul class="collapse">
   <li><a href="#the-auto-conversion-scenario" id="toc-the-auto-conversion-scenario" class="nav-link" data-scroll-target="#the-auto-conversion-scenario"><span class="header-section-number">14.3.1</span> The “auto-conversion” scenario</a></li>
@@ -302,38 +310,73 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="how-to-call-c-code-from-zig" class="level2" data-number="14.1">
 <h2 data-number="14.1" class="anchored" data-anchor-id="how-to-call-c-code-from-zig"><span class="header-section-number">14.1</span> How to call C code from Zig</h2>
 <p>Interop with C is not something new. Most high-level programming languages have FFI (foreign function interfaces), which can be used to call C code. For example, Python have Cython, R have <code>.Call()</code>, Javascript have <code>ccall()</code>, etc. But Zig integrates with C in a deeper level, which affects not only the way that C code get’s called, but also, how this C code is compiled and incorporated into your Zig project.</p>
-<p>In summary, Zig have great interoperability with C. But if you want to call C code from Zig you will have to perform the following steps:</p>
+<p>In summary, Zig have great interoperability with C. If you want to call any C code from Zig, you have to perform the following steps:</p>
 <ul>
 <li>import a C header file into your Zig code.</li>
 <li>link your Zig code with the C library.</li>
 </ul>
-<p>In more details, you should begin by importing into your Zig code the C header file that describes the C functions that you want to call. Which is pretty much the same thing that you would do in C, by including the header files into your C module. After you import the C header file, you can start calling and using the C functions described in this header file directly in your Zig code.</p>
-<p>Everytime you use a C library in your Zig code, <strong>you introduce a dependency in your build process</strong>. This should come as no surprise to anyone that have any experience with C and C++. Because this is no different in C. Everytime you use a C library in your C code, you also have to build and link your C code with this C library that you are using.</p>
-<p>When we use a C library in our Zig code, the <code>zig</code> compiler needs to access the definition of the C functions that are being called in your Zig code. The C header file that we have imported into our Zig code provides the declarations of these C functions, but not their definitions. So, in order to access these definitions, the <code>zig</code> compiler needs to build your Zig code and link it with the C library in the build process.</p>
+<section id="sec-strategy-c" class="level3" data-number="14.1.1">
+<h3 data-number="14.1.1" class="anchored" data-anchor-id="sec-strategy-c"><span class="header-section-number">14.1.1</span> Strategies to import C header files</h3>
+<p>So using C code in Zig always involves performing the two steps cited above. However, when we talk specifically about the first step listed above, there are currently two different ways to perform this first step, which are:</p>
+<ul>
+<li>translating the C header file into Zig code, through <code>zig translate-c</code>, and then, importing the translated Zig code.</li>
+<li>importing the C header file directly into your Zig module through <code>@cImport()</code> built-in function.</li>
+</ul>
+<p>If you are not familiar with <code>translate-c</code>, this is a subcommand inside the <code>zig</code> compiler that takes C files as input, and outputs the Zig representation of the C code present in these C files. In other words, this subcommand works like a transpiler. It takes C code, and translates it into the equivalent Zig code.</p>
+<p>I think it would be ok to interpret <code>translate-c</code> as a tool to generate Zig bindings to C code, similarly to the <code>rust-bindgen</code><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> tool, which generates Rust FFI bindings to C code. But that would not be a precise interpretation of <code>translate-c</code>. The idea behind this tool is to really translate the C code into Zig code.</p>
+<p>Now, on a surface level, <code>@cImport()</code> versus <code>translate-c</code> might seem like two completely different strategies. But in fact, they are effectively the exact same strategy. Because, under the hood, the <code>@cImport()</code> built-in function is just a shortcut to <code>translate-c</code>. Both tools use the same C to Zig translation functionality. So when you use <code>@cImport()</code>, you are essentially asking the <code>zig</code> compiler to translate the C header file into Zig code, then, to import this Zig code into your current Zig module.</p>
+<p>At the present moment, there is an accepted proposal at the Zig project, to move <code>@cImport()</code> to the Zig build system<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. If this proposal is completed, then, the “use <code>@cImport()</code>” strategy would be transformed into “call a translate C function in your Zig build script”. So, the step of translating the C code into Zig code would be moved to the build script of your Zig project, and you would only have to import the translated Zig code into your Zig module to start calling C code from Zig.</p>
+<p>If you think about this proposal for a minute, you will understand that this is actually a small change. I mean, the logic is the same, and the steps are still essentially the same. The only difference is that one of the steps will be moved to the build script of your Zig project.</p>
+</section>
+<section id="sec-linking-c" class="level3" data-number="14.1.2">
+<h3 data-number="14.1.2" class="anchored" data-anchor-id="sec-linking-c"><span class="header-section-number">14.1.2</span> Linking Zig code with a C library</h3>
+<p>Regardless of which of the two strategies mentioned in the previous section you choose, if you want to call C code from Zig, you will always have to link your Zig code with the C library that contains the C code that you want to call.</p>
+<p>In other words, everytime you use a C library in your Zig code, <strong>you introduce a dependency in your build process</strong>. This should come as no surprise to anyone that have any experience with C and C++. Because this is no different in C. Everytime you use a C library in your C code, you also have to build and link your C code with this C library that you are using.</p>
+<p>When we use a C library in our Zig code, the <code>zig</code> compiler needs to access the definition of the C functions that are being called in your Zig code. The C header file of this library provides the declarations of these C functions, but not their definitions. So, in order to access these definitions, the <code>zig</code> compiler needs to build your Zig code and link it with the C library in the build process.</p>
 <p>As we discussed across the <a href="07-build-system.html" class="quarto-xref"><span>Chapter 9</span></a>, there are different strategies to link something with a library. This might involve building the C library first, and then, linking it with the Zig code. Or, it could also involve just the linking step, if this C library is already built and installed in your system. Anyway, if you have doubts about this, comeback to <a href="07-build-system.html" class="quarto-xref"><span>Chapter 9</span></a>.</p>
+</section>
 </section>
 <section id="sec-import-c-header" class="level2" data-number="14.2">
 <h2 data-number="14.2" class="anchored" data-anchor-id="sec-import-c-header"><span class="header-section-number">14.2</span> Importing C header files</h2>
-<p>To import a C header file into our Zig code, we use the built-in functions <code>@cInclude()</code> and <code>@cImport()</code>. Inside the <code>@cImport()</code> function, we open a block (with a pair of curly braces). Inside this block we can (if we need to) include multiple <code>@cDefine()</code> calls to define C macros when including this specific C header file. But for the most part, you will probably need to use just a single call inside this block at <code>@cImport()</code>, which is a call to <code>@cInclude()</code>.</p>
-<p>This <code>@cInclude()</code> function is equivalent to the <code>#include</code> statement in C. You provide the name of the C header that you want to include as input to this <code>@cInclude()</code> function, then, in conjunction with <code>@cImport()</code>, it will perform the necessary steps to include this C header file into your Zig code.</p>
-<p>You should bind the result of <code>@cImport()</code> to a constant object, pretty much like you would do with <code>@import()</code>. You just assign the result to a constant object in your Zig code, and, as consequence, all C functions, C structs, C macros, etc. that are defined inside the C header file will be available through this constant object.</p>
-<p>Look at the code example below, where we are importing the Standard I/O C Library (<code>stdio.h</code>), and calling the <code>printf()</code><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> C function. Notice that we have also used in this example the C function <code>powf()</code><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>, which comes from the C Math Library (<code>math.h</code>). In order to compile this example, you have to link this Zig code with both the C Standard Library and the C Math Library, by passing the flags <code>-lc</code> and <code>-lm</code> to the <code>zig</code> compiler.</p>
+<p>At <a href="#sec-strategy-c" class="quarto-xref"><span>Section 14.1.1</span></a>, we have described that, currently, there is two different paths that you can take to import a C header file into your Zig modules, <code>translate-c</code> or <code>@cImport()</code>. This section describes each strategy separately in more details.</p>
+<section id="strategy-1-using-translate-c" class="level3" data-number="14.2.1">
+<h3 data-number="14.2.1" class="anchored" data-anchor-id="strategy-1-using-translate-c"><span class="header-section-number">14.2.1</span> Strategy 1: using <code>translate-c</code></h3>
+<p>When we choose this strategy, we first need to use the <code>translate-c</code> tool to translate the C header files that we want to use into Zig code. For example, suppose we wanted to use the <code>fopen()</code> C function from the <code>stdio.h</code> C header file. We can translate the <code>stdio.h</code> C header file through the bash command below:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> translate-c /usr/include/stdio.h <span class="dt">\</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">-lc</span> <span class="at">-I</span>/usr/include <span class="dt">\</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">-D_NO_CRT_STDIO_INLINE</span><span class="op">=</span>1 <span class="op">&gt;</span> c.zig <span class="dt">\</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Notice that, in this bash command, we are passing the necessary compiler flags (<code>-D</code> to define macros, <code>-l</code> to link libraries, <code>-I</code> to include header file) to compile and use the <code>stdio.h</code> header file. Also notice that we are saving the results of the translation inside a Zig module called <code>c.zig</code>.</p>
+<p>So after running this command, all we have to do is to import this <code>c.zig</code> module, and start calling the C functions that you want to call from it. The example below demonstrates that. Important to remember what we’ve discussed at <a href="#sec-linking-c" class="quarto-xref"><span>Section 14.1.2</span></a>. In order to compile this example you have to link this code with <code>libc</code>, by passing the flag <code>-lc</code> to the <code>zig</code> compiler.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cmath = <span class="bu">@cImport</span>(<span class="op">{</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"math.h"</span>);</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdio = <span class="bu">@cImport</span>(<span class="op">{</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cDefine</span>(<span class="st">"_NO_CRT_STDIO_INLINE"</span>, <span class="st">"1"</span>);</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"stdio.h"</span>);</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x: <span class="dt">f32</span> = <span class="fl">15.2</span>;</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> y = cmath.powf(x, <span class="bu">@as</span>(<span class="dt">f32</span>, <span class="fl">2.6</span>));</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    _ = stdio.printf(<span class="st">"%.3f</span><span class="sc">\n</span><span class="st">"</span>, y);</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c = <span class="bu">@import</span>(<span class="st">"c.zig"</span>);</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x: <span class="dt">f32</span> = <span class="fl">1772.94122</span>;</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    _ = c.printf(<span class="st">"%.3f</span><span class="sc">\n</span><span class="st">"</span>, x);</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>1772.941</code></pre>
+</section>
+<section id="strategy-2-using-cimport" class="level3" data-number="14.2.2">
+<h3 data-number="14.2.2" class="anchored" data-anchor-id="strategy-2-using-cimport"><span class="header-section-number">14.2.2</span> Strategy 2: using <code>@cImport()</code></h3>
+<p>To import a C header file into our Zig code, we can use the built-in functions <code>@cInclude()</code> and <code>@cImport()</code>. Inside the <code>@cImport()</code> function, we open a block (with a pair of curly braces). Inside this block we can (if we need to) include multiple <code>@cDefine()</code> calls to define C macros when including this specific C header file. But for the most part, you will probably need to use just a single call inside this block at <code>@cImport()</code>, which is a call to <code>@cInclude()</code>.</p>
+<p>This <code>@cInclude()</code> function is equivalent to the <code>#include</code> statement in C. You provide the name of the C header that you want to include as input to this <code>@cInclude()</code> function, then, in conjunction with <code>@cImport()</code>, it will perform the necessary steps to include this C header file into your Zig code.</p>
+<p>You should bind the result of <code>@cImport()</code> to a constant object, pretty much like you would do with <code>@import()</code>. You just assign the result to a constant object in your Zig code, and, as consequence, all C functions, C structs, C macros, etc. that are defined inside the C header files will be available through this constant object.</p>
+<p>Look at the code example below, where we are importing the Standard I/O C Library (<code>stdio.h</code>), and calling the <code>printf()</code><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> C function. Notice that we have also used in this example the C function <code>powf()</code><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>, which comes from the C Math Library (<code>math.h</code>). In order to compile this example, you have to link this Zig code with both the C Standard Library and the C Math Library, by passing the flags <code>-lc</code> and <code>-lm</code> to the <code>zig</code> compiler.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c = <span class="bu">@cImport</span>(<span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cDefine</span>(<span class="st">"_NO_CRT_STDIO_INLINE"</span>, <span class="st">"1"</span>);</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"stdio.h"</span>);</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"math.h"</span>);</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x: <span class="dt">f32</span> = <span class="fl">15.2</span>;</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> y = c.powf(x, <span class="bu">@as</span>(<span class="dt">f32</span>, <span class="fl">2.6</span>));</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    _ = c.printf(<span class="st">"%.3f</span><span class="sc">\n</span><span class="st">"</span>, y);</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>1182.478</code></pre>
+</section>
 </section>
 <section id="sec-zig-obj-to-c" class="level2" data-number="14.3">
 <h2 data-number="14.3" class="anchored" data-anchor-id="sec-zig-obj-to-c"><span class="header-section-number">14.3</span> About passing Zig values to C functions</h2>
@@ -353,34 +396,34 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>As an example, look at the code exposed below. Here we are using the <code>fopen()</code> C function to simply open and close a file. If you do not know how this <code>fopen()</code> function works in C, it takes two C strings as input. But in this code example below, we are passing some string literals written in our Zig code directly as inputs to this <code>fopen()</code> C function.</p>
 <p>In other words, we are not doing any type of conversion from a Zig string to a C string. We are just passing the Zig string literals directly as inputs to the C function. And it works just fine! Because the compiler inteprets the string <code>"foo.txt"</code> as a C string, as a result of the current context that this string literal is being used.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c = <span class="bu">@cImport</span>(<span class="op">{</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cDefine</span>(<span class="st">"_NO_CRT_STDIO_INLINE"</span>, <span class="st">"1"</span>);</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"stdio.h"</span>);</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = c.fopen(<span class="st">"foo.txt"</span>, <span class="st">"rb"</span>);</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (file == <span class="cn">null</span>) <span class="op">{</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>        <span class="bu">@panic</span>(<span class="st">"Could not open file!"</span>);</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (c.fclose(file) != <span class="dv">0</span>) <span class="op">{</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">error</span>.CouldNotCloseFileDescriptor;</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c = <span class="bu">@cImport</span>(<span class="op">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cDefine</span>(<span class="st">"_NO_CRT_STDIO_INLINE"</span>, <span class="st">"1"</span>);</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"stdio.h"</span>);</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = c.fopen(<span class="st">"foo.txt"</span>, <span class="st">"rb"</span>);</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (file == <span class="cn">null</span>) <span class="op">{</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        <span class="bu">@panic</span>(<span class="st">"Could not open file!"</span>);</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (c.fclose(file) != <span class="dv">0</span>) <span class="op">{</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">error</span>.CouldNotCloseFileDescriptor;</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Let’s make some experiments, by writing the same code in different manners, and we see how this affects the program. As a starting point, let’s store the <code>"foo.txt"</code> string inside a Zig object, like the <code>path</code> object below, and then, we pass this Zig object as input to the <code>fopen()</code> C function.</p>
 <p>If we do this, the program still compiles and runs successfully. Notice that I have ommitted most of the code in this example below. This is just for brevitty reasons, because the remainder of the program is still the same. The only difference between this example and the previous example is just these two lines exposed below.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> path = <span class="st">"foo.txt"</span>;</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = c.fopen(path, <span class="st">"rb"</span>);</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Remainder of the program</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> path = <span class="st">"foo.txt"</span>;</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = c.fopen(path, <span class="st">"rb"</span>);</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Remainder of the program</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Now, what happens if you give an explicit data type to the <code>path</code> object? Well, if I force the <code>zig</code> compiler to interpret this <code>path</code> object as a Zig string object, by annotating the <code>path</code> object with the data type <code>[]const u8</code>, then, I actually get a compile error as demonstrated below. We get this compile error because now I’m forcing the <code>zig</code> compiler to interpret <code>path</code> as a Zig string object.</p>
 <p>According to the error message, the <code>fopen()</code> C function was expecting to receive an input value of type <code>[*c]const u8</code> (C string) instead of a value of type <code>[]const u8</code> (Zig string). In more details, the type <code>[*c]const u8</code> is actually the Zig type representation of a C string. The <code>[*c]</code> portion of this type identifies a C pointer. So, this Zig type essentially means: a C pointer to an array (<code>[*c]</code>) of constant bytes (<code>const u8</code>).</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> path: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"foo.txt"</span>;</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = c.fopen(path, <span class="st">"rb"</span>);</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Remainder of the program</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> path: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"foo.txt"</span>;</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = c.fopen(path, <span class="st">"rb"</span>);</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Remainder of the program</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>t.zig:10:26: error: expected type '[*c]const u8', found '[]const u8'
     const file = c.fopen(path, "rb");
@@ -388,23 +431,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Therefore, when we talk exclusively about string literal values, as long as you don’t give an explicit data type to these string literal values, the <code>zig</code> compiler should be capable of automatically converting them into C strings as needed.</p>
 <p>But what about using one of the primitive data types that were introduced at <a href="01-zig-weird.html#sec-primitive-data-types" class="quarto-xref"><span>Section 1.5</span></a>? Let’s take code exposed below as an example of that. Here, we are giving some float literal values as input to the C function <code>powf()</code>. Notice that this code example compiles and runs succesfully.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cmath = <span class="bu">@cImport</span>(<span class="op">{</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"math.h"</span>);</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> y = cmath.powf(<span class="fl">15.68</span>, <span class="fl">2.32</span>);</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>y<span class="op">}</span>);</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cmath = <span class="bu">@cImport</span>(<span class="op">{</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"math.h"</span>);</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> y = cmath.powf(<span class="fl">15.68</span>, <span class="fl">2.32</span>);</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>y<span class="op">}</span>);</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>593.2023</code></pre>
 <p>Once again, because the <code>zig</code> compiler does not associate a specific data type with the literal values <code>15.68</code> and <code>2.32</code> at first glance, the compiler can automatically convert these values into their C <code>float</code> (or <code>double</code>) equivalents, before it passes to the <code>powf()</code> C function. Now, even if I give an explicit Zig data type to these literal values, by storing them into a Zig object, and explicit annotating the type of these objects, the code still compiles and runs succesfully.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x: <span class="dt">f32</span> = <span class="fl">15.68</span>;</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> y = cmath.powf(x, <span class="fl">2.32</span>);</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// The remainder of the program</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x: <span class="dt">f32</span> = <span class="fl">15.68</span>;</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> y = cmath.powf(x, <span class="fl">2.32</span>);</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// The remainder of the program</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>593.2023</code></pre>
 </section>
@@ -413,9 +456,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A “need-conversion” scenario is when we need to manually convert our Zig objects into C compatible values before passing them as input to C functions. You will fall in this scenario, when passing Zig string objects to C functions.</p>
 <p>We already saw this specific circumstance on the last <code>fopen()</code> example, which is reproduced below. You can see in this example, that we have given an explicit Zig data type (<code>[]const u8</code>) to our <code>path</code> object, and, as a consequence of that, we have forced the <code>zig</code> compiler to see this <code>path</code> object, as a Zig string object. Because of that, we need now to manually convert this <code>path</code> object into a C string before we pass it to <code>fopen()</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> path: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"foo.txt"</span>;</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = c.fopen(path, <span class="st">"rb"</span>);</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Remainder of the program</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> path: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"foo.txt"</span>;</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = c.fopen(path, <span class="st">"rb"</span>);</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Remainder of the program</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>t.zig:10:26: error: expected type '[*c]const u8', found '[]const u8'
     const file = c.fopen(path, "rb");
@@ -423,19 +466,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>There are different ways to convert a Zig string object into a C string. One way to solve this problem is to provide the pointer to the underlying array of bytes, instead of providing the Zig object directly as input. You can access this pointer by using the <code>ptr</code> property of the Zig string object.</p>
 <p>The code example below demonstrates this strategy. Notice that, by giving the pointer to the underlying array in <code>path</code> through the <code>ptr</code> property, we get no compile errors as result while using the <code>fopen()</code> C function.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> path: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"foo.txt"</span>;</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = c.fopen(path.ptr, <span class="st">"rb"</span>);</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Remainder of the program</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> path: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"foo.txt"</span>;</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = c.fopen(path.ptr, <span class="st">"rb"</span>);</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Remainder of the program</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>This strategy works because this pointer to the underlying array found in the <code>ptr</code> property, is semantically identical to a C pointer to a null-terminated array of bytes, i.e.&nbsp;a C object of type <code>*unsigned char</code>. This is why this option also solves the problem of converting the Zig string into a C string.</p>
 <p>Another option is to explicitly convert the Zig string object into a C pointer by using the built-in function <code>@ptrCast()</code>. With this function we can convert an object of type <code>[]const u8</code> into an object of type <code>[*c]const u8</code>. As I described at the previous section, the <code>[*c]</code> portion of the type means that it is a C pointer. This strategy is not-recommended. But it is useful to demonstrate the use of <code>@ptrCast()</code>.</p>
-<p>You may recall of the <code>@as()</code> built-in function, which is used to explicit convert (or cast) a Zig value from a type <code>x</code> to a type <code>y</code>, etc. That is, this <code>@as()</code> Zig function is equivalent to the <code>as</code> keyword in Rust, and the C type casting syntax (e.g.&nbsp;<code>(int) x</code>). But in our case here, we are not converting any type of object. More specifically, we are converting something into a pointer, or, a C pointer more specifically. Everytime a pointer is involved in some “type casting operation” in Zig, the <code>@ptrCast()</code> function is involved. This <code>@ptrCast()</code> function is responsible for converting a pointer of one type to a pointer of another type.</p>
+<p>You may recall of <code>@as()</code> and <code>@ptrCast()</code> from <a href="03-structs.html#sec-type-cast" class="quarto-xref"><span>Section 2.6</span></a>. Just as a recap, the <code>@as()</code> built-in function is used to explicit convert (or cast) a Zig value from a type <code>x</code> to a type <code>y</code>. But in our case here, we are not converting any type of object. More specifically, we are converting something into a pointer, or, a C pointer more specifically. Everytime a pointer is involved in some “type casting operation” in Zig, the <code>@ptrCast()</code> function is involved.</p>
 <p>In the example below, we are using this function to cast our <code>path</code> object into a C pointer to an array of bytes. Then, we pass this C pointer as input to the <code>fopen()</code> function. Notice that this code example compiles succesfully with no errors.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> path: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"foo.txt"</span>;</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> c_path: [*c]<span class="kw">const</span> <span class="dt">u8</span> = <span class="bu">@ptrCast</span>(path);</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = c.fopen(c_path, <span class="st">"rb"</span>);</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Remainder of the program</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> path: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"foo.txt"</span>;</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> c_path: [*c]<span class="kw">const</span> <span class="dt">u8</span> = <span class="bu">@ptrCast</span>(path);</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = c.fopen(c_path, <span class="st">"rb"</span>);</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Remainder of the program</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>
@@ -443,43 +486,43 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 data-number="14.4" class="anchored" data-anchor-id="sec-c-inputs"><span class="header-section-number">14.4</span> Creating C objects in Zig</h2>
 <p>Creating C objects, or, in other words, creating instances of C structs in your Zig code is actually something quite easy to do. You first need to import the C header file (like I described at <a href="#sec-import-c-header" class="quarto-xref"><span>Section 14.2</span></a>) that describes the C struct that you are trying to instantiate in your Zig code. After that, you can just create a new object in your Zig code, and annotate it with the C type of the struct.</p>
 <p>For example, suppose we have a C header file called <code>user.h</code>, and that this header file is declaring a new struct named <code>User</code>. This C header file is exposed below:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode c code-with-copy"><code class="sourceCode c"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdint.h&gt;</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="kw">typedef</span> <span class="kw">struct</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">uint64_t</span> id<span class="op">;</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">char</span><span class="op">*</span> name<span class="op">;</span></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> User<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode c code-with-copy"><code class="sourceCode c"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdint.h&gt;</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="kw">typedef</span> <span class="kw">struct</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">uint64_t</span> id<span class="op">;</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">char</span><span class="op">*</span> name<span class="op">;</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> User<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>This <code>User</code> C struct have two distinct fields, or two struct members, named <code>id</code> and <code>name</code>. The field <code>id</code> is a unsigned 64-bit integer value, while the field <code>name</code> is just a standard C string. Now, suppose that I want to create an instance of this <code>User</code> struct in my Zig code. I can do that by importing this <code>user.h</code> header file into my Zig code, and creating a new object with type <code>User</code>. These steps are reproduced in the code example below.</p>
 <p>Notice that I have used the keyword <code>undefined</code> in this example. This allows me to create the <code>new_user</code> object without the need to provide an initial value to the object. As consequence, the underlying memory associated with this <code>new_user</code> is unintialized, i.e.&nbsp;the memory is currently populated with “garbage” values. Thus, this expression have the exact same effect of the expression <code>User new_user;</code> in C, which means “declare a new object named <code>new_user</code> of type <code>User</code>”.</p>
 <p>Is our responsibility to properly initialize this memory associated with this <code>new_user</code> object, by assigining valid values to the members (or the fields) of the C struct. In the example below, I am assigning the integer 1 to the member <code>id</code>. I am also saving the string <code>"pedropark99"</code> into the member <code>name</code>. Notice in this example that I manually add the null character (zero byte) to the end of the allocated array for this string. This null character marks the end of the array in C.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c = <span class="bu">@cImport</span>(<span class="op">{</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"user.h"</span>);</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> new_user: c.User = <span class="cn">undefined</span>;</span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>    new_user.id = <span class="dv">1</span>;</span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> user_name = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">12</span>);</span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.free(user_name);</span>
-<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memcpy</span>(user_name[<span class="dv">0</span>..(user_name.len - <span class="dv">1</span>)], <span class="st">"pedropark99"</span>);</span>
-<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    user_name[user_name.len - <span class="dv">1</span>] = <span class="dv">0</span>;</span>
-<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>    new_user.name = user_name.ptr;</span>
-<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c = <span class="bu">@cImport</span>(<span class="op">{</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"user.h"</span>);</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> new_user: c.User = <span class="cn">undefined</span>;</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    new_user.id = <span class="dv">1</span>;</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> user_name = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">12</span>);</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.free(user_name);</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memcpy</span>(user_name[<span class="dv">0</span>..(user_name.len - <span class="dv">1</span>)], <span class="st">"pedropark99"</span>);</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>    user_name[user_name.len - <span class="dv">1</span>] = <span class="dv">0</span>;</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>    new_user.name = user_name.ptr;</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>So, in this example above, we are manually initializing each field of the C struct. We could say that, in this instance, we are “manually instantiating the C struct object”. However, when we use C libraries in our Zig code, we rarely need to manually instantiate the C structs like in the above example. Only because C libraries usually provide “constructor functions” in their public APIs. As consequence, we normally rely on these constructor functions to properly initialize the C structs, and the struct fields for us.</p>
 <p>For example, consider the Harfbuzz C library. This a text shaping C library, and it works around a “buffer object”, or, more specifically, an instance of the C struct <code>hb_buffer_t</code>. Therefore, we need to create an instance of this C struct if we want to use this C library. Luckily, this library offers the function <code>hb_buffer_create()</code>, which we can use to create such object. So the Zig code necessary to create such object would probably look something like this:</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c = <span class="bu">@cImport</span>(<span class="op">{</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"hb.h"</span>);</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buf: c.hb_buffer_t = c.hb_buffer_create();</span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="co">// Do stuff with the "buffer object"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c = <span class="bu">@cImport</span>(<span class="op">{</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"hb.h"</span>);</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buf: c.hb_buffer_t = c.hb_buffer_create();</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co">// Do stuff with the "buffer object"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Therefore, we do not need to manually create an instance of the C struct <code>hb_buffer_t</code> here, and manually assign valid values to each field in this C struct. Because the constructor function <code>hb_buffer_create()</code> is doing this heavy job for us.</p>
 <p>Since this <code>buf</code> object (and also the <code>new_user</code> object) is an instance of a C struct, this object is, in itself, a C compatible value. It is a C object defined in our Zig code. As consequence, you can freely pass this object as input to any C function that expects to receive this type of C struct as input. You do not need to use any special syntax, or, to convert this object in any special manner to use it in C code. This is how we create and use C objects in our Zig code.</p>
 </section>
@@ -491,30 +534,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Therefore, essentially, all you have to do when passing C objects to Zig functions, is to add <code>*</code> to the data type of the function argument that is receiving the C object. This will make sure that the C object is passed <em>by reference</em> to the function.</p>
 <p>Now, because we have transformed the function argument into a pointer, everytime that you have to access the value pointed by the input pointer inside the function body, for whatever reason (e.g.&nbsp;you want to read, update, or delete this value), you have to dereference the pointer with the <code>.*</code> syntax that we learned from <a href="05-pointers.html" class="quarto-xref"><span>Chapter 6</span></a>. Notice that the <code>set_user_id()</code> function is using this syntax to alter the value in the <code>id</code> field of the <code>User</code> struct pointed by the input pointer.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c = <span class="bu">@cImport</span>(<span class="op">{</span></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"user.h"</span>);</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> set_user_id(id: <span class="dt">u64</span>, user: *c.User) <span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    user.*.id = id;</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> new_user: c.User = <span class="cn">undefined</span>;</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    new_user.id = <span class="dv">1</span>;</span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> user_name = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">12</span>);</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.free(user_name);</span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memcpy</span>(user_name[<span class="dv">0</span>..(user_name.len - <span class="dv">1</span>)], <span class="st">"pedropark99"</span>);</span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    user_name[user_name.len - <span class="dv">1</span>] = <span class="dv">0</span>;</span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    new_user.name = user_name.ptr;</span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>    set_user_id(<span class="dv">25</span>, &amp;new_user);</span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"New ID: {any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>new_user.id<span class="op">}</span>);</span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c = <span class="bu">@cImport</span>(<span class="op">{</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"user.h"</span>);</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> set_user_id(id: <span class="dt">u64</span>, user: *c.User) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    user.*.id = id;</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> new_user: c.User = <span class="cn">undefined</span>;</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>    new_user.id = <span class="dv">1</span>;</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> user_name = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">12</span>);</span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.free(user_name);</span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memcpy</span>(user_name[<span class="dv">0</span>..(user_name.len - <span class="dv">1</span>)], <span class="st">"pedropark99"</span>);</span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>    user_name[user_name.len - <span class="dv">1</span>] = <span class="dv">0</span>;</span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>    new_user.name = user_name.ptr;</span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>    set_user_id(<span class="dv">25</span>, &amp;new_user);</span>
+<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"New ID: {any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>new_user.id<span class="op">}</span>);</span>
+<span id="cb21-24"><a href="#cb21-24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>New ID: 25</code></pre>
 
@@ -523,8 +566,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>
 <ol>
-<li id="fn1"><p><a href="https://cplusplus.com/reference/cstdio/printf/" class="uri">https://cplusplus.com/reference/cstdio/printf/</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2"><p><a href="https://en.cppreference.com/w/c/numeric/math/pow" class="uri">https://en.cppreference.com/w/c/numeric/math/pow</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1"><p><a href="https://github.com/rust-lang/rust-bindgen" class="uri">https://github.com/rust-lang/rust-bindgen</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p><a href="https://github.com/ziglang/zig/issues/20630" class="uri">https://github.com/ziglang/zig/issues/20630</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p><a href="https://cplusplus.com/reference/cstdio/printf/" class="uri">https://cplusplus.com/reference/cstdio/printf/</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p><a href="https://en.cppreference.com/w/c/numeric/math/pow" class="uri">https://en.cppreference.com/w/c/numeric/math/pow</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
