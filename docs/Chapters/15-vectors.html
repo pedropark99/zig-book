@@ -6,10 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Pedro Duarte Faria">
-<meta name="dcterms.date" content="2024-09-24">
 
-<title>Introduction to Zig: a project-based book</title>
+<title>17&nbsp; Introducing Vectors and SIMD – Introduction to Zig: a project-based book</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -22,28 +20,63 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<link href="./Chapters/01-zig-weird.html" rel="next">
-<script src="site_libs/quarto-html/quarto.js"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../references.html" rel="next">
+<link href="../Chapters/14-threads.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -84,7 +117,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Welcome</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/15-vectors.html"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Introducing Vectors and SIMD</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -99,7 +132,7 @@ ul.task-list li input[type="checkbox"] {
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
     <div class="pt-lg-2 mt-2 text-left sidebar-header">
     <div class="sidebar-title mb-0 py-0">
-      <a href="./">Introduction to Zig: a project-based book</a> 
+      <a href="../">Introduction to Zig: a project-based book</a> 
         <div class="sidebar-tools-main">
   <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
 </div>
@@ -114,115 +147,115 @@ ul.task-list li input[type="checkbox"] {
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link active">
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Welcome</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/01-zig-weird.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/01-zig-weird.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Introducing Zig</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/03-structs.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/03-structs.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Structs, Modules and Control Flow</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/01-memory.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/01-memory.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Memory and Allocators</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/01-base64.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/01-base64.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Project 1 - Building a base64 encoder/decoder</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/02-debugging.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/02-debugging.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Debugging Zig applications</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/05-pointers.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/05-pointers.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Pointers and Optionals</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/04-http-server.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/04-http-server.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Project 2 - Building a HTTP Server from scratch</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/03-unittests.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/03-unittests.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/07-build-system.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/07-build-system.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Build System</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/09-error-handling.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/09-error-handling.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Error handling and unions</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/09-data-structures.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/09-data-structures.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Data Structures</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/10-stack-project.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/10-stack-project.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Project 3 - Building a stack data structure</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/12-file-op.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/12-file-op.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Filesystem and Input/Output (IO)</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/14-zig-c-interop.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/14-zig-c-interop.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Zig interoperability with C</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/13-image-filter.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/13-image-filter.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Project 4 - Developing an image filter</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/14-threads.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/14-threads.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Introducing threads and parallelism in Zig</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./Chapters/15-vectors.html" class="sidebar-item-text sidebar-link">
+  <a href="../Chapters/15-vectors.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Introducing Vectors and SIMD</span></span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./references.html" class="sidebar-item-text sidebar-link">
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">References</span></a>
   </div>
 </li>
@@ -236,15 +269,9 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#welcome" id="toc-welcome" class="nav-link active" data-scroll-target="#welcome">Welcome</a>
+  <li><a href="#what-is-simd" id="toc-what-is-simd" class="nav-link active" data-scroll-target="#what-is-simd"><span class="header-section-number">17.1</span> What is SIMD?</a>
   <ul class="collapse">
-  <li><a href="#about-this-book" id="toc-about-this-book" class="nav-link" data-scroll-target="#about-this-book">About this book</a></li>
-  <li><a href="#about-the-author" id="toc-about-the-author" class="nav-link" data-scroll-target="#about-the-author">About the author</a></li>
-  <li><a href="#license" id="toc-license" class="nav-link" data-scroll-target="#license">License</a></li>
-  <li><a href="#book-compilation-metadata" id="toc-book-compilation-metadata" class="nav-link" data-scroll-target="#book-compilation-metadata">Book compilation metadata</a></li>
-  <li><a href="#book-citation" id="toc-book-citation" class="nav-link" data-scroll-target="#book-citation">Book citation</a></li>
-  <li><a href="#corresponding-author-and-maintainer" id="toc-corresponding-author-and-maintainer" class="nav-link" data-scroll-target="#corresponding-author-and-maintainer">Corresponding author and maintainer</a></li>
-  <li><a href="#acknowledgments" id="toc-acknowledgments" class="nav-link" data-scroll-target="#acknowledgments">Acknowledgments</a></li>
+  <li><a href="#vectors" id="toc-vectors" class="nav-link" data-scroll-target="#vectors"><span class="header-section-number">17.1.1</span> Vectors</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -254,26 +281,14 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Introduction to Zig: a project-based book</h1>
+<h1 class="title"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Introducing Vectors and SIMD</span></h1>
 </div>
 
 
 
 <div class="quarto-title-meta">
 
-    <div>
-    <div class="quarto-title-meta-heading">Author</div>
-    <div class="quarto-title-meta-contents">
-             <p>Pedro Duarte Faria </p>
-          </div>
-  </div>
     
-    <div>
-    <div class="quarto-title-meta-heading">Published</div>
-    <div class="quarto-title-meta-contents">
-      <p class="date">September 24, 2024</p>
-    </div>
-  </div>
   
     
   </div>
@@ -283,76 +298,30 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-
-<section id="welcome" class="level1 unnumbered">
-<h1 class="unnumbered">Welcome</h1><p><img src="Cover/cover-artv2.1.png" title="Introduction to Zig: a project-based book" class="quarto-cover-image img-fluid"></p>
-<p>Welcome! This is the initial page for the “Open Access” HTML version of the book “Introduction to Zig: a project-based book”, written by <a href="https://pedro-faria.netlify.app/">Pedro Duarte Faria</a>. This is an open book that provides an introduction to the <a href="https://ziglang.org/">Zig programming language</a>, which is a new general-purpose, and low-level language for building robust and optimal software.</p>
-<section id="about-this-book" class="level2 unnumbered">
-<h2 class="unnumbered anchored" data-anchor-id="about-this-book">About this book</h2>
-<p>This an open book, meaning that, it is open-source, and it will always be open for anyone that wants to read it. However, this book is still under construction 🚧 and active development, so, it’s contents might change drastically in the near future.</p>
-<p>Also, this is a project-based book, which means that we learn how to use the Zig programming language through small and simple projects, in a similar style to the famous “Python Crash Course” book from Eric Matthes.</p>
-<p>Official book’s repository: <a href="https://github.com/pedropark99/zig-book" class="uri">https://github.com/pedropark99/zig-book</a></p>
-</section>
-<section id="about-the-author" class="level2 unnumbered">
-<h2 class="unnumbered anchored" data-anchor-id="about-the-author">About the author</h2>
-<p>Pedro Duarte Faria have a bachelor degree in Economics from Federal University of Ouro Preto - Brazil. Currently, he is a Data Platform Engineer at <a href="https://www.blip.ai/en/">Blip</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, and an Associate Developer for Apache Spark 3.0 certified by Databricks.</p>
-<p>The author have more than 4 years of experience in the data industry. Developing data products, pipelines, reports and analysis for research institutions and some of the largest companies in the brazilian financial sector, such as the BMG Bank, Sodexo and Pan Bank.</p>
-<p>But Pedro is also a passionate software developer that loves to learn and teach about programming. Although Pedro uses many different languages in his work, he is specialized in the R programming language, and have given several lectures and courses about it, inside graduate centers (such as PPEA-UFOP<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>), in addition to federal and state organizations (such as FJP-MG<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>).</p>
-<p>Personal Website: <a href="https://pedro-faria.netlify.app/" class="uri">https://pedro-faria.netlify.app/</a></p>
-<p>Linkedin: <a href="https://www.linkedin.com/in/pedro-faria-a68140209/" class="uri">https://www.linkedin.com/in/pedro-faria-a68140209/</a></p>
-<p>Mastodon: <a href="https://fosstodon.org/@pedropark99">@pedropark99@fosstodon.org</a></p>
-<p>Twitter (X): <a href="https://twitter.com/PedroPark9">@PedroPark9</a></p>
-</section>
-<section id="license" class="level2 unnumbered">
-<h2 class="unnumbered anchored" data-anchor-id="license">License</h2>
-<p>Copyright © 2024 Pedro Duarte Faria. This book is licensed by the <a href="https://creativecommons.org/licenses/by/4.0/">CC-BY 4.0 Creative Commons Attribution 4.0 International Public License</a><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>.</p>
-<p><img src="Figures/creative-commoms-88x31.png" class="img-fluid" width="88"></p>
-</section>
-<section id="book-compilation-metadata" class="level2 unnumbered">
-<h2 class="unnumbered anchored" data-anchor-id="book-compilation-metadata">Book compilation metadata</h2>
-<p>This book was compiled using the following versions of <a href="https://ziglang.org">Zig</a> and <a href="https://quarto.org">Quarto</a>:</p>
-<ul>
-<li><p>System version: Linux, 6.8.0-45-generic, NA, x86_64.</p></li>
-<li><p>Zig version: 0.14.0-dev.1166+bb7050106.</p></li>
-<li><p>Quarto version: 1.5.56.</p></li>
-</ul>
-</section>
-<section id="book-citation" class="level2 unnumbered">
-<h2 class="unnumbered anchored" data-anchor-id="book-citation">Book citation</h2>
-<p>You can use the following BibTex entry to cite this book:</p>
-<pre><code>@book{pedro2024,
-    author = {Pedro Duarte Faria},
-    title = {Introduction to Zig},
-    subtitle = {a project-based book},
-    month = {December},
-    edition = {1},
-    year = {2024},
-    address = {Belo Horizonte},
-    url = {https://pedropark99.github.io/zig-book/}
-}</code></pre>
-</section>
-<section id="corresponding-author-and-maintainer" class="level2 unnumbered">
-<h2 class="unnumbered anchored" data-anchor-id="corresponding-author-and-maintainer">Corresponding author and maintainer</h2>
-<p>Pedro Duarte Faria</p>
-<p>Contact: <a href="mailto:pedropark99@gmail.com">pedropark99@gmail.com</a></p>
-<p>Personal website: <a href="https://pedro-faria.netlify.app/" class="uri">https://pedro-faria.netlify.app/</a></p>
-</section>
-<section id="acknowledgments" class="level2">
-<h2 class="anchored" data-anchor-id="acknowledgments">Acknowledgments</h2>
-<p>This book is also a product of many conversations and exchanges that we had with different people from the Zig community. I (Pedro Duarte Faria) am incredibly grateful for these conversations, and also, for some direct contributions that we had. Below we have a list of the people involved (name of the person with their usename in GitHub):</p>
-<p>Calin Martinconi (@martinconic), Steffen Roller (@sroller), Chris Boesch (@chrboesch), Lv Sihan (@Pokryton), saurabh sharma. (@esskayesss)</p>
+<p>In this chapter, I’m going to discuss vectors in Zig, which are related to SIMD operations. Before we dive into the subject, is worth mentioning that vectors in Zig have no relationship with the <code>std::vector</code> class from C++. Remember, as we discussed at <a href="09-data-structures.html#sec-dynamic-array" class="quarto-xref"><span>Section 11.1</span></a>, dynamic/growable arrays in Zig are represented by the <code>std.ArrayList()</code> structure from the Zig Standard Library.</p>
+<section id="what-is-simd" class="level2" data-number="17.1">
+<h2 data-number="17.1" class="anchored" data-anchor-id="what-is-simd"><span class="header-section-number">17.1</span> What is SIMD?</h2>
+<p>SIMD (<em>Single Instruction/Multiple Data</em>) is a group of operations that are widely used on video/audio editing programs, and also in graphics applications. SIMD is not a new technology, but the massive use of SIMD on normal desktop computers is somewhat recent. In the old days, SIMD was only used on “supercomputers models”.</p>
+<p>Most modern CPU models (from AMD, Intel, etc.) these days (either in a desktop or in a notebook model) have support for SIMD operations. If you have a very old CPU model installed in your computer, then, is possible that you have no support for SIMD operations in your computer.</p>
+<p>But why people have started using SIMD on their software? The answer is performance. But what SIMD precisely do to achieve better performance? In essence, SIMD is a different way to get parallel computing, and therefore, make faster calculations.</p>
+<p>The basic idea behind SIMD is to have a single instruction that operates over multiple data at the same time. When you perform a normal scalar operation, like for example, four add instructions, each addition is performed separately, one after another. But with SIMD, these four add instructions are translated into a single instruction, and, as consequence, the four additions are performed in parallel, at the same time.</p>
+<section id="vectors" class="level3" data-number="17.1.1">
+<h3 data-number="17.1.1" class="anchored" data-anchor-id="vectors"><span class="header-section-number">17.1.1</span> Vectors</h3>
+<p>SIMD operations are performed over a special type of object, which are called “vectors”. A vector object is usually a fixed-sized block of 128 bits (16 bytes). However, different CPU models may have different extensions (or, “implementations”) of SIMD, which may offer more types of vector objects that are bigger in size (256 bits or 512 bits).</p>
+<p>You can create new vector objects in Zig by using the <code>@Vector()</code> built-in function. Inside this function, you specify the vector length (number of elements in the vector), and the data type of the elements of the vector. In the example below, I’m creating two vector objects (<code>v1</code> and <code>v2</code>) of 4 elements of type <code>u32</code> each.</p>
+<p>Also notice in the example below, that a third vector object (<code>v3</code>) is created from the sum of the previous two vector objects (<code>v1</code> plus <code>v2</code>). Therefore, math operations over vector objects take place element-wise by default. Remember, the same operation (in this case, addition) is replicated in parallel, across all elements of the vector.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v1 = <span class="bu">@Vector</span>(<span class="dv">4</span>, <span class="dt">u32</span>)<span class="op">{</span><span class="dv">4</span>, <span class="dv">12</span>, <span class="dv">37</span>, <span class="dv">9</span><span class="op">}</span>;</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v2 = <span class="bu">@Vector</span>(<span class="dv">4</span>, <span class="dt">u32</span>)<span class="op">{</span><span class="dv">10</span>, <span class="dv">22</span>, <span class="dv">5</span>, <span class="dv">12</span><span class="op">}</span>;</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v3 = v1 + v2;</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>v3<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>{ 14, 34, 42, 21 }</code></pre>
+</div>
+</div>
 
 
 </section>
-</section>
-<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
-<hr>
-<ol>
-<li id="fn1"><p><a href="https://www.blip.ai/en/" class="uri">https://www.blip.ai/en/</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2"><p><a href="https://ppea.ufop.br/" class="uri">https://ppea.ufop.br/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3"><p><a href="http://fjp.mg.gov.br/" class="uri">http://fjp.mg.gov.br/</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4"><p><a href="https://creativecommons.org/licenses/by/4.0/" class="uri">https://creativecommons.org/licenses/by/4.0/</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-</ol>
 </section>
 
 </main> <!-- /main -->
@@ -922,10 +891,13 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
+      <a href="../Chapters/14-threads.html" class="pagination-link" aria-label="Introducing threads and parallelism in Zig">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Introducing threads and parallelism in Zig</span></span>
+      </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./Chapters/01-zig-weird.html" class="pagination-link" aria-label="Introducing Zig">
-        <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Introducing Zig</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../references.html" class="pagination-link" aria-label="References">
+        <span class="nav-page-text">References</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
