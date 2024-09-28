@@ -36,19 +36,27 @@ fn read_data_to_buffer(ctx: *png.spng_ctx, buffer: []u8) !void {
 
 fn apply_image_filter(buffer: []u8) !void {
     const len = buffer.len;
-    const red_factor: f16 = 0.2126;
-    const green_factor: f16 = 0.7152;
-    const blue_factor: f16 = 0.0722;
-    var index: u64 = 0;
+    var rv: @Vector(1080000, f16) = @splat(0.0);
+    var gv: @Vector(1080000, f16) = @splat(0.0);
+    var bv: @Vector(1080000, f16) = @splat(0.0);
+
+    var index: usize = 0;
+    var vec_index: usize = 0;
     while (index < (len - 4)) : (index += 4) {
-        const rf: f16 = @floatFromInt(buffer[index]);
-        const gf: f16 = @floatFromInt(buffer[index + 1]);
-        const bf: f16 = @floatFromInt(buffer[index + 2]);
-        const y_linear: f16 = ((rf * red_factor) + (gf * green_factor) + (bf * blue_factor));
-        buffer[index] = @intFromFloat(y_linear);
-        buffer[index + 1] = @intFromFloat(y_linear);
-        buffer[index + 2] = @intFromFloat(y_linear);
+        rv[vec_index] = @floatFromInt(buffer[index]);
+        gv[vec_index + 1] = @floatFromInt(buffer[index + 1]);
+        bv[vec_index + 2] = @floatFromInt(buffer[index + 2]);
+        vec_index += 3;
     }
+
+    const rfactor: @Vector(1080000, f16) = @splat(0.2126);
+    const gfactor: @Vector(1080000, f16) = @splat(0.7152);
+    const bfactor: @Vector(1080000, f16) = @splat(0.0722);
+    rv = rv * rfactor;
+    gv = gv * gfactor;
+    bv = bv * bfactor;
+    const result = rv + gv + bv;
+    try stdout.print("{any}\n", .{result});
 }
 
 fn save_png(image_header: *png.spng_ihdr, buffer: []u8) !void {
@@ -82,12 +90,10 @@ pub fn main() !void {
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    var image_header = try get_image_header(ctx);
     const output_size = try calc_output_size(ctx);
     var buffer = try allocator.alloc(u8, output_size);
     @memset(buffer[0..], 0);
 
     try read_data_to_buffer(ctx, buffer[0..]);
     try apply_image_filter(buffer[0..]);
-    try save_png(&image_header, buffer[0..]);
 }
