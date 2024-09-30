@@ -59,7 +59,7 @@ This is a fast and easy approach, but, it doesn't work in all situations, specia
 your Zig compiler is not installed in a "standard location" in your computer. That is
 why, a second strategy is applied, which is to search through the PATH environment variable.
 
-If gets the value of your PATH environment variable, and iterates through the directories listed
+It gets the value of your PATH environment variable, and iterates through the directories listed
 in this variable, trying to find the Zig compiler in one of them. This approach is much
 slower than the first one, but is more garanteed to work.
 
