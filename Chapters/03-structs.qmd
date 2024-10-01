@@ -637,25 +637,30 @@ t.zig:3:5: error: cannot assign to constant
 ```
 
 
-If a function argument receives as input a object whose data type is
-any of the primitive types that we have listed at @sec-primitive-data-types
+If a function argument receives as input an object whose data type is
+any of the primitive types that we have listed at @sec-primitive-data-types,
 this object is always passed by value to the function. In other words, this object
-is copied to the function stack frame.
+is copied into the function stack frame.
 
 However, if the input object have a more complex data type, for example, it might
-be a struct instance, or an array, or a union, etc., in cases like that, the `zig` compiler
-will take the liberty of deciding for you which strategy is best. The `zig` compiler will
+be a struct instance, or an array, or an union value, etc., in cases like that, the `zig` compiler
+will take the liberty of deciding for you which strategy is best. Thus, the `zig` compiler will
 pass your object to the function either by value, or by reference. The compiler will always
 choose the strategy that is faster for you.
 This optimization that you get for free is possible only because function arguments are
 immutable in Zig.
 
-To overcome this barrier, we need to take the lead, and explicitly choose to pass the
-object by reference. That is, instead of depending on the `zig` compiler to decide for us, we need
+There are some situations where you might need to change the value of your function argument
+directly inside the function's body. This happens more often when we are passing
+C structs as inputs to Zig functions.
+
+In a situation like this, you can overcome this barrier of immutable function arguments, by simply taking the lead,
+and explicitly choosing to pass the object by reference to the function.
+That is, instead of depending on the `zig` compiler to decide which strategy is best, you have
 to explicitly mark the function argument as a pointer. This way, we are telling the compiler
 that this function argument will be passed by reference to the function.
 
-By making it a pointer, we can finally use and alter directly the value of this function argument inside
+By making it a pointer, we can finally alter the value of this function argument directly inside
 the body of the `add2()` function. You can see that the code example below compiles successfully.
 
 ```{zig}
@@ -692,31 +697,31 @@ You give a name to this new struct (or, to this new data type you are creating),
 also register functions inside this struct, and they become the methods of this particular struct (or data type), so that, every object
 that you create with this new type, will always have these methods available and associated with them.
 
-In C++, when we create a new class, we normally have a constructor method (or, a constructor function) to construct or to instantiate every object
-of this particular class, and you also have a destructor method (or a destructor function) that
-is the function responsible for destroying every object of this class.
+In C++, when we create a new class, we normally have a constructor method (or, a constructor function) which
+is used to construct (or, to instantiate) every object of this particular class, and we also have
+a destructor method (or a destructor function), which is the function responsible for destroying
+every object of this class.
 
 In Zig, we normally declare the constructor and the destructor methods
 of our structs, by declaring an `init()` and a `deinit()` methods inside the struct.
-This is just a naming convention that you will find across the entire Zig standard library.
+This is just a naming convention that you will find across the entire Zig Standard Library.
 So, in Zig, the `init()` method of a struct is normally the constructor method of the class represented by this struct.
 While the `deinit()` method is the method used for destroying an existing instance of that struct.
 
 The `init()` and `deinit()` methods are both used extensively in Zig code, and you will see both of
 them being used when we talk about allocators at @sec-allocators.
 But, as another example, let's build a simple `User` struct to represent an user of some sort of system.
-If you look at the `User` struct below, you can see the `struct` keyword, and inside of a
-pair of curly braces, we write the struct's body.
 
+If you look at the `User` struct below, you can see the `struct` keyword.
 Notice the data members of this struct, `id`, `name` and `email`. Every data member have it's
 type explicitly annotated, with the colon character (`:`) syntax that we described earlier at @sec-root-file.
 But also notice that every line in the struct body that describes a data member, ends with a comma character (`,`).
 So every time you declare a data member in your Zig code, always end the line with a comma character, instead
 of ending it with the traditional semicolon character (`;`).
 
-Next, also notice in this example, that we registrated an `init()` function as a method
-of this `User` struct. This `init()` method is the constructor method that you use to instantiate
-every new `User` object. That is why this `init()` function return an `User` object as result.
+Next, also notice in this example, that we have registrated an `init()` function as a method
+of this `User` struct. This `init()` method is the constructor method that we will use to instantiate
+every new `User` object. That is why this `init()` function returns a new `User` object as result.
 
 
 ```{zig}
@@ -755,11 +760,10 @@ The `pub` keyword plays an important role in struct declarations, and OOP in Zig
 Every method that you declare in your struct that is marked with the keyword `pub`,
 becomes a public method of this particular struct.
 
-So every method that you create in your struct, is, at first, a private method
+So every method that you create inside your struct, is, at first, a private method
 of that struct. Meaning that, this method can only be called from within this
 struct. But, if you mark this method as public, with the keyword `pub`, then,
-you can call the method directly from the `User` object you have
-in your code.
+you can call the method directly from an instance of the `User` struct.
 
 In other words, the functions marked by the keyword `pub`
 are members of the public API of that struct.
