@@ -15,19 +15,19 @@ knitr::opts_chunk$set(
 
 
 
-# Structs, Modules and Control Flow
+# Control flow, structs, modules and types
 
-I introduced a lot of the Zig's syntax to you in the last chapter,
+We have discussed a lot of Zig's syntax in the last chapter,
 specially at @sec-root-file and @sec-main-file.
-But we still need to discuss about some other very important
-elements of the language that you will use constantly on your day-to-day
+But we still need to discuss some other very important
+elements of the language. Elements that you will use constantly on your day-to-day
 routine.
 
-We begin this chapter by talking about the different keywords and structures
+We begin this chapter by discussing the different keywords and structures
 in Zig related to control flow (e.g. loops and if statements).
 Then, we talk about structs and how they can be used to do some
 basic Object-Oriented (OOP) patterns in Zig. We also talk about
-type inference, which help us to write less code and achieve the same results.
+type inference and type casting.
 Finally, we end this chapter by discussing modules, and how they relate
 to structs.
 
@@ -36,7 +36,7 @@ to structs.
 ## Control flow {#sec-zig-control-flow}
 
 Sometimes, you need to make decisions in your program. Maybe you need to decide
-wether to execute or not a specific piece of code. Or maybe,
+whether to execute or not a specific piece of code. Or maybe,
 you need to apply the same operation over a sequence of values. These kinds of tasks,
 involve using structures that are capable of changing the "control flow" of our program.
 
@@ -55,23 +55,22 @@ of a loop, or make the loop stop completely.
 
 ### If/else statements
 
-An if/else statement performs an "conditional flow operation".
+An if/else statement performs a "conditional flow operation".
 A conditional flow control (or choice control) allows you to execute
 or ignore a certain block of commands based on a logical condition.
 Many programmers and computer science professionals also use
 the term "branching" in this case.
-In essence, we use if/else statements to use the result of a logical test
+In essence, an if/else statement allow us to use the result of a logical test
 to decide whether or not to execute a given block of commands.
 
 In Zig, we write if/else statements by using the keywords `if` and `else`.
 We start with the `if` keyword followed by a logical test inside a pair
-of parentheses, and then, a pair of curly braces with contains the lines
+of parentheses, followed by a pair of curly braces which contains the lines
 of code to be executed in case the logical test returns the value `true`.
 
-After that, you can optionally add an `else` statement. Just add the `else`
+After that, you can optionally add an `else` statement. To do that, just add the `else`
 keyword followed by a pair of curly braces, with the lines of code
-to executed in case the logical test defined in the `if`
-returns `false`.
+to executed in case the logical test defined at `if` returns `false`.
 
 In the example below, we are testing if the object `x` contains a number
 that is greater than 10. Judging by the output printed to the console,
@@ -99,16 +98,15 @@ if (x > 10) {
 
 ### Switch statements {#sec-switch}
 
-Switch statements are also available in Zig.
-A switch statement in Zig have a similar syntax to a switch statement in Rust.
+Switch statements are also available in Zig, and they have a very similar syntax to a switch statement in Rust.
 As you would expect, to write a switch statement in Zig we use the `switch` keyword.
 We provide the value that we want to "switch over" inside a
 pair of parentheses. Then, we list the possible combinations (or "branchs")
 inside a pair of curly braces.
 
-Let's take a look at the code example below. You can see in this example that,
+Let's take a look at the code example below. You can see that
 I'm creating an enum type called `Role`. We talk more about enums at @sec-enum.
-But in essence, this `Role` type is listing different types of roles in a fictitious
+But in summary, this `Role` type is listing different types of roles in a fictitious
 company, like `SE` for Software Engineer, `DE` for Data Engineer, `PM` for Product Manager,
 etc.
 
@@ -119,8 +117,8 @@ as we described at @sec-type-inference.
 This makes the `zig` compiler infer the correct data type of the values (`PM`, `SE`, etc.) for us.
 
 Also notice that, we are grouping multiple values in the same branch of the switch statement.
-We just separate each possible value with a comma. So, for example, if `role` contains either `DE` or `DA`,
-the `area` variable would contain the value `"Data & Analytics"`, instead of `"Platform"`.
+We just separate each possible value with a comma. For example, if `role` contains either `DE` or `DA`,
+the `area` variable would contain the value `"Data & Analytics"`, instead of `"Platform"` or `"Sales"`.
 
 ```{zig}
 #| build_type: "run"
@@ -152,19 +150,20 @@ pub fn main() !void {
 
 #### Switch statements must exhaust all possibilities
 
-Now, one very important aspect about this switch statement presented
-in the code example above, is that it exhaust all existing possibilities.
+One very important aspect about switch statements in Zig
+is that they must exhaust all existing possibilities.
 In other words, all possible values that could be found inside the `order`
-object are explicitly handled in this switch statement.
+object must be explicitly handled in this switch statement.
 
 Since the `role` object have type `Role`, the only possible values to
 be found inside this object are `PM`, `SE`, `DPE`, `PO`, `DE`, `DA` and `KS`.
-There is no other possible value to be stored in this `role` object.
-This what "exhaust all existing possibilities" means. The switch statement covers
+There are no other possible values to be stored in this `role` object.
+Thus, the switch statements must have a combination (branch) for each one of these values.
+This is what "exhaust all existing possibilities" means. The switch statement covers
 every possible case.
 
-In Zig, switch statements must exhaust all existing possibilities. You cannot write
-a switch statement, and leave an edge case with no expliciting action to be taken.
+Therefore, you cannot write a switch statement in Zig, and leave an edge case
+with no expliciting action to be taken.
 This is a similar behaviour to switch statements in Rust, which also have to
 handle all possible cases.
 
@@ -173,13 +172,16 @@ handle all possible cases.
 #### The else branch
 
 Take a look at the `dump_hex_fallible()` function below as an example. This function
-also comes from the Zig Standard Library, but this time, it comes from the
+comes from the Zig Standard Library. More precisely, from the
 [`debug.zig` module](https://github.com/ziglang/zig/blob/master/lib/std/debug.zig)[^debug-mod].
 There are multiple lines in this function, but I omitted them to focus solely on the
 switch statement found in this function. Notice that this switch statement have four
 possible cases, or four explicit branches. Also, notice that we used an `else` branch
-in this case. Whenever you have multiple cases in your switch statement
-which you want to apply the same exact action, you can use an `else` branch to do that.
+in this case.
+
+An `else` branch in a switch statement work as the "default branch".
+Whenever you have multiple cases in your switch statement where
+you want to apply the exact same action, you can use an `else` branch to do that.
 
 [^debug-mod]: <https://github.com/ziglang/zig/blob/master/lib/std/debug.zig>
 
@@ -196,18 +198,18 @@ pub fn dump_hex_fallible(bytes: []const u8) !void {
 }
 ```
 
-Many users would also use an `else` branch to handle a "not supported" case.
+Many programmers would also use an `else` branch to handle a "not supported" case.
 That is, a case that cannot be properly handled by your code, or, just a case that
-should not be "fixed". So many programmers use an `else` branch to panic (or raise an error) to stop
-the current execution.
+should not be "fixed". Therefore, you can use an `else` branch to panic (or raise an error)
+in your program to stop the current execution.
 
-Take the code example below as an example. We can see that, we are handling the cases
+Take the code example below. We can see that, we are handling the cases
 for the `level` object being either 1, 2, or 3. All other possible cases are not supported by default,
-and, as consequence, we raise an runtime error in these cases, through the `@panic()` built-in function.
+and, as consequence, we raise a runtime error in such cases through the `@panic()` built-in function.
 
 Also notice that, we are assigning the result of the switch statement to a new object called `category`.
-This is another thing that you can do with switch statements in Zig. If the branchs in this switch
-statement output some value as result, you can store the result value of the switch statement into
+This is another thing that you can do with switch statements in Zig. If the branchs
+output some value as result, you can store the result value of the switch statement into
 a new object.
 
 ```{zig}
@@ -236,8 +238,8 @@ t.zig:9:13: 0x1033c58 in main (switch2)
 
 Furthermore, you can also use ranges of values in switch statements.
 That is, you can create a branch in your switch statement that is used
-whenever the input value is contained in a range. These range
-expressions are created with the operator `...`. Is important
+whenever the input value is within a range. These "range expressions"
+are created with the operator `...`. Is important
 to emphasize that the ranges created by this operator are
 inclusive on both ends.
 
@@ -268,8 +270,8 @@ lowercase letter, and it would work fine.
 
 At @sec-blocks we have talked about labeling blocks, and also, about using these labels
 to return a value from the block. Well, from version 0.14.0 and onwards of the `zig` compiler,
-you can also apply labels over switch statements,
-which makes possible to implement almost a "C goto like" pattern in Zig.
+you can also apply labels over switch statements, which makes it possible to almost implement a
+"C `goto`" like pattern.
 
 For example, if you give the label `xsw` to a switch statement, you can use this
 label in conjunction with the `continue` keyword to go back to the beginning of the switch
@@ -291,10 +293,12 @@ xsw: switch (@as(u8, 1)) {
 
 ### The `defer` keyword {#sec-defer}
 
-With the `defer` keyword you can execute expressions at the end of the current scope.
-Take the `foo()` function below as an example. When we execute this function, the expression
-that prints the message "Exiting function ..." get's executed only at
-the end of the function scope.
+With the `defer` keyword you can register an expression to be executed when you exit the current scope.
+Therefore, this keyword has a similar functionality as the `on.exit()` function from R.
+Take the `foo()` function below as an example. When we execute this `foo()` function, the expression
+that prints the message "Exiting function ..." get's executed only when the function exits
+it's scope.
+
 
 ```{zig}
 #| auto_main: false
@@ -324,9 +328,104 @@ Multiplying ...
 Exiting function ...
 ```
 
-It doesn't matter how the function exits (i.e. because
-of an error, or, because of an return statement, or whatever),
-just remember, this expression get's executed when the function exits.
+Therefore, we can use `defer` to declare an expression that is going to be executed
+when your code exits the current scope. Some programmers like to interpret the phrase "exit of the current scope"
+as "the end of the current scope". But this interpretation might not be entirely correct, depending
+on what you consider as "the end of the current scope".
+
+I mean, what do you consider as **the end** of the current scope? Is it the closing curly bracket (`}`) of the scope?
+Is it when the last expression in the function get's executed? Is it when the function returns to the previous scope?
+Etc. For example, it would not be correct to interpret the "exit of the current scope" as the closing
+curly bracket of the scope. Because the function might exit from an earlier position than this
+closing curly bracket (e.g. an error value was generated at a previous line inside the function;
+the function reached an earlier return statement; etc.). Anyway, just be careful with this interpretation.
+
+Now, if you remember of what we have discussed at @sec-blocks, there are multiple structures in the language
+that create their own separate scopes. For/while loops, if/else statements,
+functions, normal blocks, etc. This also affects the interpretation of `defer`.
+For example, if you use `defer` inside a for loop, then, the given expression
+will be executed everytime this specific for loop exits it's own scope.
+
+Before we continue, is worth emphasizing that the `defer` keyword is an "unconditional defer".
+Which means that the given expression will be executed no matter how the code exits
+the current scope. For example, your code might exit the current scope because of an error value
+being generated, or, because of a return statement, or, a break statement, etc.
+
+
+
+### The `errdefer` keyword {#sec-errdefer1}
+
+On the previous section, we have discussed the `defer` keyword, which you can use to
+register an expression to be executed at the exit of the current scope.
+But this keyword have a brother, which is the `errdefer` keyword. While `defer`
+is an "unconditional defer", the `errdefer` keyword is a "conditional defer".
+Which means that the given expression is executed only when you exit the current
+scope on a very specific circumstance.
+
+In more details, the expression given to `errdefer` is executed only when an error occurs in the current scope.
+Therefore, if the function (or for/while loop, if/else statement, etc.) exits the current scope
+in a normal situation, without errors, the expression given to `errdefer` is not executed.
+
+This makes the `errdefer` keyword one of the many tools available in Zig for error handling.
+In this section, we are more concerned with the control flow aspects around `errdefer`.
+But we are going to discuss `errdefer` later as a error handling tool at @sec-errdefer2.
+
+The code example below demonstrates three things:
+
+- that `defer` is an "unconditional defer", because the given expression get's executed regardless of how the function `foo()` exits it's own scope.
+- that `errdefer` is executed because the function `foo()` returned an error value.
+- that `defer` and `errdefer` expressions are executed in a LIFO (*last in, first out*) order.
+
+```{zig}
+#| eval: false
+const std = @import("std");
+fn foo() !void { return error.FooError; }
+pub fn main() !void {
+    var i: usize = 1;
+    errdefer std.debug.print("Value of i: {d}\n", .{i});
+    defer i = 2;
+    try foo();
+}
+```
+
+```
+Value of i: 2
+error: FooError
+/t.zig:6:5: 0x1037e48 in foo (defer)
+    return error.FooError;
+    ^
+```
+
+
+When I say that "defer expressions" are executed in a LIFO order, what I want to mean is that
+the last `defer` or `errdefer` expressions in the code are the first ones to be executed.
+You could also interpret this as: "defer expressions" are executed from bottom to top, or,
+from last to first.
+
+Therefore, if I change the order of the `defer` and `errdefer` expressions, you will notice that
+the value of `i` that get's printed to the console changes to 1. This doesn't mean that the
+`defer` expression was not executed in this case. This actually means that the `defer` expression
+was executed only after the `errdefer` expression. The code example below demonstrates this:
+
+```{zig}
+#| eval: false
+const std = @import("std");
+fn foo() !void { return error.FooError; }
+pub fn main() !void {
+    var i: usize = 1;
+    defer i = 2;
+    errdefer std.debug.print("Value of i: {d}\n", .{i});
+    try foo();
+}
+```
+
+```
+Value of i: 1
+error: FooError
+/t.zig:6:5: 0x1037e48 in foo (defer)
+    return error.FooError;
+    ^
+```
 
 
 
@@ -427,7 +526,18 @@ while (i < 5) {
 }
 ```
 
+You can also specify the increment expression to be used at the beginning of while loop.
+Just write the expression inside a pair of parentheses after a colon character (`:`).
+The code example below replicates the previous example, but using this new pattern.
 
+```{zig}
+#| auto_main: true
+#| build_type: "run"
+var i: u8 = 1;
+while (i < 5) : (i += 1) {
+    try stdout.print("{d} | ", .{i});
+}
+```
 
 ### Using `break` and `continue`
 
@@ -1040,55 +1150,6 @@ is commonly used on switch statements in Zig.
 
 
 
-## Modules
-
-We already talked about what modules are, and also, how to import other modules into
-you current module through *import statements*.
-Every Zig module (i.e. a `.zig` file) that you write in your project
-is internally stored as a struct object.
-Take the line exposed below as an example. In this line we are importing the
-Zig Standard Library into our current module.
-
-```zig
-const std = @import("std");
-```
-
-When we want to access the functions and objects from the standard library, we
-are basically accessing the data members of the struct stored in the `std`
-object. That is why we use the same syntax that we use in normal structs, with the dot operator (`.`)
-to access the data members and methods of the struct.
-
-When this "import statement" get's executed, the result of this expression is a struct
-object that contains the Zig Standard Library modules, global variables, functions, etc.
-And this struct object get's saved (or stored) inside the constant object named `std`.
-
-
-Take the [`thread_pool.zig` module from the project `zap`](https://github.com/kprotty/zap/blob/blog/src/thread_pool.zig)[^thread]
-as an example. This module is written as if it was
-a big struct. That is why we have a top-level and public `init()` method
-written in this module. The idea is that all top-level functions written in this
-module are methods from the struct, and all top-level objects and struct declarations
-are data members of this struct. The module is the struct itself.
-
-[^thread]: <https://github.com/kprotty/zap/blob/blog/src/thread_pool.zig>
-
-
-So you would import and use this module by doing something like this:
-
-```zig
-const std = @import("std");
-const ThreadPool = @import("thread_pool.zig");
-const num_cpus = std.Thread.getCpuCount()
-    catch @panic("failed to get cpu core count");
-const num_threads = std.math.cast(u16, num_cpus)
-    catch std.math.maxInt(u16);
-const pool = ThreadPool.init(
-    .{ .max_threads = num_threads }
-);
-```
-
-
-
 ## Type casting {#sec-type-cast}
 
 In this section, I want to discuss type casting (or, type conversion) with you.
@@ -1171,4 +1232,57 @@ test {
     try expect(@TypeOf(u32_ptr) == *const u32);
 }
 ```
+
+
+
+
+
+## Modules
+
+We already talked about what modules are, and also, how to import other modules into
+you current module through *import statements*.
+Every Zig module (i.e. a `.zig` file) that you write in your project
+is internally stored as a struct object.
+Take the line exposed below as an example. In this line we are importing the
+Zig Standard Library into our current module.
+
+```zig
+const std = @import("std");
+```
+
+When we want to access the functions and objects from the standard library, we
+are basically accessing the data members of the struct stored in the `std`
+object. That is why we use the same syntax that we use in normal structs, with the dot operator (`.`)
+to access the data members and methods of the struct.
+
+When this "import statement" get's executed, the result of this expression is a struct
+object that contains the Zig Standard Library modules, global variables, functions, etc.
+And this struct object get's saved (or stored) inside the constant object named `std`.
+
+
+Take the [`thread_pool.zig` module from the project `zap`](https://github.com/kprotty/zap/blob/blog/src/thread_pool.zig)[^thread]
+as an example. This module is written as if it was
+a big struct. That is why we have a top-level and public `init()` method
+written in this module. The idea is that all top-level functions written in this
+module are methods from the struct, and all top-level objects and struct declarations
+are data members of this struct. The module is the struct itself.
+
+[^thread]: <https://github.com/kprotty/zap/blob/blog/src/thread_pool.zig>
+
+
+So you would import and use this module by doing something like this:
+
+```zig
+const std = @import("std");
+const ThreadPool = @import("thread_pool.zig");
+const num_cpus = std.Thread.getCpuCount()
+    catch @panic("failed to get cpu core count");
+const num_threads = std.math.cast(u16, num_cpus)
+    catch std.math.maxInt(u16);
+const pool = ThreadPool.init(
+    .{ .max_threads = num_threads }
+);
+```
+
+
 
