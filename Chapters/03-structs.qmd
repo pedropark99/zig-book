@@ -776,9 +776,9 @@ not be authorized to call this method directly in my code.
 ### Anonymous struct literals {#sec-anonymous-struct-literals}
 
 You can declare a struct object as a literal value. When we do that, we normally specify the
-data type of this struct literal by writing it's data type just before the opening curly braces.
-For example, I could write a struct literal of type `User` that we defined in the previous section like
-this:
+data type of this struct literal by writing it's data type just before the opening curly brace.
+For example, I could write a struct literal value of the type `User` that we have defined
+in the previous section like this:
 
 ```{zig}
 #| eval: false
@@ -798,13 +798,13 @@ replaced the explicit type of the struct literal with a dot character (`.`).
 As we described at @sec-type-inference, when you put a dot before a struct literal,
 the type of this struct literal is automatically inferred by the `zig` compiler.
 In essence, the `zig` compiler will look for some hint of what is the type of that struct.
-It can be the type annotation of an function argument,
+This hint can be the type annotation of a function argument,
 or the return type annotation of the function that you are using, or the type annotation
-of a variable.
+of an existing object.
 If the compiler do find such type annotation, then, it will use this
-type in your literal struct. 
+type in your literal struct.
 
-Anonymous structs are very commom to use in function arguments in Zig.
+Anonymous structs are very commom to be used as inputs to function arguments in Zig.
 One example that you have seen already constantly, is the `print()`
 function from the `stdout` object.
 This function takes two arguments.
@@ -834,7 +834,7 @@ pub fn main() !void {
 
 Types in Zig must be `const` or `comptime` (we are going to talk more about comptime at @sec-comptime).
 What this means is that you cannot create a new data type, and mark it as variable with the `var` keyword.
-So struct declarations are always constant. You cannot declare a new struct using the `var` keyword.
+So struct declarations are always constant. You cannot declare a new struct type using the `var` keyword.
 It must be `const`.
 
 In the `Vec3` example below, this declaration is allowed because I'm using the `const` keyword
@@ -858,11 +858,11 @@ usually declare this method as a function that have a `self` argument.
 This `self` argument is the reference to the object itself from which the method
 is being called from.
 
-Is not mandatory to use this `self` argument. But why would you not use this `self` argument?
+It is not mandatory to use this `self` argument. But why would you not use this `self` argument?
 There is no reason to not use it. Because the only way to get access to the data stored in the
 data members of your struct is to access them through this `self` argument.
 If you don't need to use the data in the data members of your struct inside your method, then, you very likely don't need
-a method, you can just simply declare this logic as a simple function, outside of your
+a method. You can just declare this logic as a simple function, outside of your
 struct declaration.
 
 
@@ -925,7 +925,7 @@ Distance: 3.3970575502926055
 Sometimes you don't need to care about the state of your struct object. Sometimes, you just need
 to instantiate and use the objects, without altering their state. You can notice that when you have methods
 inside your struct declaration that might use the values that are present in the data members, but they
-do not alter the values in the data members of the struct in anyway.
+do not alter the values in these data members of the struct in anyway.
 
 The `Vec3` struct that was presented at @sec-self-arg is an example of that.
 This struct have a single method named `distance()`, and this method do use the values
@@ -958,13 +958,13 @@ we can see in the `distance()` method that this `self` argument is annotated as
 method.
 
 But what if we do have a method that alters the state of the object, by altering the
-values of it's data members. How should we annotate `self` in this instance? The answer is:
+values of it's data members, how should we annotate `self` in this instance? The answer is:
 "we should annotate `self` as a pointer of `x`, instead of just `x`".
 In other words, you should annotate `self` as `self: *x`, instead of annotating it
 as `self: x`.
 
 If we create a new method inside the `Vec3` object that, for example, expands the
-vector by multiplying it's coordinates by a factor o two, then, we need to follow
+vector by multiplying it's coordinates by a factor of two, then, we need to follow
 this rule specified in the previous paragraph. The code example below demonstrates
 this idea:
 
@@ -1025,15 +1025,15 @@ indicating that you cannot alter the value of the `x` data member.
     pub fn double(self: Vec3) void {
 ```
 
-This error message indicates that the `x` data member belongs to a constant object,
-and, because of that, it cannot be changed. Ultimately, this error message
-is telling us that the `self` argument is constant.
-
 ```
 t.zig:16:13: error: cannot assign to constant
         self.x = self.x * 2.0;
         ~~~~^~
 ```
+
+This error message indicates that the `x` data member belongs to a constant object,
+and, because of that, it cannot be changed. Ultimately, this error message
+is telling us that the `self` argument is constant.
 
 If you take some time, and think hard about this error message, you will understand it.
 You already have the tools to understand why we are getting this error message.
@@ -1077,7 +1077,7 @@ The most commom way this happens is through function arguments that receives str
 as input.
 
 In general, type inference in Zig is done by using the dot character (`.`).
-Everytime you see a dot character written before a struct literal, or before a enum value, or something like that,
+Everytime you see a dot character written before a struct literal, or before an enum value, or something like that,
 you know that this dot character is playing a special party in this place. More specifically, it is
 telling the `zig` compiler something on the lines of: "Hey! Can you infer the type of this
 value for me? Please!". In other words, this dot character is playing a role similar to the `auto` keyword in C++.
@@ -1090,7 +1090,7 @@ You could say that the `zig` compiler looks for any neighbouring type annotation
 what would be the correct type.
 
 Another commom place where we use type inference in Zig is at switch statements (which we talk about at @sec-switch).
-So I also gave some other examples of type inference at @sec-switch, where we were inferring the data types of enum values listed inside
+I also gave some other examples of type inference at @sec-switch, where we were inferring the data types of enum values listed inside
 of switch statements (e.g. `.DE`).
 But as another example, take a look at this `fence()` function reproduced below,
 which comes from the [`atomic.zig` module](https://github.com/ziglang/zig/blob/master/lib/std/atomic.zig)[^fence-fn]
@@ -1130,7 +1130,9 @@ pub inline fn fence(self: *Self, comptime order: AtomicOrder) void {
 
         const addr: *anyopaque = self;
         return switch (order) {
-            .unordered, .monotonic => @compileError(@tagName(order) ++ " only applies to atomic loads and stores"),
+            .unordered, .monotonic => @compileError(
+                @tagName(order) ++ " only applies to atomic loads and stores"
+            ),
             .acquire => tsan.__tsan_acquire(addr),
             .release => tsan.__tsan_release(addr),
             .acq_rel, .seq_cst => {
@@ -1243,10 +1245,8 @@ test {
 ## Modules
 
 We already talked about what modules are, and also, how to import other modules into
-you current module through *import statements*.
-Every Zig module (i.e. a `.zig` file) that you write in your project
-is internally stored as a struct object.
-Take the line exposed below as an example. In this line we are importing the
+your current module via *import statements*. Every Zig module (i.e. a `.zig` file) that you write in your project
+is internally stored as a struct object. Take the line exposed below as an example. In this line we are importing the
 Zig Standard Library into our current module.
 
 ```zig
