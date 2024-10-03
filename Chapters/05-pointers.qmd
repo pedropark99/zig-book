@@ -19,10 +19,10 @@ knitr::opts_chunk$set(
 
 On our next project we are going to build a HTTP server from scratch.
 But in order to do that, we need to learn more about pointers and how they work in Zig.
-Pointers in Zig are similar to pointers in C.
+Pointers in Zig are similar to pointers in C. But they come with some extra advantages in Zig.
 
 A pointer is an object that contains a memory address. This memory address is the address where
-a particular value is stored in the memory. It can be any value. Most of the times,
+a particular value is stored in memory. It can be any value. Most of the times,
 it is a value that comes from another object (or variable) present in our code.
 
 In the example below, I'm creating two objects (`number` and `pointer`).
@@ -34,26 +34,31 @@ stored.
 
 
 ```{zig}
-#| eval: false
+#| build_type: "run"
+#| auto_main: true
 const number: u8 = 5;
 const pointer = &number;
+_ = pointer;
 ```
 
 We create a pointer object in Zig by using the `&` operator. When you put this operator
 before the name of an existing object, you get the memory address of this object as result.
-When you store this memory address inside an object, this object becomes a pointer object.
-Because this object stores a memory address.
+When you store this memory address inside a new object, this new object becomes a pointer object.
+Because it stores a memory address.
 
 People mostly use pointers as an alternative way to access a particular value.
 For example, I can use the `pointer` object to access the value stored by
-the `number` object. We call this operation (i.e. accessing the value that the
-pointer points to) of *dereferencing the pointer*. So, we can dereference
-a pointer by using the `*` method of the pointer object. Like in the example
-below, where we are taking the number 5 pointed by the `pointer` object,
-and doubling it.
+the `number` object. This operation of accessing the value that the
+pointer "points to" is normally called of *dereferencing the pointer*.
+We can dereference a pointer in Zig by using the `*` method of the pointer object. Like in the example
+below, where we take the number 5 pointed by the `pointer` object,
+and double it.
 
 ```{zig}
-#| eval: false
+#| build_type: "run"
+#| auto_main: true
+const number: u8 = 5;
+const pointer = &number;
 const doubled = 2 * pointer.*;
 std.debug.print("{d}\n", .{doubled});
 ```
@@ -63,7 +68,7 @@ std.debug.print("{d}\n", .{doubled});
 ```
 
 This syntax to dereference the pointer is nice. Because we can easily chain it with
-methods of the value pointed by the pointer. We can use the `User` struct that we
+methods of the value pointed by the pointer. We can use the `User` struct that we have
 created at @sec-structs-and-oop as an example. If you comeback to that section,
 you will see that this struct have a method named `print_name()`.
 
@@ -100,20 +105,19 @@ try stdout.print("{d}\n", .{number});
 
 
 Therefore, as I mentioned earlier, people use pointers as an alternative way to access a particular value.
-And they use it specially when they do not want to "move"
-the values they produce in their code. There are situations where,
-you want to access a particular value in a different scope of your code,
-but you do not want to "move" this value to the new scope that you are in.
+And they use it especially when they do not want to "move" these values around. There are situations where,
+you want to access a particular value in a different scope (i.e. a different location) of your code,
+but you do not want to "move" this value to this new scope (or location) that you are in.
 
 This matters especially if this value is big in size. Because if it is, then,
 moving this value becomes an expensive operation to do.
 The computer will have to spend a considerable amount of time
-copying this value to a new location.
+copying this value to this new location.
 
-That is why, many programmers avoid this heavy operation of copying the value,
-by accessing it through pointers.
-We are going to talk more about this "moving operation" on the next sections.
-For now, just keep in your mind that avoiding this "move operation" is
+Therefore, many programmers prefer to avoid this heavy operation of copying the value
+to the new location, by accessing this value through pointers.
+We are going to talk more about this "moving operation" over the next sections.
+For now, just keep in mind that avoiding this "move operation" is
 one of main reasons why pointers are used in programming languages.
 
 
@@ -146,7 +150,7 @@ p.zig:6:12: error: cannot assign to constant
 ```
 
 If I change the `number` object to be a variable object, by introducing the `var` keyword,
-then I can change the value of this object through a pointer, as demonstrated below:
+then, I can succesfully change the value of this object through a pointer, as demonstrated below:
 
 ```{zig}
 #| auto_main: true
@@ -157,21 +161,20 @@ pointer.* = 6;
 try stdout.print("{d}\n", .{number});
 ```
 
-You can see this relationship on the data type of your pointer object.
-In other words, the data type of a pointer object already gives you
-some clues about whether the value that it points to is
-constant or not.
+You can see this relationship between "constant versus variable" on the data type of
+your pointer object. In other words, the data type of a pointer object already gives you
+some clues about whether the value that it points to is constant or not.
 
 When a pointer object points to a constant value, then, this pointer have a data type `*const T`,
 which means "a pointer to a constant value of type `T`".
 In contrast, if the pointer points to a variable value, then, the type of the pointer is usually `*T`, which is
 simply "a pointer to a value of type `T`".
+Hence, whenever you see a pointer object whose data type is in the format `*const T`, then,
+you know that you cannot use this pointer to change the value that it points to.
+Because this pointer points to a constant value of type `T`.
 
-Whenever you see a pointer object whose type is in the format `*const T`, then, you know that you cannot use this pointer
-to change the value that it points to. Because this pointer points to a constant value of type `T`.
 
-
-Hence, we talked about the value pointed by the pointer being constant or not,
+We have talked about the value pointed by the pointer being constant or not,
 and the consequences that arises from it. But, what about the pointer object itself? I mean, what happens
 if the pointer object itself is constant or not? Think about it.
 We can have a constant pointer that points to a constant value.
@@ -221,18 +224,18 @@ In Zig, there are two types of pointers [@zigdocs], which are:
 
 Single-item pointer objects are objects whose data types are in the format `*T`.
 So, for example, if an object have a data type `*u32`, it means that, this
-object contains a pointer that points to an unsigned 32-bit integer value.
+object contains a single-item pointer that points to an unsigned 32-bit integer value.
 As another example, if an object have type `*User`, then, it contains
-a pointer to a `User` value.
+a single-item pointer to an `User` value.
 
-In contrast, many-item pointer objects are objects whose data types are in the format `[*]T`.
+In contrast, many-item pointers are objects whose data types are in the format `[*]T`.
 Notice that the star symbol (`*`) is now inside a pair of brackets (`[]`). If the star
 symbol is inside a pair of brackets, you know that this object is a many-item pointer.
 
 When you apply the `&` operator over an object, you will always get a single-item pointer.
 Many-item pointers are more of a "internal type" of the language, more closely
 related to slices. So, when you deliberately create a pointer with the `&` operator,
-you always get a single-item pointer as result. Remember that.
+you always get a single-item pointer as result.
 
 
 
@@ -300,7 +303,7 @@ you can safely assume that any object in your source code is not null.
 
 This is a powerful feature of Zig when you compare it to the developer experience in C.
 Because in C, any object can be null at any point, and, as consequence, a pointer in C
-might point to a null value. This is a commom source of undefined behaviour in C.
+might point to a null value. This is a common source of undefined behaviour in C.
 When programmers work with pointers in C, they have to constantly check if
 their pointers are pointing to null values or not.
 
@@ -325,34 +328,17 @@ p5.zig:5:14: error: expected type 'u8',
 ```
 
 
-You don't get this type of security in C.
+You don't get this type of safety in C.
 In C, you don't get warnings or errors about null values being produced in your program.
 If for some reason, your code produces a null value in C, most of the times, you end up getting a segmentation fault error
 as result, which can mean many things.
 That is why programmers have to constantly check for null values in C.
-Because they do not have much visibility of null values.
 
 Pointers in Zig are also, by default, **non-nullable**. This is another amazing
-feature in Zig. So, any pointer you create in your code, you can
-safely assume that this pointer is pointing to a non-null value.
+feature in Zig. So, you can safely assume that any pointer that you create in
+your Zig code is pointing to a non-null value.
 Therefore, you don't have this heavy work of checking if the pointers you create
 in Zig are pointing to a null value.
-
-This is an important feature, because this is also a commom source
-source of undefined behaviour in C. For example, if you have a pointer `x` that points to
-an object `y`, the value of the object `y` might change during the runtime
-of your program, and, as consequence, the value pointed by the pointer `x`
-will change. I demonstrated already how the value pointed by a pointer
-might change at @sec-pointer-var.
-
-So, if for some reason, the value of `y` changes to a null value during runtime,
-and, you try to use the object `y` in some way in your code, the chances of
-producing a undefined behaviour in your program are sky high.
-
-In C, when the value of `y` changes, you have no garantees that the value
-of the object `y` changed to a null value or not. You simply don't know
-upfront if you have a null value in `y` or not. But in Zig,
-you can safely assume that the object `y` will never have a null value.
 
 
 ### What are optionals?
@@ -367,7 +353,7 @@ this `?` operator right before the data type of an object, you transform
 this data type into an optional data type, and the object becomes an optional object.
 
 Take the snippet below as an example. We are creating a new variable object
-called `num`. This object have data type `?i32`, which means that,
+called `num`. This object have the data type `?i32`, which means that,
 this object contains either a signed 32-bit integer (`i32`), or, a null value.
 Both alternatives are valid values to the `num` object.
 That is why, I can actually change the value of this object to null, and,
@@ -383,13 +369,10 @@ num = null;
 ### Optional pointers
 
 You can also mark a pointer object as an optional pointer, meaning that,
-this pointer points to either a null value, or, a value that is not null.
-In other words, by marking a pointer in Zig as optional, you get a pointer in Zig that
-behaves like a pointer in C.
-
+this object contains either a null value, or, a pointer that points to a value.
 When you mark a pointer as optional, the data type of this pointer object
 becomes `?*const T` or `?*T`, depending if the value pointed by the pointer
-is a constant value or not. The `?` identifies the object as optional, and
+is a constant value or not. The `?` identifies the object as optional, while
 the `*` identifies it as a pointer object.
 
 In the example below, we are creating a variable object named `num`, and an
@@ -406,20 +389,21 @@ value, or, a pointer to an `i32` value.
 #| auto_main: true
 #| build_type: "run"
 var num: i32 = 5;
-const ptr: ?*i32 = &num;
-_ = ptr;
+var ptr: ?*i32 = &num;
+ptr = null;
+num = 6;
 ```
 
 But what happens if we turn the table, and mark the `num` object as optional,
 instead of the pointer object. If we do that, then, the pointer object is
-not optional anymore. It would be a similar (altough different) result. Because then, we would have
+not optional anymore. It would be a similar (although different) result. Because then, we would have
 a pointer to an optional value. In other words, a pointer to a value that is either a
 null value, or, a not-null value.
 
 In the example below, we are recreating this idea. Now, the `ptr` object
 have a data type of `*?i32`, instead of `?*i32`. Notice that the `*` symbol comes before of `?`
 this time. So now, we have a pointer that points to a value that is either null
-, or, a signed 32-bits integer.
+, or, a signed 32-bit integer.
 
 ```{zig}
 #| auto_main: true
@@ -434,7 +418,7 @@ _ = ptr;
 ### Null handling in optionals {#sec-null-handling}
 
 When you have an optional object in your Zig code, you have to explicitly handle
-the possibility of this object being null. Is like error-handling with `try` and `catch`.
+the possibility of this object being null. It is like error-handling with `try` and `catch`.
 In Zig you also have to handle null values like if they were a type of error.
 
 We can do that, by using either:
@@ -457,15 +441,13 @@ the scope of the if statement.
 #| build_type: "run"
 const num: ?i32 = 5;
 if (num) |not_null_num| {
-    try stdout.print(
-        "{d}\n", .{not_null_num}
-    );
+    try stdout.print("{d}\n", .{not_null_num});
 }
 ```
 
 Now, the `orelse` keyword behaves like a binary operator. You connect two expressions with this keyword.
 On the left side of `orelse`, you provide the expression that might result
-in a null value, and on the right side of `orelse` you provide another expression
+in a null value, and on the right side of `orelse`, you provide another expression
 that will not result in a null value.
 
 The idea behind the `orelse` keyword is: if the expression on the left side
