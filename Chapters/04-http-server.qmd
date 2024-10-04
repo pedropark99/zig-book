@@ -118,10 +118,11 @@ teaching how to write a simple HTTP server in C code, like @jeffrey_http,
 or @nipun_http, or @eric_http.
 Having this in mind, I will not show C code examples here, because you
 can find them on the internet.
-But I will describe the theory behind the necessary steps to perform in the C code.
+But I will describe the theory behind the necessary steps to create
+such HTTP server in C.
 
 
-In essence, we normally implement a HTTP server in C using WebSocket technology,
+In essence, we normally implement a HTTP server in C by using WebSocket technology,
 which involves the following steps:
 
 1. Create a socket object.
@@ -131,8 +132,8 @@ which involves the following steps:
 1. Then, we simply close this connection.
 
 
-A socket object (which uses the WebSocket technology) is essentially a channel of communication.
-You are creating a channel where people can send messages to.
+A socket object is essentially a channel of communication.
+You are creating a channel where people can send messages through.
 When you create a socket object, this object is not binded to any particular
 address. This means that with this object you have a representation of a channel of communication
 in your hands. But this channel is not currently available, or, it is not currently accessible,
@@ -143,40 +144,39 @@ this socket object, or, this channel of communication, so that it becomes availa
 or, accessible through this address. While the "listen" operation makes the socket object to
 listen for incoming connections in this address. In other words, the "listen" operation
 makes the socket to wait for incoming connections.
-
-Now, when a client actually attempts to connect to the server through the address we specify,
-then, the socket object needs to accept this incoming connection. When we
-accept it, then, the connection is established, client and server are now
-connected to each other, and they can read or write messages in this
+currently
+Now, when a client actually attempts to connect to the server through the socket address
+that we have specified, in order to establish this connection with the client,
+the socket object needs to accept this incoming connection. Thus, when we
+accept an incoming connection, the client and the server become
+connected to each other, and they can start reading or writing messages into this
 established connection.
 
-After we received the HTTP Request from the client,
-and sent the HTTP Response to the client,
-we can now close the connection, and end
-this communication.
+After we receive the HTTP Request from the client, analyze it, and send the HTTP Response
+to the client, we can then close the connection, and end this communication.
 
 
 ## Implementing the server - Part 1
 
 ### Creating the socket object {#sec-create-socket}
 
-Let's begin with creating the socket for our server.
+Let's begin with creating the socket object for our server.
 Just to make things shorter, I will create this socket object in
 a separate Zig module. I will name it `config.zig`.
 
 In Zig, we can create a web socket using
 the `std.posix.socket()` function, from the Zig Standard Library.
-As I meantioned earlier at @sec-http-how-impl, every socket object we create
+As I meantioned earlier at @sec-http-how-impl, every socket object that we create
 represents a communication channel, and we need to bind this channel to a specific address.
 An "address" is defined as an IP address, or, more specifically, an IPv4 address^[It can be also an IPv6 address. But normally, we use a IPv4 address for that.].
 Every IPv4 address is composed by two components. The first component is the host,
 which is a sequence of 4 numbers separated by dot characters (`.`) that identifies the machine used.
 While the second component is a port number, which identifies the specific
-door, or, the specific port to use in the host.
+door, or, the specific port to use in the host machine.
 
-The sequence of 4 numbers (i.e. the host) identifies the machine (i.e. the computer itselft) where
-this socket will live in. Every computer normally have multiple "doors" available inside him, because 
-this allows the computer to receive multiple connections at the same time.
+The sequence of 4 numbers (i.e. the host) identifies the machine (i.e. the computer itself) where
+this socket will live in. Every computer normally have multiple "doors" available inside of him, because 
+this allows the computer to receive and work with multiple connections at the same time.
 He simply use a single door for each connection. So the port number, is
 essentially a number that identifies the specific door in the computer that will be resposible
 for receiving the connection. That is, it identifies the "door" in the computer that the socket will use
@@ -193,9 +193,7 @@ by using an array of 4 integers, like this:
 
 ```{zig}
 #| auto_main: true
-const localhost = [4]u8{
-    127, 0, 0, 1
-};
+const localhost = [4]u8{ 127, 0, 0, 1 };
 _ = localhost;
 ```
 
@@ -218,7 +216,7 @@ with the `std.net.Address.initIp4()` function, like in the example below.
 After that, I use this address object inside the `socket()` function
 to create our socket object.
 
-The `Socket` struct defined below summarizes all the logic behind this
+The `Socket` struct defined below summarizes all the logic behind
 this process. In this struct, we have two data members, which are:
 1)  the address object; 2) and a stream object, which is
 the object we will use to read and write the messages into any connection we establish.
@@ -262,9 +260,9 @@ declaration that we built at @sec-create-socket inside a Zig module named `confi
 This is why I imported this module into our main module (`main.zig`) in the example below, as the `SocketConf` object,
 to access the `Socket` struct.
 
-Once we created our socket object, we can focus now on making this socket object to
+Once we created our socket object, we can focus now on making this socket object
 listen and receive new incoming connections. We do that, by calling the `listen()`
-method from the `Address` object that is contained in the socket object, and then,
+method from the `Address` object that is contained inside the socket object, and then,
 we call the `accept()` method over the result.
 
 The `listen()` method from the `Address` object produces a server object,
@@ -280,8 +278,8 @@ the server is running and listening for incoming connections. This is what
 the `listen()` method do, it makes the socket to be active waiting for someone
 to connect.
 
-On the other side, the `accept()` method is the function that establish the connection
-when someone try to connect to the socket. This means that, the `accept()` method
+On the other side, the `accept()` method is the function that establishes the connection
+when someone tries to connect to the socket. This means that, the `accept()` method
 returns a new connection object as a result. And you can use this connection object
 to read or write messages from or to the client.
 For now, we are not doing anything with this connection object.
@@ -305,7 +303,7 @@ pub fn main() !void {
 
 This code example allows one single connection. In other words, the
 server will wait for one incoming connection, and as soon as the
-server is done with the first connection that it establishs, the
+server is done with this first connection that it establishes, the
 program ends, and the server stops.
 
 This is not the norm on the real world. Most people that write
@@ -321,7 +319,7 @@ the HTTP Request, and sending the HTTP Response, all of this
 is done in the background, on a separate execution thread.
 
 So, as soon as the server accepts the connection, and creates
-the separate thread, the server goes back to what he was doing,
+the separate thread, the server goes back to what he was doing earlier,
 which is to wait indefinitely for a new connection to accept.
 Having this in mind, the code example exposed above, is a
 server that serves only a single client. Because the program
@@ -369,9 +367,9 @@ pub fn read_request(conn: Connection,
 
 
 This function accepts a slice object which behaves as a buffer.
-The `read_request()` function reads the contents of the message sent into
-the connection object, and saves this content into this buffer object that we provided
-as input.
+The `read_request()` function reads the message sent into
+the connection object, and saves this message into this buffer object that
+we have provided as input.
 
 Notice that I'm using the connection object that we created to read
 the message from the client. I first access the `reader` object that lives inside the
@@ -386,11 +384,11 @@ because this return value is not useful for us right now.
 ## Looking at the current state of the program
 
 
-I think it is a good time to see how our program is currently working. Shall we?
+I think now is a good time to see how our program is currently working. Shall we?
 So, the first thing I will do is to update the `main.zig` module in our small Zig project,
-so that the `main()` function call this new `read_request()` function that we just created.
+so that the `main()` function call this new `read_request()` function that we have just created.
 I will also add a print statement at the end of the `main()` function,
-just so that you can see what the HTTP Request we just loaded into the buffer object
+just so that you can see what the HTTP Request that we have just loaded into the buffer object
 looks like.
 
 Also, I'm creating the buffer object in the `main()` function, which will be
@@ -399,9 +397,8 @@ using a `for` loop to initialize all fields of this buffer object to the number 
 This is important to make sure that we don't have uninitialized memory in
 this object. Because uninitialized memory may cause undefined behaviour in our program.
 
-Since the `read_request()` receives as input the buffer object as a slice object (`[]u8`),
-I am using the syntax `array[0..array.len]` to get access to a slice of this `buffer` object,
-and provide it as input to the function.
+Since the `read_request()` function should receive as input the buffer object as a slice object (`[]u8`),
+I am using the syntax `array[0..array.len]` to get access to a slice of this `buffer` object.
 
 ```{zig}
 #| eval: false
@@ -435,17 +432,16 @@ More specifically, the program will pause at the line
 with the `accept()` call. As soon as a client try to connect to the
 server, then, the execution will "unpause", and the `accept()` function
 will finally be executed to create the
-connection object we need, and the remaining of the program
+connection object that we need, and the remaining of the program
 will run.
 
-You can see that at @fig-print-zigrun1. The message
-`Server Addr: 127.0.0.1:3490` is printed to the console, and the program
-is now waiting for an incoming connection.
+You can see that at @fig-print-zigrun1. The message `Server Addr: 127.0.0.1:3490`
+is printed to the console, and the program is now waiting for an incoming connection.
 
 ![A screenshot of running the program](./../Figures/print-zigrun1.png){#fig-print-zigrun1}
 
 
-Well, we can finally try to connect to this server, and there are several ways we can do this.
+We can finally try to connect to this server, and there are several ways we can do this.
 For example, we could use the following Python script:
 
 ```python
@@ -467,13 +463,13 @@ browser connected to our server, it did send the HTTP Request through the establ
 Then, the web browser was expecting to receive a HTTP Response back, but
 it got no response from the server (we didn't implemented the HTTP Response logic yet).
 
-But that is okay. We achieved the result that we wanted for now,
+But that is okay. We have achieved the result that we wanted for now,
 which is to connect to the server, and see the HTTP Request
 that was sent by the web browser (or by the Python script)
 to the server.
 
 If you comeback to the console that you left open
-when you executed the program, you will see that the
+when you have executed the program, you will see that the
 program finished it's execution, and, a new message is
 printed in the console, which is the actual HTTP Request
 message that was sent by the web browser to the server.
@@ -493,7 +489,7 @@ set of values, you might want to associate this variable to an enum structure,
 to make sure that this variable only assumes a value from this set.
 
 A classic example for enums are primary colors. If for some reason, your program
-needs to represent one of the primary colors, you can create a enum
+needs to represent one of the primary colors, you can create an enum
 that represents one of these colors.
 In the example below, we are creating the enum `PrimaryColorRGB`, which
 represents a primary color from the RGB color system. By using this enum,
@@ -530,7 +526,7 @@ e1.zig:5:36: error: enum 'PrimaryColorRGB' has
 ```
 
 Behind the hood, enums in Zig work the same way that enums
-work in C. Each enum value is essentially represented as a integer.
+work in C. Each enum value is essentially represented as an integer.
 The first value in the set is represented as zero,
 then, the second value is one, ... etc.
 
@@ -548,7 +544,7 @@ private and public methods inside them.
 ## Implementing the server - Part 2
 
 Now, on this section, I want to focus on parsing
-the HTTP Request we received from the client.
+the HTTP Request that we received from the client.
 However, to effectively parse a HTTP Request message, we first need to understand it's
 structure.
 In summary, a HTTP Request is a text message that is divided into 3 different
@@ -561,14 +557,14 @@ sections (or parts):
 ### The top-level header
 
 The first line of text in a HTTP Request always come with the three most essential
-information about the request being analyzed. These three key attributes of the HTTP Request
+information about the request. These three key attributes of the HTTP Request
 are separated by a simple space in this first line of the request.
 The first information is the HTTP method that is being
 used in the request, second, we have the URI to which this HTTP Request is being sent to,
 and third, we have the version of the HTTP protocol that is being used in this HTTP Request.
 
-In the snippet below, you will find an example of this first line in a HTTP Request.
-First, we have the the HTTP method of this request (`GET`). Many programmers
+In the snippet below, you can find an example of this first line in a HTTP Request.
+First, we have the HTTP method of this request (`GET`). Many programmers
 refer to the URI component (`/users/list`) as the "API endpoint" to which the HTTP Request
 is being sent to. In the context of this specific request, since it is a GET request,
 you could also say that the URI component is the path to the resource we want to access,
@@ -593,7 +589,7 @@ For our purpose in this chapter, which is to build a simple HTTP Server,
 we are going to ignore this section of the HTTP Request, for simplicity.
 But most HTTP servers that exist in the wild parses and use these
 HTTP headers to change the way that the server responds to the request
-send by the client.
+sent by the client.
 
 For example, many requests we encounter in the real-world comes with
 a HTTP header called `Accept`. In this header, we find a list of [MIME types](https://en.wikipedia.org/wiki/Media_type)[^mime].
@@ -604,10 +600,10 @@ a document that is in a HTML format.".
 
 [^mime]: <https://en.wikipedia.org/wiki/Media_type>.
 
-So, if the HTTP server can read and use this `Accept` header, then, the server can identify
-which is the best format of the document to send to the client. Maybe the HTTP server have
+If the HTTP server can read and use this `Accept` header, then, the server can identify
+which is the best file format for the document to be sent to the client. Maybe the HTTP server have
 the same document in multiple formats, for example, in JSON, in XML, in HTML and in PDF,
-but the client can only understand documents in the format HTML. That is the purpose
+but the client can only understand documents in the HTML format. That is the purpose
 of this `Accept` header.
 
 
@@ -617,8 +613,8 @@ The body comes after the list of HTTP headers, and it is an optional section of 
 all HTTP Request will come with a body in it. For example, every HTTP Request that uses the
 GET method usually do not come with a body.
 
-Because a GET request is used to request data,
-instead of sending it to the server. So, the body section is more related to the POST method, which is a method that involves
+Because a GET request is used to request data, instead of sending it to the server.
+So, the body section is more related to the POST method, which is a method that involves
 sending data to the server, to be processed and stored.
 
 Since we are going to support only the GET method in this project, it means that
@@ -645,9 +641,9 @@ to send some data to the HTTP server, so that it can be processed and stored by 
 As another example, the GET method is normally used to get content from the server.
 In other words, we use this method whenever we want the server to send some
 content back to us. It can be any type of content. It can be a web page,
-a document file, or some data in JSON format.
+a document file, or some data in a JSON format.
 
-When a client send a POST HTTP Request, the HTTP Response sent by the server normally have the sole purpose of
+When a client sends a POST HTTP Request, the HTTP Response sent by the server normally have the sole purpose of
 letting the client know if the server processed and stored the data succesfully.
 In contrast, when the server receives a GET HTTP Request, then, the server sends the content
 that the client asked for in the HTTP Response itself. This demonstrates that the method associated
@@ -683,23 +679,23 @@ But in order to build these functions, I will use a functionality from the Zig S
 `StaticStringMap()`. This function allows us to create a simple map from strings to enum values.
 In other words, we can use this map structure to map a string to the respective enum value.
 To some extent, this specific structure from the standard library works almost like a "hashtable" structure,
-and it is optmized for a small sets of words, or, a small set of keys, which is our case here.
+and it is optimized for small sets of words, or, small sets of keys, which is our case here.
+We are going to talk more about hashtables in Zig at @sec-maps-hashtables.
 
-To use this function, you have to import it from the `std.static_string_map` module. Just
-to make things shorter and easier to type, I am going to import this function through a different
-and shorter name (`Map`).
+To use this "static string map" structure, you have to import it from the `std.static_string_map` module
+of the Zig Standard Library. Just to make things shorter and easier to type, I am going to import this
+function through a different and shorter name (`Map`).
 
-With `Map()` imported, we just apply this function over the enum structure
+With `Map()` imported, we can just apply this function over the enum structure
 that we are going to use in the resulting map. In our case here, it is the `Method` enum structure
 that we declared at the last code example. Then, I call the `initComptime()` method with the
 map, i.e. the list of key-value pairs that we are going to use.
 
-You can see in the example below that I write this map using multiple anonymous struct literals.
-Inside the first (or "top-level") struct literal we have a list (or a sequence) of struct literals.
-Each struct literal in this list represents a key-value pair. The first element
-in this struct is the key, while the second element is the value. The first element (or the key)
+You can see in the example below that I wrote this map using multiple anonymous struct literals.
+Inside the first (or "top-level") struct literal, we have a list (or a sequence) of struct literals.
+Each struct literal in this list represents a separate key-value pair. The first element (or the key)
 in each key-value pair should always be a string value. While the second element should
-be a value from the enum structure that you used inside the `Map()` function.
+be a value from the enum structure that you have used inside the `Map()` function.
 
 
 ```{zig}
@@ -718,9 +714,8 @@ result in a null value.
 
 We can use this in our advantage to detect if a particular HTTP method is
 supported or not in our HTTP server. Because, if the `get()` method returns null,
-it means that it did not find this method inside our `MethodMap` object, and,
+it means that it did not found the method that we provided inside the `MethodMap` object, and,
 as a consequence, this method is not supported by our HTTP server.
-In this specific case, a null value means "not supported method".
 
 The `init()` method below, takes a string value as input, and then, it simply passes this string value
 to the `get()` method of our `MethodMap` object. As consequence, we should get the enum value that corresponds
@@ -763,8 +758,7 @@ pub const Method = enum {
 
 Now that we created the enum that represents our HTTP method,
 we should start to write the function responsible for
-actually parsing the HTTP Request. Let's first, understand
-the structure of a HTTP Request.
+actually parsing the HTTP Request.
 
 The first thing we can do, is to write a struct to represent the HTTP Request.
 Take the `Request` struct below as an example. It contains the three
@@ -794,7 +788,7 @@ The `parse_request()` function should receive a string as input. This input stri
 contains the entire HTTP Request message, and the parsing function should
 read and understand the individual parts of this message.
 
-Now, remember that for the purpose of this chapter, we care about only about the first
+Now, remember that for the purpose of this chapter, we care only about the first
 line in this message, which contains the "top-level header", or, the three essential attributes about the HTTP Request,
 which are the HTTP method used, the URI and the HTTP version.
 
@@ -802,7 +796,7 @@ Notice that I use the function `indexOfScalar()` in `parse_request()`. This func
 Zig Standard Library returns the first index where the scalar value that we provide
 happens in a string. In this case, I'm looking at the first occurrence of the new line character (`\n`).
 Because once again, we care only about the first line in the HTTP Request message.
-This is the line where we have the three information we want to parse
+This is the line where we have the three information that we want to parse
 (version of HTTP, the HTTP method and the URI).
 
 Therefore, we are using this `indexOfScalar()` function
@@ -818,7 +812,7 @@ a simple space. In other words, this `splitScalar()` function is equivalent
 to the `split()` method in Python, or, the `std::getline()` function from C++,
 or the `strtok()` function in C.
 
-When you use this `splitScalar()` function you get an iterator as the result.
+When you use this `splitScalar()` function, you get an iterator as the result.
 This iterator have a `next()` method that you can use to advance the iterator
 to the next position, or, to the next section of the splitted string.
 Note that, when you use `next()`, the method not only advances the iterator,
@@ -848,12 +842,12 @@ pub fn parse_request(text: []u8) Request {
 }
 ```
 
-Have you notice that the "string utility functions" we imported from the Zig Standard Library,
-and that we applied over the input string, comes from the `mem` module (which is the "memory utility functions" module)?
 
 As I described at @sec-zig-strings, strings in Zig are simply arrays of bytes in the language.
-So, you will find inside this `mem` module lots of excellent utility functions to work directly with bytes
-and arrays in Zig, and, as a result, these functions will also be very useful if you have to work with string data.
+So, you will find lots of excellent utility functions to work directly with strings
+inside this `mem` module from the Zig Standard Library.
+We have described some of these useful utility functions already
+at @sec-strings-useful-funs.
 
 
 
@@ -863,15 +857,15 @@ Now that we wrote the function responsible for parsing the HTTP Request,
 we can add the function call to `parse_request()` in
 the `main()` function of our program.
 
-After, is a good idea to test once again the state of our program.
+After that, is a good idea to test once again the state of our program.
 I execute this program again with the `run` command from the `zig` compiler,
 then, I use my web browser to connect once again to the server through the URL `localhost:3490`, and finally,
 the end result of our `Request` object is printed to the console.
 
-A quick observation, since I used the `any` format specifier in the
+A quick observation, since I have used the `any` format specifier in the
 print statement, the data members `version` and `uri` of the `Request`
 struct were printed as raw integer values. String data being printed
-as integer values is commom in Zig, and remember, these integer values are just the decimal representation of
+as integer values is common in Zig, and remember, these integer values are just the decimal representation of
 the bytes that form the string in question.
 
 In the result below, the sequence of decimal values 72, 84, 84, 80, 47, 49, 46, 49, and 13,
@@ -923,12 +917,12 @@ First, I create a new Zig module in the project, named `response.zig`.
 In this module, I will declare just two functions. Each function
 corresponds to a specific status code in the HTTP Response.
 The `send_200()` function will send a HTTP Response with status code 200
-(which means "Success") to the client. While the `send_404()` sends a response
+(which means "Success") to the client. While the `send_404()` function sends a response
 with status code 404 (which means "Not found").
 
 This is definitely not the most ergonomic and adequate way of handling the
 HTTP Response, but it works for our case here. We are just building toy projects
-in this book after all. So, the source code we write do not need to be perfect.
+in this book after all, therefore, the source code that we write do not need to be perfect.
 It just needs to work!
 
 
@@ -977,8 +971,8 @@ in their GitHub project.
 
 ## The end result
 
-We can now, update once again our `main()` to incorporate our new
-functions from the `respons.zig` module. First I need to import this module
+We can now, update once again our `main()` function to incorporate our new
+functions from the `response.zig` module. First, I need to import this module
 into our `main.zig` module, then, I add the function calls to `send_200()`
 and `send_404()`.
 
@@ -990,10 +984,9 @@ real documents to send, we can just check if the URI is the root path (`/`)
 or not to decide which function to call.
 
 Also, notice that I'm using the function `std.mem.eql()` from the Zig Standard Library
-to check if the string from `uri` is equal or not the string `"/"`. This function is
-used to check if two arrays are equal or not. In the first argument, you provide
-the type of the elements present in this array. While in the second and third arguments,
-you provide the arrays to be compared.
+to check if the string from `uri` is equal or not the string `"/"`. We have
+described this function already at @sec-strings-useful-funs, so, comeback to
+that section if you are not familiar yet with this function.
 
 
 ```{zig}
@@ -1033,7 +1026,7 @@ see the effects of these last changes. First, I execute the program once again, 
 `run` command of the `zig` compiler. The program will hang, waiting for a client to connect.
 
 Then, I open my web browser, and try to connect to the server again, using the URL `localhost:3490`.
-This time, instead of getting ar "error message" from the browser, you will get the message
+This time, instead of getting some sort of an error message from the browser, you will get the message
 "Hello World" printed into your web browser. Because this time, the server sended the HTTP Response
 succesfully to the web browser, as demonstrated by @fig-print-zigrun3.
 
