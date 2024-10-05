@@ -19,18 +19,18 @@ knitr::opts_chunk$set(
 # Build System {#sec-build-system}
 
 
-In this chapter, we are going to talk about the build system in Zig, and how an entire project
+In this chapter, we are going to talk about the build system, and how an entire project
 is built in Zig.
 One key advantage of Zig is that it includes a build system embedded in the language itself.
-This is great, because then you do not have to depend on a external system, separated
+This is great, because then you do not have to depend on an external system, separated
 from the compiler, to build your code.
 
 
 You can find a good description of Zig's build system
 on the [article entitled "Build System"](https://ziglang.org/learn/build-system/#user-provided-options)[^zig-art1]
-available in the official Zig's website.
+from the official Zig's website.
 We also have the excellent [series of posts written by Felix](https://zig.news/xq/zig-build-explained-part-1-59lf)[^felix].
-But this chapter represents an extra resource for you to consult and rely on.
+Hence, this chapter represents an extra resource for you to consult and rely on.
 
 [^felix]: <https://zig.news/xq/zig-build-explained-part-1-59lf>
 [^zig-art1]: <https://ziglang.org/learn/build-system/#user-provided-options>
@@ -46,9 +46,9 @@ for this particular task.
 
 ## How source code is built?
 
-We already talked about the challenges of building source code in low-level languages
+We already have talked about the challenges of building source code in low-level languages
 at @sec-project-files. As we described at that section, programmers invented Build Systems
-to surpass these challenges on the building processes of low-level languages.
+to surpass these challenges on the process of building source code in low-level languages.
 
 Low-level languages uses a compiler to compile (or to build) your source code into binary instructions.
 In C and C++, we normally use compilers like `gcc`, `g++` or `clang` to compile
@@ -65,7 +65,7 @@ the following components:
 - Compiler flags that tailors the build process to your needs.
 
 These are the things that you need to connect together in order to build your
-source code in Zig. In C and C++, you would have an extra component, which is the header files of
+source code in Zig. In C and C++, you would have an extra component, which are the header files of
 the libraries that you are using. But header files do not exist in Zig, so, you only need
 to care about them if you are linking your Zig source code with a C library.
 If that is not your case, you can forget about it.
@@ -84,10 +84,10 @@ especially in CMake[^cmake].
 
 There are four types of target objects that you can build in Zig, which are:
 
-- An executable, which is simply a binary executable file (e.g. a `.exe` file on Windows).
-- A shared library, which is simply a binary library file (e.g. a `.so` file in Linux or a `.dll` file on Windows).
-- A static library, which is simply a binary library file (e.g. a `.a` file in Linux or a `.lib` file on Windows).
-- An unit tests executable, which is an executable file that executes only unit tests.
+- An executable (e.g. a `.exe` file on Windows).
+- A shared library (e.g. a `.so` file in Linux or a `.dll` file on Windows).
+- A static library (e.g. a `.a` file in Linux or a `.lib` file on Windows).
+- An executable file that executes only unit tests (or, a "unit tests executable").
 
 We are going to talk more about these target objects at @sec-targets.
 
@@ -133,10 +133,10 @@ Each target object is normally a binary file (or an output) that you want to get
 multiple target objects in your build script, so that the build process generates multiple
 binary files for you at once.
 
-For example, you may be a developer working in a cross-platform application,
-and, because this application is cross-platform, you probably need to realease
+For example, maybe you are a developer working in a cross-platform application,
+and, because this application is cross-platform, you probably need to release
 binary files of your software for each OS supported by your application to your end users.
-You can define a target object in your build script
+Thus, you can define a different target object in your build script
 for each OS (Windows, Linux, etc.) where you want to publish your software.
 This will make the `zig` compiler to build your project to multiple target OS's at once.
 The Zig Build System official documentation have a [great code example that demonstrates this strategy](https://ziglang.org/learn/build-system/#handy-examples)[^zig-ex].
@@ -160,7 +160,7 @@ by the `zig` compiler. All of these functions accept a similar struct literal as
 This struct literal defines three essential specs about this target object that you are building:
 `name`, `target` and `root_source_file`.
 
-We already saw these three options being used on the previous example,
+We have already seen these three options being used on the previous example,
 where we used the `addExecutable()` method to create an executable target object.
 This example is reproduced below. Notice the use of the `path()` method
 from the `Build` struct, to define a path in the `root_source_file` option.
@@ -176,7 +176,7 @@ exe = b.addExecutable(.{
 
 The `name` option specificy the name that you want to give to the binary file defined
 by this target object. So, in this example, we are building an executable file named `hello`.
-Is traditional to set this `name` option to the name of your project.
+Is common to set this `name` option to the name of your project.
 
 
 Furthermore, the `target` option specify the target computer architecture (or the target operational system) of this
@@ -196,15 +196,15 @@ currently running the `zig` compiler.
 At last, the `root_source_file` option specifies the root Zig module of your project.
 That is the Zig module that contains the entrypoint to your application (i.e. the `main()` function), or, the main API of your library.
 This also means that, all the Zig modules that compose your project are automatically discovered
-from the import statements that you have inside this "root source file".
+from the import statements you have inside this "root source file".
 The `zig` compiler can detect when a Zig module depends on the other through the import statements,
 and, as a result, it can discover the entire map of Zig modules used in your project.
 
 This is handy, and it is different from what happens in other build systems.
 In CMake for example, you have to explicitly list the paths to all source files that you want to
 include in your build process. This is probably a symptom of the "lack of conditional
-compilation" in C and C++ compilers. Since they lack this feature, you have
-to explicitly choose which source files are sent to the C/C++ compiler, since not
+compilation" in the C and C++ compilers. Since they lack this feature, you have
+to explicitly choose which source files should be sent to the C/C++ compiler, because not
 every C/C++ code is portable or supported in every operational system, and, therefore,
 would cause a compilation error in the C/C++ compiler.
 
@@ -215,10 +215,10 @@ install the target objects that you create in your build script**, by using the
 
 Everytime you invoke the build process of your project, by calling the `build` command
 of the `zig` compiler, a new directory named `zig-out` is created in the root
-directory of your project. This new directory contains the output of the build process,
+directory of your project. This new directory contains the outputs of the build process,
 that is, the binary files built from your source code.
 
-What the `installArtifact()` method do is install (or copy) the built target objects
+What the `installArtifact()` method do is to install (or copy) the built target objects
 that you defined to this `zig-out` directory.
 This means that, if you do not
 install the target objects you define in your build script, these target objects are
@@ -232,8 +232,8 @@ But only one is of interest, which is the executable file of our project.
 We can discard the binary file of the third party library, by simply not installing it
 into this `zig-out` directory.
 
-So, is easy to use this `installArtifact()` method. Just remember to apply it to every
-target object that you want to save it into the `zig-out` directory, like in the example below:
+This `installArtifact()` method is pretty straightforward. Just remember to apply it to every
+target object that you want to save into the `zig-out` directory, like in the example below:
 
 
 ```{zig}
@@ -250,14 +250,14 @@ b.installArtifact(exe);
 
 ## Setting the build mode
 
-We talked about the three essential options that are set when you create a new target object.
+We have talked about the three essential options that are set when you create a new target object.
 But there is also a fourth option that you can use to set the build mode of this target object,
 which is the `optimize` option.
 This option is called this way, because the build modes in Zig are treated more of
-an "optimization vs safety" problem. So optmization plays an important role here.
+an "optimization vs safety" problem. So optimization plays an important role here.
 Don't worry, I'm going back to this question very soon.
 
-In Zig, we have the four build modes listed below. Each one of these build modes offer
+In Zig, we have four build modes (which are listed below). Each one of these build modes offer
 different advantages and characteristics. As we described at @sec-compile-debug-mode, the `zig` compiler
 uses the `Debug` build mode by default, when you don't explicitly choose a build mode.
 
@@ -269,7 +269,7 @@ uses the `Debug` build mode by default, when you don't explicitly choose a build
 So, when you build your project, you can set the build mode of your target object to `ReleaseFast` for example, which will tell
 the `zig` compiler to apply important optimizations in your code. This creates a binary file
 that simply runs faster on most contexts, because it contains a more optimized version of your code.
-However, as a result, we normally loose some security funcionalities in our code.
+However, as a result, we often lose some safety features in our code.
 Because some safety checks are removed from the final binary file,
 which makes your code run faster, but in a less safe manner.
 
@@ -279,9 +279,8 @@ slower to run, but much more secure, because it includes all possible runtime sa
 built in the build process. In the other hand, if you are writing a game for example, you might prefer to prioritize performance
 over safety, by using the `ReleaseFast` build mode, so that your users can experience faster frame rates in your game.
 
-In the example below, we are creating the same
-target object that we used on previous examples. But this time, we are specifying
-the build mode of this target object to use the `ReleaseSafe` mode.
+In the example below, we are creating the same target object that we have used on previous examples.
+But this time, we are specifying the build mode of this target object to the `ReleaseSafe` mode.
 
 ```{zig}
 #| eval: false
@@ -300,8 +299,7 @@ b.installArtifact(exe);
 Everytime you build a target object in your build script, you can assign a version
 number to this specific build, following a semantic versioning framework.
 You can find more about semantic versioning by visiting the [Semantic Versioning website](https://semver.org/)[^semver].
-Anyway, in Zig,
-you can specify the version of your build, by providing a `SemanticVersion` struct to
+Anyway, in Zig, you can specify the version of your build, by providing a `SemanticVersion` struct to
 the `version` option, like in the example below:
 
 
@@ -356,7 +354,7 @@ build script?
 The answer is by including a "run artifact" in our build script.
 A run artifact is created through the `addRunArtifact()` method from the `Build` struct.
 We simply provide as input to this function the target object that describes the binary file that we
-want to execute, and the function creates as output, a run artifact capable of executing
+want to execute. As a result, this function creates a run artifact that is capable of executing
 this binary file.
 
 In the example below, we are defining an executable binary file named `hello`,
@@ -374,10 +372,11 @@ b.installArtifact(exe);
 const run_arti = b.addRunArtifact(exe);
 ```
 
-Now that we created the run artifact, we need to include it in
+Now that we have created this run artifact, we need to include it in
 the build process. We do that by declaring a new step in our build
 script to call this artifact, through the `step()` method of the `Build`
 struct.
+
 We can give any name we want to this step, but, for our
 context here, I'm going to name this step as "run".
 Also, I give it a brief description to this step ("Run the project").
@@ -390,14 +389,14 @@ const run_step = b.step(
 ```
 
 
-Now that we declared this "run step" we need to tell Zig that
+Now that we have declared this "run step" we need to tell Zig that
 this "run step" depends on the run artifact.
 In other words, a run artifact always depends on a "step" to effectively be executed.
 By creating this dependency
 we finally stablish the necessary commands to build and run the executable file
 from the build script.
 
-We establish a dependency between the run step and the run artifact
+We can establish a dependency between the run step and the run artifact
 by using the `dependsOn()` method from the run step. So, we first
 create the run step, and then, we link it with the run artifact, by
 using this `dependsOn()` method from the run step.
@@ -447,19 +446,17 @@ zig build run
 
 ## Build unit tests in your project
 
-We talk at length about writing unit tests in Zig, and we also talk about how to execute these unit tests through
-the `test` command of the `zig` compiler at @sec-unittests. However,
+We have talked at length about writing unit tests in Zig at @sec-unittests,
+and we also have talked about how to execute these unit tests through
+the `test` command of the `zig` compiler. However,
 as we did with the `run` command on the previous section, we also might want to
 include some commands in our build script to also build and execute the unit tests in our project.
 
 So, once again, we are going to discuss how a specific built-in command from the `zig` compiler,
 (in this case, the `test` command) can be used in a build script in Zig.
-This means that, we can include a step in our build script to build and run
-all unit tests in our project at once.
-
 Here is where a "test target object" comes into play.
 As was described at @sec-targets, we can create a test target object by using the `addTest()` method of
-the `Build` struct. So the first thing that we need to do is to
+the `Build` struct. The first thing that we need to do is to
 declare a test target object in our build script.
 
 
@@ -474,13 +471,13 @@ b.installArtifact(test_exe);
 ```
 
 
-A test target object essentially filter all `test` blocks in all Zig modules
+A test target object essentially selects all `test` blocks in all Zig modules
 across your project, and builds only the source code present inside
 these `test` blocks in your project. As a result, this target object
 creates an executable file that contains only the source code present
 in all of these `test` blocks (i.e. the unit tests) in your project.
 
-Perfect! Now that we declared this test target object, an executable file
+Perfect! Now that we have declared this test target object, an executable file
 named `unit_tests` is built by the `zig` compiler when we trigger the build
 script with the `build` command. After the build
 process is finished, we can simply execute this `unit_tests` executable
@@ -522,14 +519,14 @@ zig build tests
 
 Sometimes, you want to make a build script that is customizable by the user
 of your project. You can do that by creating user-provided options in
-your build script. In Zig, we create these options using the
+your build script. We create an user-provided option by using the
 `option()` method from the `Build` struct.
 
 With this method, we create a "build option" which can be passed
 to the `build.zig` script at the command line. The user have the power of setting
 this option at the `build` command from the
 `zig` compiler. In other words, each build option that we create
-becomes a new command line argument accessible in the `build` command
+becomes a new command line argument that is accessible through the `build` command
 of the compiler.
 
 These "user-provided options" are set by using the prefix `-D` in the command line.
@@ -559,11 +556,6 @@ pub fn build(b: *std.Build) void {
 }
 ```
 
-You can set this `use_zlib` option at the command line when you are invoking the
-`build` command from the `zig` compiler. In the example below, we set this option
-to false, which means that the build script will not link our binary executable to
-the `zlib` library.
-
 ```bash
 zig build -Duse_zlib=false
 ```
@@ -575,7 +567,7 @@ zig build -Duse_zlib=false
 One essential part of every build process is the linking stage.
 This stage is responsible for combining the multiple object files
 that represent your code, into a single executable file. It also links
-this executable file to an external libraries, if you use any in your code.
+this executable file to external libraries, if you use any in your code.
 
 In Zig, we have two notions of a "library", which are: 1) a system's library;
 2) a local library. A system's library is just a library that already is installed
@@ -592,11 +584,12 @@ in a string as input. Remember from @sec-targets that a `Compile` object
 is a target object that you declare in your build script.
 
 When you link a particular target object with a system's library,
-the `zig` compiler will use `pkg-config` to find where in your system
-are the binary files and also the header files of this library that you requested for.
+the `zig` compiler will use `pkg-config` to find where
+are the binary files and also the header files of this library
+in your system.
 When it finds these files, the linker present in the `zig` compiler
 will link your object files with the files of this library to
-produce a single executable file.
+produce a single binary file for you.
 
 In the example below, we are creating an executable file named `image_filter`,
 and, we are linking this executable file to the C Standard Library with the
@@ -624,7 +617,7 @@ to also link your code with the C Standard Library. Because is very likely
 that this C library uses some functionality of the C Standard Library at some point.
 The same goes to C++ libraries. So, if you are linking with
 C++ libraries, is a good idea to link your project with the C++
-Standard Library using the `linkLibCpp()` method.
+Standard Library by using the `linkLibCpp()` method.
 
 On the order side, when you want to link with a local library,
 you should use the `linkLibrary()` method of a `Compile` object.
@@ -633,7 +626,7 @@ That is, another target object defined in your build script,
 using either the `addStaticLibrary()` or `addSharedLibrary()` methods
 which defines a library to be built.
 
-Because as we discussed earlier, a local library is a library
+As we discussed earlier, a local library is a library
 that is local to your project, and that is being built together
 with your project. So, you need to create a target object in your build script
 to build this local library. Then, you link the target objects of interest in your project,
@@ -642,8 +635,8 @@ with this target object that identifies this local library.
 Take a look at this example extracted from the build script of the [`libxev` library](https://github.com/mitchellh/libxev/tree/main)[^libxev2].
 You can see in this snippet that
 we are declaring a shared library file, from the `c_api.zig`
-module. Then later in the build script, we declare an
-executable file named "dynamic-binding-test", which
+module. Then, later in the build script, we declare an
+executable file named `"dynamic-binding-test"`, which
 links to this shared library that we defined earlier
 in the script.
 
@@ -742,7 +735,7 @@ or "library paths" (with the `-L` flag) to the compilation process. But there ar
 add these types of paths in the compilation process. Both are discussed at @sec-include-paths
 and @sec-library-paths.
 
-Anyway, in Zig, we add C flags to the build process together with the C files that we want to compile, using the
+Anyway, in Zig, we add C flags to the build process together with the C files that we want to compile, by using the
 `addCSourceFile()` and `addCSourceFiles()` methods. In the example above, we have just declared
 the C flags that we want to use. But we haven't added them to the build process yet.
 To do that, we also need to list the C files to be compiled.
@@ -764,7 +757,7 @@ const c_source_files = [_][]const u8{
 ```
 
 Now, in addition to "cross-platform" source code, we also have some C files in the FreeType project
-that are platform-specific, meaning that, they contain source code that can obly be compiled in specific platforms,
+that are platform-specific, meaning that, they contain source code that can only be compiled in specific platforms,
 and, as a result, they are only included in the build process on these specific target platforms.
 The objects that list these C files are exposed in the code example below.
 
@@ -829,8 +822,8 @@ In Zig, you can define a C Macro to be used in your build process
 by using the `defineCMacro()` method from the target object that
 defines the binary file that you are building.
 
-In the example below, we are using the `lib` object that we defined
-on the previous sections to define some C Macros used by FreeType
+In the example below, we are using the `lib` object that we have defined
+on the previous sections to define some C Macros used by the FreeType project
 in the compilation process. These C Macros specify if FreeType
 should (or should not) include functionalities from different
 external libraries.
