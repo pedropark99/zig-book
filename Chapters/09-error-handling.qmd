@@ -22,7 +22,7 @@ In this chapter, I want to discuss how error handling is done in Zig.
 We already briefly learned about one of the available strategies to handle errors in Zig,
 which is the `try` keyword presented at @sec-main-file. But we still haven't learned about
 the other methods, such as the `catch` keyword.
-I also want to discuss in this chapter how enum types are created in Zig.
+I also want to discuss in this chapter how union types are created in Zig.
 
 ## Learning more about errors in Zig
 
@@ -31,7 +31,7 @@ An error is actually a value in Zig [@zigoverview]. In other words, when an erro
 it means that somewhere in your Zig codebase, an error value is being generated.
 An error value is similar to any integer value that you create in your Zig code.
 You can take an error value and pass it as input to a function,
-and you can also cast (or coerce) it into a different type of error value.
+and you can also cast (or coerce) it into a different type of an error value.
 
 This have some similarities with exceptions in C++ and Python.
 Because in C++ and Python, when an exception happens inside a `try` block,
@@ -39,10 +39,10 @@ you can use a `catch` block (in C++) or an `except` block (in Python)
 to capture the exception produced in the `try` block,
 and pass it to functions as an input.
 
-
-Although they are normal values as any other, you cannot ignore error values in your Zig code. Meaning that, if an error
+However, error values in Zig are treated very differently than exceptions.
+First, you cannot ignore error values in your Zig code. Meaning that, if an error
 value appears somewhere in your source code, this error value must be explicitly handled in some way.
-This also means that you cannot discard error values by assigning them to a underscore,
+This also means that you cannot discard error values by assigning them to an underscore,
 as you could do with normal values and objects.
 
 Take the source code below as an example. Here we are trying to open a file that does not exist
@@ -69,6 +69,7 @@ _ = dir.openFile("doesnt_exist.txt", .{});
 t.zig:8:17: error: error set is discarded
 t.zig:8:17: note: consider using 'try', 'catch', or 'if'
 ```
+
 
 ### Returning errors from functions
 
@@ -122,18 +123,19 @@ stay on the right side of the exclamation mark. So the syntax format become:
 <error-value>!<valid-value>
 ```
 
+
 ### Error sets
 
 But what about when we have a single function that might return different types of errors?
 When you have such a function, you can list
 all of these different types of errors that can be returned from this function,
-through a structure in Zig that we call of *error set*.
+through a structure in Zig that we call of an *error set*.
 
-An error set is a special case of an union type.
-It essentially is an union that contains error values in it.
+An error set is a special case of an union type. It is an union that contains error values in it.
 Not all programming languages have a notion of an "union object".
-But in summary, an union is just a list of the options that
-an object can be. For example, a union of `x`, `y` and `z`, means that
+But in summary, an union is just a set of data types.
+Unions are used to allow an object to have multiple data types.
+For example, a union of `x`, `y` and `z`, means that
 an object can be either of type `x`, or type `y` or type `z`.
 
 We are going to talk in more depth about unions at @sec-unions.
@@ -145,7 +147,7 @@ Take the `resolvePath()` function below as an example, which comes from the
 `introspect.zig` module of the Zig Standard Library. We can see in it's return type annotation, that this
 function return either: 1) a valid slice of `u8` values (`[]u8`); or, 2) one of the three different
 types of error values listed inside the error set (`OutOfMemory`, `Unexpected`, etc.).
-This is an example of use of an error set.
+This is an usage example of an error set.
 
 
 ```{zig}
@@ -172,11 +174,11 @@ We can see that in the `ReadError` error set that we showed earlier in the `fill
 which is defined in the `http.Client` module.
 So yes, I presented the `ReadError` as if it was just a standard and single error value, but in fact,
 it is an error set defined in the `http.Client` module, and therefore, it actually represents
-a set of different error values that might happen in the `fill()` and other functions.
+a set of different error values that might happen inside the `fill()` function.
 
 
 Take a look at the `ReadError` definition reproduced below. Notice that we are grouping all of these
-different error values into a single object, and then, we use this object into the return type annotation of the functions.
+different error values into a single object, and then, we use this object into the return type annotation of the function.
 Like the `fill()` function that we showed earlier, or, the `readvDirect()` function from the same module,
 which is reproduced below.
 
@@ -292,7 +294,7 @@ are different and completely separate strategies in the Zig language.
 
 This is uncommon, and different than what happens in other languages. Most
 programming languages that adopts the *try catch* pattern (such as C++, R, Python, Javascript, etc.), normally use
-these two keywords in conjunction to form the complete logic to
+these two keywords together to form the complete logic to
 properly handle the errors.
 Anyway, Zig tries a different approach in the *try catch* pattern.
 
@@ -307,7 +309,7 @@ but this time, I use `catch` to actually implement a logic to handle the error, 
 just stopping the execution right away.
 
 More specifically, in this example, I'm using a logger object to record some logs into
-the system, before I return the error, and stops the execution of the program. For example,
+the system, before I return the error, and stop the execution of the program. For example,
 this could be some part of the codebase of a complex system that I do not have full control over,
 and I want to record these logs before the program crashes, so that I can debug it later
 (e.g. maybe I cannot compile the full program, and properly debug it with a debugger. So, these logs might
@@ -333,8 +335,7 @@ But I could also, return a valid value from this block of code, which would
 be stored in the `file` object.
 
 Notice that, instead of writing the keyword before the expression that might return the error,
-like we do with `try`,
-we write `catch` after the expression. We can open the pair of pipes (`|`),
+like we do with `try`, we write `catch` after the expression. We can open the pair of pipes (`|`),
 which captures the error value returned by the expression, and makes
 this error value available in the scope of the `catch` block as the object named `err`.
 In other words, because I wrote `|err|` in the code, I can access the error value
@@ -355,7 +356,7 @@ But this parsing process done by the function `parseU64()` may fail, resulting i
 The `catch` keyword used in this example provides an alternative value (13) to be used in case
 this `parseU64()` function raises an error. So, the expression below essentially means:
 "Hey! Please, parse this string into a `u64` for me, and store the results into the
-object `number`. But, if an error occurs, then, return the value `13` instead".
+object `number`. But, if an error occurs, then, use the value `13` instead".
 
 ```{zig}
 #| eval: false
@@ -363,8 +364,8 @@ const number = parseU64(str, 10) catch 13;
 ```
 
 So, at the end of this process, the object `number` will contain either a `u64` integer
-that was parsed succesfully from the input string `str`, or, if an error in the
-parsing process occurs, it will contain the `u64` value `13` that was provided by the `catch`
+that was parsed successfully from the input string `str`, or, if an error occurs in the
+parsing process, it will contain the `u64` value `13` that was provided by the `catch`
 keyword as the "default", or, the "alternative" value.
 
 
@@ -401,10 +402,10 @@ if (parseU64(str, 10)) |number| {
 
 Now, if the expression that you are executing returns different types of error values,
 and you want to take a different action in each of these types of error values, the
-`catch` keyword becomes limited.
+`try` and `catch` keywords, and the if statement strategy, becomes limited.
 
-For this type of situation, the official documentation
-of the language suggests the use of a switch statement with an if statement [@zigdocs].
+For this type of situation, the official documentation of the language suggests
+the use of a switch statement together with an if statement [@zigdocs].
 The basic idea is, to use the if statement to execute the expression, and
 use the "else branch" to pass the error value to a switch statement, where
 you define a different action for each type of error value that might be
@@ -450,8 +451,8 @@ get's stopped because of an error value being generated.
 The basic idea is to provide an expression to the `errdefer` keyword. Then,
 `errdefer` executes this expression if, and only if, an error occurs
 during the execution of the current scope.
-In the example below, we are using an allocator object (that we presented at @sec-allocators)
-to create a new `User` object. If we are succesfull in creating and registering this new user,
+In the example below, we are using an allocator object (that we have presented at @sec-allocators)
+to create a new `User` object. If we are successful in creating and registering this new user,
 this `create_user()` function will return this new `User` object as it's return value.
 
 However, if for some reason, an error value is generated by some expression
@@ -477,16 +478,16 @@ By using `errdefer` to destroy the `user` object that we have just created,
 we garantee that the memory allocated for this `user` object
 get's freed, before the execution of the program stops.
 Because if the expression `try db.add(user)` returns an error value,
-the execution of our program stops, and we loose all references and control over the memory
+the execution of our program stops, and we lose all references and control over the memory
 that we have allocated for the `user` object.
 As a result, if we do not free the memory associated with the `user` object before the program stops,
-we cannot free this memory anymore. We simply loose our chance to do the right thing.
+we cannot free this memory anymore. We simply lose our chance to do the right thing.
 That is why `errdefer` is essential in this situation.
 
-Just to make very clear the differences between `defer` (which I described at @sec-defer)
-and `errdefer`, it might be worth to discuss the subject a bit further.
-You might still have the question "why use `errdefer` if we can use `defer` instead?"
-in your mind.
+Just to state clearly the differences between `defer` and `errdefer`
+(which I described at @sec-defer and @sec-errdefer1), it might be worth
+to discuss the subject a bit further. You might still have the question
+"why use `errdefer` if we can use `defer` instead?" in your mind.
 
 Although being similar, the key difference between `errdefer` and `defer` keyword
 is when the provided expression get's executed.
@@ -502,13 +503,13 @@ closely about this function, you will notice that this function returns
 the `user` object as the result.
 
 In other words, the allocated memory for the `user` object does not get
-freed inside the `create_user()`, if the function returns succesfully.
+freed inside the `create_user()` function, if it returns successfully.
 So, if an error does not occur inside this function, the `user` object
 is returned from the function, and probably, the code that runs after
 this `create_user()` function will be responsible for freeying
 the memory of the `user` object.
 
-But what if an error do occur inside the `create_user()`? What happens then?
+But what if an error occurs inside the `create_user()` function? What happens then?
 This would mean that the execution of your code would stop in this `create_user()`
 function, and, as a consequence, the code that runs after this `create_user()`
 function would simply not run, and, as a result, the memory of the `user` object
@@ -518,8 +519,8 @@ This is the perfect scenario for `errdefer`. We use this keyword to garantee
 that our program will free the allocated memory for the `user` object,
 even if an error occurs inside the `create_user()` function.
 
-If you allocate and free some memory for an object in the same scope, then,
-just use `defer` and be happy, `errdefer` have no use for you in such situation.
+If you allocate and free some memory for an object inside the same scope, then,
+just use `defer` and be happy, i.e. `errdefer` have no use for you in such situation.
 But if you allocate some memory in a scope A, but you only free this memory
 later, in a scope B for example, then, `errdefer` becomes useful to avoid leaking memory
 in sketchy situations.
@@ -532,12 +533,12 @@ An union type defines a set of types that an object can be. It is like a list of
 options. Each option is a type that an object can assume. Therefore, unions in Zig
 have the same meaning, or, the same role as unions in C. They are used for the same purpose.
 You could also say that unions in Zig produces a similar effect to
-[`typing.Union` in Python](https://docs.python.org/3/library/typing.html#typing.Union)[^pyunion].
+[using `typing.Union` in Python](https://docs.python.org/3/library/typing.html#typing.Union)[^pyunion].
 
 [^pyunion]: <https://docs.python.org/3/library/typing.html#typing.Union>
 
 For example, you might be creating an API that sends data to a data lake, hosted
-in some private cloud infrastructure. Suppose you created different structs in your codebase,
+in some private cloud infrastructure. Suppose you have created different structs in your codebase,
 to store the necessary information that you need, in order to connect to the services of
 each mainstream data lake service (Amazon S3, Azure Blob, etc.).
 
@@ -551,10 +552,10 @@ to be either an object of type `AzureBlob`, or type `AmazonS3`, or type `GoogleG
 This union allows the `send_event()` function to receive an object of any of these three types
 as input in the `lake_target` argument.
 
-Remember that each of these three types
-(`AmazonS3`, `GoogleGCP` and `AzureBlob`) are separate structs that we defined in
-our source code. So, at first glance, they are separate data types in our source code.
-But is the `union` keyword that unifies them into a single data type called `LakeTarget`.
+Remember that each of these three types (`AmazonS3`, `GoogleGCP` and `AzureBlob`)
+are separate structs that we have defined in our source code. So, at first glance,
+they are separate data types in our source code. But is the `union` keyword that
+unifies them into a single data type called `LakeTarget`.
 
 ```{zig}
 #| eval: false
@@ -614,7 +615,7 @@ and you can no longer use them after you instantiate the object.
 
 You can activate another data member by completely redefining the entire enum object.
 In the example below, I initially use the `azure` data member. But then, I redefine the
-`target` object to use a new `LakeTarget` object, which uses this time the `google` data member.
+`target` object to use a new `LakeTarget` object, which uses the `google` data member.
 
 ```{zig}
 #| eval: false
@@ -626,9 +627,9 @@ target = LakeTarget {
 };
 ```
 
-An curious fact about union types, is that, at first, you cannot use them in switch statements (that we preseted at @sec-switch).
+A curious fact about union types, is that, at first, you cannot use them in switch statements (which were presented at @sec-switch).
 In other words, if you have an object of type `LakeTarget` for example, you cannot give this object
-to a switch statement as input.
+as input to a switch statement.
 
 But what if you really need to do so? What if you actually need to
 provide an "union object" to a switch statement? The answer to this question relies on another special type in Zig,
@@ -640,7 +641,7 @@ below. This type comes from the
 [`grammar.zig` module](https://github.com/ziglang/zig/blob/30b4a87db711c368853b3eff8e214ab681810ef9/tools/spirv/grammar.zig)[^grammar]
 from the Zig repository. This union type lists different types of registries.
 But notice this time, the use of `(enum)` after the `union` keyword. This is what makes
-this union type a tagged union. Also, by being a tagged union, an object of this `Registry` type
+this union type a tagged union. By being a tagged union, an object of this `Registry` type
 can be used as input in a switch statement. This is all you have to do. Just add `(enum)`
 to your `union` declaration, and you can use it in switch statements.
 
