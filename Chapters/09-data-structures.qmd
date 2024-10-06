@@ -709,38 +709,37 @@ var ages = std.StringArrayHashMap(u8).init(allocator);
 
 The Zig Standard Library provides an implementation for both singly and doubly linked lists.
 A linked list is a linear data structure that looks like a chain, or, a rope.
-The main advantage of this data structure is that you normally have fast
+The main advantage of this data structure is that you normally have very fast
 insertion and deletion operations. But, as a disadvantage, iterating through
 this data structure is usually not so fast as iterating through an array.
 
-The idea behind a linked list is basically build a structure that concists of a series of nodes
-connected to each other by pointers. This means that linked lists are usually not contiguos
-in memory, because each node might be south in memory, but the next node might be north
-in memory, then the next node might be left in memory, anyway, you get it, they can be anywhere.
+The idea behind a linked list is to build a structure that consists of a sequence of nodes
+connected to each other by pointers. This means that linked lists are usually not contiguous
+in memory, because each node might be anywhere in memory. They do not need to be close to
+one another.
 
-At @fig-linked-list we can see a diagram of a singly linked list. Notice that we begin with
-a first node. This first node is usually called "the head of the linked list". Then, from this
+At @fig-linked-list we can see a diagram of a singly linked list. We begin at the first node
+(which is usually called "the head of the linked list"). Then, from this
 first node we uncover the remaining nodes in the structure, by following the locations pointed
-by the pointers.
+by the pointers found in each node.
 
-Every node have two things in it. It have the value that is stored in the current node
-, and also have a pointer. This pointer points to the next node in the list. If this pointer
-is null, then, it means that we reached the end of our linked list.
+Each node has two things in it. It has the value that is stored in the current node
+, and also, a pointer. This pointer points to the next node in the list. If this pointer
+is null, then, it means that we have reached the end of our linked list.
 
 ![A diagram of a singly linked list.](./../Figures/linked-list.png){#fig-linked-list}
 
 
 At @fig-linked-list2 we can see a diagram of a doubly linked list. The only thing that really
-changes is that every node in the linked list have both a pointer to the previous node,
-and, a pointer to the next node. So every node have now two pointers in it. These are
-usually called the `prev` (for "previous") and `next` (for "next") pointers of the node.
+changes now is that every node in the linked list has both a pointer to the previous node,
+and, a pointer to the next node. So every node in a doubly linked list has two pointers in it. These are
+usually called the `prev` (for "previous") and the `next` (for "next") pointers of the node.
 
 In the singly linked list example, we had only one single pointer in each node, and this singular
-pointer was always pointing to the next node in the sequence. In other words, singly linked lists
+pointer was always pointing to the next node in the sequence. This means that singly linked lists
 normally have only the `next` pointer in them.
 
 ![A diagram of a doubly linked list.](./../Figures/doubly-linked-list.png){#fig-linked-list2}
-
 
 
 Linked lists are available in Zig through the functions `SinglyLinkedList()` and
@@ -749,15 +748,15 @@ actually generic functions, which we are going to talk more about at @sec-generi
 
 For now, just understand that, in order to create a linked list object,
 we begin by providing a data type to these functions. This data type defines
-the type of data that this linked list will store. In the example below,
-we are creating a singly linked list capable of storing `u32` values.
+the type of data that each node in this linked list will store. In the example below,
+we are creating a singly linked list of `u32` values.
 So each node in this linked list will store a `u32` value.
 
-Both the `SinglyLinkedList()` and `DoublyLinkedList()` functions returns a type, i.e. a struct definition, as result. This means that
-the object `Lu32` is actually a type definition, or a struct definition. It defines
-the type "singly linked list of `u32` values".
+Both the `SinglyLinkedList()` and `DoublyLinkedList()` functions returns a type,
+i.e. a struct definition, as output. Therefore, the object `Lu32` is actually
+a struct definition. It defines the type "singly linked list of `u32` values".
 
-So now that we have the definition of the struct, we have to instantiate a `Lu32` object.
+Now that we have the definition of the struct, we need to instantiate a `Lu32` object.
 We normally instantiate struct objects in Zig by using an `init()` method.
 But in this case, we are instantiating the struct directly, by using an empty
 `struct` literal, in the expression `Lu32{}`.
@@ -774,23 +773,18 @@ list. In other words, the node that you provide to this method, becomes the new
 
 On the other side, the `insertAfter()` method is used to basically connect two nodes together.
 When you provide a node to this method, it creates a pointer to this input node,
-and stores this pointer in the current node, from which the method was called from.
-In other words, this method creates the pointer that connects these two nodes together
-and stores it in the `next` attribute of the current node.
+and stores this pointer in the `next` attribute of the current node, from which the method was called from.
 
-Since doubly linked list have both a `next` and a `prev` pointers in each node,
-referring to the next and previous nodes in the sequence, respectively,
-as I described at @fig-linked-list2, a node object created from
-a `DoublyLinkedList()` object would have both a
-`insertBefore()` (for `prev`) and a `insertAfter()` (for `next`) methods
-available.
+Because doubly linked lists have both a `next` and a `prev` attributes in each node
+(as described at @fig-linked-list2), a node object created from
+a `DoublyLinkedList` object have both an `insertBefore()` (for `prev`)
+and an `insertAfter()` (for `next`) methods available.
 
-This means that, if we used a doubly linked list, we could use the `insertBefore()` method
+Thus, if we have used a doubly linked list, we can use the `insertBefore()` method
 to store the pointer to the input node in the `prev` attribute. This would put the input
-node as the "previous node", or, the node before the current node. The `insertAfter()` method
-have "after" in it's name to indicate that this method puts the pointer created to the input
-node in the `next` attribute of the current node, and as the result, the input node becomes
-the "next node" of the current node.
+node as the "previous node", or, the node before the current node. In constrast, the `insertAfter()` method
+puts the pointer created to the input node in the `next` attribute of the current node,
+and as result, the input node becomes the "next node" of the current node.
 
 Since we are using a singly linked list in this example, we have only the `insertAfter()` method
 available in the node objects that we create from our `Lu32` type.
@@ -820,13 +814,13 @@ pub fn main() !void {
 
 
 There are other methods available from the linked list object, depending if this object is
-a singly linked list or a doubly linked list, that might be very useful for you, like:
+a singly linked list or a doubly linked list, that might be very useful for you. You can find a
+summary of them in the bulletpoints below:
 
 - `remove()` to remove a specific node from the linked list.
-- `popFirst()` to remove the first node from the linked list.
 - if singly linked list, `len()` to count how many nodes there is in the linked list.
 - if doubly linked list, checkout the `len` attribute to see how many nodes there is in the linked list.
-- if singly linked list, `popFirst()` to remove the first node from the linked list.
+- if singly linked list, `popFirst()` to remove the first node (i.e. the "head") from the linked list.
 - if doubly linked list, `pop()` and `popFirst()` to remove the last and first nodes from the linked list, respectively.
 - if doubly linked list, `append()` to add a new node to end of the linked list (i.e. inverse of `prepend()`).
 
@@ -877,7 +871,7 @@ pub fn main() !void {
 
 In other words, instead of creating an array of "persons", the `MultiArrayList()` function
 creates a "struct of arrays". Each data member of this struct is a different array that stores
-the values of a specific field from the `Person` struct values that were added (or, appended) to this "struct of arrays".
+the values of a specific field from the `Person` values that were added (or, appended) to this "struct of arrays".
 One important detail is that each of these separate internal arrays stored inside `PersonArray`
 are dynamic arrays. This means that these arrays can grow in capacity automatically as needed, to accomodate
 more values.
@@ -885,7 +879,7 @@ more values.
 The @fig-multi-array exposed below presents a diagram that describes the `PersonArray` struct
 that we have created in the previous code example. Notice that the values of the data members
 present in each of the three `Person` values that we have appended into the `PersonArray` object
-that we have instantiated, are scattered across three different internal arrays of the `PersonArray` object.
+, are scattered across three different internal arrays of the `PersonArray` object.
 
 ![A diagram of the `PersonArray` struct.](./../Figures/multi-array.png){#fig-multi-array}
 
@@ -919,11 +913,11 @@ from a "slice object", which you can create from the `slice()` method.
 The reason for this is that calling `items()` multiple times have better performance
 if you use a slice object.
 
-In other words, if you are planning to access only one of the
+Therefore, if you are planning to access only one of the
 internal arrays from your "multi array struct", it is fine to call `items()` directly
 from the multi array object. But if you need to access many of the internal arrays
 from your "multi array struct", then, you will likely need to call `items()` more
-than once, and, in such circustance, is better to call `items()` through a slice object.
+than once, and, in such circumstance, is better to call `items()` through a slice object.
 The example below demonstrates the use of such object:
 
 ```{zig}
@@ -948,14 +942,12 @@ Name: Michael, Age: 74
 
 ## Conclusion
 
-There are many other data structures that I did not presented here.
-But you can check them out at the offical Zig Standard Library documentation page.
+There are many other data structures that I haven't presented here.
+But you can check them out at the official Zig Standard Library documentation page.
 Actually, when you get into the [homepage of the documentation](https://ziglang.org/documentation/master/std/#)[^home], the first thing
-that appears to you in this page, is a list of types and data structures.
-
-
-In this section you can see a list of the many different data structures available in
-the Zig Standard Library. There are some very specific structures in this list, like a
+that appears to you in this page, is a list of types and data structures that
+are available in the Zig Standard Library.
+There are some very specific data structures in this list, like a
 [`BoundedArray` struct](https://ziglang.org/documentation/master/std/#std.bounded_array.BoundedArray)[^bounded]
 , but there is also some more general structures, such as a
 [`PriorityQueue` struct](https://ziglang.org/documentation/master/std/#std.priority_queue.PriorityQueue)[^priority].
