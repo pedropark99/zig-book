@@ -403,16 +403,7 @@ needs to allocate more space for the values that are being stored.
 We begin by defining an `init()` method of this struct, which is going to be
 responsible for instantiating a `Stack` object. Notice that, inside this
 `init()` method, we start by allocating an array with the capacity specified
-in the `capacity` argument. Then, we use the built-in function `@memset()`
-to set all elements of this new array that we have allocated to zero.
-
-In other words, this `@memset()` function is basically equivalent to the `memset()`
-function from C Standard Library[^cmemset]. In this example, we are using this function to essentially
-assign the value `0` to all elements of this array. We do that to initialize this memory that was allocated.
-Uninitialized memory is a common source of undefined behaviour, so, this step
-is made for safety reasons.
-
-[^cmemset]: <https://www.tutorialspoint.com/c_standard_library/c_function_memset.htm>
+in the `capacity` argument.
 
 
 ```{zig}
@@ -428,7 +419,6 @@ const Stack = struct {
 
     pub fn init(allocator: Allocator, capacity: usize) !Stack {
         var buf = try allocator.alloc(u32, capacity);
-        @memset(buf[0..], 0);
         return .{
             .items = buf[0..],
             .capacity = capacity,
@@ -462,10 +452,8 @@ value, and, in this case, we need to expand our array to get the capacity that w
 So, if the logical test in this if statement returns true, it means that the array
 does not have enough capacity, and we need to expand it before we store this new value.
 So inside this if statement we are executing the necessary expressions to expand the underlying array.
-
 Notice that we use the allocator object to allocate a new array that is twice as bigger
-than the current array (`self.capacity * 2`). Then, we use `memset()` once again to
-set all fields in this array to zero, making sure that all memory is properly initialized.
+than the current array (`self.capacity * 2`).
 
 After that, we use a different built-in function named `@memcpy()`. This built-in function
 is equivalent to the `memcpy()` function from the C Standard Library[^cmemcpy]. It is used to
@@ -492,12 +480,12 @@ pub fn push(self: *Stack, val: u32) !void {
         var new_buf = try self.allocator.alloc(
             u32, self.capacity * 2
         );
-        @memset(new_buf[0..], 0);
         @memcpy(
             new_buf[0..self.capacity], self.items
         );
         self.allocator.free(self.items);
         self.items = new_buf;
+        self.capacity = self.capacity * 2;
     }
 
     self.items[self.length] = val;
@@ -515,12 +503,12 @@ in the stack by using the `length` attribute.
 
 ### Implementing the `pop` operation
 
-Now, we can implement the pop operation of our stack object.
-This is a much easier operation to implement, and the pop method below summarises
+Now we can implement the pop operation of our stack object.
+This is a much easier operation to implement, and the `pop()` method below summarises
 all the logic that is needed.
 
 We just have to find the element in the underlying array that currently represents the top
-of the stack, and set this element to zero, to indicate that
+of the stack, and set this element to "undefined", to indicate that
 this element is "empty". After that, we also need to decrease
 the `length` attribute of the stack by one.
 
@@ -534,7 +522,7 @@ This is what the if statement inside this function is checking for.
 pub fn pop(self: *Stack) void {
     if (self.length == 0) return;
 
-    self.items[self.length - 1] = 0;
+    self.items[self.length - 1] = undefined;
     self.length -= 1;
 }
 ```
@@ -551,7 +539,7 @@ a new `Stack` object, which is the `init()` method.
 But now, we need to implement also the method responsible for destroying
 a `Stack` object. In Zig, this task is commonly associated with the method
 named `deinit()`. Most struct objects in Zig have such method, and it
-is commonly nicknamed of "the destructor method".
+is commonly nicknamed "the destructor method".
 
 In theory, all we have to do to destroy the `Stack` object is to make
 sure that we free the allocated memory for the underlying array, using
@@ -579,14 +567,13 @@ in it. How can we make this possible? The answer lies on the use of generics
 and `comptime`.
 
 As I described at @sec-generic-struct, the basic idea is to write a generic
-function that returns as result a struct definition as output.
+function that returns a struct definition as output.
 In theory, we do not need much to transform our `Stack` struct into a generic
-data structure. All that we need to do, to make our `Stack` struct
-generic, is to transform the underlying array in the stack structure
-into a generic array.
+data structure. All that we need to do is to transform the underlying array
+of the stack into a generic array.
 
 In other words, this underlying array needs to be a "chameleon". It needs to adapt,
-and transform it into an array of the data type that we give it to. For example, if we need to create
+and transform it into an array of any data type that we want. For example, if we need to create
 a stack that will store `u8` values, then, this underlying array needs to be
 a `u8` array (i.e. `[]u8`). But if we need to store `User` values instead, then,
 this array needs to be a `User` array (i.e. `[]User`). Etc.
@@ -598,9 +585,9 @@ the data type we want. If we want to create a stack structure that stores `User`
 we pass the `User` data type to this generic function, and it will create for us
 the struct definition that describes a `Stack` object that can store `User` values in it.
 
-Take the code example below as an example. I truncated some parts of the `Stack` struct
-for brevity reasons. But if a specific part of our `Stack` struct is not exposed here
-in this example, is because this part did not changed from the previous example.
+Look at the code example below. I have omitted some parts of the `Stack` struct definition
+for brevity reasons. However, if a specific part of our `Stack` struct is not exposed here
+in this example, then it is because this part did not change from the previous example.
 It remains the same.
 
 
@@ -618,7 +605,6 @@ fn Stack(comptime T: type) type {
 
         pub fn init(allocator: Allocator, capacity: usize) !Stack(T) {
             var buf = try allocator.alloc(T, capacity);
-            @memset(buf[0..], 0);
             return .{
                 .items = buf[0..],
                 .capacity = capacity,
@@ -636,16 +622,11 @@ fn Stack(comptime T: type) type {
 Notice that we have created a function in this example named `Stack()`. This function
 takes a type as input, and passes this type to the struct definition of our
 `Stack` object. The data member `items` is now, an array of type `T`, which is the
-data type that we passed as input to the function. The function argument
+data type that we have provided as input to the function. The function argument
 `val` in the `push()` function is now a value of type `T` too.
 
-Now we have finally a stack data structure that is generic. I mean, we probably still
-need to adjust the `@memset()` calls, to trully make it generic for any data type.
-But this version is good enough, and it really works well with any of the primitive data
-types of Zig.
-
 We can just provide a data type to this function, and it will create a definition of a
-`Stack` object that can store values of the data type that we provided. In the example below, we are creating
+`Stack` object that can store values of the data type that we have provided. In the example below, we are creating
 the definition of a
 `Stack` object that can store `u8` values in it. This definition is stored at the `Stacku8` object.
 This `Stacku8` object becomes our new struct, it is the struct that we are going to use
@@ -673,7 +654,10 @@ stack.pop();
 std.debug.print("Stack len: {d}\n", .{stack.length});
 stack.pop();
 std.debug.print("Stack len: {d}\n", .{stack.length});
-std.debug.print("Stack state: {any}\n", .{stack.items});
+std.debug.print(
+    "Stack state: {any}\n",
+    .{stack.items[0..stack.length]}
+);
 ```
 
 ```
@@ -684,8 +668,8 @@ Stack len: 4
 Stack state: { 1, 2, 3, 4, 0, 0, 0, 0, 0, 0 }
 ```
 
-Every generic data structure in the Zig Standard Library (`ArrayList`, `HashMap`, `SinlyLinkedList`, etc.) is implemented through this logic,
-of using a generic function to create the struct definition that can work
+Every generic data structure in the Zig Standard Library (`ArrayList`, `HashMap`, `SinlyLinkedList`, etc.)
+is implemented through this logic. They use a generic function to create the struct definition that can work
 with the data type that you provided as input.
 
 
@@ -694,11 +678,10 @@ with the data type that you provided as input.
 ## Conclusion
 
 The full source code of the stack structure discussed in this chapter is freely available at the official
-repository for this book. Just checkout the [`stack.zig`](https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/stack.zig)[^zig-stack]
+repository of this book. Just checkout the [`stack.zig`](https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/stack.zig)[^zig-stack]
 for the `u32` version of our stack,
 and the [`generic_stack.zig`](https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/generic_stack.zig)[^zig-stack2]
-for the generic version,
-available inside the `ZigExamples` folder of the repository.
+for the generic version, available inside the `ZigExamples` folder of the repository.
 
 
 [^zig-stack]: <https://github.com/pedropark99/zig-book/tree/main/ZigExamples/data-structures/stack.zig>
