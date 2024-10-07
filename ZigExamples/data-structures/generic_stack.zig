@@ -11,7 +11,6 @@ fn Stack(comptime T: type) type {
 
         pub fn init(allocator: Allocator, capacity: usize) !Stack(T) {
             var buf = try allocator.alloc(T, capacity);
-            @memset(buf[0..], 0);
             return .{
                 .items = buf[0..],
                 .capacity = capacity,
@@ -23,10 +22,10 @@ fn Stack(comptime T: type) type {
         pub fn push(self: *Self, val: T) !void {
             if ((self.length + 1) > self.capacity) {
                 var new_buf = try self.allocator.alloc(T, self.capacity * 2);
-                @memset(new_buf[0..], 0);
                 @memcpy(new_buf[0..self.capacity], self.items);
                 self.allocator.free(self.items);
                 self.items = new_buf;
+                self.capacity = self.capacity * 2;
             }
 
             self.items[self.length] = val;
@@ -36,7 +35,7 @@ fn Stack(comptime T: type) type {
         pub fn pop(self: *Self) void {
             if (self.length == 0) return;
 
-            self.items[self.length - 1] = 0;
+            self.items[self.length - 1] = undefined;
             self.length -= 1;
         }
 
@@ -66,5 +65,5 @@ pub fn main() !void {
     std.debug.print("Stack len: {d}\n", .{stack.length});
     stack.pop();
     std.debug.print("Stack len: {d}\n", .{stack.length});
-    std.debug.print("Stack state: {any}\n", .{stack.items});
+    std.debug.print("Stack state: {any}\n", .{stack.items[0..stack.length]});
 }
