@@ -19,11 +19,11 @@ knitr::opts_chunk$set(
 # Zig interoperability with C
 
 In this chapter, we are going to discuss the interoperability of Zig with C.
-We have discussed at @sec-building-c-code how to build C code using the `zig` compiler.
+We have discussed at @sec-building-c-code how you can use the `zig` compiler to build C code.
 But we haven't discussed yet how to actually use C code in Zig. In other words,
 we haven't discussed yet how to call and use C code from Zig.
 
-These matters are discussed here, in this chapter.
+This is the main subject of this chapter.
 Also, in our next small project in this book, we are going to use a C library in it.
 As consequence, we will put in practice a lot of the knowledge discussed here on
 this next project.
@@ -31,7 +31,7 @@ this next project.
 
 ## How to call C code from Zig
 
-Interop with C is not something new. Most high-level programming languages have FFI (foreign function interfaces),
+Interoperability with C is not something new. Most high-level programming languages have FFI (foreign function interfaces),
 which can be used to call C code. For example, Python have Cython, R have `.Call()`, Javascript have `ccall()`, etc.
 But Zig integrates with C in a deeper level, which affects not only the way that C code get's called, but also,
 how this C code is compiled and incorporated into your Zig project.
@@ -45,12 +45,12 @@ you have to perform the following steps:
 
 ### Strategies to import C header files {#sec-strategy-c}
 
-So using C code in Zig always involves performing the two steps cited above. However, when
+Using C code in Zig always involves performing the two steps cited above. However, when
 we talk specifically about the first step listed above, there are currently two
 different ways to perform this first step, which are:
 
-- translating the C header file into Zig code, through `zig translate-c`, and then, importing the translated Zig code.
-- importing the C header file directly into your Zig module through `@cImport()` built-in function.
+- translating the C header file into Zig code, through the `zig translate-c` command, and then, import and use the translated Zig code.
+- importing the C header file directly into your Zig module through the `@cImport()` built-in function.
 
 If you are not familiar with `translate-c`, this is a subcommand inside the `zig` compiler that takes C files
 as input, and outputs the Zig representation of the C code present in these C files.
@@ -67,7 +67,7 @@ to really translate the C code into Zig code.
 Now, on a surface level, `@cImport()` versus `translate-c` might seem like
 two completely different strategies. But in fact, they are effectively the exact same strategy.
 Because, under the hood, the `@cImport()` built-in function is just a shortcut to `translate-c`.
-Both tools use the same C to Zig translation functionality. So when you use `@cImport()`,
+Both tools use the same "C to Zig" translation functionality. So when you use `@cImport()`,
 you are essentially asking the `zig` compiler to translate the C header file into Zig code, then,
 to import this Zig code into your current Zig module.
 
@@ -75,7 +75,7 @@ At the present moment, there is an accepted proposal at the Zig project, to move
 to the Zig build system[^cimport-issue]. If this proposal is completed, then, the "use `@cImport()`"
 strategy would be transformed into "call a translate C function in your Zig build script".
 So, the step of translating the C code into Zig code would be moved to
-the build script of your Zig project, and you would only have to import the translated Zig code into
+the build script of your Zig project, and you would only need to import the translated Zig code into
 your Zig module to start calling C code from Zig.
 
 [^cimport-issue]: <https://github.com/ziglang/zig/issues/20630>
@@ -88,11 +88,11 @@ The only difference is that one of the steps will be moved to the build script o
 
 ### Linking Zig code with a C library {#sec-linking-c}
 
-Regardless of which of the two strategies mentioned in the previous section you choose,
-if you want to call C code from Zig, you will always have to link your Zig code
+Regardless of which of the two strategies from the previous section you choose,
+if you want to call C code from Zig, you must link your Zig code
 with the C library that contains the C code that you want to call.
 
-In other words, everytime you use a C library in your Zig code, **you introduce a dependency in your build process**.
+In other words, everytime you use some C code in your Zig code, **you introduce a dependency in your build process**.
 This should come as no surprise to anyone that have any experience with C and C++.
 Because this is no different in C. Everytime you use a C library in your C code, you also
 have to build and link your C code with this C library that you are using.
@@ -100,7 +100,7 @@ have to build and link your C code with this C library that you are using.
 When we use a C library in our Zig code, the `zig` compiler needs to access the definition of the C functions that
 are being called in your Zig code. The C header file of this library provides the
 declarations of these C functions, but not their definitions. So, in order to access these definitions,
-the `zig` compiler needs to build your Zig code and link it with the C library in the build process.
+the `zig` compiler needs to build your Zig code and link it with the C library during the build process.
 
 As we discussed across the @sec-build-system, there are different strategies to link something with a library.
 This might involve building the C library first, and then, linking it with the Zig code. Or,
@@ -111,7 +111,7 @@ installed in your system. Anyway, if you have doubts about this, comeback to @se
 
 ## Importing C header files {#sec-import-c-header}
 
-At @sec-strategy-c, we have described that, currently, there is two different paths that
+At @sec-strategy-c, we have described that, currently, there are two different paths that
 you can take to import a C header file into your Zig modules, `translate-c` or `@cImport()`.
 This section describes each strategy separately in more details.
 
@@ -129,12 +129,12 @@ zig translate-c /usr/include/stdio.h \
 ```
 
 Notice that, in this bash command, we are passing the necessary compiler flags (`-D` to define macros,
-`-l` to link libraries, `-I` to include header file) to compile and use the `stdio.h` header file.
-Also notice that we are saving the results of the translation inside a Zig module called `c.zig`.
+`-l` to link libraries, `-I` to add an "include path") to compile and use the `stdio.h` header file.
+Also notice that we are saving the results of the translation process inside a Zig module called `c.zig`.
 
-So after running this command, all we have to do is to import this `c.zig` module, and start
+Therefore, after running this command, all we have to do is to import this `c.zig` module, and start
 calling the C functions that you want to call from it. The example below demonstrates that.
-Important to remember what we've discussed at @sec-linking-c. In order to compile this
+Is important to remember what we've discussed at @sec-linking-c. In order to compile this
 example you have to link this code with `libc`, by passing the flag `-lc` to the `zig` compiler.
 
 ```{zig}
@@ -156,7 +156,7 @@ pub fn main() !void {
 To import a C header file into our Zig code, we can use the built-in functions `@cInclude()` and `@cImport()`.
 Inside the `@cImport()` function, we open a block (with a pair of curly braces). Inside this block
 we can (if we need to) include multiple `@cDefine()` calls to define C macros when including this specific C header file.
-But for the most part, you will probably need to use just a single call inside this block at `@cImport()`,
+But for the most part, you will probably need to use just a single call inside this block,
 which is a call to `@cInclude()`.
 
 This `@cInclude()` function is equivalent to the `#include` statement in C.
@@ -253,10 +253,9 @@ the `fopen()` C function to simply open and close a file. If you do not know how
 function works in C, it takes two C strings as input. But in this code example below, we are passing some
 string literals written in our Zig code directly as inputs to this `fopen()` C function.
 
-In other words, we are not doing any type of conversion from a Zig string to a C string.
+In other words, we are not doing any conversion from a Zig string to a C string.
 We are just passing the Zig string literals directly as inputs to the C function. And it works just fine!
-Because the compiler inteprets the string `"foo.txt"` as a C string, as a result of the current context
-that this string literal is being used.
+Because the compiler inteprets the string `"foo.txt"` as a C string given the current context.
 
 
 ```{zig}
@@ -281,9 +280,9 @@ Let's make some experiments, by writing the same code in different manners, and 
 see how this affects the program. As a starting point, let's store the `"foo.txt"` string inside
 a Zig object, like the `path` object below, and then, we pass this Zig object as input to the `fopen()` C function.
 
-If we do this, the program still compiles and runs successfully. Notice that I have ommitted most of the code in this example below.
-This is just for brevitty reasons, because the remainder of the program is still the same.
-The only difference between this example and the previous example is just these two lines exposed below.
+If we do this, the program still compiles and runs successfully. Notice that I have omitted most of the code in this example below.
+This is just for brevity reasons, because the remainder of the program is still the same.
+The only difference between this example and the previous one is just these two lines exposed below.
 
 ```{zig}
 #| eval: false
@@ -369,10 +368,10 @@ A "need-conversion" scenario is when we need to manually convert our Zig objects
 before passing them as input to C functions. You will fall in this scenario, when passing Zig string objects
 to C functions.
 
-We already saw this specific circumstance on the last `fopen()` example,
+We have already seen this specific circumstance in the last `fopen()` example,
 which is reproduced below. You can see in this example, that we have given an explicit Zig data type
 (`[]const u8`) to our `path` object, and, as a consequence of that, we have forced the `zig` compiler
-to see this `path` object, as a Zig string object. Because of that, we need now to manually convert
+to see this `path` object, as a Zig string object. Therefore, we need now to manually convert
 this `path` object into a C string before we pass it to `fopen()`.
 
 
@@ -418,10 +417,9 @@ means that it is a C pointer. This strategy is not-recommended. But it is
 useful to demonstrate the use of `@ptrCast()`.
 
 You may recall of `@as()` and `@ptrCast()` from @sec-type-cast. Just as a recap,
-the `@as()` built-in function is used to explicit convert (or cast) a Zig value from a type "x"
-to a type "y".
-But in our case here, we are converting a pointer object, or, a C pointer more specifically.
-Everytime a pointer is involved in some "type casting operation" in Zig,
+the `@as()` built-in function is used to explicitly convert (or cast) a Zig value
+from a type "x" into a value of type "y". But in our case here, we are converting
+a pointer object. Everytime a pointer is involved in some "type casting operation" in Zig,
 the `@ptrCast()` function is involved.
 
 In the example below, we are using this function to cast our `path` object
@@ -442,9 +440,9 @@ with no errors.
 ## Creating C objects in Zig {#sec-c-inputs}
 
 Creating C objects, or, in other words, creating instances of C structs in your Zig code
-is actually something quite easy to do. You first need to import the C header file (like I described at @sec-import-c-header) that describes
+is actually something quite easy to do. You first need to import the C header file (like I described at @sec-import-c-header) that defines
 the C struct that you are trying to instantiate in your Zig code. After that, you can just
-create a new object in your Zig code, and annotate it with the C type of the struct.
+create a new object in your Zig code, and annotate it with the data type of the C struct.
 
 For example, suppose we have a C header file called `user.h`, and that this header file is declaring a new struct named `User`.
 This C header file is exposed below:
@@ -452,29 +450,28 @@ This C header file is exposed below:
 ```c
 #include <stdint.h>
 
-typedef struct
-{
+typedef struct {
     uint64_t id;
     char* name;
 } User;
 ```
 
 This `User` C struct have two distinct fields, or two struct members, named `id` and `name`.
-The field `id` is a unsigned 64-bit integer value, while the field `name` is just a standard C string.
+The field `id` is an unsigned 64-bit integer value, while the field `name` is just a standard C string.
 Now, suppose that I want to create an instance of this `User` struct in my Zig code.
 I can do that by importing this `user.h` header file into my Zig code, and creating
 a new object with type `User`. These steps are reproduced in the code example below.
 
 Notice that I have used the keyword `undefined` in this example. This allows me to
 create the `new_user` object without the need to provide an initial value to the object.
-As consequence, the underlying memory associated with this `new_user` is unintialized,
+As consequence, the underlying memory associated with this `new_user` object is unintialized,
 i.e. the memory is currently populated with "garbage" values.
 Thus, this expression have the exact same effect of the expression `User new_user;` in C,
 which means "declare a new object named `new_user` of type `User`".
 
 Is our responsibility to properly initialize this memory associated with this `new_user` object,
-by assigining valid values to the members (or the fields) of the C struct. In the example below, I am assigning the integer 1 to the
-member `id`. I am also saving the string `"pedropark99"` into the member `name`.
+by assigning valid values to the members (or the fields) of the C struct. In the example below,
+I'm assigning the integer 1 to the member `id`. I am also saving the string `"pedropark99"` into the member `name`.
 Notice in this example that I manually add the null character (zero byte) to the end of the allocated array
 for this string. This null character marks the end of the array in C.
 
@@ -504,8 +501,8 @@ pub fn main() !void {
 So, in this example above, we are manually initializing each field of the C struct.
 We could say that, in this instance, we are "manually instantiating
 the C struct object". However, when we use C libraries in our Zig code, we rarely need
-to manually instantiate the C structs like in the above example. Only because C libraries
-usually provide "constructor functions" in their public APIs. As consequence, we normally rely on
+to manually instantiate the C structs like that. Only because C libraries
+usually provide a "constructor function" in their public APIs. As consequence, we normally rely on
 these constructor functions to properly initialize the C structs, and
 the struct fields for us.
 
@@ -528,12 +525,11 @@ Therefore, we do not need to manually create an instance of the C struct
 `hb_buffer_t` here, and manually assign valid values to each field in this C struct.
 Because the constructor function `hb_buffer_create()` is doing this heavy job for us.
 
-Since this `buf` object (and also the `new_user` object) is an instance of a C struct, this
-object is, in itself, a C compatible value. It is a C object defined in our Zig code. As consequence,
-you can freely pass this object as input to any C function that expects to receive this type
-of C struct as input. You do not need to use any special syntax, or, to convert this object in
-any special manner to use it in C code.
-This is how we create and use C objects in our Zig code.
+Since this `buf` object, and also, the `new_user` object from previous examples, are instances of C structs, these
+objects are by themselves C compatible values. They are C objects defined in our Zig code. As consequence,
+you can freely pass these objects as input to any C function that expects to receive this type
+of C struct as input. You do not need to use any special syntax, or, to convert them in
+any special manner to use them in C code. This is how we create and use C objects in our Zig code.
 
 
 
@@ -542,7 +538,7 @@ This is how we create and use C objects in our Zig code.
 Now that we have learned how to create/declare C objects in our Zig code, we
 need to learn how to pass these C objects as inputs to Zig functions.
 As I described at @sec-c-inputs, we can freely pass these C objects as inputs to C code
-that we call from our Zig code. But what about passing these C objects as inputs to Zig functions?
+that we call from our Zig code. But what about passing these C objects to Zig functions?
 
 In essence, this specific case requires one small adjustment in the Zig function declaration.
 All you need to do, is to make sure that you pass your C object *by reference* to the function,
@@ -554,12 +550,12 @@ Now, consider that we want to create a Zig function that sets the value of the `
 in this C struct, like the `set_user_id()` function declared below.
 Notice that the `user` argument in this function is annotated as a pointer (`*`) to a `c.User` object.
 
-Therefore, essentially, all you have to do when passing C objects to Zig functions, is to add `*` to the
+Therefore, all you have to do when passing C objects to Zig functions, is to add `*` to the
 data type of the function argument that is receiving the C object. This will make sure that
 the C object is passed *by reference* to the function.
 
-Now, because we have transformed the function argument into a pointer,
-everytime that you have to access the value pointed by the input pointer inside the function body, for whatever reason (e.g. you want
+Because we have transformed the function argument into a pointer,
+everytime that you have to access the value pointed by this input pointer inside the function body, for whatever reason (e.g. you want
 to read, update, or delete this value), you have to dereference the pointer with the `.*` syntax that we
 learned from @sec-pointer. Notice that the `set_user_id()` function is using this syntax to alter
 the value in the `id` field of the `User` struct pointed by the input pointer.
