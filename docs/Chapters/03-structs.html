@@ -463,7 +463,7 @@ t.zig:9:13: 0x1033c58 in main (switch2)
 </section>
 <section id="sec-defer" class="level3" data-number="2.1.3">
 <h3 data-number="2.1.3" class="anchored" data-anchor-id="sec-defer"><span class="header-section-number">2.1.3</span> The <code>defer</code> keyword</h3>
-<p>With the <code>defer</code> keyword you can register an expression to be executed when you exit the current scope. Therefore, this keyword has a similar functionality as the <code>on.exit()</code> function from R. Take the <code>foo()</code> function below as an example. When we execute this <code>foo()</code> function, the expression that prints the message “Exiting function …” get’s executed only when the function exits it’s scope.</p>
+<p>With the <code>defer</code> keyword you can register an expression to be executed when you exit the current scope. Therefore, this keyword has a similar functionality as the <code>on.exit()</code> function from R. Take the <code>foo()</code> function below as an example. When we execute this <code>foo()</code> function, the expression that prints the message “Exiting function …” get’s executed only when the function exits its scope.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
@@ -486,7 +486,7 @@ Multiplying ...
 Exiting function ...</code></pre>
 <p>Therefore, we can use <code>defer</code> to declare an expression that is going to be executed when your code exits the current scope. Some programmers like to interpret the phrase “exit of the current scope” as “the end of the current scope”. But this interpretation might not be entirely correct, depending on what you consider as “the end of the current scope”.</p>
 <p>I mean, what do you consider as <strong>the end</strong> of the current scope? Is it the closing curly bracket (<code>}</code>) of the scope? Is it when the last expression in the function get’s executed? Is it when the function returns to the previous scope? Etc. For example, it would not be correct to interpret the “exit of the current scope” as the closing curly bracket of the scope. Because the function might exit from an earlier position than this closing curly bracket (e.g.&nbsp;an error value was generated at a previous line inside the function; the function reached an earlier return statement; etc.). Anyway, just be careful with this interpretation.</p>
-<p>Now, if you remember of what we have discussed at <a href="01-zig-weird.html#sec-blocks" class="quarto-xref"><span>Section 1.7</span></a>, there are multiple structures in the language that create their own separate scopes. For/while loops, if/else statements, functions, normal blocks, etc. This also affects the interpretation of <code>defer</code>. For example, if you use <code>defer</code> inside a for loop, then, the given expression will be executed everytime this specific for loop exits it’s own scope.</p>
+<p>Now, if you remember of what we have discussed at <a href="01-zig-weird.html#sec-blocks" class="quarto-xref"><span>Section 1.7</span></a>, there are multiple structures in the language that create their own separate scopes. For/while loops, if/else statements, functions, normal blocks, etc. This also affects the interpretation of <code>defer</code>. For example, if you use <code>defer</code> inside a for loop, then, the given expression will be executed everytime this specific for loop exits its own scope.</p>
 <p>Before we continue, is worth emphasizing that the <code>defer</code> keyword is an “unconditional defer”. Which means that the given expression will be executed no matter how the code exits the current scope. For example, your code might exit the current scope because of an error value being generated, or, because of a return statement, or, a break statement, etc.</p>
 </section>
 <section id="sec-errdefer1" class="level3" data-number="2.1.4">
@@ -496,7 +496,7 @@ Exiting function ...</code></pre>
 <p>This makes the <code>errdefer</code> keyword one of the many tools available in Zig for error handling. In this section, we are more concerned with the control flow aspects around <code>errdefer</code>. But we are going to discuss <code>errdefer</code> later as a error handling tool at <a href="09-error-handling.html#sec-errdefer2" class="quarto-xref"><span>Section 10.2.4</span></a>.</p>
 <p>The code example below demonstrates three things:</p>
 <ul>
-<li>that <code>defer</code> is an “unconditional defer”, because the given expression get’s executed regardless of how the function <code>foo()</code> exits it’s own scope.</li>
+<li>that <code>defer</code> is an “unconditional defer”, because the given expression get’s executed regardless of how the function <code>foo()</code> exits its own scope.</li>
 <li>that <code>errdefer</code> is executed because the function <code>foo()</code> returned an error value.</li>
 <li>that <code>defer</code> and <code>errdefer</code> expressions are executed in a LIFO (<em>last in, first out</em>) order.</li>
 </ul>
@@ -672,7 +672,7 @@ error: FooError
 <p>In C++, when we create a new class, we normally have a constructor method (or, a constructor function) which is used to construct (or, to instantiate) every object of this particular class, and we also have a destructor method (or a destructor function), which is the function responsible for destroying every object of this class.</p>
 <p>In Zig, we normally declare the constructor and the destructor methods of our structs, by declaring an <code>init()</code> and a <code>deinit()</code> methods inside the struct. This is just a naming convention that you will find across the entire Zig Standard Library. So, in Zig, the <code>init()</code> method of a struct is normally the constructor method of the class represented by this struct. While the <code>deinit()</code> method is the method used for destroying an existing instance of that struct.</p>
 <p>The <code>init()</code> and <code>deinit()</code> methods are both used extensively in Zig code, and you will see both of them being used when we talk about allocators at <a href="01-memory.html#sec-allocators" class="quarto-xref"><span>Section 3.2</span></a>. But, as another example, let’s build a simple <code>User</code> struct to represent an user of some sort of system.</p>
-<p>If you look at the <code>User</code> struct below, you can see the <code>struct</code> keyword. Notice the data members of this struct, <code>id</code>, <code>name</code> and <code>email</code>. Every data member have it’s type explicitly annotated, with the colon character (<code>:</code>) syntax that we described earlier at <a href="01-zig-weird.html#sec-root-file" class="quarto-xref"><span>Section 1.2.2</span></a>. But also notice that every line in the struct body that describes a data member, ends with a comma character (<code>,</code>). So every time you declare a data member in your Zig code, always end the line with a comma character, instead of ending it with the traditional semicolon character (<code>;</code>).</p>
+<p>If you look at the <code>User</code> struct below, you can see the <code>struct</code> keyword. Notice the data members of this struct, <code>id</code>, <code>name</code> and <code>email</code>. Every data member have its type explicitly annotated, with the colon character (<code>:</code>) syntax that we described earlier at <a href="01-zig-weird.html#sec-root-file" class="quarto-xref"><span>Section 1.2.2</span></a>. But also notice that every line in the struct body that describes a data member, ends with a comma character (<code>,</code>). So every time you declare a data member in your Zig code, always end the line with a comma character, instead of ending it with the traditional semicolon character (<code>;</code>).</p>
 <p>Next, also notice in this example, that we have registrated an <code>init()</code> function as a method of this <code>User</code> struct. This <code>init()</code> method is the constructor method that we will use to instantiate every new <code>User</code> object. That is why this <code>init()</code> function returns a new <code>User</code> object as result.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb34"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
@@ -711,7 +711,7 @@ error: FooError
 <p>In other words, the functions marked by the keyword <code>pub</code> are members of the public API of that struct. For example, if I did not marked the <code>print_name()</code> method as public, then, I could not execute the line <code>u.print_name()</code>. Because I would not be authorized to call this method directly in my code.</p>
 <section id="sec-anonymous-struct-literals" class="level3" data-number="2.3.1">
 <h3 data-number="2.3.1" class="anchored" data-anchor-id="sec-anonymous-struct-literals"><span class="header-section-number">2.3.1</span> Anonymous struct literals</h3>
-<p>You can declare a struct object as a literal value. When we do that, we normally specify the data type of this struct literal by writing it’s data type just before the opening curly brace. For example, I could write a struct literal value of the type <code>User</code> that we have defined in the previous section like this:</p>
+<p>You can declare a struct object as a literal value. When we do that, we normally specify the data type of this struct literal by writing its data type just before the opening curly brace. For example, I could write a struct literal value of the type <code>User</code> that we have defined in the previous section like this:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb36"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> eu = User <span class="op">{</span></span>
 <span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>    .id = <span class="dv">1</span>,</span>
@@ -792,8 +792,8 @@ error: FooError
 <p>But why? Why am I talkin about this here? Is because the <code>self</code> argument in the methods is affected depending on whether the methods present in a struct change or not the state of the object itself. More specifically, when you have a method in a struct that changes the state of the object (i.e.&nbsp;change the value of a data member), the <code>self</code> argument in this method must be annotated in a different manner.</p>
 <p>As I described at <a href="#sec-self-arg" class="quarto-xref"><span>Section 2.3.3</span></a>, the <code>self</code> argument in methods of a struct is the argument that receives as input the object from which the method was called from. We usually annotate this argument in the methods by writing <code>self</code>, followed by the colon character (<code>:</code>), and the data type of the struct to which the method belongs to (e.g.&nbsp;<code>User</code>, <code>Vec3</code>, etc.).</p>
 <p>If we take the <code>Vec3</code> struct that we defined in the previous section as an example, we can see in the <code>distance()</code> method that this <code>self</code> argument is annotated as <code>self: Vec3</code>. Because the state of the <code>Vec3</code> object is never altered by this method.</p>
-<p>But what if we do have a method that alters the state of the object, by altering the values of it’s data members, how should we annotate <code>self</code> in this instance? The answer is: “we should annotate <code>self</code> as a pointer of <code>x</code>, instead of just <code>x</code>”. In other words, you should annotate <code>self</code> as <code>self: *x</code>, instead of annotating it as <code>self: x</code>.</p>
-<p>If we create a new method inside the <code>Vec3</code> object that, for example, expands the vector by multiplying it’s coordinates by a factor of two, then, we need to follow this rule specified in the previous paragraph. The code example below demonstrates this idea:</p>
+<p>But what if we do have a method that alters the state of the object, by altering the values of its data members, how should we annotate <code>self</code> in this instance? The answer is: “we should annotate <code>self</code> as a pointer of <code>x</code>, instead of just <code>x</code>”. In other words, you should annotate <code>self</code> as <code>self: *x</code>, instead of annotating it as <code>self: x</code>.</p>
+<p>If we create a new method inside the <code>Vec3</code> object that, for example, expands the vector by multiplying its coordinates by a factor of two, then, we need to follow this rule specified in the previous paragraph. The code example below demonstrates this idea:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb43"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> m = std.math;</span>
@@ -826,8 +826,10 @@ error: FooError
 </div>
 <pre><code>Doubled: 8.4</code></pre>
 <p>Now, if you change the <code>self</code> argument in this <code>double()</code> method to <code>self: Vec3</code>, like in the <code>distance()</code> method, you will get the compiler error exposed below as result. Notice that this error message is indicating a line from the <code>double()</code> method body, indicating that you cannot alter the value of the <code>x</code> data member.</p>
-<div class="sourceCode" id="cb46"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co">// If we change the function signature of double to:</span></span>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co">// If we change the function signature of double to:</span></span>
 <span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> double(self: Vec3) <span class="dt">void</span> <span class="op">{</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <pre><code>t.zig:16:13: error: cannot assign to constant
         self.x = self.x * 2.0;
         ~~~~^~</code></pre>
@@ -848,7 +850,7 @@ Note
 <p>If a method of your <code>x</code> struct alters the state of the object, by changing the value of any data member, then, remember to use <code>self: *x</code>, instead of <code>self: x</code> in the function signature of this method.</p>
 </div>
 </div>
-<p>You could also interpret the content discussed in this section as: “if you need to alter the state of your <code>x</code> struct object in one of it’s methods, you must explicitly pass the <code>x</code> struct object by reference to the <code>self</code> argument of this method”.</p>
+<p>You could also interpret the content discussed in this section as: “if you need to alter the state of your <code>x</code> struct object in one of its methods, you must explicitly pass the <code>x</code> struct object by reference to the <code>self</code> argument of this method”.</p>
 </section>
 </section>
 <section id="sec-type-inference" class="level2" data-number="2.4">
@@ -933,12 +935,15 @@ Note
 <section id="modules" class="level2" data-number="2.6">
 <h2 data-number="2.6" class="anchored" data-anchor-id="modules"><span class="header-section-number">2.6</span> Modules</h2>
 <p>We already talked about what modules are, and also, how to import other modules into your current module via <em>import statements</em>. Every Zig module (i.e.&nbsp;a <code>.zig</code> file) that you write in your project is internally stored as a struct object. Take the line exposed below as an example. In this line we are importing the Zig Standard Library into our current module.</p>
-<div class="sourceCode" id="cb52"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <p>When we want to access the functions and objects from the standard library, we are basically accessing the data members of the struct stored in the <code>std</code> object. That is why we use the same syntax that we use in normal structs, with the dot operator (<code>.</code>) to access the data members and methods of the struct.</p>
 <p>When this “import statement” get’s executed, the result of this expression is a struct object that contains the Zig Standard Library modules, global variables, functions, etc. And this struct object get’s saved (or stored) inside the constant object named <code>std</code>.</p>
 <p>Take the <a href="https://github.com/kprotty/zap/blob/blog/src/thread_pool.zig"><code>thread_pool.zig</code> module from the project <code>zap</code></a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> as an example. This module is written as if it was a big struct. That is why we have a top-level and public <code>init()</code> method written in this module. The idea is that all top-level functions written in this module are methods from the struct, and all top-level objects and struct declarations are data members of this struct. The module is the struct itself.</p>
 <p>So you would import and use this module by doing something like this:</p>
-<div class="sourceCode" id="cb53"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ThreadPool = <span class="bu">@import</span>(<span class="st">"thread_pool.zig"</span>);</span>
 <span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num_cpus = std.Thread.getCpuCount()</span>
 <span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">catch</span> <span class="bu">@panic</span>(<span class="st">"failed to get cpu core count"</span>);</span>
@@ -947,6 +952,7 @@ Note
 <span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pool = ThreadPool.init(</span>
 <span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> .max_threads = num_threads <span class="op">}</span></span>
 <span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 
 
 </section>

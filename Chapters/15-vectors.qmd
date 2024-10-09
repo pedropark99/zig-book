@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 
 # Introducing Vectors and SIMD {#sec-vectors-simd}
 
-In this chapter, I'm going to discuss vectors in Zig, which are
+In this chapter, I want to discuss vectors in Zig, which are
 related to SIMD operations (i.e. they have no relationship with the `std::vector` class
 from C++).
 
@@ -28,7 +28,7 @@ from C++).
 SIMD (*Single Instruction/Multiple Data*) is a group of operations that are widely used
 on video/audio editing programs, and also in graphics applications. SIMD is not a new technology,
 but the massive use of SIMD on normal desktop computers is somewhat recent. In the old days, SIMD
-was only used on "supercomputers models".
+was only used on "supercomputer models".
 
 Most modern CPU models (from AMD, Intel, etc.) these days (either in a desktop or in a
 notebook model) have support for SIMD operations. So, if you have a very old CPU model installed in your
@@ -44,8 +44,9 @@ each addition is performed separately, one after another. But with SIMD, these f
 are translated into a single instruction, and, as consequence, the four additions are performed
 in parallel, at the same time.
 
-Currently, the following group of operators are allowed to use on vector objects. All of
-these operators are applied element-wise and in parallel by default.
+Currently, the `zig` compiler allows you to apply the following group of operators on vector objects.
+When you apply one of these operators on vector objects, SIMD is used to make the calculations, and,
+therefore, these operators are applied element-wise and in parallel by default.
 
 - Arithmetic (`+`, `-`, `/`, `*`, `@divFloor()`, `@sqrt()`,  `@ceil()`, `@log()`, etc.).
 - Bitwise operators (`>>`, `<<`, `&`, `|`, `~`, etc.).
@@ -54,7 +55,7 @@ these operators are applied element-wise and in parallel by default.
 
 ## Vectors {#sec-what-vectors}
 
-A SIMD operation is usually performed through a "SIMD intrinsic", which is just a fancy
+A SIMD operation is usually performed through a *SIMD intrinsic*, which is just a fancy
 name for a function that performs a SIMD operation. These SIMD intrinsics (or "SIMD functions")
 always operate over a special type of object, which are called "vectors". So,
 in order to use SIMD, you have to create a "vector object".
@@ -91,21 +92,21 @@ This is how SIMD introduces more performance in your program. Instead of using a
 to iterate through the elements of `v1` and `v2`, and adding them together, one element at a time,
 we enjoy the benefits of SIMD, which performs all 4 additions in parallel, at the same time.
 
-Therefore, the `@Vector` structure in Zig is essentially, the Zig representation of SIMD vector objects.
-But the elements on these vector objects will be operated in parallel, if, and only if your current CPU model
-supports SIMD operations. If your CPU model does not support SIMD, then, the `@Vector` structure will
+Therefore, the `@Vector` structure is essentially the Zig representation of SIMD vector objects.
+The elements on these vector objects will be operated in parallel, if, and only if your current CPU model
+supports SIMD operations. If your CPU model does not have support for SIMD, then, the `@Vector` structure will
 likely produce a similar performance from a "for loop solution".
 
 
 ### Transforming arrays into vectors
 
-There are different ways you can transform a normal array into a vector object.
+There are different ways to transform a normal array into a vector object.
 You can either use implicit conversion (which is when you assign the array to
 a vector object directly), or, use slices to create a vector object from a normal array.
 
-In the example below, we implicitly convert the array `a1` into a vector object (`v1`)
-of length 4. All we had to do was to just explicitly annotate the data type of the vector object,
-and then, assign the array object to this vector object.
+In the example below, we are implicitly converting the array `a1` into a vector object (`v1`)
+of length 4. We first explicitly annotate the data type of the vector object,
+and then, we assign the array object to this vector object.
 
 Also notice in the example below, that a second vector object (`v2`) is also created
 by taking a slice of the array object (`a1`), and then, storing the pointer to this
@@ -133,7 +134,7 @@ copy it into an array with a compile-time known size, before transforming it int
 ### The `@splat()` function
 
 You can use the `@splat()` built-in function to create a vector object that is filled
-with the same value across all of it's elements. This function was created to offer a quick
+with the same value across all of its elements. This function was created to offer a quick
 and easy way to directly convert a scalar value (a.k.a. a single value, like a single character, or a single integer, etc.)
 into a vector object.
 
@@ -155,7 +156,7 @@ try stdout.print("{any}\n", .{v1});
 
 As I described at @sec-what-vectors, each vector object is usually a small block of 128, 256 or 512 bits.
 This means that a vector object is usually small in size, and when you try to go in the opposite direction,
-by creating a vector object in Zig that is very big in size (i.e. sizes that are close to $2^{20}$),
+by creating a vector object that is very big in size (i.e. sizes that are close to $2^{20}$),
 you usually end up with crashes and loud errors from the compiler.
 
 For example, if you try to compile the program below, you will likely face segmentation faults, or, LLVM errors during
