@@ -17,26 +17,26 @@ knitr::opts_chunk$set(
 
 # Project 4 - Developing an image filter
 
-In this chapter we are going to build a new small project. The objective of
-this project is to build a program in Zig that applies a filter over an image.
-More specifically, a "grayscale filter". This filter essentially transforms
+In this chapter we are going to build a new project. The objective of
+this project is to write a program that applies a filter over an image.
+More specifically, a "grayscale filter", which transforms
 any color image into a grayscale image.
 
-We are going to use the image displayed at @fig-pascal as the example in this project.
-In other words, we are going to transform this colored image, into a grayscale image,
-using our "image filter program" written in Zig.
+We are going to use the image displayed at @fig-pascal in this project.
+In other words, we want to transform this colored image into a grayscale image,
+by using our "image filter program" written in Zig.
 
 ![A photo of the chilean-american actor Pedro Pascal. Source: Google Images.](../ZigExamples/image_filter/pedro_pascal.png){#fig-pascal}
 
-We don't need to write a lot of code to build such "image filter program". However, in order for us
-to build such program, we first need to understand how digital images work. That is why we begin this chapter
+We don't need to write a lot of code to build such "image filter program". However, we first need
+to understand how digital images work. That is why we begin this chapter
 by explaining the theory behind digital images and how colors are represented in modern computers.
-We also give a brief explanation about the file format PNG (Portable Network Graphics), which is used
+We also give a brief explanation about the PNG (Portable Network Graphics) file format, which is the format used
 in the example images.
 
-At the end of this chapter, we will have a full example of a program that takes the PNG image displayed at @fig-pascal
-as input, and writes a new image to the current working directory that is the grayscale version of the input image.
-This grayscale version of @fig-pascal that is written by the program is exposed at @fig-pascal-gray.
+At the end of this chapter, we should have a full example of a program that takes the PNG image displayed at @fig-pascal
+as input, and writes a new image to the current working directory that is the grayscale version of this input image.
+This grayscale version of @fig-pascal is exposed at @fig-pascal-gray.
 You can find the full source code of this small project at the `ZigExamples/image_filter`
 [folder at the official repository of this book](https://github.com/pedropark99/zig-book/tree/main/ZigExamples/image_filter)[^img-filter-folder].
 
@@ -48,7 +48,7 @@ You can find the full source code of this small project at the `ZigExamples/imag
 
 In this section, I want to briefly describe to you how we (humans) actually see things with our own eyes.
 I mean, how our eyes work? If you do have a very basic understanding of how our eyes work, you will understand
-more easily how digital images are made. Because the techniques used to produce a digital image
+more easily how digital images are made. Because the techniques behind digital images
 were developed by taking a lot of inspiration from how our human eyes work.
 
 You can interpret a human eye as a light sensor, or, a light receptor. The eye receives some amount of light as input,
@@ -56,7 +56,7 @@ and it interprets the colors that are present in this "amount of light".
 If no amount of light hits the eye, then, the eye cannot extract color from it, and as result,
 we end up seeing nothing, or, more precisely, we see complete blackness.
 
-So everything depends on light. What we actually see are the colors (blue, red, orange, green, purple, yellow, etc.) that
+Therefore, everything depends on light. What we actually see are the colors (blue, red, orange, green, purple, yellow, etc.) that
 are being reflected from the light that is hitting our eyes. **Light is the source of all colors!**
 This is what Isaac Newton discovered on his famous prism experiment[^newton] in the 1660s.
 
@@ -64,8 +64,8 @@ This is what Isaac Newton discovered on his famous prism experiment[^newton] in 
 
 Inside our eyes, we have a specific type of cell called the "cone cell".
 Our eye have three different types, or, three different versions of these "cone cells".
-Each of these three types of cone cell is very sensitive to a specific spectrum of the light,
-which are the spectrums that define the colors red, green and blue.
+Each type of cone cell is very sensitive to a specific spectrum of the light. More specifically,
+to the spectrums that define the colors red, green and blue.
 So, in summary, our eyes have specific types of cells that
 are highly sensitive to these three colors (red, green and blue).
 
@@ -76,11 +76,11 @@ that we want. So every color that we see is perceived as a specific mixture of b
 like 30% of red, plus 20% of green, plus 50% of blue.
 
 When these cone cells perceive (or, detect) the colors that are found in the
-light that is hitting our eyes, these cells produce electrical signals and sent them to the brain.
+light that is hitting our eyes, these cells produce electrical signals, which are sent to the brain.
 Our brain interprets these electrical signals, and use them to form the image that we are seeing
 inside our head.
 
-Based on what we have discussed here, the items below describes the sequence of events that
+Based on what we have discussed here, the bullet points exposed below describes the sequence of events that
 composes this very simplified version of how our human eyes work:
 
 1. Light hits our eyes.
@@ -95,37 +95,33 @@ composes this very simplified version of how our human eyes work:
 A digital image is a "digital representation" of an image that we see with our eyes.
 In other words, a digital image is a "digital representation" of the colors that we see
 and perceive through the light.
-In the digital world, we have two types of images, which are: vector image and raster image.
-Vector images are not described here. So just remember that every single aspect that we discuss
-here in this chapter about digital images **are related solely to raster images**, and not vector images.
+In the digital world, we have two types of images, which are: vector images and raster images.
+Vector images are not described here. So just remember that the content discussed here
+**is related solely to raster images**, and not vector images.
 
-Raster images are digital images that are represented as a 2D (two dimensional) matrix
-of pixels. In other words, every raster image is basically a rectangle of pixels. Each pixel have a particular color.
+A raster image is a type of digital image that is represented as a 2D (two dimensional) matrix
+of pixels. In other words, every raster image is basically a rectangle of pixels, and each pixel have a particular color.
 So, a raster image is just a rectangle of pixels, and each of these pixels are displayed in the screen of your computer (or the screen
 of any other device, e.g. laptop, tablet, smartphone, etc.) as a color.
 
 @fig-raster demonstrates this idea. If you take any raster image, and you zoom into it very hard,
-you will see the actual pixels of the image. Although JPEG and PNG are file formats to store raster images,
-when you zoom into JPEG, PNG, and some other types of raster image files, you usually do not quite see the pixels.
-That is because most of these file formats implement techniques that affect how the pixels are displayed,
-with the objective of increasing the details in the image. The most famous of these techniques is anti-aliasing,
-which you probably know from video-games. But nevertheless, the pixels are still there! They are
-just displayed differently in JPEG/PNG files.
+you will see the actual pixels of the image. JPEG, TIFF and PNG are file formats that are commonly
+used to store raster images.
 
 ![Zooming over a raster image to see the pixels. Source: Google Images.](../Figures/imagem-raster.png){#fig-raster}
 
 The more pixels the image has, the more information and detail we can include in the image.
-The more precise, sharp and pretty will look the image. That is why photographic cameras
-usually produces big raster images, with several megapixels of resolution, to include as much detail as possible into the final image.
-As an example, a digital image with dimensions of 1920 pixels of width and 1080 pixels of height, would be a image that
+The more accurate, sharp and pretty the image will look. This is why photographic cameras
+usually produce big raster images, with several megapixels of resolution, to include as much detail as possible into the final image.
+As an example, a digital image with dimensions of 1920 pixels wide and 1080 pixels high, would be a image that
 contains $1920 \times 1080 = 2073600$ pixels in total. You could also say that the "total area" of the image is
-of 2073600 pixels, although the concept of "area" is not very used here in computer graphics.
+of 2073600 pixels, although the concept of "area" is not really used here in computer graphics.
 
-Most digital images we see in our modern world uses the RGB color model. RGB stands for (red, green and blue) if you did not
-detected that yet. So the color of each pixel in these raster images are usually
-represented as a mixture of red, green and blue, just like in our eyes. That is, the color of each pixel is identified by a set of
+Most digital images we see in our modern world uses the RGB color model. RGB stands for (red, green and blue).
+So the color of each pixel in these raster images are usually represented as a mixture of red, green and blue,
+just like in our eyes. That is, the color of each pixel is identified by a set of
 three different integer values. Each integer value identifies the "amount" of each color (red, green and blue).
-For example, the set `(199, 78, 70)` identifies a color that is close to red. We have 199 of red, 78 of green,
+For example, the set `(199, 78, 70)` identifies a color that is more close to red. We have 199 of red, 78 of green,
 and 70 of blue. In contrast, the set `(129, 77, 250)` describes a color that is more close to purple. Et cetera.
 
 
@@ -137,14 +133,14 @@ to bottom and left to right. Most computers screens also follow this pattern. So
 in the image are the ones that are at the top and left corner of the image. You can find a visual representation
 of this logic at @fig-img-display.
 
-Also notice in @fig-img-display that, since a digital image is essentially a 2D matrix of pixels,
+Also notice in @fig-img-display that, because a raster image is essentially a 2D matrix of pixels,
 the image is organized into rows and columns of pixels. The columns are defined by the horizontal x axis,
 while the rows are defined by the vertical y axis.
 
 Each pixel (i.e. the gray rectangles) exposed at @fig-img-display contains a number inside of it.
 These numbers are the indexes of the pixels. You can notice that the first pixels are in the top and left
 corner, and also, that the indexes of these pixels "grow to the sides", or, in other words, they grow in the direction of the horizontal x axis.
-This means that most digital images are usually organized as rows of pixels. So when these digital images are
+Most raster images are organized as rows of pixels. Thus, when these digital images are
 displayed, the screen display the first row of pixels, then, the second row, then, the third row, etc.
 
 ![How the pixels of raster images are displayed.](./../Figures/image-display.png){#fig-img-display}
@@ -156,22 +152,22 @@ displayed, the screen display the first row of pixels, then, the second row, the
 
 ### Representing the matrix of pixels in code {#sec-pixel-repr}
 
-Ok, we know already that digital images are represented as a 2D matrix of pixels.
-But we do not have a notion of a 2D matrix in Zig. Most low-level languages in general (Zig, C, Rust, etc.) do not have such notion.
-So how do we represent such matrix of pixels in Zig, or any other low-level language.
-The strategy that most programmers choose is to just use a normal 1D array to store the values of
+Ok, we know already that raster images are represented as 2D matrices of pixels.
+But we do not have a notion of a 2D matrix in Zig. Actually, most low-level languages in general
+(Zig, C, Rust, etc.) do not have such notion.
+So how can we represent such matrix of pixels in Zig, or any other low-level language?
+The strategy that most programmers choose in this situation is to just use a normal 1D array to store the values of
 this 2D matrix. In other words, you just create an normal 1D array, and store all values from both dimensions into this 1D array.
 
-
-Now, remember, a digital image is represented as a
-2D matrix of pixels, and each pixel is represented by 3 unsigned 8bit-integer values.
-So, if we have for example a very small image of dimensions 4x3, then,
-we have 12 pixels in total in this image. As a result, we need to create a normal array that
-can store $3 \times 12 = 36$ integer values, more precisely, an array of 36 `u8` values.
+As an example, suppose we have a very small image of dimensions 4x3.
+Since a raster image is represented as a 2D matrix of pixels, and each pixel
+is represented by 3 "unsigned 8-bit" integer values, we have 12 pixels in
+total in this image, which are represented by $3 \times 12 = 36$ integer values.
+Therefore, we need to create an array of 36 `u8` values to store this small image.
 
 The reason why unsigned 8-bit integer (`u8`) values are used to represent the amounts of each color,
 instead of any other integer type, is because they take the minimum amount of space as possible, or,
-the minimum amount of bits as possible. Which helps to reduces the binary size of the image, i.e. of the 2D matrix.
+the minimum amount of bits as possible. Which helps to reduces the binary size of the image, i.e. the 2D matrix.
 Also, they convey a good amount of precision and detail about the colors, even though they can represent
 a relatively small range (from 0 to 255) of "color amounts".
 
@@ -191,15 +187,14 @@ const matrix = [_]u8{
 ```
 
 The first three integer values in this array are the color amounts of the first pixel in the image.
-While the next three integer are the colors amounts for the second pixel.
-And the sequence goes on in this pattern. So the size of the array that stores
-the values of the pixels from a raster image is usually a multiple of 3.
-In this case, the array have a size of 36.
+The next three integers are the colors amounts for the second pixel.
+And the sequence goes on in this pattern. Having that in mind, the size of the array that stores
+a raster image is usually a multiple of 3. In this case, the array have a size of 36.
 
 I mean, the size of the array is **usually** a multiple of 3, because in specific circumstances,
 it can also be a multiple of 4. This happens when a transparency amount is
 also included into the raster image. In other words, there are some types of raster images
-that follow a different color model, which is the RGBA (red, green, blue and alpha)
+that uses a different color model, which is the RGBA (red, green, blue and alpha)
 color model. The "alpha" corresponds to an amount of transparency in the pixel.
 So every pixel in a RGBA image is represented by a red, green, blue and alpha values.
 
@@ -209,17 +204,16 @@ that are stored in PNG files, might be using the RGBA model, and, therefore, are
 represented by an array whose size is a multiple of 4.
 
 In our case here, the example image of our project (@fig-pascal) is a raster image
-stored in a PNG file, and this specific image is using the RGBA color model. So
+stored in a PNG file, and this specific image is using the RGBA color model. Therefore,
 each pixel in the image is represented by 4 different integer values, and, as consequence,
 to store this image in our Zig code, we need to create an array whose size is a multiple of 4.
 
 
-## The PNG library we are going to use
+## The PNG library that we are going to use
 
 Let's begin our project by focusing on writing the necessary Zig code to
-read the data from the PNG file. In other words, we want
-to read the PNG file exposed at @fig-pascal, and parse it's data to extract the 2D matrix of pixels
-that represents the image.
+read the data from the PNG file. In other words, we want to read the PNG file exposed
+at @fig-pascal, and parse it's data to extract the 2D matrix of pixels that represents the image.
 
 As we have discussed at @sec-pixel-repr, the image that we are using as example here
 is a PNG file that uses the RGBA color model, and, threfore, each pixel of the image
@@ -231,26 +225,25 @@ are developing here.
 [^img-filter-folder]: <https://github.com/pedropark99/zig-book/tree/main/ZigExamples/image_filter>
 
 There are some C libraries available that we can use to read and parse PNG files.
-The most famous and used of all is the `libpng`, which is the "official library" for reading and writing
-PNG files. This C library is available in most operating system. But this C library is very known
-for being a little complex and hard to use.
+The most famous and used of all is `libpng`, which is the "official library" for reading and writing
+PNG files. Although this library is available on most operating system, it is well known
+for being complex and hard to use.
 
 That is why, I'm going to use a more modern alternative here in this project, which is the `libspng` library.
-I have choose to use this C library here, because it is much, much
-simpler to use than `libpng`, and also, offers very good performance for all operations.
-You can checkout the [official website of the library](https://libspng.org/)[^libspng]
-to know more about it.
-You will also find there, some documentation that might help you to understand and
+I choose to use this C library here, because it is much, much simpler to use than `libpng`,
+and it also offers very good performance for all operations. You can checkout the
+[official website of the library](https://libspng.org/)[^libspng]
+to know more about it. You will also find there some documentation that might help you to understand and
 follow the code examples exposed here.
 
 [^libspng]: <https://libspng.org/>
 
 
 First of all, remember to build and install this `libspng` into your system. Because
-if you don't do this step, the `zig` compiler will not find the files and resources of
-this library in your computer, and link them with the Zig code that we are going to write here
-together. There is good information about how to build and install the library at the
-[build section of the library documentation at the official website](https://libspng.org/docs/build/)[^lib-build].
+if you don't do this step, the `zig` compiler will not be able to find the files and resources of
+this library in your computer, and link them with the Zig source code that we are writing together here.
+There is good information about how to build and install the library at the
+[build section of the library documentation](https://libspng.org/docs/build/)[^lib-build].
 
 [^lib-build]: <https://libspng.org/docs/build/>
 
@@ -260,14 +253,13 @@ together. There is good information about how to build and install the library a
 ## Reading the PNG file
 
 In order to extract the pixel data from the PNG file, we need to read and decode the file.
-A PNG file is just a binary file written in the "PNG format". We need to decode the
-file in order to extract the pixel data from it. Luckily, the `libspng` library offers
+A PNG file is just a binary file written in the "PNG format". Luckily, the `libspng` library offers
 a function called `spng_decode_image()` that does all this heavy work for us.
 
 Now, since `libspng` is a C library, most of the file and I/O operations in this library are made by using
 a `FILE` C pointer. Because of that, is probably a better idea to use the `fopen()` C function
 to open our PNG file, instead of using the `openFile()` method that I introduced at @sec-filesystem.
-That is why I'm importing the `stdio.h` header in this project, and using the `fopen()` C function to open the file.
+That is why I'm importing the `stdio.h` C header in this project, and using the `fopen()` C function to open the file.
 
 If you look at the snippet below, you can see that we are:
 
@@ -276,7 +268,7 @@ If you look at the snippet below, you can see that we are:
 1. using `spng_set_png_file()` to specify the `FILE` object that reads the PNG file that we are going to use.
 
 Every operation in `libspng` is made through a "context object". In our snippet below, this object is `ctx`.
-Also, to perform an operation over a PNG file, we need to specify which PNG file we are referring to.
+Also, to perform an operation over a PNG file, we need to specify which exact PNG file we are referring to.
 This is the job of `spng_set_png_file()`. We are using this function to specify the file descriptor
 object that reads the PNG file that we want to use.
 
@@ -302,7 +294,7 @@ _ = c.spng_set_png_file(
 Before we continue, is important to emphasize the following: since we have opened the file with `fopen()`,
 we have to remember to close the file at the end of the program, with `fclose()`.
 In other words, after we have done everything that we wanted to do with the PNG file
-`pedro_pascal.png`, we need to close the file, by applying `fclose()` over the file descriptor object.
+`pedro_pascal.png`, we need to close this file, by applying `fclose()` over the file descriptor object.
 We could use also the `defer` keyword to help us in this task, if we want to.
 This code snippet below demonstrates this step:
 
@@ -317,15 +309,15 @@ if (c.fclose(file_descriptor) != 0) {
 
 ### Reading the image header section
 
-Now, the context object `ctx` is aware of our PNG file `pedro_pascal.png`, and it has access to
-a file descriptor object to this file, and we can start doing operations in this file. The first thing that we
-are going to do is to read the "image header section" of the PNG file. This "image header section" is the section
+Now, the context object `ctx` is aware of our PNG file `pedro_pascal.png`, because it has access to
+a file descriptor object to this file. The first thing that we are going to do is to read the
+"image header section" of the PNG file. This "image header section" is the section
 of the file that contains some basic information about the PNG file, like, the bit depth of the pixel data
 of the image, the color model used in the file, the dimensions of the image (height and width in number of pixels),
 etc.
 
 To make things easier, I will encapsulate this "read image header" operation into a
-nice small function called `get_image_header()`. All that this function needs to do
+nice and small function called `get_image_header()`. All that this function needs to do
 is to call the `spng_get_ihdr()` function. This function from `libspng` is responsible
 for reading the image header data, and storing it into a C struct named `spng_ihdr`.
 Thus, an object of type `spng_ihdr` is a C struct that contains the data from the
@@ -348,28 +340,27 @@ fn get_image_header(ctx: *c.spng_ctx) !c.spng_ihdr {
 var image_header = try get_image_header(ctx);
 ```
 
-Also notice in this function, that I'm checking
-if the `spng_get_ihdr()` function call have returned or not an integer value that is different than zero.
-Most functions from the `libspng` library return a code status as result, and the code status zero means
-"success". So any code status that is different than zero means that an error occurred while running `spng_get_ihdr()`.
-This is why I'm returning an error value from the function in case the code status returned by the function
-is different than zero.
+Also notice in this function, that I'm checking if the `spng_get_ihdr()` function call have
+returned or not an integer value that is different than zero. Most functions from the
+`libspng` library return a code status as result, and the code status "zero" means
+"success". So any code status that is different than zero means that an error
+occurred while running `spng_get_ihdr()`. This is why I'm returning an error value from
+the function in case the code status returned by the function is different than zero.
 
 
 ### Allocating space for the pixel data
 
 Before we read the pixel data from the PNG file, we need to allocate enough space to hold this data.
 But in order to allocate such space, we first need to know how much space we need to allocate.
-The image dimension is obviously needed to calculate the size of this space. But there are
+The dimensions of the image are obviously needed to calculate the size of this space. But there are
 other elements that also affect this number, such as the color model used in the image, the bit depth, and others.
 
 Anyway, all of this means that calculating the size of the space that we need, is not a simple task.
-That is why the `libspng` library offers a utility function named
+That is why the `libspng` library offers an utility function named
 `spng_decoded_image_size()` to calculate this size for us. Once again, I'm going
-to encapsulate the logic around this function into a nice small Zig function
-named `calc_output_size()`.
-You can see that this function returns a nice integer value as result, informing
-the size of the space that we need to allocate.
+to encapsulate the logic around this C function into a nice and small Zig function
+named `calc_output_size()`. You can see below that this function returns a nice
+integer value as result, informing the size of the space that we need to allocate.
 
 
 ```zig
@@ -387,15 +378,16 @@ fn calc_output_size(ctx: *c.spng_ctx) !u64 {
 
 
 
-You might quest yourself what the value `SPNG_FMT_RGBA8` means. This value is actually an enum value defined in the `spng.h` header file.
-This enum is used to identify a "PNG format". More precisely, it identifies a PNG file
-that uses the RGBA color model and 8 bit depth. So by providing this enum value as input to the `spng_decoded_image_size()` function,
-we are saying to this function to calculate the size of the decoded pixel data considering a PNG file that follows this
-"RGBA color model with 8 bit depth format".
+You might quest yourself what the value `SPNG_FMT_RGBA8` means. This value is actually an enum
+value defined in the `spng.h` C header file. This enum is used to identify a "PNG format".
+More precisely, it identifies a PNG file that uses the RGBA color model and 8 bit depth.
+So, by providing this enum value as input to the `spng_decoded_image_size()` function,
+we are saying to this function to calculate the size of the decoded pixel data, by considering
+a PNG file that follows this "RGBA color model with 8 bit depth" format.
 
-Having this function, we can use it in conjunction with an allocator object, to allocate an array of bytes (`u8` values) that is big enough
-to store the decoded pixel data of the image. Notice that I'm using `@memset()` to properly initialize
-the entire array to zero.
+Having this function, we can use it in conjunction with an allocator object, to allocate an
+array of bytes (`u8` values) that is big enough to store the decoded pixel data of the image.
+Notice that I'm using `@memset()` to initialize the entire array to zero.
 
 ```zig
 const output_size = try calc_output_size(ctx);
@@ -408,9 +400,9 @@ var buffer = try allocator.alloc(u8, output_size);
 
 Now that we have the necessary space to store the decoded pixel data of the image,
 we can start to actually decode and extract this pixel data from the image,
-by using the `spng_decode_image()` function.
+by using the `spng_decode_image()` C function.
 
-The `read_data_to_buffer()` function exposed below summarises the necessary
+The `read_data_to_buffer()` Zig function exposed below summarises the necessary
 steps to read this decoded pixel data, and store it into an input buffer.
 Notice that this function is encapsulating the logic around the `spng_decode_image()` function.
 Also, we are using the `SPNG_FMT_RGBA8` enum value once again to inform the corresponding function,
@@ -433,7 +425,7 @@ fn read_data_to_buffer(ctx: *c.spng_ctx, buffer: []u8) !void {
 ```
 
 Having this function at hand, we can apply it over our context object, and also, over
-the buffer object that we have created in the previous section to hold the decoded pixel data
+the buffer object that we have allocated in the previous section to hold the decoded pixel data
 of the image:
 
 ```zig
@@ -443,7 +435,7 @@ try read_data_to_buffer(ctx, buffer[0..]);
 
 ### Looking at the pixel data
 
-Now that we have the pixel data stored in our "buffer object", we can take just
+Now that we have the pixel data stored in our "buffer object", we can take
 a quick look at the bytes. In the example below, we are looking at the first
 12 bytes in the decoded pixel data.
 
@@ -457,20 +449,18 @@ If you recall from @sec-pixel-repr, I have
 described in that section that our `pedro_pascal.png` PNG file uses the RGBA color model,
 which adds an alpha (or transparency) byte to each pixel in the image.
 As consequence, each pixel in the image is represented by 4 bytes. Since we are looking
-here are the first 12 bytes in the image, it means that we are looking at the data of
+here are the first 12 bytes in the image, it means that we are looking at the data from
 the first $12 / 4 = 3$ pixels in the image.
 
 So, based on how these first 12 bytes (or these 3 pixels) look, with these 255 values at every 4 bytes, we can say that is likely
 that every pixel in the image have alpha (or transparency) setted to 100%. This might not be true,
 but, is the most likely possibility. Also, if we look at the image itself, which if your recall is
-exposed at @fig-pascal, we can see that the transparency of the image does not change across the image,
+exposed at @fig-pascal, we can see that the transparency does not change across the image,
 which enforces this theory.
 
 
 ```zig
-try stdout.print(
-    "{any}\n", .{buffer[0..12]}
-);
+try stdout.print("{any}\n", .{buffer[0..12]});
 ```
 
 ```
@@ -495,9 +485,8 @@ filter over these pixels. Remember, our objective here is to apply a grayscale f
 the image. A grayscale filter is a filter that transforms a colored image into a grayscale image.
 
 There are different formulas and strategies to transform a colored image into a grayscale image.
-But all of these different strategies involve
-applying some math over the colors of each pixel. In this project, we are going to use the
-most general formula, which is exposed below.
+But all of these different strategies normally involve applying some math over the colors of each pixel.
+In this project, we are going to use the most general formula, which is exposed below.
 This formula considers $r$ as the red of the pixel, $g$ as the green, $b$ as the blue, and $p'$ as the
 linear luminance of the pixel.
 
@@ -507,9 +496,9 @@ $${#eq-grayscale}
 
 This @eq-grayscale is the formula to calculate the linear luminance of a pixel. Is worth noting that this formula
 works only for images whose pixels are using the sRGB color space, which is the standard color space
-for the web. This means that, ideally, all images on the web should use this color space. Luckily,
+for the web. Thus, ideally, all images on the web should use this color space. Luckily,
 this is our case here, i.e. the `pedro_pascal.png` image is using this sRGB color space, and, as consequence,
-we can use the @eq-grayscale. You can read more about this at the Wikipedia page for grayscale [@wiki_grayscale].
+we can use the @eq-grayscale. You can read more about this formula at the Wikipedia page for grayscale [@wiki_grayscale].
 
 The `apply_image_filter()` function exposed below summarises the necessary steps to
 apply @eq-grayscale over the pixels in the image. We just apply this function
@@ -551,7 +540,7 @@ that was produced by our small program.
 
 To do that, the `libspng` library help us once again by offering an "encode data to PNG" type of function,
 which is the `spng_encode_image()` function. But in order to "encode data to PNG" with `libspng`, we need
-to create a new context object. This new context object must use a "encoder context", which
+to create a new context object. This new context object must use an "encoder context", which
 is identified by the enum value `SPNG_CTX_ENCODER`.
 
 The `save_png()` function exposed below, summarises all the necessary steps to save the
@@ -560,19 +549,18 @@ function will save the grayscale image into a file named `pedro_pascal_filter.pn
 
 Notice in this code example that we are using the same image header object (`image_header`) that we have
 collected previously with the `get_image_header()` function. Remember, this image header object
-is a C struct (`spng_ihdr`) that contains basic information about our PNG file, especially
+is a C struct (`spng_ihdr`) that contains basic information about our PNG file, such as
 the dimensions of the image, the color model used, etc.
 
 If we wanted to save a very different image in this new PNG file, e.g. an image
 with different dimensions, or, an image that uses a different color model, a different bit depth, etc.
-we would need to create a new image header (`spng_ihdr`) object that describes the properties
+we would have to create a new image header (`spng_ihdr`) object that describes the properties
 of this new image.
 
 But we are essentially saving the same image that we have begin with here (the dimensions of
 the image, the color model, etc. are all still the same). The only difference
-between the two images are the colors of the pixels, which are now shades of gray.
-As consequence, we can safely use the exact same image header data
-in this new PNG file.
+between the two images are the colors of the pixels, which are now "shades of gray".
+As consequence, we can safely use the exact same image header data in this new PNG file.
 
 
 
@@ -624,10 +612,10 @@ that we have acquired from @sec-build-system.
 
 We first create the build target for our executable file, that executes our
 Zig code. Let's suppose that all of our Zig code was written into a Zig module
-named `image_filter.zig`, then, the `exe` object described in the build script below
+named `image_filter.zig`. The `exe` object exposed in the build script below
 describes the build target for our executable file.
 
-Since we have used C code from the `libspng` library in our Zig code,
+Since we have used some C code from the `libspng` library in our Zig code,
 we need to link our Zig code (which is in the `exe` build target) to both
 the C Standard Library, and, to the `libspng` library. We do that, by calling
 the `linkLibC()` and `linkSystemLibrary()` methods from our `exe` build target.
@@ -644,20 +632,23 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     exe.linkLibC();
-    // Link to spng library:
+    // Link to libspng library:
     exe.linkSystemLibrary("spng");
     b.installArtifact(exe);
 }
 ```
 
-Because we are using the `linkSystemLibrary()` method, it means that the library
+Since we are using the `linkSystemLibrary()` method, it means that the library
 files for `libspng` are searched in your system to be linked with the `exe` build target.
 If you have not yet built and installed the `libspng` library into your system, this
-linkage step will likely not work. Because it will not find the library files.
-
+linkage step will likely not work. Because it will not find the library files in your system.
 
 So, just remember to install `libspng` in your system, if you want to build this project.
 Having this build script above written, we can finally build our project by
 running the `zig build` command in the terminal.
+
+```bash
+zig build
+```
 
 
