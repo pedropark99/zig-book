@@ -866,7 +866,7 @@ Note
 <p>Since they are being used inside a switch statement, the <code>zig</code> compiler looks into the type of the input object given to the switch statement, which is the <code>order</code> object in this case. Because this object have type <code>AtomicOrder</code>, the <code>zig</code> compiler infers that these values are data members from this type <code>AtomicOrder</code>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb48"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">inline</span> <span class="kw">fn</span> fence(self: *Self, <span class="kw">comptime</span> order: AtomicOrder) <span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// LLVM's ThreadSanitizer doesn't support the normal fences so we specialize for it.</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// many lines of code ...</span></span>
 <span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (builtin.sanitize_thread) <span class="op">{</span></span>
 <span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> tsan = <span class="kw">struct</span> <span class="op">{</span></span>
 <span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>            <span class="kw">extern</span> <span class="st">"c"</span> <span class="kw">fn</span> __tsan_acquire(addr: *anyopaque) <span class="dt">void</span>;</span>
@@ -876,19 +876,20 @@ Note
 <span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> addr: *anyopaque = self;</span>
 <span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">switch</span> (order) <span class="op">{</span></span>
 <span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a>            .unordered, .monotonic =&gt; <span class="bu">@compileError</span>(</span>
-<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a>                <span class="bu">@tagName</span>(order) ++ <span class="st">" only applies to atomic loads and stores"</span></span>
-<span id="cb48-13"><a href="#cb48-13" aria-hidden="true" tabindex="-1"></a>            ),</span>
-<span id="cb48-14"><a href="#cb48-14" aria-hidden="true" tabindex="-1"></a>            .acquire =&gt; tsan.__tsan_acquire(addr),</span>
-<span id="cb48-15"><a href="#cb48-15" aria-hidden="true" tabindex="-1"></a>            .release =&gt; tsan.__tsan_release(addr),</span>
-<span id="cb48-16"><a href="#cb48-16" aria-hidden="true" tabindex="-1"></a>            .acq_rel, .seq_cst =&gt; <span class="op">{</span></span>
-<span id="cb48-17"><a href="#cb48-17" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_acquire(addr);</span>
-<span id="cb48-18"><a href="#cb48-18" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_release(addr);</span>
-<span id="cb48-19"><a href="#cb48-19" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>,</span>
-<span id="cb48-20"><a href="#cb48-20" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
-<span id="cb48-21"><a href="#cb48-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb48-22"><a href="#cb48-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-23"><a href="#cb48-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="bu">@fence</span>(order);</span>
-<span id="cb48-24"><a href="#cb48-24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a>                <span class="bu">@tagName</span>(order)</span>
+<span id="cb48-13"><a href="#cb48-13" aria-hidden="true" tabindex="-1"></a>                ++ <span class="st">" only applies to atomic loads and stores"</span></span>
+<span id="cb48-14"><a href="#cb48-14" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb48-15"><a href="#cb48-15" aria-hidden="true" tabindex="-1"></a>            .acquire =&gt; tsan.__tsan_acquire(addr),</span>
+<span id="cb48-16"><a href="#cb48-16" aria-hidden="true" tabindex="-1"></a>            .release =&gt; tsan.__tsan_release(addr),</span>
+<span id="cb48-17"><a href="#cb48-17" aria-hidden="true" tabindex="-1"></a>            .acq_rel, .seq_cst =&gt; <span class="op">{</span></span>
+<span id="cb48-18"><a href="#cb48-18" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_acquire(addr);</span>
+<span id="cb48-19"><a href="#cb48-19" aria-hidden="true" tabindex="-1"></a>                tsan.__tsan_release(addr);</span>
+<span id="cb48-20"><a href="#cb48-20" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>,</span>
+<span id="cb48-21"><a href="#cb48-21" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb48-22"><a href="#cb48-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb48-23"><a href="#cb48-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-24"><a href="#cb48-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="bu">@fence</span>(order);</span>
+<span id="cb48-25"><a href="#cb48-25" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>This is how basic type inference is done in Zig. If we didn’t use the dot character before the values inside this switch statement, then, we would be forced to write explicitly the data types of these values. For example, instead of writing <code>.release</code> we would have to write <code>AtomicOrder.release</code>. We would have to do this for every single value in this switch statement, and this is a lot of work. That is why type inference is commonly used on switch statements in Zig.</p>
 </section>

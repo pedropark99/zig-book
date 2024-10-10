@@ -1122,7 +1122,7 @@ are data members from this type `AtomicOrder`.
 ```{zig}
 #| eval: false
 pub inline fn fence(self: *Self, comptime order: AtomicOrder) void {
-    // LLVM's ThreadSanitizer doesn't support the normal fences so we specialize for it.
+    // many lines of code ...
     if (builtin.sanitize_thread) {
         const tsan = struct {
             extern "c" fn __tsan_acquire(addr: *anyopaque) void;
@@ -1132,7 +1132,8 @@ pub inline fn fence(self: *Self, comptime order: AtomicOrder) void {
         const addr: *anyopaque = self;
         return switch (order) {
             .unordered, .monotonic => @compileError(
-                @tagName(order) ++ " only applies to atomic loads and stores"
+                @tagName(order)
+                ++ " only applies to atomic loads and stores"
             ),
             .acquire => tsan.__tsan_acquire(addr),
             .release => tsan.__tsan_release(addr),
