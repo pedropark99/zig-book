@@ -57,7 +57,7 @@ Knowing the length (or the size) of each object is also important. So the length
 in some cases, *known at compile time*.
 
 The `zig` compiler cares more about knowing the length (or the size) of a particular object
-, than to know it's actual value. But, if the `zig` compiler knows the value of the object, then, it
+, than to know its actual value. But, if the `zig` compiler knows the value of the object, then, it
 automatically knows the size of this object. Because it can simply calculate the
 size of the object by looking at the size of the value.
 
@@ -84,7 +84,7 @@ but this array have a known fixed size, like `[60]u8` (which declares an array o
 this type, or, this struct that you are declaring, becomes a type with a known fixed size at compile-time.
 And because of that, in this case, the `zig` compiler do not need to known at compile-time the exact value of
 any object of this type. Since the compiler can find the necessary size to store this object by
-looking at the size of it's type.
+looking at the size of its type.
 
 
 Let's look at an example. In the source code below, we have two constant objects (`name` and `array`) declared.
@@ -118,14 +118,14 @@ For example, the function `input_length()` contains an argument named `input`, w
 Is impossible to know at compile time the value of this particular argument. And it also is impossible to know the size/length
 of this particular argument. Because it is an array that do not have a fixed size specified explicitly in the argument type annotation.
 
-So, we know that this `input` argument will be an array of `u8` integers. But we do not know at compile-time, it's value, and neither his size.
+So, we know that this `input` argument will be an array of `u8` integers. But we do not know at compile-time, its value, and neither his size.
 This information is known only at runtime, which is the period of time when you program is executed.
 As a consequence, the value of the expression `input.len` is also known only at runtime.
 This is an intrinsic characteristic of any function. Just remember that the value of function arguments is usually not "compile-time known".
 
 However, as I mentioned earlier, what really matters to the compiler is to know the size of the object
-at compile-time, and not necessarily it's value. So, although we don't know the value of the object `n`, which is the result of the expression
-`input.len`, at compile-time, we do know it's size. Because the expression `input.len` always return a value of type `usize`,
+at compile-time, and not necessarily its value. So, although we don't know the value of the object `n`, which is the result of the expression
+`input.len`, at compile-time, we do know its size. Because the expression `input.len` always return a value of type `usize`,
 and the type `usize` have a known fixed size.
 
 
@@ -228,7 +228,7 @@ Because they will be automatically destroyed once the stack space is freed at th
 So, once the function call returns (or ends, if you prefer to call it this way)
 the space that was reserved in the stack is destroyed, and all of the objects that were in that space goes away with it.
 This mechanism exists because this space, and the objects within it, are not necessary anymore,
-since the function "finished it's business".
+since the function "finished its business".
 Using the `add()` function that we exposed above as an example, it means that the object `result` is automatically
 destroyed once the function returns.
 
@@ -238,7 +238,7 @@ freed/destroyed at the end of the function scope.
 :::
 
 
-This same logic applies to any other special structure in Zig that have it's own scope by surrounding
+This same logic applies to any other special structure in Zig that have its own scope by surrounding
 it with curly braces (`{}`).
 For loops, while loops, if else statements, etc. For example, if you declare any local
 object in the scope of a for loop, this local object is accessible only within the scope
@@ -319,14 +319,14 @@ in the program.
 If a local object in your function is stored in the stack, you should never
 return a pointer to this local object from the function. Because
 this pointer will always become undefined after the function returns, since the stack space of the function
-is destroyed at the end of it's scope.
+is destroyed at the end of its scope.
 :::
 
 But what if you really need to use this local object in some way after your function returns?
 How can you do this? The answer is: "in the same you would do if this was a C or C++ program. By returning
 an address to an object stored in the heap". The heap memory have a much more flexible lifecycle,
 and allows you to get a valid pointer to a local object of a function that already returned
-from it's scope.
+from its scope.
 
 
 ### Heap {#sec-heap}
@@ -344,7 +344,7 @@ and that serves (or "deals with") any incoming request that reaches this particu
 The heap is a good choice for this type of system, mainly because the server does not know upfront
 how many requests it will receive from users, while it is active. It could be one single request,
 or, 5 thousand requests, or, it could also be zero requests.
-The server needs to have the ability to allocate and manage it's memory according to how many requests it receives.
+The server needs to have the ability to allocate and manage its memory according to how many requests it receives.
 
 Another key difference between the stack and the heap, is that the heap is a type
 of memory that you, the programmer, have complete control over. This makes the heap a
@@ -379,13 +379,9 @@ In summary, the Zig compiler will use the following rules to decide where each
 object you declare is stored:
 
 1. every literal value (such as `"this is string"`, `10`, or `true`) is stored in the global data section.
-
 1. every constant object (`const`) whose value **is known at compile-time** is also stored in the global data section.
-
 1. every object (constant or not) whose length/size **is known at compile time** is stored in the stack space for the current scope.
-
 1. if an object is created with the method `alloc()` or `create()` of an allocator object, this object is stored in the memory space used by this particular allocator object. Most of allocators available in Zig use the heap memory, so, this object is likely stored in the heap (`FixedBufferAllocator()` is an exception to that).
-
 1. the heap can only be accessed through allocators. If your object was not created through the `alloc()` or `create()` methods of an allocator object, then, he is most certainly not an object stored in the heap.
 
 
@@ -400,13 +396,13 @@ source code of these operators, and find the memory allocation calls.
 Many programmers find this behaviour annoying and hard to keep track of.
 
 But, in Zig, if a function, an operator, or anything from the standard library
-needs to allocate some memory during it's execution, then, this function/operator needs to receive (as input) an allocator
+needs to allocate some memory during its execution, then, this function/operator needs to receive (as input) an allocator
 provided by the user, to actually be able to allocate the memory it needs.
 
 This creates a clear distinction between functions that "do not" from those that "actually do"
 allocate memory. Just look at the arguments of this function.
-If a function, or operator, have an allocator object as one of it's inputs/arguments, then, you know for
-sure that this function/operator will allocate some memory during it's execution.
+If a function, or operator, have an allocator object as one of its inputs/arguments, then, you know for
+sure that this function/operator will allocate some memory during its execution.
 
 An example is the `allocPrint()` function from the Zig standard library. With this function, you can
 write a new string using format specifiers. So, this function is, for example, very similar to the function `sprintf()` in C.
@@ -464,8 +460,7 @@ known fixed length.
 But in reality, there are two very common instances where this "fixed length limitation" of the stack is a deal braker:
 
 1. the objects that you create inside your function might grow in size during the execution of the function.
-
-2. sometimes, it is impossible to know upfront how many inputs you will receive, or how big this input will be.
+1. sometimes, it is impossible to know upfront how many inputs you will receive, or how big this input will be.
 
 Also, there is another instance where you might want to use an allocator, which is when you want to write a function that returns a pointer
 to a local object. As I described at @sec-stack, you cannot do that if this local object is stored in the
@@ -499,7 +494,7 @@ allocators available in the standard library:
 - `c_allocator()` (requires you to link to libc).
 
 
-Each allocator have it's own perks and limitations. All allocators, except `FixedBufferAllocator()` and `ArenaAllocator()`,
+Each allocator have its own perks and limitations. All allocators, except `FixedBufferAllocator()` and `ArenaAllocator()`,
 are allocators that use the heap memory. So any memory that you allocate with
 these allocators, will be placed in the heap.
 

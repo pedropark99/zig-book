@@ -297,7 +297,7 @@ With the `defer` keyword you can register an expression to be executed when you 
 Therefore, this keyword has a similar functionality as the `on.exit()` function from R.
 Take the `foo()` function below as an example. When we execute this `foo()` function, the expression
 that prints the message "Exiting function ..." get's executed only when the function exits
-it's scope.
+its scope.
 
 
 ```{zig}
@@ -344,7 +344,7 @@ Now, if you remember of what we have discussed at @sec-blocks, there are multipl
 that create their own separate scopes. For/while loops, if/else statements,
 functions, normal blocks, etc. This also affects the interpretation of `defer`.
 For example, if you use `defer` inside a for loop, then, the given expression
-will be executed everytime this specific for loop exits it's own scope.
+will be executed everytime this specific for loop exits its own scope.
 
 Before we continue, is worth emphasizing that the `defer` keyword is an "unconditional defer".
 Which means that the given expression will be executed no matter how the code exits
@@ -372,7 +372,7 @@ But we are going to discuss `errdefer` later as a error handling tool at @sec-er
 
 The code example below demonstrates three things:
 
-- that `defer` is an "unconditional defer", because the given expression get's executed regardless of how the function `foo()` exits it's own scope.
+- that `defer` is an "unconditional defer", because the given expression get's executed regardless of how the function `foo()` exits its own scope.
 - that `errdefer` is executed because the function `foo()` returned an error value.
 - that `defer` and `errdefer` expressions are executed in a LIFO (*last in, first out*) order.
 
@@ -713,7 +713,7 @@ them being used when we talk about allocators at @sec-allocators.
 But, as another example, let's build a simple `User` struct to represent an user of some sort of system.
 
 If you look at the `User` struct below, you can see the `struct` keyword.
-Notice the data members of this struct, `id`, `name` and `email`. Every data member have it's
+Notice the data members of this struct, `id`, `name` and `email`. Every data member have its
 type explicitly annotated, with the colon character (`:`) syntax that we described earlier at @sec-root-file.
 But also notice that every line in the struct body that describes a data member, ends with a comma character (`,`).
 So every time you declare a data member in your Zig code, always end the line with a comma character, instead
@@ -776,7 +776,7 @@ not be authorized to call this method directly in my code.
 ### Anonymous struct literals {#sec-anonymous-struct-literals}
 
 You can declare a struct object as a literal value. When we do that, we normally specify the
-data type of this struct literal by writing it's data type just before the opening curly brace.
+data type of this struct literal by writing its data type just before the opening curly brace.
 For example, I could write a struct literal value of the type `User` that we have defined
 in the previous section like this:
 
@@ -958,13 +958,13 @@ we can see in the `distance()` method that this `self` argument is annotated as
 method.
 
 But what if we do have a method that alters the state of the object, by altering the
-values of it's data members, how should we annotate `self` in this instance? The answer is:
+values of its data members, how should we annotate `self` in this instance? The answer is:
 "we should annotate `self` as a pointer of `x`, instead of just `x`".
 In other words, you should annotate `self` as `self: *x`, instead of annotating it
 as `self: x`.
 
 If we create a new method inside the `Vec3` object that, for example, expands the
-vector by multiplying it's coordinates by a factor of two, then, we need to follow
+vector by multiplying its coordinates by a factor of two, then, we need to follow
 this rule specified in the previous paragraph. The code example below demonstrates
 this idea:
 
@@ -1020,7 +1020,8 @@ Now, if you change the `self` argument in this `double()` method to `self: Vec3`
 error message is indicating a line from the `double()` method body,
 indicating that you cannot alter the value of the `x` data member.
 
-```zig
+```{zig}
+#| eval: false
 // If we change the function signature of double to:
     pub fn double(self: Vec3) void {
 ```
@@ -1060,14 +1061,14 @@ instead of `self: x` in the function signature of this method.
 
 
 You could also interpret the content discussed in this section as:
-"if you need to alter the state of your `x` struct object in one of it's methods,
+"if you need to alter the state of your `x` struct object in one of its methods,
 you must explicitly pass the `x` struct object by reference to the `self` argument of this method".
 
 
 
 ## Type inference {#sec-type-inference}
 
-Zig is kind of a strongly typed language. I say "kind of" because there are situations
+Zig is a strongly typed language. But, there are some situations
 where you don't have to explicitly write the type of every single object in your source code,
 as you would expect from a traditional strongly typed language, such as C and C++.
 
@@ -1121,7 +1122,7 @@ are data members from this type `AtomicOrder`.
 ```{zig}
 #| eval: false
 pub inline fn fence(self: *Self, comptime order: AtomicOrder) void {
-    // LLVM's ThreadSanitizer doesn't support the normal fences so we specialize for it.
+    // many lines of code ...
     if (builtin.sanitize_thread) {
         const tsan = struct {
             extern "c" fn __tsan_acquire(addr: *anyopaque) void;
@@ -1131,7 +1132,8 @@ pub inline fn fence(self: *Self, comptime order: AtomicOrder) void {
         const addr: *anyopaque = self;
         return switch (order) {
             .unordered, .monotonic => @compileError(
-                @tagName(order) ++ " only applies to atomic loads and stores"
+                @tagName(order)
+                ++ " only applies to atomic loads and stores"
             ),
             .acquire => tsan.__tsan_acquire(addr),
             .release => tsan.__tsan_release(addr),
@@ -1249,7 +1251,8 @@ your current module via *import statements*. Every Zig module (i.e. a `.zig` fil
 is internally stored as a struct object. Take the line exposed below as an example. In this line we are importing the
 Zig Standard Library into our current module.
 
-```zig
+```{zig}
+#| eval: false
 const std = @import("std");
 ```
 
@@ -1275,7 +1278,8 @@ are data members of this struct. The module is the struct itself.
 
 So you would import and use this module by doing something like this:
 
-```zig
+```{zig}
+#| eval: false
 const std = @import("std");
 const ThreadPool = @import("thread_pool.zig");
 const num_cpus = std.Thread.getCpuCount()

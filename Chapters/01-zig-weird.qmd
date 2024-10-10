@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 In this chapter, I want to introduce you to the world of Zig.
 Zig is a very young language that is being actively developed.
-As a consequence, it's world is still very wild and to be explored.
+As a consequence, its world is still very wild and to be explored.
 This book is my attempt to help you on your personal journey for
 understanding and exploring the exciting world of Zig.
 
@@ -203,12 +203,11 @@ In this `root.zig` module, we are declaring a function called `add()`, which has
 The function returns an integer of the type `i32` as result.
 
 
-Zig is not exactly a strongly-typed language. Because you can (if you want to) omit
-the type of an object in your code, if this type can be derived from the assigned value.
-But there are other situations where you do need to be explicit.
+Zig is a strongly-typed language. There are some specific situations where you can (if you want to) omit
+the type of an object in your code, if this type can be inferred by the `zig` compiler (we talk more
+about that at @sec-type-inference). But there are other situations where you do need to be explicit.
 For example, you do have to explicitly specify the type of each function argument, and also,
-the return type of every function you create in Zig. So, at least in function declarations,
-Zig is a strongly-typed language.
+the return type of every function that you create in Zig.
 
 We specify the type of an object or a function argument in Zig by
 using a colon character (`:`) followed by the type after the name of this object/function argument.
@@ -633,7 +632,7 @@ t.zig:4:11: error: unused local constant
 Everytime you declare a new object in Zig, you have two choices:
 
 1. you either use the value of this object;
-2. or you explicitly discard the value of the object;
+1. or you explicitly discard the value of the object;
 
 To explicitly discard the value of any object (constant or variable), all you need to do is to assign
 this object to an special character in Zig, which is the underscore (`_`).
@@ -1001,13 +1000,13 @@ your source code. In less technical terms, blocks are used to specify where in y
 you can access whatever object you have in your source code.
 
 So, a block is just a group of expressions contained inside a pair of curly braces.
-And every block have it's own scope separated from the others.
+And every block have its own scope separated from the others.
 The body of a function is a classic example of a block. If statements, for and while loops
 (and any other structure in the language that uses the pair of curly braces)
 are also examples of blocks.
 
 This means that, every if statement, or for loop,
-etc., that you create in your source code have it's own separate scope.
+etc., that you create in your source code have its own separate scope.
 That is why you can't access the objects that you defined inside
 of your for loop (or if statement) in an outer scope, i.e. a scope outside of the for loop.
 Because you are trying to access an object that belongs to a scope that is different
@@ -1131,7 +1130,8 @@ where exactly the array ends, or, in other words, to find how much elements the 
 To do that, you would need something like this in C. In this example, the C string stored in
 the object `array` is 25 bytes long:
 
-```c
+```{c}
+#| eval: false
 #include <stdio.h>
 int main() {
     char* array = "An example of string in C";
@@ -1200,7 +1200,10 @@ const stdout = std.io.getStdOut().writer();
 pub fn main() !void {
     const string_object = "This is an example of string literal in Zig";
     const simple_array = [_]i32{1, 2, 3, 4};
-    try stdout.print("Type of array object: {}", .{@TypeOf(simple_array)});
+    try stdout.print(
+        "Type of array object: {}",
+        .{@TypeOf(simple_array)}
+    );
     try stdout.print(
         "Type of string object: {}",
         .{@TypeOf(string_object)}
@@ -1242,7 +1245,9 @@ const std = @import("std");
 const stdout = std.io.getStdOut().writer();
 pub fn main() !void {
     const string_object = "Ⱥ";
-    try stdout.print("Bytes that represents the string object: ", .{});
+    _ = try stdout.write(
+        "Bytes that represents the string object: "
+    );
     for (string_object) |char| {
         try stdout.print("{X} ", .{char});
     }

@@ -449,7 +449,7 @@ window.Quarto = {
 </section>
 <section id="the-standard-input" class="level3" data-number="13.1.4">
 <h3 data-number="13.1.4" class="anchored" data-anchor-id="the-standard-input"><span class="header-section-number">13.1.4</span> The <em>standard input</em></h3>
-<p>You can access the <em>standard input</em> (i.e.&nbsp;<code>stdin</code>) in Zig by using the <code>getStdIn()</code> function from the <code>std.io</code> module. Like it’s brother (<code>getStdOut()</code>), this function also returns a file descriptor object that describes the <code>stdin</code> channel of your OS.</p>
+<p>You can access the <em>standard input</em> (i.e.&nbsp;<code>stdin</code>) in Zig by using the <code>getStdIn()</code> function from the <code>std.io</code> module. Like its brother (<code>getStdOut()</code>), this function also returns a file descriptor object that describes the <code>stdin</code> channel of your OS.</p>
 <p>Because we want to receive some input from the user, the key verb here becomes <strong>receive</strong>, and, as consequence, we usually want to <strong>read</strong> data from the <code>stdin</code> channel, instead of writing data into it. So, we normally use the <code>reader()</code> method of the file descriptor object returned by <code>getStdIn()</code>, to get access to a <code>GenericReader</code> object that we can use to read data from <code>stdin</code>.</p>
 <p>In the example below, we are creating a small buffer capable of holding 20 characters. Then, we try to read the data from the <code>stdin</code> with the <code>readUntilDelimiterOrEof()</code> method, and save this data into the <code>buffer</code> object. Also notice that we are reading the data from the <code>stdin</code> until we hit a new line character (<code>'\n'</code>).</p>
 <p>If you execute this program, you will notice that it stops the execution, ands start to wait indefinitely for some input from the user. In other words, you need to type your name into the terminal, and then, you press Enter to send your name to <code>stdin</code>. After you send your name to <code>stdin</code>, the program reads this input, and continues with the execution, by printing the given name to <code>stdout</code>. In the example below, I typed my name (Pedro) into the terminal, and then, pressed Enter.</p>
@@ -481,44 +481,27 @@ Your name is: Pedro
 <p>So is perfectly fine to use a system call once in a while. But when these system calls are used often, you can clearly notice most of the time the loss of performance in your application. So, the good rule of thumbs is to use a system call only when it is needed, and also, only in infrequent situations, to reduce the number of system calls performed to a minimum.</p>
 <section id="understanding-how-buffered-io-works" class="level3" data-number="13.2.1">
 <h3 data-number="13.2.1" class="anchored" data-anchor-id="understanding-how-buffered-io-works"><span class="header-section-number">13.2.1</span> Understanding how buffered IO works</h3>
-<p>Buffered IO is a strategy to achieve better performance. It is used to reduce the number of system calls made by IO operations, and, as consequence, achieve a much higher performance. At <a href="#fig-buff-diff" class="quarto-xref">Figure&nbsp;<span>13.1</span></a> you can find two different diagrams which presents the difference between read operations performed in an unbuferred IO environment versus a buffered IO environment.</p>
-<p>To give a better context to these diagrams, let’s suppose that we have a text file that contains the famous Lorem ipsum text<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a> in our filesystem. Let’s also suppose that these diagrams at <a href="#fig-buff-diff" class="quarto-xref">Figure&nbsp;<span>13.1</span></a> are showing the read operations that we are performing to read the Lorem ipsum text from this text file. The first thing you will notice when looking at these diagrams, is that in an unbuffered environment the read operations leads to many system calls. More precisely, in the diagram exposed at <a href="#fig-unbuffered-io" class="quarto-xref">Figure&nbsp;<span>13.1 (a)</span></a> we get one system call per each byte that we read from the text file. On the other hand, at <a href="#fig-buffered-io" class="quarto-xref">Figure&nbsp;<span>13.1 (b)</span></a> we have only one system call at the very beginning.</p>
+<p>Buffered IO is a strategy to achieve better performance. It is used to reduce the number of system calls made by IO operations, and, as consequence, achieve a much higher performance. At <a href="#fig-unbuffered-io" class="quarto-xref">Figure&nbsp;<span>13.1</span></a> and <a href="#fig-buffered-io" class="quarto-xref">Figure&nbsp;<span>13.2</span></a> you can find two different diagrams which presents the difference between read operations performed in an unbuferred IO environment versus a buffered IO environment.</p>
+<p>To give a better context to these diagrams, let’s suppose that we have a text file that contains the famous Lorem ipsum text<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a> in our filesystem. Let’s also suppose that these diagrams at <a href="#fig-unbuffered-io" class="quarto-xref">Figure&nbsp;<span>13.1</span></a> and <a href="#fig-buffered-io" class="quarto-xref">Figure&nbsp;<span>13.2</span></a> are showing the read operations that we are performing to read the Lorem ipsum text from this text file. The first thing you will notice when looking at these diagrams, is that in an unbuffered environment the read operations leads to many system calls. More precisely, in the diagram exposed at <a href="#fig-unbuffered-io" class="quarto-xref">Figure&nbsp;<span>13.1</span></a> we get one system call per each byte that we read from the text file. On the other hand, at <a href="#fig-buffered-io" class="quarto-xref">Figure&nbsp;<span>13.2</span></a> we have only one system call at the very beginning.</p>
 <p>When we use a buffered IO system, at the first read operation we perform, instead of sending one single byte directly to our program, the OS first sends a chunk of bytes from the file to a buffer object (i.e.&nbsp;an array). This chunk of bytes are cached/stored inside this buffer object.</p>
 <p>Therefore, from now on, for every new read operation that you perform, instead of making a new system call to ask for the next byte in the file to the OS, this read operation is redirected to the buffer object, that have this next byte already cached and ready to go.</p>
-<div id="fig-buff-diff" class="quarto-layout-panel">
-<figure class="quarto-float quarto-float-fig figure">
-<div aria-describedby="fig-buff-diff-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="quarto-layout-row">
-<div class="quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-buff-diff" style="flex-basis: 100.0%;justify-content: flex-start;">
 <div id="fig-unbuffered-io" class="quarto-float quarto-figure quarto-figure-center anchored">
-<figure class="quarto-float quarto-subfloat-fig figure">
+<figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-unbuffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<img src="./../Figures/unbuffered-io.png" class="img-fluid figure-img" style="width:60.0%" data-ref-parent="fig-buff-diff">
+<img src="./../Figures/unbuffered-io.png" class="img-fluid figure-img" style="width:60.0%">
 </div>
-<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-unbuffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-(a) Unbuffered IO
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-unbuffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;13.1: Unbuffered IO
 </figcaption>
 </figure>
 </div>
-</div>
-</div>
-<div class="quarto-layout-row">
-<div class="quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-buff-diff" style="flex-basis: 100.0%;justify-content: flex-start;">
 <div id="fig-buffered-io" class="quarto-float quarto-figure quarto-figure-center anchored">
-<figure class="quarto-float quarto-subfloat-fig figure">
+<figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-buffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<img src="./../Figures/buffered-io.png" class="img-fluid figure-img" data-ref-parent="fig-buff-diff">
+<img src="./../Figures/buffered-io.png" class="img-fluid figure-img">
 </div>
-<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-buffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-(b) Buffered IO
-</figcaption>
-</figure>
-</div>
-</div>
-</div>
-</div>
-<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-buff-diff-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure&nbsp;13.1: Diagrams of read operations performed in buffered IO and unbuffered IO environments.
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-buffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;13.2: Buffered IO
 </figcaption>
 </figure>
 </div>
@@ -535,7 +518,7 @@ Figure&nbsp;13.1: Diagrams of read operations performed in buffered IO and unbuf
 <p>Using buffered IO in Zig is actually very easy. All you have to do is to just give the <code>GenericWriter</code> object to the <code>bufferedWriter()</code> function, or, to give the <code>GenericReader</code> object to the <code>bufferedReader()</code> function. These functions come from the <code>std.io</code> module, and they will construct the <code>BufferedWriter</code> or <code>BufferedReader</code> object for you.</p>
 <p>After you create this new <code>BufferedWriter</code> or <code>BufferedReader</code> object, you can call the <code>writer()</code> or <code>reader()</code> method of this new object, to get access to a new (and buffered) generic reader or generic writer.</p>
 <p>Let’s describe the process once again. Every time that you have a file descriptor object, you first get the generic writer or generic reader object from it, by calling the <code>writer()</code> or <code>reader()</code> methods of this file descriptor object. Then, you provide this generic writer or generic reader to the <code>bufferedWriter()</code> or <code>bufferedReader()</code> function, which creates a new <code>BufferedWriter</code> or <code>BufferedReader</code> object. Then, you call the <code>writer()</code> or <code>reader()</code> methods of this buffered writer or buffered reader object, which gives you access to a generic writer or a generic reader object that is buffered.</p>
-<p>Take this program as an example. This program is demonstrating the process exposed at <a href="#fig-buffered-io" class="quarto-xref">Figure&nbsp;<span>13.1 (b)</span></a>. We are simply opening a text file that contains the Lorem ipsum text, and then, we create a buffered IO reader object at <code>bufreader</code>, and we use this <code>bufreader</code> object to read the contents of this file into a buffer object, then, we end the program by printing this buffer to <code>stdout</code>.</p>
+<p>Take this program as an example. This program is demonstrating the process exposed at <a href="#fig-buffered-io" class="quarto-xref">Figure&nbsp;<span>13.2</span></a>. We are simply opening a text file that contains the Lorem ipsum text, and then, we create a buffered IO reader object at <code>bufreader</code>, and we use this <code>bufreader</code> object to read the contents of this file into a buffer object, then, we end the program by printing this buffer to <code>stdout</code>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> file = <span class="kw">try</span> std.fs.cwd().openFile(</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ZigExamples/file-io/lorem.txt"</span>, .<span class="op">{}</span></span>
@@ -566,7 +549,7 @@ nulla vulputate molestie eget non nunc. Ut commodo luctus ipsum,
 in finibus libero feugiat eget. Etiam vel ante at urna tincidunt
 posuere sit amet ut felis. Maecenas finibus suscipit tristique.
 Donec viverra non sapien id suscipit.</code></pre>
-<p>Despite being a buffered IO reader, this <code>bufreader</code> object is similar to any other <code>GenericReader</code> object, and have the exact same methods. So, although these two types of objects perform very different IO operations, they have the same interface, so you, the programmer, can interchangeably use them without the need to change anything in your source code. So a buffered IO reader or a buffered IO writer objects have the same methods than it’s generic and unbuffered brothers, i.e.&nbsp;the generic reader and generic writer objects that I presented at <a href="#sec-writer-reader" class="quarto-xref"><span>Section 13.1.1</span></a>.</p>
+<p>Despite being a buffered IO reader, this <code>bufreader</code> object is similar to any other <code>GenericReader</code> object, and have the exact same methods. So, although these two types of objects perform very different IO operations, they have the same interface, so you, the programmer, can interchangeably use them without the need to change anything in your source code. So a buffered IO reader or a buffered IO writer objects have the same methods than its generic and unbuffered brothers, i.e.&nbsp;the generic reader and generic writer objects that I presented at <a href="#sec-writer-reader" class="quarto-xref"><span>Section 13.1.1</span></a>.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -589,25 +572,25 @@ Tip
 <h3 data-number="13.3.1" class="anchored" data-anchor-id="the-concept-of-current-working-directory-cwd"><span class="header-section-number">13.3.1</span> The concept of current working directory (CWD)</h3>
 <p>The working directory is the folder on your computer where you are currently rooted at. In other words, it is the folder that your program is currently looking at. Therefore, whenever you are executing a program, this program is always working with a specific folder on your computer. It is always in this folder that the program will initially look for the files you require, and it is also in this folder that the program will initially save all the files you ask it to save.</p>
 <p>The working directory is determined by the folder from which you invoke your program in the terminal. In other words, if you are in the terminal of your OS, and you execute a binary file (i.e.&nbsp;a program) from this terminal, the folder to which your terminal is pointing at is the current working directory of your program that is being executed.</p>
-<p>At <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.2</span></a> we have an example of me executing a program from the terminal. We are executing the program outputted by the <code>zig</code> compiler by compiling the Zig module named <code>hello.zig</code>. The CWD in this case is the <code>zig-book</code> folder. In other words, while the <code>hello.zig</code> program is executing, it will be looking at the <code>zig-book</code> folder, and any file operation that we perform inside this program, will be using this <code>zig-book</code> folder as the “starting point”, or, as the “central focus”.</p>
+<p>At <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.3</span></a> we have an example of me executing a program from the terminal. We are executing the program outputted by the <code>zig</code> compiler by compiling the Zig module named <code>hello.zig</code>. The CWD in this case is the <code>zig-book</code> folder. In other words, while the <code>hello.zig</code> program is executing, it will be looking at the <code>zig-book</code> folder, and any file operation that we perform inside this program, will be using this <code>zig-book</code> folder as the “starting point”, or, as the “central focus”.</p>
 <div id="fig-cwd" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-cwd-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="./../Figures/cwd.png" class="img-fluid figure-img">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-cwd-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure&nbsp;13.2: Executing a program from the terminal
+Figure&nbsp;13.3: Executing a program from the terminal
 </figcaption>
 </figure>
 </div>
-<p>Just because we are rooted inside a particular folder (in the case of <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.2</span></a>, the <code>zig-book</code> folder) of our computer, it doesn’t mean that we cannot access or write resources in other locations of our computer. The current working directory (CWD) mechanism just defines where your program will look first for the files you ask for. This does not prevent you from accessing files that are located elsewhere on your computer. However, to access any file that is in a folder other than your current working directory, you must provide a path to that file or folder.</p>
+<p>Just because we are rooted inside a particular folder (in the case of <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.3</span></a>, the <code>zig-book</code> folder) of our computer, it doesn’t mean that we cannot access or write resources in other locations of our computer. The current working directory (CWD) mechanism just defines where your program will look first for the files you ask for. This does not prevent you from accessing files that are located elsewhere on your computer. However, to access any file that is in a folder other than your current working directory, you must provide a path to that file or folder.</p>
 </section>
 <section id="the-concept-of-paths" class="level3" data-number="13.3.2">
 <h3 data-number="13.3.2" class="anchored" data-anchor-id="the-concept-of-paths"><span class="header-section-number">13.3.2</span> The concept of paths</h3>
 <p>A path is essentially a location. It points to a location in your filesystem. We use paths to describe the location of files and folders in our computer. One important aspect about paths is that they are always written inside strings, i.e.&nbsp;they are always provided as text values.</p>
 <p>There are two types of paths that you can provide to any program in any OS: a relative path, or an absolute path. Absolute paths are paths that start at the root of your filesystem, and go all the way to the file name or the specfic folder that you are referring to. This type of path is called absolute, because it points to an unique and absolute location on your computer. That is, there is no other existing location on your computer that corresponds to this path. It is an unique identifier.</p>
 <p>In Windows, an absolute path is a path that starts with a hard disk identifier (e.g.&nbsp;<code>C:/Users/pedro</code>). On the other hand, absolute paths in Linux and MacOS, are paths that start with a forward slash character (e.g.&nbsp;<code>/usr/local/bin</code>). Notice that a path is composed by “segments”. Each segment is connected to each other by a slash character (<code>\</code> or <code>/</code>). On Windows, the backward slash (<code>\</code>) is normally used to connect the path segments. While on Linux and MacOS, the forward slash (<code>/</code>) is the character used to connect path segments.</p>
-<p>A relative path is a path that start at the CWD. In other words, a relative path is “relative to the CWD”. The path used to access the <code>hello.zig</code> file at <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.2</span></a> is an example of a relative path. This path is reproduced below. This path begins at the CWD, which in the context of <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.2</span></a>, is the <code>zig-book</code> folder, then, it goes to the <code>ZigExamples</code> folder, then, into <code>zig-basics</code>, then, to the <code>hello.zig</code> file.</p>
+<p>A relative path is a path that start at the CWD. In other words, a relative path is “relative to the CWD”. The path used to access the <code>hello.zig</code> file at <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.3</span></a> is an example of a relative path. This path is reproduced below. This path begins at the CWD, which in the context of <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.3</span></a>, is the <code>zig-book</code> folder, then, it goes to the <code>ZigExamples</code> folder, then, into <code>zig-basics</code>, then, to the <code>hello.zig</code> file.</p>
 <pre><code>ZigExamples/zig-basics/hello_world.zig</code></pre>
 </section>
 <section id="path-wildcards" class="level3" data-number="13.3.3">
@@ -682,11 +665,13 @@ Figure&nbsp;13.2: Executing a program from the terminal
 <p>These modes are similar to the modes that you provide to the <code>mode</code> argument of the <code>open()</code> Python built-in function<a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a>, or, the <code>mode</code> argument of the <code>fopen()</code> C function<a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a>. In the code example below, we are opening the <code>foo.txt</code> text file with a <code>write_only</code> mode, and appending a new line of text to the end of the file. We use <code>seekFromEnd()</code> this time to garantee that we are going to append the text to the end of the file. Once again, methods such as <code>seekFromEnd()</code> are described in more depth at <a href="#sec-indicators" class="quarto-xref"><span>Section 13.6</span></a>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file = <span class="kw">try</span> cwd.openFile(<span class="st">"foo.txt"</span>, .<span class="op">{</span> .mode = .write_only <span class="op">}</span>);</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> file.close();</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> file.seekFromEnd(<span class="dv">0</span>);</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> fw = file.writer();</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> fw.writeAll(<span class="st">"Some random text to write</span><span class="sc">\n</span><span class="st">"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> file = <span class="kw">try</span> cwd.openFile(</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"foo.txt"</span>, .<span class="op">{</span> .mode = .write_only <span class="op">}</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> file.close();</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> file.seekFromEnd(<span class="dv">0</span>);</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> fw = file.writer();</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> fw.writeAll(<span class="st">"Some random text to write</span><span class="sc">\n</span><span class="st">"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="deleting-files" class="level3" data-number="13.5.3">
@@ -700,7 +685,7 @@ Figure&nbsp;13.2: Executing a program from the terminal
 <section id="copying-files" class="level3" data-number="13.5.4">
 <h3 data-number="13.5.4" class="anchored" data-anchor-id="copying-files"><span class="header-section-number">13.5.4</span> Copying files</h3>
 <p>To copy existing files, we use the <code>copyFile()</code> method. The first argument in this method is the path to the file that you want to copy. The second argument is a <code>Dir</code> object, i.e.&nbsp;a directory handler, more specifically, a <code>Dir</code> object that points to the folder in your computer where you want to copy the file to. The third argument is the new path of the file, or, in other words, the new location of the file. The fourth argument is the options (or flags) to be used in the copy operation.</p>
-<p>The <code>Dir</code> object that you provide as input to this method will be used to copy the file to the new location. You may create this <code>Dir</code> object before calling the <code>copyFile()</code> method. Maybe you are planning to copy the file to a completly different location in your computer, so it might be worth to create a directory handler to that location. But if you are copying the file to a subfolder of your CWD, then, you can just simply pass the CWD handler to this argument.</p>
+<p>The <code>Dir</code> object that you provide as input to this method will be used to copy the file to the new location. You may create this <code>Dir</code> object before calling the <code>copyFile()</code> method. Maybe you are planning to copy the file to a completely different location in your computer, so it might be worth to create a directory handler to that location. But if you are copying the file to a subfolder of your CWD, then, you can just simply pass the CWD handler to this argument.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.fs.cwd();</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.copyFile(</span>

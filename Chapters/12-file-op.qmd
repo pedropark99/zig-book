@@ -224,7 +224,7 @@ use them here, from the file descriptor object of `stdout`, and vice-versa.
 ### The *standard input*
 
 You can access the *standard input* (i.e. `stdin`) in Zig by using the `getStdIn()` function from the `std.io` module.
-Like it's brother (`getStdOut()`), this function also returns a file descriptor object that describes the `stdin` channel
+Like its brother (`getStdOut()`), this function also returns a file descriptor object that describes the `stdin` channel
 of your OS.
 
 Because we want to receive some input from the user, the key verb here becomes **receive**, and, as consequence,
@@ -294,11 +294,11 @@ the number of system calls performed to a minimum.
 ### Understanding how buffered IO works
 
 Buffered IO is a strategy to achieve better performance. It is used to reduce the number of system calls made by IO operations, and, as
-consequence, achieve a much higher performance. At @fig-buff-diff you can find two different diagrams which presents the difference between
-read operations performed in an unbuferred IO environment versus a buffered IO environment.
+consequence, achieve a much higher performance. At @fig-unbuffered-io and @fig-buffered-io you can find two different diagrams
+which presents the difference between read operations performed in an unbuferred IO environment versus a buffered IO environment.
 
 To give a better context to these diagrams, let's suppose that we have a text file that contains the famous Lorem ipsum text[^lorem]
-in our filesystem. Let's also suppose that these diagrams at @fig-buff-diff
+in our filesystem. Let's also suppose that these diagrams at @fig-unbuffered-io and @fig-buffered-io
 are showing the read operations that we are performing to read the Lorem ipsum text from this text file.
 The first thing you will notice when looking at these diagrams, is that in an unbuffered environment
 the read operations leads to many system calls.
@@ -316,15 +316,12 @@ this next byte already cached and ready to go.
 
 [^lorem]: <https://www.lipsum.com/>.
 
-::: {#fig-buff-diff layout-nrow=2}
 
 ![Unbuffered IO](./../Figures/unbuffered-io.png){#fig-unbuffered-io width=60%}
 
 ![Buffered IO](./../Figures/buffered-io.png){#fig-buffered-io}
 
-Diagrams of read operations performed in buffered IO and unbuffered IO environments.
 
-:::
 
 This is the basic logic behind buffered IO systems. The size of the buffer object depends on multiple factors. But it is usually
 equal to the size of a full page of memory (4096 bytes). If we follow this logic, then, the OS reads the first 4096 bytes
@@ -412,7 +409,7 @@ Despite being a buffered IO reader, this `bufreader` object is similar to any ot
 and have the exact same methods. So, although these two types of objects perform very different IO operations,
 they have the same interface, so you, the programmer, can interchangeably use them
 without the need to change anything in your source code.
-So a buffered IO reader or a buffered IO writer objects have the same methods than it's generic and unbuffered brothers,
+So a buffered IO reader or a buffered IO writer objects have the same methods than its generic and unbuffered brothers,
 i.e. the generic reader and generic writer objects that I presented at @sec-writer-reader.
 
 ::: {.callout-tip}
@@ -679,7 +676,9 @@ such as `seekFromEnd()` are described in more depth at @sec-indicators.
 #| auto_main: true
 #| build_type: "run"
 const cwd = std.fs.cwd();
-const file = try cwd.openFile("foo.txt", .{ .mode = .write_only });
+const file = try cwd.openFile(
+    "foo.txt", .{ .mode = .write_only }
+);
 defer file.close();
 try file.seekFromEnd(0);
 var fw = file.writer();
@@ -710,7 +709,7 @@ of the file. The fourth argument is the options (or flags) to be used in the cop
 
 The `Dir` object that you provide as input to this method will be used to copy the file to
 the new location. You may create this `Dir` object before calling the `copyFile()` method.
-Maybe you are planning to copy the file to a completly different location in your computer,
+Maybe you are planning to copy the file to a completely different location in your computer,
 so it might be worth to create a directory handler to that location. But if you are copying the
 file to a subfolder of your CWD, then, you can just simply pass the CWD handler to this argument.
 
