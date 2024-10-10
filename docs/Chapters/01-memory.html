@@ -500,11 +500,11 @@ Important
 <h3 data-number="3.1.6" class="anchored" data-anchor-id="summary"><span class="header-section-number">3.1.6</span> Summary</h3>
 <p>After discussing all of these boring details, we can quickly recap what we learned. In summary, the Zig compiler will use the following rules to decide where each object you declare is stored:</p>
 <ol type="1">
-<li><p>every literal value (such as <code>"this is string"</code>, <code>10</code>, or <code>true</code>) is stored in the global data section.</p></li>
-<li><p>every constant object (<code>const</code>) whose value <strong>is known at compile-time</strong> is also stored in the global data section.</p></li>
-<li><p>every object (constant or not) whose length/size <strong>is known at compile time</strong> is stored in the stack space for the current scope.</p></li>
-<li><p>if an object is created with the method <code>alloc()</code> or <code>create()</code> of an allocator object, this object is stored in the memory space used by this particular allocator object. Most of allocators available in Zig use the heap memory, so, this object is likely stored in the heap (<code>FixedBufferAllocator()</code> is an exception to that).</p></li>
-<li><p>the heap can only be accessed through allocators. If your object was not created through the <code>alloc()</code> or <code>create()</code> methods of an allocator object, then, he is most certainly not an object stored in the heap.</p></li>
+<li>every literal value (such as <code>"this is string"</code>, <code>10</code>, or <code>true</code>) is stored in the global data section.</li>
+<li>every constant object (<code>const</code>) whose value <strong>is known at compile-time</strong> is also stored in the global data section.</li>
+<li>every object (constant or not) whose length/size <strong>is known at compile time</strong> is stored in the stack space for the current scope.</li>
+<li>if an object is created with the method <code>alloc()</code> or <code>create()</code> of an allocator object, this object is stored in the memory space used by this particular allocator object. Most of allocators available in Zig use the heap memory, so, this object is likely stored in the heap (<code>FixedBufferAllocator()</code> is an exception to that).</li>
+<li>the heap can only be accessed through allocators. If your object was not created through the <code>alloc()</code> or <code>create()</code> methods of an allocator object, then, he is most certainly not an object stored in the heap.</li>
 </ol>
 </section>
 </section>
@@ -542,8 +542,8 @@ Important
 <p>As we described at <a href="#sec-stack" class="quarto-xref"><span>Section 3.1.4</span></a>, everytime you make a function call in Zig, a space in the stack is reserved for this function call. But the stack have a key limitation which is: every object stored in the stack have a known fixed length.</p>
 <p>But in reality, there are two very common instances where this “fixed length limitation” of the stack is a deal braker:</p>
 <ol type="1">
-<li><p>the objects that you create inside your function might grow in size during the execution of the function.</p></li>
-<li><p>sometimes, it is impossible to know upfront how many inputs you will receive, or how big this input will be.</p></li>
+<li>the objects that you create inside your function might grow in size during the execution of the function.</li>
+<li>sometimes, it is impossible to know upfront how many inputs you will receive, or how big this input will be.</li>
 </ol>
 <p>Also, there is another instance where you might want to use an allocator, which is when you want to write a function that returns a pointer to a local object. As I described at <a href="#sec-stack" class="quarto-xref"><span>Section 3.1.4</span></a>, you cannot do that if this local object is stored in the stack. However, if this object is stored in the heap, then, you can return a pointer to this object at the end of the function. Because you (the programmer) control the lyfetime of any heap memory that you allocate. You decide when this memory get’s destroyed/freed.</p>
 <p>These are common situations where the stack is not good for. That is why you need a different memory management strategy to store these objects inside your function. You need to use a memory type that can grow together with your objects, or that you can control the lyfetime of this memory. The heap fit this description.</p>
