@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 # Control flow, structs, modules and types
 
 We have discussed a lot of Zig's syntax in the last chapter,
-especially at @sec-root-file and @sec-main-file.
+especially in @sec-root-file and @sec-main-file.
 But we still need to discuss some other very important
 elements of the language. Elements that you will use constantly on your day-to-day
 routine.
@@ -105,7 +105,7 @@ pair of parentheses. Then, we list the possible combinations (or "branchs")
 inside a pair of curly braces.
 
 Let's take a look at the code example below. You can see that
-I'm creating an enum type called `Role`. We talk more about enums at @sec-enum.
+I'm creating an enum type called `Role`. We talk more about enums in @sec-enum.
 But in summary, this `Role` type is listing different types of roles in a fictitious
 company, like `SE` for Software Engineer, `DE` for Data Engineer, `PM` for Product Manager,
 etc.
@@ -113,7 +113,7 @@ etc.
 Notice that we are using the value from the `role` object in the
 switch statement, to discover which exact area we need to store in the `area` variable object.
 Also notice that we are using type inference inside the switch statement, with the dot character,
-as we described at @sec-type-inference.
+as we are going to describe in @sec-type-inference.
 This makes the `zig` compiler infer the correct data type of the values (`PM`, `SE`, etc.) for us.
 
 Also notice that, we are grouping multiple values in the same branch of the switch statement.
@@ -175,11 +175,11 @@ Take a look at the `dump_hex_fallible()` function below as an example. This func
 comes from the Zig Standard Library. More precisely, from the
 [`debug.zig` module](https://github.com/ziglang/zig/blob/master/lib/std/debug.zig)[^debug-mod].
 There are multiple lines in this function, but I omitted them to focus solely on the
-switch statement found in this function. Notice that this switch statement have four
-possible cases, or four explicit branches. Also, notice that we used an `else` branch
+switch statement found in this function. Notice that this switch statement has four
+possible cases (i.e. four explicit branches). Also, notice that we used an `else` branch
 in this case.
 
-An `else` branch in a switch statement work as the "default branch".
+An `else` branch in a switch statement works as the "default branch".
 Whenever you have multiple cases in your switch statement where
 you want to apply the exact same action, you can use an `else` branch to do that.
 
@@ -208,8 +208,8 @@ for the `level` object being either 1, 2, or 3. All other possible cases are not
 and, as consequence, we raise a runtime error in such cases through the `@panic()` built-in function.
 
 Also notice that, we are assigning the result of the switch statement to a new object called `category`.
-This is another thing that you can do with switch statements in Zig. If the branchs
-output some value as result, you can store the result value of the switch statement into
+This is another thing that you can do with switch statements in Zig. If a branch
+outputs a value as result, you can store the result value of the switch statement into
 a new object.
 
 ```{zig}
@@ -238,8 +238,8 @@ t.zig:9:13: 0x1033c58 in main (switch2)
 
 Furthermore, you can also use ranges of values in switch statements.
 That is, you can create a branch in your switch statement that is used
-whenever the input value is within a range. These "range expressions"
-are created with the operator `...`. Is important
+whenever the input value is within the specified range. These "range expressions"
+are created with the operator `...`. It is important
 to emphasize that the ranges created by this operator are
 inclusive on both ends.
 
@@ -268,7 +268,7 @@ lowercase letter, and it would work fine.
 
 #### Labeled switch statements
 
-At @sec-blocks we have talked about labeling blocks, and also, about using these labels
+In @sec-blocks we have talked about labeling blocks, and also, about using these labels
 to return a value from the block. Well, from version 0.14.0 and onwards of the `zig` compiler,
 you can also apply labels over switch statements, which makes it possible to almost implement a
 "C `goto`" like pattern.
@@ -283,7 +283,10 @@ switch statement two times, before ending at the `3` branch.
 #| build_type: "lib"
 #| eval: false
 xsw: switch (@as(u8, 1)) {
-    1 => continue :xsw 2,
+    1 => {
+        try stdout.print("First branch\n", .{});
+        continue :xsw 2;
+    },
     2 => continue :xsw 3,
     3 => return,
     4 => {},
@@ -296,7 +299,7 @@ xsw: switch (@as(u8, 1)) {
 With the `defer` keyword you can register an expression to be executed when you exit the current scope.
 Therefore, this keyword has a similar functionality as the `on.exit()` function from R.
 Take the `foo()` function below as an example. When we execute this `foo()` function, the expression
-that prints the message "Exiting function ..." get's executed only when the function exits
+that prints the message "Exiting function ..." is getting executed only when the function exits
 its scope.
 
 
@@ -340,7 +343,7 @@ curly bracket of the scope. Because the function might exit from an earlier posi
 closing curly bracket (e.g. an error value was generated at a previous line inside the function;
 the function reached an earlier return statement; etc.). Anyway, just be careful with this interpretation.
 
-Now, if you remember of what we have discussed at @sec-blocks, there are multiple structures in the language
+Now, if you remember of what we have discussed in @sec-blocks, there are multiple structures in the language
 that create their own separate scopes. For/while loops, if/else statements,
 functions, normal blocks, etc. This also affects the interpretation of `defer`.
 For example, if you use `defer` inside a for loop, then, the given expression
@@ -368,7 +371,7 @@ in a normal situation, without errors, the expression given to `errdefer` is not
 
 This makes the `errdefer` keyword one of the many tools available in Zig for error handling.
 In this section, we are more concerned with the control flow aspects around `errdefer`.
-But we are going to discuss `errdefer` later as a error handling tool at @sec-errdefer2.
+But we are going to discuss `errdefer` later as a error handling tool in @sec-errdefer2.
 
 The code example below demonstrates three things:
 
@@ -397,7 +400,7 @@ error: FooError
 ```
 
 
-When I say that "defer expressions" are executed in a LIFO order, what I want to mean is that
+When I say that "defer expressions" are executed in a LIFO order, what I want to say is that
 the last `defer` or `errdefer` expressions in the code are the first ones to be executed.
 You could also interpret this as: "defer expressions" are executed from bottom to top, or,
 from last to first.
@@ -441,8 +444,8 @@ There are different types of loops available in Zig. But the most
 essential of them all is probably the *for loop*. A for loop is
 used to apply the same piece of code over the elements of a slice, or, an array.
 
-For loops in Zig have a slightly different syntax that you are
-probably used to seeing in other languages. You start with the `for` keyword, then, you
+For loops in Zig use a syntax that may be unfamiliar to programmers coming from
+other languages. You start with the `for` keyword, then, you
 list the items that you want to iterate
 over inside a pair of parentheses. Then, inside of a pair of pipes (`|`)
 you should declare an identifier that will serve as your iterator, or,
@@ -526,7 +529,7 @@ while (i < 5) {
 }
 ```
 
-You can also specify the increment expression to be used at the beginning of while loop.
+You can also specify the increment expression to be used at the beginning of a while loop.
 To do that, we write the increment expression inside a pair of parentheses after a colon character (`:`).
 The code example below demonstrates this other pattern.
 
@@ -545,11 +548,11 @@ In Zig, you can explicitly stop the execution of a loop, or, jump to the next it
 the keywords `break` and `continue`, respectively. The `while` loop presented in the next code example is,
 at first sight, an infinite loop. Because the logical value inside the parenthese will always be equal to `true`.
 But what makes this `while` loop stop when the `i` object reaches the count
-10? Is the `break` keyword!
+10? It is the `break` keyword!
 
 Inside the while loop, we have an if statement that is constantly checking if the `i` variable
 is equal to 10. Since we are incrementing the value of `i` at each iteration of the
-while loop, this `i` object will eventually be equal to 10, and when it does, the if statement
+while loop, this `i` object will eventually be equal to 10, and when it is, the if statement
 will execute the `break` expression, and, as a result, the execution of the while loop is stopped.
 
 Notice the use of the `expect()` function from the Zig Standard Library after the while loop.
@@ -572,14 +575,14 @@ try stdout.print("Everything worked!", .{});
 ```
 
 Since this code example was executed successfully by the `zig` compiler,
-without raising any errors, then, we known that, after the execution of while loop,
-the `i` object is equal to 10. Because if it wasn't equal to 10, then, an error would
-be raised by `expect()`.
+without raising any errors, we known that, after the execution of the while loop,
+the `i` object is equal to 10. Because if it wasn't equal to 10, an error would have
+been raised by `expect()`.
 
-Now, in the next example, we have an use case for
+Now, in the next example, we have a use case for
 the `continue` keyword. The if statement is constantly
 checking if the current index is a multiple of 2. If
-it is, then, we jump to the next iteration of the loop.
+it is, we jump to the next iteration of the loop.
 Otherwise, the loop just prints the current index to the console.
 
 ```{zig}
@@ -598,7 +601,7 @@ for (ns) |i| {
 
 ## Function parameters are immutable {#sec-fun-pars}
 
-We have already discussed a lot of the syntax behind function declarations at @sec-root-file and @sec-main-file.
+We have already discussed a lot of the syntax behind function declarations in @sec-root-file and @sec-main-file.
 But I want to emphasize a curious fact about function parameters (a.k.a. function arguments) in Zig.
 In summary, function parameters are immutable in Zig.
 
@@ -638,7 +641,7 @@ t.zig:3:5: error: cannot assign to constant
 
 
 If a function argument receives as input an object whose data type is
-any of the primitive types that we have listed at @sec-primitive-data-types,
+any of the primitive types that we have listed in @sec-primitive-data-types,
 this object is always passed by value to the function. In other words, this object
 is copied into the function stack frame.
 
@@ -709,12 +712,12 @@ So, in Zig, the `init()` method of a struct is normally the constructor method o
 While the `deinit()` method is the method used for destroying an existing instance of that struct.
 
 The `init()` and `deinit()` methods are both used extensively in Zig code, and you will see both of
-them being used when we talk about allocators at @sec-allocators.
+them being used when we talk about allocators in @sec-allocators.
 But, as another example, let's build a simple `User` struct to represent an user of some sort of system.
 
 If you look at the `User` struct below, you can see the `struct` keyword.
 Notice the data members of this struct, `id`, `name` and `email`. Every data member have its
-type explicitly annotated, with the colon character (`:`) syntax that we described earlier at @sec-root-file.
+type explicitly annotated, with the colon character (`:`) syntax that we described earlier in @sec-root-file.
 But also notice that every line in the struct body that describes a data member, ends with a comma character (`,`).
 So every time you declare a data member in your Zig code, always end the line with a comma character, instead
 of ending it with the traditional semicolon character (`;`).
@@ -795,7 +798,7 @@ struct literal, but not especify explicitly the type of this particular struct.
 An anonymous struct is written by using the syntax `.{}`. So, we essentially
 replaced the explicit type of the struct literal with a dot character (`.`).
 
-As we described at @sec-type-inference, when you put a dot before a struct literal,
+As we described in @sec-type-inference, when you put a dot before a struct literal,
 the type of this struct literal is automatically inferred by the `zig` compiler.
 In essence, the `zig` compiler will look for some hint of what is the type of that struct.
 This hint can be the type annotation of a function argument,
@@ -832,7 +835,7 @@ pub fn main() !void {
 
 ### Struct declarations must be constant
 
-Types in Zig must be `const` or `comptime` (we are going to talk more about comptime at @sec-comptime).
+Types in Zig must be `const` or `comptime` (we are going to talk more about comptime in @sec-comptime).
 What this means is that you cannot create a new data type, and mark it as variable with the `var` keyword.
 So struct declarations are always constant. You cannot declare a new struct type using the `var` keyword.
 It must be `const`.
@@ -927,13 +930,13 @@ to instantiate and use the objects, without altering their state. You can notice
 inside your struct declaration that might use the values that are present in the data members, but they
 do not alter the values in these data members of the struct in anyway.
 
-The `Vec3` struct that was presented at @sec-self-arg is an example of that.
+The `Vec3` struct that was presented in @sec-self-arg is an example of that.
 This struct have a single method named `distance()`, and this method do use the values
 present in all three data members of the struct (`x`, `y` and `z`). But at the same time,
 this method do not change the values of these data members in any point.
 
 As a result of that, when we create `Vec3` objects we usually create them as
-constant objects, like the `v1` and `v2` objects presented at @sec-self-arg.
+constant objects, like the `v1` and `v2` objects presented in @sec-self-arg.
 We can create them as variable objects with the `var` keyword,
 if we want to. But because the methods of this `Vec3` struct do not change
 the state of the objects in any point, is unnecessary to mark them
@@ -946,7 +949,7 @@ More specifically, when you have a method in a struct that changes the state
 of the object (i.e. change the value of a data member), the `self` argument
 in this method must be annotated in a different manner.
 
-As I described at @sec-self-arg, the `self` argument in methods of
+As I described in @sec-self-arg, the `self` argument in methods of
 a struct is the argument that receives as input the object from which the method
 was called from. We usually annotate this argument in the methods by writing `self`,
 followed by the colon character (`:`), and the data type of the struct to which
@@ -1038,7 +1041,7 @@ is telling us that the `self` argument is constant.
 
 If you take some time, and think hard about this error message, you will understand it.
 You already have the tools to understand why we are getting this error message.
-We have talked about it already at @sec-fun-pars.
+We have talked about it already in @sec-fun-pars.
 So remember, every function argument is immutable in Zig, and `self`
 is included in this rule.
 
@@ -1049,7 +1052,7 @@ the function argument.
 
 The problem begins when we try to alter the value of `self` directly, which is a function argument,
 and, every function argument is immutable by default. You may quest yourself how can we overcome
-this barrier, and once again, the solution was also discussed at @sec-fun-pars.
+this barrier, and once again, the solution was also discussed in @sec-fun-pars.
 We overcome this barrier, by explicitly marking the `self` argument as a pointer.
 
 
@@ -1083,15 +1086,15 @@ you know that this dot character is playing a special party in this place. More 
 telling the `zig` compiler something on the lines of: "Hey! Can you infer the type of this
 value for me? Please!". In other words, this dot character is playing a role similar to the `auto` keyword in C++.
 
-I give you some examples of this at @sec-anonymous-struct-literals, where we present anonymous struct literals.
+I give you some examples of this in @sec-anonymous-struct-literals, where we present anonymous struct literals.
 Anonymous struct literals are, essentially, struct literals that use type inference to
 infer the exact type of this particular struct literal.
 This type inference is done by looking for some minimal hint of the correct data type to be used.
 You could say that the `zig` compiler looks for any neighbouring type annotation that might tell him
 what would be the correct type.
 
-Another common place where we use type inference in Zig is at switch statements (which we talk about at @sec-switch).
-I also gave some other examples of type inference at @sec-switch, where we were inferring the data types of enum values listed inside
+Another common place where we use type inference in Zig is at switch statements (which we talk about in @sec-switch).
+I also gave some other examples of type inference in @sec-switch, where we were inferring the data types of enum values listed inside
 of switch statements (e.g. `.DE`).
 But as another example, take a look at this `fence()` function reproduced below,
 which comes from the [`atomic.zig` module](https://github.com/ziglang/zig/blob/master/lib/std/atomic.zig)[^fence-fn]
@@ -1217,7 +1220,7 @@ test {
 Another built-in function that is very useful when performing type casting operations is `@ptrCast()`.
 In essence, we use the `@as()` built-in function when we want to explicit convert (or cast) a Zig value/object
 from a type "x" to a type "y", etc. However, pointers (we are going to discuss pointers
-in more depth at @sec-pointer) are a special type of object in Zig,
+in more depth in @sec-pointer) are a special type of object in Zig,
 i.e. they are treated differently from "normal objects".
 
 Everytime a pointer is involved in some "type casting operation" in Zig, the `@ptrCast()` function is used.
