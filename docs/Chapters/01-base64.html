@@ -448,7 +448,7 @@ Figure&nbsp;4.1: The logic behind a base64 encoder
 <p>Taking the string “Hi” as an example, we have 2 bytes, or, 16 bits in total. So, we lack a full byte (8 bits) to complete the window of 24 bits that the base64 algorithm likes to work on. The first thing that the algorithm does, is to check how to divide the input bytes into groups of 6 bits.</p>
 <p>If the algorithm notice that there is a group of 6 bits that, have some bits in it, but, at the same time, it is not full (in other words, <span class="math inline">\(0 &lt; nbits &lt; 6\)</span>, being <span class="math inline">\(nbits\)</span> the number of bits), meaning that, it lacks some bits to fill the 6-bits requirement, the algorithm simply add extra zeros in this group to fill the space that it needs. That is why at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>4.1</span></a>, on the third group after the 6-bit transformation, 2 extra zeros were added to fill the gap in this group.</p>
 <p>When we have a 6-bit group that is not completely full, like the third group, extra zeros are added to fill the gap. But what about when an entire 6-bit group is empty, or, it simply doesn’t exist? This is the case of the fourth 6-bit group exposed at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>4.1</span></a>.</p>
-<p>This fourth group is necessary, because the algorithm works on 4 groups of 6 bits. But the input string does not have enough bytes to create a fourth 6-bit group. Every time this happens, where an entire group of 6 bits is empty, this group becomes a “padding group”. Every “padding group” is mapped to the character <code>=</code> (equal sign), which represents “null”, or, the end of meaninful characters in the sequence. Hence, everytime that the algorithm produces a “padding group”, this group is automatically mapped to <code>=</code>.</p>
+<p>This fourth group is necessary, because the algorithm works on 4 groups of 6 bits. But the input string does not have enough bytes to create a fourth 6-bit group. Every time this happens, where an entire group of 6 bits is empty, this group becomes a “padding group”. Every “padding group” is mapped to the character <code>=</code> (equal sign), which represents “null”, or, the end of meaningful characters in the sequence. Hence, everytime that the algorithm produces a “padding group”, this group is automatically mapped to <code>=</code>.</p>
 <p>As another example, if you give the string “0” as input to a base64 encoder, this string is translated into the base64 sequence “MA==”. The character “0” is, in binary, the sequence <code>00110000</code><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. So, with the 6-bit transformation exposed at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>4.1</span></a>, this single character would produce these two 6-bit groups: <code>001100</code>, <code>000000</code>. The remaining two 6-bit groups become “padding groups”. That is why the last two characters in the output sequence (MA==) are <code>==</code>.</p>
 </section>
 <section id="sec-base64-decoder-algo" class="level3" data-number="4.1.4">
@@ -467,7 +467,7 @@ Figure&nbsp;4.2: The logic behind a base64 decoder
 </figure>
 </div>
 <p>The exact transformations, or, the exact steps applied to each byte from the input to transform them into the bytes of the output, are a bit tricky to visualize in a figure like this. Because of that, I have summarized these transformations as “Some bit shifting and additions …” in the figure. These transformations will be described in depth later.</p>
-<p>Besides that, if you look again at <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>4.2</span></a>, you will notice that the character <code>=</code> was completely ignored by the algorithm. Remember, this is just a special character that marks the end of meaninful characters in the base64 sequence. So, every <code>=</code> character in a base64 encoded sequence should be ignored by a base64 decoder.</p>
+<p>Besides that, if you look again at <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>4.2</span></a>, you will notice that the character <code>=</code> was completely ignored by the algorithm. Remember, this is just a special character that marks the end of meaningful characters in the base64 sequence. So, every <code>=</code> character in a base64 encoded sequence should be ignored by a base64 decoder.</p>
 </section>
 </section>
 <section id="sec-encode-vs-decode" class="level2" data-number="4.2">
@@ -811,7 +811,7 @@ Figure&nbsp;4.4: How the 1st byte in the decoder output is produced from the 1st
 </figcaption>
 </figure>
 </div>
-<p>The <a href="#tbl-6bit-decode" class="quarto-xref">Table&nbsp;<span>4.2</span></a> presents how the three steps described ealier translate into Zig code:</p>
+<p>The <a href="#tbl-6bit-decode" class="quarto-xref">Table&nbsp;<span>4.2</span></a> presents how the three steps described earlier translate into Zig code:</p>
 <div id="tbl-6bit-decode" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-6bit-decode-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
