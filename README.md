@@ -11,6 +11,15 @@ in conjunction with a little bit of R code (`zig_engine.R`), that is responsible
 the Zig compiler to compile and run the Zig code examples.
 
 
+## Support the project!
+
+If you like this project, and you want to support it, you can buy an eBook or a physical copy
+of the book on Amazon:
+
+<https://www.amazon.com/dp/B0DJYMDRLP>
+
+
+
 ## How to build the book
 
 This book depends on the three main pieces of software:
