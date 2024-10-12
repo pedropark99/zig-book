@@ -14,7 +14,9 @@ the Zig compiler to compile and run the Zig code examples.
 ## Support the project!
 
 If you like this project, and you want to support it, you can buy an eBook or a physical copy
-of the book on Amazon:
+of the book on Amazon (link below). This is a good way to support directly the author of the project, which helps to foster
+more contents like this, and it makes possible for the author to keep writing helpful tools and
+materials for the community.
 
 <https://www.amazon.com/dp/B0DJYMDRLP>
 
