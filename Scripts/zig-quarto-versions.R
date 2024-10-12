@@ -30,7 +30,7 @@ bullets <- c(
   "- Zig version: %s.",
   "- Quarto version: %s."
 )
-bullets <- paste(bullets, sep = "", collapse = "\n\n")
+bullets <- paste(bullets, sep = "", collapse = "\n")
 versions_string <- sprintf(
   bullets,
   sys_info["sysname"],

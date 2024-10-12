@@ -1,6 +1,6 @@
 # Introduction to Zig
 
-<a href=""><img src="Cover/cover-artv2.1.png" width="250" height="366" class="cover" align="right"/></a>
+<a href=""><img src="Cover/cover-artv3.png" width="250" height="366" class="cover" align="right"/></a>
 
 Hey! This is the official repository for the book "Introduction to Zig: a project-based book", written by Pedro Duarte Faria.
 This book is still under active development, and, as a result, it's content might change drastically in the near future.
