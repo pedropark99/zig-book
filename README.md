@@ -3,7 +3,7 @@
 <a href=""><img src="Cover/cover-artv3.png" width="250" height="366" class="cover" align="right"/></a>
 
 Hey! This is the official repository for the book "Introduction to Zig: a project-based book", written by Pedro Duarte Faria.
-This book is still under active development, and, as a result, it's content might change drastically in the near future.
+To know more about the book, checkout the [About this book](#about-this-book) section below.
 You can read the current version of the book in your web browser: <https://pedropark99.github.io/zig-book/>.
 
 The book is built using the publishing system [Quarto](https://quarto.org)
@@ -19,6 +19,30 @@ more contents like this, and it makes possible for the author to keep writing he
 materials for the community.
 
 <https://www.amazon.com/dp/B0DJYMDRLP>
+
+
+## About this book
+
+This an open (i.e. it is open-source), technical and introductory book for the [Zig programming language](https://ziglang.org/),
+which is a new general purpose, and low-level programming language for building optimal and robust software.
+
+Official repository of the book: <https://github.com/pedropark99/zig-book>.
+
+This book is designed for both beginners and experienced developers. It explores the exciting world of Zig through small
+and simple projects (in a similar style to the famous "Python Crash Course" book from Eric Matthes).
+Some of these projects are: a Base64 encoder/decoder, a HTTP Server and an image filter.
+
+As you work through the book, you will learn:
+
+- The syntax of the language, and how it compares to C, C++ and Rust.
+- Data structures, memory allocators, filesystem and I/O.
+- Optionals as a new paradigm to handle nullability.
+- How to test and debug a Zig application.
+- Errors as values, and how to handle them.
+- How to build C and Zig code with the build system that is embedded into the language.
+- Zig interoperability with C.
+- Parallelism with threads and SIMD.
+- And more.
 
 
 
