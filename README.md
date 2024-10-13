@@ -14,11 +14,17 @@ the Zig compiler to compile and run the Zig code examples.
 ## Support the project!
 
 If you like this project, and you want to support it, you can buy an eBook or a physical copy
-of the book on Amazon (link below). This is a good way to support directly the author of the project, which helps to foster
-more contents like this, and it makes possible for the author to keep writing helpful tools and
-materials for the community.
+of the book on Amazon:
 
 <https://www.amazon.com/dp/B0DJYMDRLP>
+
+But you can also donate some amount directly to the author of the project via PayPal Donation:
+
+[![PayPal](https://img.shields.io/badge/PayPal-003087?logo=paypal&logoColor=fff)](https://www.paypal.com/donate/?business=D58J5LFEERC3N&no_recurring=0&item_name=These+donations+make+it+possible+for+me+to+continue+writing+new+and+useful+content+for+our+community%F0%9F%98%89+Thank+you%21%E2%9D%A4%EF%B8%8F%F0%9F%A5%B3&currency_code=USD)
+
+These are good ways to support directly the author of the project, which helps to foster
+more contents like this, and it makes possible for the author to keep writing helpful tools and
+materials for the community.
 
 
 ## About this book
