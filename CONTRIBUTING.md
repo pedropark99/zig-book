@@ -1,17 +1,44 @@
 # Contributing
 
-First, you can contribute to this project by purchasing an eBook or a physical copy of this book on Amazon:
+## Support the project!
+
+If you like this project, and you want to support it, you can buy an eBook or a physical copy
+of the book on Amazon:
 
 <https://www.amazon.com/dp/B0DJYMDRLP>
 
-But you can also donate some amount directly to the author of the project via PayPal Donation or Wise.
+### Sending donations directly
+
+You can also donate some amount directly to the author of the project via PayPal Donation or Wise.
+These are good ways to support directly the author of the project, which helps to foster
+more contents like this, and it makes possible for the author to keep writing helpful tools and
+materials for the community.
+
+### PayPal
 
 [![PayPal](https://img.shields.io/badge/PayPal-003087?logo=paypal&logoColor=fff)](https://www.paypal.com/donate/?business=D58J5LFEERC3N&no_recurring=0&item_name=These+donations+make+it+possible+for+me+to+continue+writing+new+and+useful+content+for+our+community%F0%9F%98%89+Thank+you%21%E2%9D%A4%EF%B8%8F%F0%9F%A5%B3&currency_code=USD)
 
+
+### Wise
+
+If you don't have a Wise account, and just want to send the money via Swift Payment,
+you can send it to the following bank account:
+
+```
+Owner of the Wise account: Pedro Duarte Faria
+Owner of the account: Wise US Inc.
+Swift/BIC: TRWIUS35XXX
+Account number: 715958645769167
+Name and address of the bank: Wise US Inc 30 W. 26th Street, Sixth Floor, New York NY 10010, United States.
+```
+
+If you do have a Wise account, you can scan the following QR code:
+
 [![Wise](https://img.shields.io/badge/Wise-394e79?style=for-the-badge&logo=wise&logoColor=00B9FF)](https://wise.com/pay/me/pedrod4845)
 
-These are good ways to support directly the author of the project, which helps to foster more contents like this, and it makes possible for the author to keep writing helpful tools and materials for the community.
 
+
+## Opening issues or Pull Requests
 
 But you can still contribute to this project in other ways. For example, these are some reasons why you could
 [open new issues](https://github.com/pedropark99/zig-book/issues)
