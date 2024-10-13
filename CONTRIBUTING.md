@@ -19,6 +19,23 @@ materials for the community.
 [![PayPal](https://img.shields.io/badge/PayPal-003087?logo=paypal&logoColor=fff)](https://www.paypal.com/donate/?business=D58J5LFEERC3N&no_recurring=0&item_name=These+donations+make+it+possible+for+me+to+continue+writing+new+and+useful+content+for+our+community%F0%9F%98%89+Thank+you%21%E2%9D%A4%EF%B8%8F%F0%9F%A5%B3&currency_code=USD)
 
 
+### Revolut
+
+You can send money via Swift Payment with the following bank and Swift details:
+
+```
+Recipient: Pedro Duarte Faria
+BIC/SWIFT Code: REVOSGS2
+Account number: 6124512226
+Name and address of the bank: Revolut Technologies Singapore Pte. Ltd, 6 Battery Road, Floor 6-01, 049909, Singapore, Singapore
+Corresponding BIC: CHASGB2L
+```
+
+If you do have a Revolut account, you can scan the following QR code:
+
+<http://revolut.me/pedroduartefaria>
+
+
 ### Wise
 
 If you don't have a Wise account, and just want to send the money via Swift Payment,
