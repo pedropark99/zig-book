@@ -14,11 +14,62 @@ the Zig compiler to compile and run the Zig code examples.
 ## Support the project!
 
 If you like this project, and you want to support it, you can buy an eBook or a physical copy
-of the book on Amazon (link below). This is a good way to support directly the author of the project, which helps to foster
+of the book on Amazon:
+
+<https://www.amazon.com/dp/B0DJYMDRLP>
+
+### Sending donations directly
+
+You can also donate some amount directly to the author of the project via:
+
+- PayPal Donation.
+- Revolut.
+- Wise.
+
+These are good ways to support directly the author of the project, which helps to foster
 more contents like this, and it makes possible for the author to keep writing helpful tools and
 materials for the community.
 
-<https://www.amazon.com/dp/B0DJYMDRLP>
+### PayPal
+
+[![PayPal](https://img.shields.io/badge/PayPal-003087?logo=paypal&logoColor=fff)](https://www.paypal.com/donate/?business=D58J5LFEERC3N&no_recurring=0&item_name=These+donations+make+it+possible+for+me+to+continue+writing+new+and+useful+content+for+our+community%F0%9F%98%89+Thank+you%21%E2%9D%A4%EF%B8%8F%F0%9F%A5%B3&currency_code=USD)
+
+
+### Revolut
+
+You can send money via Swift Payment with the following bank and Swift details:
+
+```
+Recipient: Pedro Duarte Faria
+BIC/SWIFT Code: REVOSGS2
+Account number: 6124512226
+Name and address of the bank: Revolut Technologies Singapore Pte. Ltd, 6 Battery Road, Floor 6-01, 049909, Singapore, Singapore
+Corresponding BIC: CHASGB2L
+```
+
+If you do have a Revolut account, you can scan the following QR code:
+
+<http://revolut.me/pedroduartefaria>
+
+
+### Wise
+
+If you don't have a Wise account, and just want to send the money via Swift Payment,
+you can send it to the following bank account:
+
+```
+Owner of the Wise account: Pedro Duarte Faria
+Owner of the account: Wise US Inc.
+Swift/BIC: TRWIUS35XXX
+Account number: 715958645769167
+Name and address of the bank: Wise US Inc 30 W. 26th Street, Sixth Floor, New York NY 10010, United States.
+```
+
+If you do have a Wise account, you can scan the following QR code:
+
+[![Wise](https://img.shields.io/badge/Wise-394e79?style=for-the-badge&logo=wise&logoColor=00B9FF)](https://wise.com/pay/me/pedrod4845)
+
+
 
 
 ## About this book

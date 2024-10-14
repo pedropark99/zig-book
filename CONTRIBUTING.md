@@ -1,12 +1,11 @@
 # Contributing
 
-First, you can contribute to this project by purchasing an eBook or a physical copy of this book on Amazon (link below).
-This is a good way to support directly the author of the project, which helps to foster
-more contents like this, and it makes possible for the author to keep writing helpful tools and
-materials for the community.
+## Support the project!
 
-<https://www.amazon.com/dp/B0DJYMDRLP>
+If you like this project, you can contribute to it by purchasing an eBook or a physical copy
+of the book on Amazon. Or, by sending a direct donation to the author. Checkout the details at `README.md`.
 
+## Opening issues or Pull Requests
 
 But you can still contribute to this project in other ways. For example, these are some reasons why you could
 [open new issues](https://github.com/pedropark99/zig-book/issues)
