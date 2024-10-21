@@ -606,7 +606,7 @@ But I want to emphasize a curious fact about function parameters (a.k.a. functio
 In summary, function parameters are immutable in Zig.
 
 Take the code example below, where we declare a simple function that just tries to add
-some amount to the input integer, and returns the result back. But if you look closely
+some amount to the input integer, and returns the result back. If you look closely
 at the body of this `add2()` function, you will notice that we try
 to save the result back into the `x` function argument.
 
@@ -616,8 +616,8 @@ into `x`. However, function arguments in Zig are immutable. You cannot change th
 cannot assign values to them inside the body's function.
 
 This is the reason why, the code example below do not compile successfully. If you try to compile
-this code example, you get a compile error warning you that you are trying to change the value of a
-immutable (i.e. constant) object.
+this code example, you will get a compile error message about "trying to change the value of a
+immutable (i.e. constant) object".
 
 ```{zig}
 #| eval: false
@@ -640,6 +640,8 @@ t.zig:3:5: error: cannot assign to constant
 ```
 
 
+### A free optimization
+
 If a function argument receives as input an object whose data type is
 any of the primitive types that we have listed in @sec-primitive-data-types,
 this object is always passed by value to the function. In other words, this object
@@ -653,16 +655,20 @@ choose the strategy that is faster for you.
 This optimization that you get for free is possible only because function arguments are
 immutable in Zig.
 
+
+### How to overcome this barrier
+
 There are some situations where you might need to change the value of your function argument
 directly inside the function's body. This happens more often when we are passing
 C structs as inputs to Zig functions.
 
-In a situation like this, you can overcome this barrier of immutable function arguments, by simply taking the lead,
-and explicitly choosing to pass the object by reference to the function.
-That is, instead of depending on the `zig` compiler to decide which strategy is best, you have
-to explicitly mark the function argument as a pointer. This way, we are telling the compiler
-that this function argument will be passed by reference to the function.
+In a situation like this, you can overcome this barrier by using a pointer. In other words,
+instead of passing a value as input to the argument, you can pass a "pointer to value" instead.
+You can change the value that the pointer points to, by dereferencing it.
 
+Therefore, if we take our previous `add2()` example, we can change the value of the
+function argument `x` inside the function's body by marking the `x` argument as a
+"pointer to a `u32` value" (i.e. `*u32` data type), instead of a `u32` value.
 By making it a pointer, we can finally alter the value of this function argument directly inside
 the body of the `add2()` function. You can see that the code example below compiles successfully.
 
@@ -685,6 +691,13 @@ pub fn main() !void {
 ```
 Result: 6
 ```
+
+
+Even in this code example above, the `x` argument is still immutable. Which means that the pointer itself is immutable.
+Therefore, you cannot change the memory address that it points to. However, you can dereference the pointer
+to access the value that it points to, and also, to change this value, if you need to.
+
+
 
 
 
@@ -988,7 +1001,7 @@ const Vec3 = struct {
         return m.sqrt(xd + yd + zd);
     }
 
-    pub fn double(self: *Vec3) void {
+    pub fn twice(self: *Vec3) void {
         self.x = self.x * 2.0;
         self.y = self.y * 2.0;
         self.z = self.z * 2.0;
@@ -997,9 +1010,9 @@ const Vec3 = struct {
 ```
 
 Notice in the code example above that we have added a new method
-to our `Vec3` struct named `double()`. This method doubles the
+to our `Vec3` struct named `twice()`. This method doubles the
 coordinate values of our vector object. In the
-case of the `double()` method, we annotated the `self` argument as `*Vec3`,
+case of the `twice()` method, we annotated the `self` argument as `*Vec3`,
 indicating that this argument receives a pointer (or a reference, if you prefer to call it this way)
 to a `Vec3` object as input.
 
@@ -1008,7 +1021,7 @@ to a `Vec3` object as input.
 var v3 = Vec3 {
     .x = 4.2, .y = 2.4, .z = 0.9
 };
-v3.double();
+v3.twice();
 std.debug.print("Doubled: {d}\n", .{v3.x});
 ```
 
@@ -1018,15 +1031,15 @@ Doubled: 8.4
 
 
 
-Now, if you change the `self` argument in this `double()` method to `self: Vec3`, like in the
+Now, if you change the `self` argument in this `twice()` method to `self: Vec3`, like in the
 `distance()` method, you will get the compiler error exposed below as result. Notice that this
-error message is showing a line from the `double()` method body,
+error message is showing a line from the `twice()` method body,
 indicating that you cannot alter the value of the `x` data member.
 
 ```{zig}
 #| eval: false
 // If we change the function signature of double to:
-    pub fn double(self: Vec3) void {
+    pub fn twice(self: Vec3) void {
 ```
 
 ```

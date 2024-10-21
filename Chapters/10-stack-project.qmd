@@ -68,22 +68,22 @@ function argument that is not known at compile time, the `zig` compiler will not
 as a consequence, it will raise a compilation error saying that it cannot compile your program. Because
 you are providing a value that is "runtime known" to a function argument that must be "compile-time known".
 
-Take a look at this very simple example below, where we define a `double()` function, that simply
+Take a look at this very simple example below, where we define a `twice()` function, that simply
 doubles the input value named `num`. Notice that we use the `comptime` keyword before the name
 of the function argument. This keyword is marking the function argument `num` as a "comptime argument".
 
 That is a function argument whose value must be compile-time known. This is why the expression
-`double(5678)` is valid, and no compilation errors are raised. Because the value `5678`
+`twice(5678)` is valid, and no compilation errors are raised. Because the value `5678`
 is compile-time known, so this is the expected behaviour for this function.
 
 ```{zig}
 #| auto_main: false
 #| build_type: "test"
-fn double(comptime num: u32) u32 {
+fn twice(comptime num: u32) u32 {
     return num * 2;
 }
 test "test comptime" {
-    _ = double(5678);
+    _ = twice(5678);
 }
 ```
 
@@ -92,14 +92,14 @@ For example, we might provide a different input value to this function depending
 on the target OS of our compilation process. The code example below demonstrates such case.
 
 Because the value of the object `n` is determined at runtime, we cannot provide this object
-as input to the `double()` function. The `zig` compiler will not allow it, because we marked
+as input to the `twice()` function. The `zig` compiler will not allow it, because we marked
 the `num` argument as a "comptime argument". That is why the `zig` compiler raises
 the compile-time error exposed below:
 
 ```{zig}
 #| eval: false
 const builtin = @import("builtin");
-fn double(comptime num: u32) u32 {
+fn twice(comptime num: u32) u32 {
     return num * 2;
 }
 test "test comptime" {
@@ -109,7 +109,7 @@ test "test comptime" {
     } else {
         n = 5678;
     }
-    _ = double(n);
+    _ = twice(n);
 }
 ```
 

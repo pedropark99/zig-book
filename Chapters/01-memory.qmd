@@ -387,6 +387,47 @@ object you declare is stored:
 1. the heap can only be accessed through allocators. If your object was not created through the `alloc()` or `create()` methods of an allocator object, then, he is most certainly not an object stored in the heap.
 
 
+## Stack overflows {#sec-stack-overflow}
+
+Allocating memory on the stack is generally faster than allocating it on the heap.
+But this better performance comes with many restrictions. We have already discussed
+many of these restrictions of the stack at @sec-stack. But there is one more important
+limitation that I want to talk about, which is the size of the stack itself.
+
+The stack is limited in size. This size varies from computer to computer, and it depends on
+a lot of things (the computer architecture, the operating system, etc.). Nevertheless, this size is usually
+not that big. This is why we normally use the stack to store only temporary and small objects in memory.
+
+In essence, if you try to make an allocation on the stack, that is so big that exceeds the stack size limit,
+a *stack overflow* happens, and your program just crashes as a result of that. In other words, a stack overflow happens when
+you attempt to use more space than is available on the stack.
+
+This type of problem is very similar to a *buffer overflow*, i.e. you are trying to use more space
+than is available in the "buffer object". However, a stack overflow always cause your program to crash,
+while a buffer overflow not always cause your program to crash (although it often does).
+
+You can see an example of a stack overflow in the example below. We are trying to allocate a very big array of `u64` values
+on the stack. You can see below that this program does not run succesfully, because it crashed
+with a "segmentation fault" error message.
+
+```{zig}
+#| eval: false
+#| build_type: "run"
+#| auto_main: true
+var very_big_alloc: [1000 * 1000 * 24]u64 = undefined;
+@memset(very_big_alloc[0..], 0);
+```
+
+```
+Segmentation fault (core dumped)
+```
+
+This segmentation fault error is a result of the stack overflow that was caused by the big
+memory allocation made on the stack, to store the `very_big_alloc` object.
+This is why very big objects are usually stored on the heap, instead of the stack.
+
+
+
 ## Allocators {#sec-allocators}
 
 One key aspect about Zig, is that there are "no hidden-memory allocations" in Zig.
@@ -406,14 +447,14 @@ allocate memory. Just look at the arguments of this function.
 If a function, or operator, have an allocator object as one of its inputs/arguments, then, you know for
 sure that this function/operator will allocate some memory during its execution.
 
-An example is the `allocPrint()` function from the Zig standard library. With this function, you can
+An example is the `allocPrint()` function from the Zig Standard Library. With this function, you can
 write a new string using format specifiers. So, this function is, for example, very similar to the function `sprintf()` in C.
 In order to write such new string, the `allocPrint()` function needs to allocate some memory to store the
 output string.
 
 That is why, the first argument of this function is an allocator object that you, the user/programmer, gives
 as input to the function. In the example below, I am using the `GeneralPurposeAllocator()` as my allocator
-object. But I could easily use any other type of allocator object from the Zig standard library.
+object. But I could easily use any other type of allocator object from the Zig Standard Library.
 
 ```{zig}
 #| auto_main: true
@@ -430,9 +471,8 @@ try stdout.print("{s}\n", .{output});
 ```
 
 
-You get a lot of control
-over where and how much memory this function can allocate. Because it is you,
-the user/programmer, that provides the allocator for the function to use.
+You get a lot of control over where and how much memory this function can allocate.
+Because it is you, the user/programmer, that provides the allocator for the function to use.
 This makes "total control" over memory management easier to achieve in Zig.
 
 ### What are allocators?
@@ -440,14 +480,14 @@ This makes "total control" over memory management easier to achieve in Zig.
 Allocators in Zig are objects that you can use to allocate memory for your program.
 They are similar to the memory allocating functions in C, like `malloc()` and `calloc()`.
 So, if you need to use more memory than you initially have, during the execution of your program, you can simply ask
-for more memory using an allocator.
+for more memory by using an allocator object.
 
 Zig offers different types of allocators, and they are usually available through the `std.heap` module of
-the standard library. So, just import the Zig standard library into your Zig module (with `@import("std")`), and you can start
+the standard library. Thus, just import the Zig Standard Library into your Zig module (with `@import("std")`), and you can start
 using these allocators in your code.
 
-Furthermore, every allocator object is built on top of the `Allocator` interface in Zig. This
-means that, every allocator object you find in Zig must have the methods `alloc()`,
+Furthermore, every allocator object is built on top of the `Allocator` interface in Zig.
+This means that, every allocator object you find in Zig must have the methods `alloc()`,
 `create()`, `free()` and `destroy()`. So, you can change the type of allocator you are using,
 but you don't need to change the function calls to the methods that do the memory allocation
 (and the free memory operations) for your program.
@@ -480,7 +520,7 @@ The heap fit this description.
 Allocating memory on the heap is commonly known as dynamic memory management. As the objects you create grow in size
 during the execution of your program, you grow the amount of memory
 you have by allocating more memory in the heap to store these objects. 
-And you that in Zig, by using an allocator object.
+And you do that in Zig, by using an allocator object.
 
 
 ### The different types of allocators
@@ -543,11 +583,20 @@ in each call, and you most likely will not need that much memory in your program
 ### Buffer allocators
 
 The `FixedBufferAllocator()` and `ThreadSafeFixedBufferAllocator()` are allocator objects that
-work with a fixed sized buffer that is stored in the stack. So these two allocators only allocates
-memory in the stack. This also means that, in order to use these allocators, you must first
-create a buffer object, and then, give this buffer as an input to these allocators.
+work with a fixed sized buffer object at the back. In other words, they use a fixed sized buffer
+object as the basis for the memory. When you ask these allocator objects to allocate some memory for you,
+they are essentially reserving some amount of space inside this fixed sized buffer object for you to use.
 
-In the example below, I am creating a `buffer` object that is 10 elements long.
+This means that, in order to use these allocators, you must first create a buffer object in your code,
+and then, give this buffer object as an input to these allocators.
+
+This also means that, these allocator objects can allocate memory both in the stack or in the heap.
+Everything depends on where the buffer object that you provide lives. If this buffer object lives
+in the stack, then, the memory allocated is "stack-based". But if it lives on the heap, then,
+the memory allocated is "heap-based".
+
+
+In the example below, I'm creating a `buffer` object on the stack that is 10 elements long.
 Notice that I give this `buffer` object to the `FixedBufferAllocator()` constructor.
 Now, because this `buffer` object is 10 elements long, this means that I am limited to this space.
 I cannot allocate more than 10 elements with this allocator object. If I try to
@@ -566,6 +615,36 @@ const allocator = fba.allocator();
 const input = try allocator.alloc(u8, 5);
 defer allocator.free(input);
 ```
+
+Remember, the memory allocated by these allocator objects can be either from
+the stack, or, from the heap. It all depends on where the buffer object that you provide lives.
+In the above example, the `buffer` object lives in the stack, and, therefore, the memory allocated
+is based in the stack. But what if it was based on the heap?
+
+As we described at @sec-stack-overflow, one of the main reasons why you would use the heap,
+instead of the stack, is to allocate huge amounts of space to store very big objects.
+Thus, let's suppose you wanted to use a very big buffer object as the basis for your
+allocator objects. You would have to allocate this very big buffer object on the heap.
+The example below demonstrates this case.
+
+```{zig}
+#| eval: false
+#| build_type: "run"
+#| auto_main: true
+const heap = std.heap.page_allocator;
+const memory_buffer = try heap.alloc(
+    u8, 100 * 1024 * 1024 // 100 MB memory
+);
+defer heap.free(memory_buffer);
+var fba = std.heap.FixedBufferAllocator.init(
+    memory_buffer
+);
+const allocator = fba.allocator();
+
+const input = try allocator.alloc(u8, 1000);
+defer allocator.free(input);
+```
+
 
 
 ### Arena allocator {#sec-arena-allocator}
