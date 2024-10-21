@@ -360,21 +360,21 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <h3 data-number="12.1.1" class="anchored" data-anchor-id="applying-over-a-function-argument"><span class="header-section-number">12.1.1</span> Applying over a function argument</h3>
 <p>When you apply the <code>comptime</code> keyword on a function argument, you are saying to the <code>zig</code> compiler that the value assigned to that particular function argument must be known at compile-time. We explained in details at <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a> what exactly “value known at compile-time” means, so, in case you have doubts about this idea, comeback to that section.</p>
 <p>Now let’s think about the consequences of this idea. First of all, we are imposing a limit, or, a requirement to that particular function argument. If the programmer accidentally tries to give a value to this function argument that is not known at compile time, the <code>zig</code> compiler will notice this problem, and as a consequence, it will raise a compilation error saying that it cannot compile your program. Because you are providing a value that is “runtime known” to a function argument that must be “compile-time known”.</p>
-<p>Take a look at this very simple example below, where we define a <code>double()</code> function, that simply doubles the input value named <code>num</code>. Notice that we use the <code>comptime</code> keyword before the name of the function argument. This keyword is marking the function argument <code>num</code> as a “comptime argument”.</p>
-<p>That is a function argument whose value must be compile-time known. This is why the expression <code>double(5678)</code> is valid, and no compilation errors are raised. Because the value <code>5678</code> is compile-time known, so this is the expected behaviour for this function.</p>
+<p>Take a look at this very simple example below, where we define a <code>twice()</code> function, that simply doubles the input value named <code>num</code>. Notice that we use the <code>comptime</code> keyword before the name of the function argument. This keyword is marking the function argument <code>num</code> as a “comptime argument”.</p>
+<p>That is a function argument whose value must be compile-time known. This is why the expression <code>twice(5678)</code> is valid, and no compilation errors are raised. Because the value <code>5678</code> is compile-time known, so this is the expected behaviour for this function.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> double(<span class="kw">comptime</span> num: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> twice(<span class="kw">comptime</span> num: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> num * <span class="dv">2</span>;</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"test comptime"</span> <span class="op">{</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    _ = double(<span class="dv">5678</span>);</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    _ = twice(<span class="dv">5678</span>);</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>But what if we provide a number that is not compile-time known to this function? For example, we might provide a different input value to this function depending on the target OS of our compilation process. The code example below demonstrates such case.</p>
-<p>Because the value of the object <code>n</code> is determined at runtime, we cannot provide this object as input to the <code>double()</code> function. The <code>zig</code> compiler will not allow it, because we marked the <code>num</code> argument as a “comptime argument”. That is why the <code>zig</code> compiler raises the compile-time error exposed below:</p>
+<p>Because the value of the object <code>n</code> is determined at runtime, we cannot provide this object as input to the <code>twice()</code> function. The <code>zig</code> compiler will not allow it, because we marked the <code>num</code> argument as a “comptime argument”. That is why the <code>zig</code> compiler raises the compile-time error exposed below:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> builtin = <span class="bu">@import</span>(<span class="st">"builtin"</span>);</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> double(<span class="kw">comptime</span> num: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> twice(<span class="kw">comptime</span> num: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> num * <span class="dv">2</span>;</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"test comptime"</span> <span class="op">{</span></span>
@@ -384,7 +384,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        n = <span class="dv">5678</span>;</span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    _ = double(n);</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    _ = twice(n);</span>
 <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>t.zig:12:16: error: runtime-known argument passed to comptime parameter </code></pre>

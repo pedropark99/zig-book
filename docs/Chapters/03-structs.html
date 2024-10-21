@@ -288,7 +288,11 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
   <li><a href="#while-loops" id="toc-while-loops" class="nav-link" data-scroll-target="#while-loops"><span class="header-section-number">2.1.6</span> While loops</a></li>
   <li><a href="#using-break-and-continue" id="toc-using-break-and-continue" class="nav-link" data-scroll-target="#using-break-and-continue"><span class="header-section-number">2.1.7</span> Using <code>break</code> and <code>continue</code></a></li>
   </ul></li>
-  <li><a href="#sec-fun-pars" id="toc-sec-fun-pars" class="nav-link" data-scroll-target="#sec-fun-pars"><span class="header-section-number">2.2</span> Function parameters are immutable</a></li>
+  <li><a href="#sec-fun-pars" id="toc-sec-fun-pars" class="nav-link" data-scroll-target="#sec-fun-pars"><span class="header-section-number">2.2</span> Function parameters are immutable</a>
+  <ul class="collapse">
+  <li><a href="#a-free-optimization" id="toc-a-free-optimization" class="nav-link" data-scroll-target="#a-free-optimization"><span class="header-section-number">2.2.1</span> A free optimization</a></li>
+  <li><a href="#how-to-overcome-this-barrier" id="toc-how-to-overcome-this-barrier" class="nav-link" data-scroll-target="#how-to-overcome-this-barrier"><span class="header-section-number">2.2.2</span> How to overcome this barrier</a></li>
+  </ul></li>
   <li><a href="#sec-structs-and-oop" id="toc-sec-structs-and-oop" class="nav-link" data-scroll-target="#sec-structs-and-oop"><span class="header-section-number">2.3</span> Structs and OOP</a>
   <ul class="collapse">
   <li><a href="#sec-anonymous-struct-literals" id="toc-sec-anonymous-struct-literals" class="nav-link" data-scroll-target="#sec-anonymous-struct-literals"><span class="header-section-number">2.3.1</span> Anonymous struct literals</a></li>
@@ -630,9 +634,9 @@ error: FooError
 <section id="sec-fun-pars" class="level2" data-number="2.2">
 <h2 data-number="2.2" class="anchored" data-anchor-id="sec-fun-pars"><span class="header-section-number">2.2</span> Function parameters are immutable</h2>
 <p>We have already discussed a lot of the syntax behind function declarations in <a href="01-zig-weird.html#sec-root-file" class="quarto-xref"><span>Section 1.2.2</span></a> and <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>. But I want to emphasize a curious fact about function parameters (a.k.a. function arguments) in Zig. In summary, function parameters are immutable in Zig.</p>
-<p>Take the code example below, where we declare a simple function that just tries to add some amount to the input integer, and returns the result back. But if you look closely at the body of this <code>add2()</code> function, you will notice that we try to save the result back into the <code>x</code> function argument.</p>
+<p>Take the code example below, where we declare a simple function that just tries to add some amount to the input integer, and returns the result back. If you look closely at the body of this <code>add2()</code> function, you will notice that we try to save the result back into the <code>x</code> function argument.</p>
 <p>In other words, this function not only use the value that it received through the function argument <code>x</code>, but it also tries to change the value of this function argument, by assigning the addition result into <code>x</code>. However, function arguments in Zig are immutable. You cannot change their values, or, you cannot assign values to them inside the body’s function.</p>
-<p>This is the reason why, the code example below do not compile successfully. If you try to compile this code example, you get a compile error warning you that you are trying to change the value of a immutable (i.e.&nbsp;constant) object.</p>
+<p>This is the reason why, the code example below do not compile successfully. If you try to compile this code example, you will get a compile error message about “trying to change the value of a immutable (i.e.&nbsp;constant) object”.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb30"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add2(x: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
@@ -648,11 +652,16 @@ error: FooError
 <pre><code>t.zig:3:5: error: cannot assign to constant
     x = x + 2;
     ^</code></pre>
+<section id="a-free-optimization" class="level3" data-number="2.2.1">
+<h3 data-number="2.2.1" class="anchored" data-anchor-id="a-free-optimization"><span class="header-section-number">2.2.1</span> A free optimization</h3>
 <p>If a function argument receives as input an object whose data type is any of the primitive types that we have listed in <a href="01-zig-weird.html#sec-primitive-data-types" class="quarto-xref"><span>Section 1.5</span></a>, this object is always passed by value to the function. In other words, this object is copied into the function stack frame.</p>
 <p>However, if the input object have a more complex data type, for example, it might be a struct instance, or an array, or an union value, etc., in cases like that, the <code>zig</code> compiler will take the liberty of deciding for you which strategy is best. Thus, the <code>zig</code> compiler will pass your object to the function either by value, or by reference. The compiler will always choose the strategy that is faster for you. This optimization that you get for free is possible only because function arguments are immutable in Zig.</p>
+</section>
+<section id="how-to-overcome-this-barrier" class="level3" data-number="2.2.2">
+<h3 data-number="2.2.2" class="anchored" data-anchor-id="how-to-overcome-this-barrier"><span class="header-section-number">2.2.2</span> How to overcome this barrier</h3>
 <p>There are some situations where you might need to change the value of your function argument directly inside the function’s body. This happens more often when we are passing C structs as inputs to Zig functions.</p>
-<p>In a situation like this, you can overcome this barrier of immutable function arguments, by simply taking the lead, and explicitly choosing to pass the object by reference to the function. That is, instead of depending on the <code>zig</code> compiler to decide which strategy is best, you have to explicitly mark the function argument as a pointer. This way, we are telling the compiler that this function argument will be passed by reference to the function.</p>
-<p>By making it a pointer, we can finally alter the value of this function argument directly inside the body of the <code>add2()</code> function. You can see that the code example below compiles successfully.</p>
+<p>In a situation like this, you can overcome this barrier by using a pointer. In other words, instead of passing a value as input to the argument, you can pass a “pointer to value” instead. You can change the value that the pointer points to, by dereferencing it.</p>
+<p>Therefore, if we take our previous <code>add2()</code> example, we can change the value of the function argument <code>x</code> inside the function’s body by marking the <code>x</code> argument as a “pointer to a <code>u32</code> value” (i.e.&nbsp;<code>*u32</code> data type), instead of a <code>u32</code> value. By making it a pointer, we can finally alter the value of this function argument directly inside the body of the <code>add2()</code> function. You can see that the code example below compiles successfully.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb32"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add2(x: *<span class="dt">u32</span>) <span class="dt">void</span> <span class="op">{</span></span>
@@ -667,6 +676,8 @@ error: FooError
 <span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Result: 6</code></pre>
+<p>Even in this code example above, the <code>x</code> argument is still immutable. Which means that the pointer itself is immutable. Therefore, you cannot change the memory address that it points to. However, you can dereference the pointer to access the value that it points to, and also, to change this value, if you need to.</p>
+</section>
 </section>
 <section id="sec-structs-and-oop" class="level2" data-number="2.3">
 <h2 data-number="2.3" class="anchored" data-anchor-id="sec-structs-and-oop"><span class="header-section-number">2.3</span> Structs and OOP</h2>
@@ -674,7 +685,7 @@ error: FooError
 <p>With struct definitions, you can create (or define) a new data type in Zig. These struct definitions work the same way as they work in C. You give a name to this new struct (or, to this new data type you are creating), then, you list the data members of this new struct. You can also register functions inside this struct, and they become the methods of this particular struct (or data type), so that, every object that you create with this new type, will always have these methods available and associated with them.</p>
 <p>In C++, when we create a new class, we normally have a constructor method (or, a constructor function) which is used to construct (or, to instantiate) every object of this particular class, and we also have a destructor method (or a destructor function), which is the function responsible for destroying every object of this class.</p>
 <p>In Zig, we normally declare the constructor and the destructor methods of our structs, by declaring an <code>init()</code> and a <code>deinit()</code> methods inside the struct. This is just a naming convention that you will find across the entire Zig Standard Library. So, in Zig, the <code>init()</code> method of a struct is normally the constructor method of the class represented by this struct. While the <code>deinit()</code> method is the method used for destroying an existing instance of that struct.</p>
-<p>The <code>init()</code> and <code>deinit()</code> methods are both used extensively in Zig code, and you will see both of them being used when we talk about allocators in <a href="01-memory.html#sec-allocators" class="quarto-xref"><span>Section 3.2</span></a>. But, as another example, let’s build a simple <code>User</code> struct to represent an user of some sort of system.</p>
+<p>The <code>init()</code> and <code>deinit()</code> methods are both used extensively in Zig code, and you will see both of them being used when we talk about allocators in <a href="01-memory.html#sec-allocators" class="quarto-xref"><span>Section 3.3</span></a>. But, as another example, let’s build a simple <code>User</code> struct to represent an user of some sort of system.</p>
 <p>If you look at the <code>User</code> struct below, you can see the <code>struct</code> keyword. Notice the data members of this struct, <code>id</code>, <code>name</code> and <code>email</code>. Every data member have its type explicitly annotated, with the colon character (<code>:</code>) syntax that we described earlier in <a href="01-zig-weird.html#sec-root-file" class="quarto-xref"><span>Section 1.2.2</span></a>. But also notice that every line in the struct body that describes a data member, ends with a comma character (<code>,</code>). So every time you declare a data member in your Zig code, always end the line with a comma character, instead of ending it with the traditional semicolon character (<code>;</code>).</p>
 <p>Next, we have registered an <code>init()</code> function as a method of this <code>User</code> struct. This <code>init()</code> method is the constructor method that we will use to instantiate every new <code>User</code> object. That is why this <code>init()</code> function returns a new <code>User</code> object as result.</p>
 <div class="cell">
@@ -812,26 +823,26 @@ error: FooError
 <span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> m.sqrt(xd + yd + zd);</span>
 <span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
 <span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> double(self: *Vec3) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> twice(self: *Vec3) <span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a>        self.x = self.x * <span class="fl">2.0</span>;</span>
 <span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a>        self.y = self.y * <span class="fl">2.0</span>;</span>
 <span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a>        self.z = self.z * <span class="fl">2.0</span>;</span>
 <span id="cb43-19"><a href="#cb43-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
 <span id="cb43-20"><a href="#cb43-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Notice in the code example above that we have added a new method to our <code>Vec3</code> struct named <code>double()</code>. This method doubles the coordinate values of our vector object. In the case of the <code>double()</code> method, we annotated the <code>self</code> argument as <code>*Vec3</code>, indicating that this argument receives a pointer (or a reference, if you prefer to call it this way) to a <code>Vec3</code> object as input.</p>
+<p>Notice in the code example above that we have added a new method to our <code>Vec3</code> struct named <code>twice()</code>. This method doubles the coordinate values of our vector object. In the case of the <code>twice()</code> method, we annotated the <code>self</code> argument as <code>*Vec3</code>, indicating that this argument receives a pointer (or a reference, if you prefer to call it this way) to a <code>Vec3</code> object as input.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb44"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> v3 = Vec3 <span class="op">{</span></span>
 <span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>    .x = <span class="fl">4.2</span>, .y = <span class="fl">2.4</span>, .z = <span class="fl">0.9</span></span>
 <span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
-<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>v3.double();</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>v3.twice();</span>
 <span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Doubled: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>v3.x<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Doubled: 8.4</code></pre>
-<p>Now, if you change the <code>self</code> argument in this <code>double()</code> method to <code>self: Vec3</code>, like in the <code>distance()</code> method, you will get the compiler error exposed below as result. Notice that this error message is showing a line from the <code>double()</code> method body, indicating that you cannot alter the value of the <code>x</code> data member.</p>
+<p>Now, if you change the <code>self</code> argument in this <code>twice()</code> method to <code>self: Vec3</code>, like in the <code>distance()</code> method, you will get the compiler error exposed below as result. Notice that this error message is showing a line from the <code>twice()</code> method body, indicating that you cannot alter the value of the <code>x</code> data member.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb46"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co">// If we change the function signature of double to:</span></span>
-<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> double(self: Vec3) <span class="dt">void</span> <span class="op">{</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> twice(self: Vec3) <span class="dt">void</span> <span class="op">{</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>t.zig:16:13: error: cannot assign to constant
         self.x = self.x * 2.0;
