@@ -1046,12 +1046,26 @@ The first project that we are going to build and discuss in this book is a base6
 But in order for us to build such a thing, we need to get a better understanding on how strings work in Zig.
 So let's discuss this specific aspect of Zig.
 
-In Zig, a string literal value is just a pointer to a null-terminated array of bytes (i.e. the same thing as a C string).
-However, a string object in Zig is a little more than just a pointer. A string object
-in Zig is an object of type `[]const u8`, and, this object always contains two things: the
-same null-terminated array of bytes that you would find in a string literal value, plus a length value.
-Each byte in this "array of bytes" is represented by an `u8` value, which is an unsigned 8 bit integer,
-so, it is equivalent to the C data type `unsigned char`.
+In summary, there are two types of string values that you care about in Zig, which are:
+
+- String literal values.
+- String objects.
+
+A string literal value is just a pointer to a null-terminated array of bytes (i.e. similar to a C string).
+But in Zig, a string literal value also embeds the length of the string into the data type of the value itself.
+Therefore, a string literal value have a data type in the format `*const [n:0]u8`. The `n` in the data type
+indicates the size of the string.
+
+On the other hand, a string object in Zig is basically a slice to an arbitrary sequence of bytes,
+or, in other words, a slice of `u8` values (slices were presented at @sec-arrays). Thus,
+a string object have a data type of `[]u8` or `[]const u8`, depending if the string object is
+marked as constant with `const`, or as variable with `var`.
+
+Because a string object is essentially a slice, it means that a string object always contains two things:
+a pointer to an array of bytes (i.e. `u8` values) that represents the string value; and also, a length value,
+which specifies the size of the slice, or, how many elements there is in the slice.
+Is worth to emphasize that the array of bytes in a string object is not null-terminated, like in a
+string literal value.
 
 ```{zig}
 #| eval: false
@@ -1061,16 +1075,15 @@ so, it is equivalent to the C data type `unsigned char`.
 const object: []const u8 = "A string object";
 ```
 
-Zig always assumes that this sequence of bytes is UTF-8 encoded. This might not be true for every
+Zig always assumes that the sequence of bytes in your string is UTF-8 encoded. This might not be true for every
 sequence of bytes you're working with, but is not really Zig's job to fix the encoding of your strings
 (you can use [`iconv`](https://www.gnu.org/software/libiconv/)[^libiconv] for that).
 Today, most of the text in our modern world, especially on the web, should be UTF-8 encoded.
-So if your string literal is not UTF-8 encoded, then, you will likely
-have problems in Zig.
+So if your string literal is not UTF-8 encoded, then, you will likely have problems in Zig.
 
 [^libiconv]: <https://www.gnu.org/software/libiconv/>
 
-Let’s take for example the word "Hello". In UTF-8, this sequence of characters (H, e, l, l, o)
+Let's take for example the word "Hello". In UTF-8, this sequence of characters (H, e, l, l, o)
 is represented by the sequence of decimal numbers 72, 101, 108, 108, 111. In hexadecimal, this
 sequence is `0x48`, `0x65`, `0x6C`, `0x6C`, `0x6F`. So if I take this sequence of hexadecimal values,
 and ask Zig to print this sequence of bytes as a sequence of characters (i.e. a string), then,
@@ -1102,7 +1115,7 @@ like you would normally do with the [`printf()` function](https://cplusplus.com/
 const std = @import("std");
 const stdout = std.io.getStdOut().writer();
 pub fn main() !void {
-    const string_object = "This is an example of string literal in Zig";
+    const string_object = "This is an example";
     try stdout.print("Bytes that represents the string object: ", .{});
     for (string_object) |byte| {
         try stdout.print("{X} ", .{byte});
@@ -1111,15 +1124,19 @@ pub fn main() !void {
 }
 ```
 
+
 ### Strings in C
 
-At first glance, this looks very similar to how C treats strings as well. In more details, string values
-in C are treated internally as an array of arbitrary bytes, and this array is also null-terminated.
+At first glance, a string literal value in Zig looks very similar to how C treats strings as well.
+In more details, string values in C are treated internally as an array of arbitrary bytes,
+and this array is also null-terminated.
 
-But one key difference between a Zig string and a C string, is that Zig also stores the length of
-the array inside the string object. This small detail makes your code safer, because is much
-easier for the Zig compiler to check if you are trying to access an element that is "out of bounds", i.e. if
-your trying to access memory that does not belong to you.
+But one key difference between a Zig string literal and a C string, is that Zig also stores the length of
+the string inside the object itself. In the case of a string literal value, this length is stored in the
+data type of the value (i.e. the `n` variable in `[n:0]u8`). While, in a string object, the length is stored
+in the `len` attribute of the slice that represents the string object. This small detail makes your code safer,
+because is much easier for the Zig compiler to check if you are trying to access an element that is
+"out of bounds", i.e. if your trying to access memory that does not belong to you.
 
 To achieve this same kind of safety in C, you have to do a lot of work that kind of seems pointless.
 So getting this kind of safety is not automatic and much harder to do in C. For example, if you want
@@ -1150,8 +1167,10 @@ int main() {
 Number of elements in the array: 25
 ```
 
-But in Zig, you do not have to do this, because the object already contains a `len`
-field which stores the length information of the array. As an example, the `string_object` object below is 43 bytes long:
+
+You don't have this kind of work in Zig. Because the length of the string is always
+present and accessible. In a string object for example, you can easily access the length of the string
+through the `len` attribute. As an example, the `string_object` object below is 43 bytes long:
 
 
 ```{zig}
@@ -1170,57 +1189,53 @@ pub fn main() !void {
 
 Now, we can inspect better the type of objects that Zig create. To check the type of any object in Zig, you can use the
 `@TypeOf()` function. If we look at the type of the `simple_array` object below, you will find that this object
-is a array of 4 elements. Each element is a signed integer of 32 bits which corresponds to the data type `i32` in Zig.
+is an array of 4 elements. Each element is a signed integer of 32 bits which corresponds to the data type `i32` in Zig.
 That is what an object of type `[4]i32` is.
 
-But if we look closely at the type of the `string_object` object below, you will find that this object is a
-constant pointer (hence the `*const` annotation) to an array of 43 elements (or 43 bytes). Each element is a
-single byte (more precisely, an unsigned 8 bit integer - `u8`), that is why we have the `[43:0]u8` portion of the type below.
-In other words, the string stored inside the `string_object` object is 43 bytes long.
-That is why you have the type `*const [43:0]u8` below.
-
-In the case of `string_object`, it is a constant pointer (`*const`) because the object `string_object` is declared
-as constant in the source code (in the line `const string_object = ...`). So, if we changed that for some reason, if
-we declare `string_object` as a variable object (i.e. `var string_object = ...`), then, `string_object` would be
-just a normal pointer to an array of unsigned 8-bit integers (i.e. `* [43:0]u8`).
+But if we look closely at the type of the string literal value exposed below, you will find that this object is a
+constant pointer (hence the `*const` annotation) to an array of 16 elements (or 16 bytes). Each element is a
+single byte (more precisely, an unsigned 8 bit integer - `u8`), that is why we have the `[16:0]u8` portion of the type below.
+In other words, the string literal value exposed below is 16 bytes long.
 
 Now, if we create an pointer to the `simple_array` object, then, we get a constant pointer to an array of 4 elements (`*const [4]i32`),
-which is very similar to the type of the `string_object` object. This demonstrates that a string object (or a string literal)
-in Zig is already a pointer to an array.
+which is very similar to the type of the string literal value. This demonstrates that a string literal value
+in Zig is already a pointer to a null-terminated array of bytes.
 
-Just remember that a "pointer to an array" is different than an "array". So a string object in Zig is a pointer to an array
-of bytes, and not simply an array of bytes.
+Furthermore, if we take a look at the type of the `string_obj` object, you will see that it is a
+slice object (hence the `[]` portion of the type) to a sequence of constant `u8` values (hence
+the `const u8` portion of the type).
 
 
 ```{zig}
+#| build_type: "run"
 #| auto_main: false
-#| eval: false
+#| eval: true
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
 pub fn main() !void {
-    const string_object = "This is an example of string literal in Zig";
     const simple_array = [_]i32{1, 2, 3, 4};
-    try stdout.print(
-        "Type of array object: {}",
-        .{@TypeOf(simple_array)}
+    const string_obj: []const u8 = "A string object";
+    std.debug.print(
+        "Type 1: {}\n", .{@TypeOf(simple_array)}
     );
-    try stdout.print(
-        "Type of string object: {}",
-        .{@TypeOf(string_object)}
+    std.debug.print(
+        "Type 2: {}\n", .{@TypeOf("A string literal")}
     );
-    try stdout.print(
-        "Type of a pointer that points to the array object: {}",
-        .{@TypeOf(&simple_array)}
+    std.debug.print(
+        "Type 3: {}\n", .{@TypeOf(&simple_array)}
+    );
+    std.debug.print(
+        "Type 4: {}\n", .{@TypeOf(string_obj)}
     );
 }
 ```
 
 ```
-Type of array object: [4]i32
-Type of string object: *const [43:0]u8
-Type of a pointer that points to
-    the array object: *const [4]i32
+Type 1: [4]i32
+Type 2: *const [16:0]u8
+Type 3: *const [4]i32
+Type 4: []const u8
 ```
+
 
 
 ### Byte vs unicode points
