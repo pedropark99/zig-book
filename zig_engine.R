@@ -3,7 +3,7 @@ library(readr)
 library(stringr)
 
 find_in_path_ <- function() {
-  cat("Zig not found through `which`. Trying to find it through PATH...\n", file = stderr())
+  cat("[INFO]: Zig not found through `which`. Trying to find it through PATH...\n", file = stderr())
   path <- Sys.getenv("PATH")
   path_dirs <- str_split_1(path, ":")
   for (dir in path_dirs) {
@@ -32,7 +32,11 @@ find_zig_ <- function() {
     }
   }
   
-  find_in_path_()
+  path <- find_in_path_()
+  if (is.null(path)) {
+    stop("[ERROR]: Unable to find the zig compiler in your computer!")
+  }
+  return(path)
 }
 
 
