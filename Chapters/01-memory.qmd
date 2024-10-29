@@ -19,8 +19,8 @@ knitr::opts_chunk$set(
 # Memory and Allocators
 
 
-In this chapter, we will talk about memory. How does Zig controls memory? What
-common tools are used? Are there any important aspect that makes memory
+In this chapter, we will talk about memory. How does Zig control memory? What
+common tools are used? Are there any important aspects that make memory
 different/special in Zig? You will find the answers here.
 
 Computers fundamentally rely on memory to function. This memory acts as a temporary storage
@@ -53,7 +53,7 @@ known at "compile-time" or at "runtime".
 
 When you write a program in Zig, the values of some of the objects that you write in your program are *known
 at compile time*. Meaning that, when you compile your Zig source code, during the compilation process,
-the `zig` compiler can figure it out what is the exact value of a particular object
+the `zig` compiler can figure out the exact value of a particular object
 that exists in your source code.
 Knowing the length (or the size) of each object is also important. So the length (or the size) of each object that you write in your program is,
 in some cases, *known at compile time*.
@@ -70,21 +70,21 @@ known at compile-time, then, the size of this object is only known at compile-ti
 and only if, the type of this object has a known fixed size.
 
 In order for a type to have a known fixed size, this type must have data members whose size is fixed.
-If this type includes, for example, a variable sized array in it, then, this type do not have a known
+If this type includes, for example, a variable sized array in it, then, this type does not have a known
 fixed size. Because this array can have any size at runtime
 (i.e. it can be an array of 2 elements, or 50 elements, or 1 thousand elements, etc.).
 
 For example, a string object, which internally is an array of constant u8 values (`[]const u8`)
-have a variable size. It can be a string object with 100 or 500 characters in it. If we do not
+has a variable size. It can be a string object with 100 or 500 characters in it. If we do not
 know at compile-time, which exact string will be stored inside this string object, then, we cannot calculate
 the size of this string object at compile-time. So, any type, or any struct declaration that you make, that
-includes a string data member that do not have an explicit fixed size, makes this type, or this
+includes a string data member that does not have an explicit fixed size, makes this type, or this
 new struct that you are declaring, a type that does not have a known fixed size at compile-time.
 
-In contrast, if the type or this struct that you are declaring, includes a data member that is an array,
+In contrast, if the type of this struct that you are declaring, includes a data member that is an array,
 but this array has a known fixed size, like `[60]u8` (which declares an array of 60 `u8` values), then,
 this type, or, this struct that you are declaring, becomes a type with a known fixed size at compile-time.
-And because of that, in this case, the `zig` compiler do not need to known at compile-time the exact value of
+And because of that, in this case, the `zig` compiler does not need to know at compile-time the exact value of
 any object of this type. Since the compiler can find the necessary size to store this object by
 looking at the size of its type.
 
@@ -117,7 +117,7 @@ argument depends on the value that you assign to this particular argument,
 when you call the function.
 
 For example, the function `input_length()` contains an argument named `input`, which is an array of constant `u8` integers (`[]const u8`).
-Is impossible to know at compile time the value of this particular argument. And it also is impossible to know the size/length
+It is impossible to know the value of this particular argument at compile time. And it also is impossible to know the size/length
 of this particular argument. Because it is an array that do not have a fixed size specified explicitly in the argument type annotation.
 
 So, we know that this `input` argument will be an array of `u8` integers. But we do not know at compile-time, its value, and neither his size.
@@ -127,8 +127,8 @@ This is an intrinsic characteristic of any function. Just remember that the valu
 
 However, as I mentioned earlier, what really matters to the compiler is to know the size of the object
 at compile-time, and not necessarily its value. So, although we don't know the value of the object `n`, which is the result of the expression
-`input.len`, at compile-time, we do know its size. Because the expression `input.len` always return a value of type `usize`,
-and the type `usize` have a known fixed size.
+`input.len`, at compile-time, we do know its size. Because the expression `input.len` always returns a value of type `usize`,
+and the type `usize` has a known fixed size.
 
 
 
@@ -275,7 +275,7 @@ Think about that for a second. If all local objects in the stack are destroyed a
 would you even consider returning a pointer to one of these objects? This pointer is at best,
 invalid, or, more likely, "undefined".
 
-Conclusion, is totally fine to write a function that returns the local object
+Conclusion, it is totally fine to write a function that returns the local object
 itself as result, because then, you return the value of that object as the result.
 But, if this local object is stored in the stack, you should never write a function
 that returns a pointer to this local object. Because the memory address pointed by the pointer
@@ -284,7 +284,7 @@ no longer exists.
 
 So, using again the `add()` function as an example, if you rewrite this function so that it
 returns a pointer to the local object `result`, the `zig` compiler will actually compile
-you program, with no warnings or erros. At first glance, it looks that this is good code
+your program, with no warnings or errors. At first glance, it looks that this is good code
 that works as expected. But this is a lie!
 
 If you try to take a look at the value inside of the `r` object,
@@ -326,7 +326,7 @@ is destroyed at the end of its scope.
 
 But what if you really need to use this local object in some way after your function returns?
 How can you do this? The answer is: "in the same you would do if this was a C or C++ program. By returning
-an address to an object stored in the heap". The heap memory have a much more flexible lifecycle,
+an address to an object stored in the heap". The heap memory has a much more flexible lifecycle,
 and allows you to get a valid pointer to a local object of a function that already returned
 from its scope.
 
@@ -336,7 +336,7 @@ from its scope.
 One important limitation of the stack, is that, only objects whose length/size is known at compile-time can be
 stored in it. In contrast, the heap is a much more dynamic
 (and flexible) type of memory. It is the perfect type of memory to use
-on objects whose size/length might grow during the execution of your program.
+for objects whose size/length might grow during the execution of your program.
 
 Virtually any application that behaves as a server is a classic use case of the heap.
 A HTTP server, a SSH server, a DNS server, a LSP server, ... any type of server.
@@ -350,7 +350,7 @@ The server needs to have the ability to allocate and manage its memory according
 
 Another key difference between the stack and the heap, is that the heap is a type
 of memory that you, the programmer, have complete control over. This makes the heap a
-more flexible type of memory, but it also makes it harder to work with it. Because you,
+more flexible type of memory, but it also makes it harder to work with. Because you,
 the programmer, is responsible for managing everything related to it. Including where the memory is allocated,
 how much memory is allocated, and where this memory is freed.
 
@@ -434,7 +434,7 @@ One key aspect about Zig, is that there are "no hidden-memory allocations" in Zi
 What that really means, is that "no allocations happen behind your back in the standard library" [@zigguide].
 
 This is a known problem, especially in C++. Because in C++, there are some operators that do allocate
-memory behind the scene, and there is no way for you to known that, until you actually read the
+memory behind the scene, and there is no way for you to know that, until you actually read the
 source code of these operators, and find the memory allocation calls.
 Many programmers find this behaviour annoying and hard to keep track of.
 
@@ -444,7 +444,7 @@ provided by the user, to actually be able to allocate the memory it needs.
 
 This creates a clear distinction between functions that "do not" from those that "actually do"
 allocate memory. Just look at the arguments of this function.
-If a function, or operator, have an allocator object as one of its inputs/arguments, then, you know for
+If a function, or operator, has an allocator object as one of its inputs/arguments, then, you know for
 sure that this function/operator will allocate some memory during its execution.
 
 An example is the `allocPrint()` function from the Zig Standard Library. With this function, you can
@@ -496,7 +496,7 @@ but you don't need to change the function calls to the methods that do the memor
 
 As we described at @sec-stack, everytime you make a function call in Zig,
 a space in the stack is reserved for this function call. But the stack
-have a key limitation which is: every object stored in the stack have a
+has a key limitation which is: every object stored in the stack have a
 known fixed length.
 
 But in reality, there are two very common instances where this "fixed length limitation" of the stack is a deal braker:
@@ -508,14 +508,14 @@ Also, there is another instance where you might want to use an allocator, which 
 to a local object. As I described at @sec-stack, you cannot do that if this local object is stored in the
 stack. However, if this object is stored in the heap, then, you can return a pointer to this object at the
 end of the function. Because you (the programmer) control the lifetime of any heap memory that you allocate. You decide
-when this memory get's destroyed/freed.
+when this memory gets destroyed/freed.
 
 These are common situations where the stack is not good for.
 That is why you need a different memory management strategy to
 store these objects inside your function. You need to use
 a memory type that can grow together with your objects, or that you
 can control the lifetime of this memory.
-The heap fit this description.
+The heap fits this description.
 
 Allocating memory on the heap is commonly known as dynamic memory management. As the objects you create grow in size
 during the execution of your program, you grow the amount of memory
@@ -536,7 +536,7 @@ allocators available in the standard library:
 - `c_allocator()` (requires you to link to libc).
 
 
-Each allocator have its own perks and limitations. All allocators, except `FixedBufferAllocator()` and `ArenaAllocator()`,
+Each allocator has its own perks and limitations. All allocators, except `FixedBufferAllocator()` and `ArenaAllocator()`,
 are allocators that use the heap memory. So any memory that you allocate with
 these allocators, will be placed in the heap.
 
@@ -660,8 +660,8 @@ free all the memory you allocated over these 5 calls at once, by simply calling 
 If you give, for example, a `GeneralPurposeAllocator()` object as input to the `ArenaAllocator()` constructor, like in the example below, then, the allocations
 you perform with `alloc()` will actually be made with the underlying object `GeneralPurposeAllocator()` that was passed.
 So, with an arena allocator, any new memory you ask for is allocated by the child allocator. The only thing that an arena allocator
-really do is helping you to free all the memory you allocated multiple times with just a single command. In the example
-below, I called `alloc()` 3 times. So, if I did not used an arena allocator, then, I would need to call
+really does is help you to free all the memory you allocated multiple times with just a single command. In the example
+below, I called `alloc()` 3 times. So, if I did not use an arena allocator, then, I would need to call
 `free()` 3 times to free all the allocated memory.
 
 ```{zig}
@@ -697,11 +697,11 @@ Notice that this `alloc()` method receives two inputs. The first one, is a type.
 This defines what type of values the allocated array will store. In the example
 below, we are allocating an array of unsigned 8-bit integers (`u8`). But
 you can create an array to store any type of value you want. Next, on the second argument, we
-define the size of the allocated array, by specifying how much elements
+define the size of the allocated array, by specifying how many elements
 this array will contain. In the case below, we are allocating an array of 50 elements.
 
 At @sec-zig-strings we described that strings in Zig are simply arrays of characters.
-Each character is represented by an `u8` value. So, this means that the array that
+Each character is represented by a `u8` value. So, this means that the array that
 was allocated in the object `input` is capable of storing a string that is
 50-characters long.
 
