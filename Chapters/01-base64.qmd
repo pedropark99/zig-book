@@ -39,7 +39,7 @@ binary data into the SMTP message.
 
 ## How the base64 algorithm work?
 
-But how exactly the algorithm behind the base64 encoding works? Let's discuss that. First, I will
+But how exactly does the algorithm behind the base64 encoding work? Let's discuss that. First, I will
 explain the base64 scale, which is the 64-character scale that is the basis for
 the base64 encoding system.
 
@@ -83,7 +83,7 @@ The bullet points below summarises the base64 scale:
 ### Creating the scale as a lookup table {#sec-base64-table}
 
 The best way to represent this scale in code, is to represent it as a *lookup table*.
-Lookup tables are a classic strategy in computer science to speed calculations. The basic idea
+Lookup tables are a classic strategy in computer science to speed up calculations. The basic idea
 is to replace a runtime calculation (which can take a long time to be done) with a basic array indexing
 operation.
 
@@ -145,7 +145,7 @@ Character at index 28: c
 
 ### A base64 encoder {#sec-base64-encoder-algo}
 
-The algorithm behind a base64 encoder usually works on a window of 3 bytes. Because each byte have
+The algorithm behind a base64 encoder usually works on a window of 3 bytes. Because each byte has
 8 bits, so, 3 bytes forms a set of $8 \times 3 = 24$ bits. This is desirable for the base64 algorithm, because
 24 bits is divisible by 6, which forms $24 / 6 = 4$ groups of 6 bits each.
 
@@ -168,7 +168,7 @@ Taking the string "Hi" as an example, we have 2 bytes, or, 16 bits in total. So,
 to complete the window of 24 bits that the base64 algorithm likes to work on. The first thing that
 the algorithm does, is to check how to divide the input bytes into groups of 6 bits.
 
-If the algorithm notice that there is a group of 6 bits that, have some bits in it, but, at the same time, it is not full
+If the algorithm notices that there is a group of 6 bits that, have some bits in it, but, at the same time, it is not full
 (in other words, $0 < nbits < 6$, being $nbits$ the number of bits), meaning that, it lacks
 some bits to fill the 6-bits requirement, the algorithm simply add extra zeros in this group
 to fill the space that it needs. That is why at @fig-base64-algo1, on the third group after the 6-bit transformation,
@@ -241,7 +241,7 @@ We want to decode, or, in other words, translate a base64 message back to its or
 So, in this process we get a sequence of base64 characters as input, and produce as output,
 the binary data that is represented by this sequence of base64 characters.
 
-Any base64 library is normally composed by these two parts: 1) the encoder, which is a function that encodes
+Any base64 library is normally composed of these two parts: 1) the encoder, which is a function that encodes
 (i.e. it converts) any sequence of binary data into a sequence of base64 characters; 2) the decoder, which is a function
 that converts a sequence of base64 characters back into the original sequence of binary data.
 
@@ -251,7 +251,7 @@ that converts a sequence of base64 characters back into the original sequence of
 
 One task that we need to do is to calculate how much space we need to reserve for the
 output, both of the encoder and decoder. This is simple math, and can be done easily in Zig
-because every array have its length (its number of elements) easily accesible by consulting
+because every array has its length (its number of elements) easily accesible by consulting
 the `.len` property of the array.
 
 For the encoder, the logic is the following: for each 3 bytes that we find in the input,
@@ -556,7 +556,7 @@ I intentionally omitted the `Base64` struct definition in this source code,
 just for brevity reasons. So, just remember that this function is a public function (or a public method) from the
 `Base64` struct.
 
-Furthermore, this `encode()` function have two other arguments:
+Furthermore, this `encode()` function has two other arguments:
 
 1. `input` is the input sequence of characters that you want to encode in base64;
 1. `allocator` is an allocator object to use in the necessary memory allocations.
@@ -566,7 +566,7 @@ So, if you are not familiar with them, I highly recommend you to comeback to
 that section, and read it.
 By looking at the `encode()` function, you will see that we use this
 allocator object to allocate enough memory to store the output of
-encoding process.
+the encoding process.
 
 The main for loop in the function is responsible for iterating through the entire input string.
 In every iteration, we use a `count` variable to count how many iterations we had at the
@@ -643,7 +643,7 @@ pub fn encode(self: Base64,
 ## Building the decoder logic {#sec-decoder-logic}
 
 Now, we can focus on writing the base64 decoder logic. Remember from @fig-base64-algo2 that,
-a base64 decoder do the inverse process of an encoder. So, all we need to do, is to
+a base64 decoder does the inverse process of an encoder. So, all we need to do, is to
 write a `decode()` function that performs the inverse process that I exposed at @sec-encoder-logic.
 
 
@@ -725,7 +725,7 @@ So, the steps to produce the 3 bytes in the output are:
 
 
 Before we continue, let's try to visualize how these transformations make the original bytes that we had
-before the encoding process. First, think back at the 6-bit transformation performed by the encoder exposed at @sec-encoder-logic.
+before the encoding process. First, think back to the 6-bit transformation performed by the encoder exposed at @sec-encoder-logic.
 The first byte in the output of the encoder is produced by moving the bits in the first byte of the input two positions to the right.
 
 If for example the first byte in the input of the encoder was the sequence `ABCDEFGH`, then, the first byte in the output of the encoder would be
@@ -782,7 +782,7 @@ Notice that we check if the indexes 2 and 3 in the temporary buffer are the numb
 from @sec-map-base64-index, is when the `_calc_index()` function receives a `'='` character
 as input. So, if these indexes are equal to the number 64, the `decode()` function knows
 that it can simply ignore these indexes. They are not converted because, as I described before,
-the character `'='` have no meaning, despite being the end of meaningful characters in the sequence.
+the character `'='` has no meaning, despite being the end of meaningful characters in the sequence.
 So we can safely ignore them when they appear in the sequence.
 
 ```{zig}
