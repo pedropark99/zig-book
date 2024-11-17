@@ -52,24 +52,6 @@ If you do have a Revolut account, you can scan the following QR code:
 <http://revolut.me/pedroduartefaria>
 
 
-### Wise
-
-If you don't have a Wise account, and just want to send the money via Swift Payment,
-you can send it to the following bank account:
-
-```
-Owner of the Wise account: Pedro Duarte Faria
-Owner of the account: Wise US Inc.
-Swift/BIC: TRWIUS35XXX
-Account number: 715958645769167
-Name and address of the bank: Wise US Inc 30 W. 26th Street, Sixth Floor, New York NY 10010, United States.
-```
-
-If you do have a Wise account, you can scan the following QR code:
-
-[![Wise](https://img.shields.io/badge/Wise-394e79?style=for-the-badge&logo=wise&logoColor=00B9FF)](https://wise.com/pay/me/pedrod4845)
-
-
 
 
 ## About this book
