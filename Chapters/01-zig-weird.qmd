@@ -359,6 +359,26 @@ zig run src/main.zig
 ```
 Hello, world!
 ```
+### Important Note for Windows Users
+
+On Windows, certain global initializations that rely on runtime resources, such as `std.io.getStdOut().writer()`, may fail. This happens because global variables in Zig are initialized at **compile-time**, and operations like accessing `stdout` or opening files are restricted to runtime.
+
+### Example
+**Incorrect:**
+```{zig}
+#| eval: false
+#| auto_main: false
+const stdout = std.io.getStdOut().writer(); // ❌ Compile-time error on Windows
+```
+Correct:
+
+```{zig}
+#| eval: false
+#| auto_main: false
+pub fn main() void {
+    const stdout = std.io.getStdOut().writer(); // ✅ Runtime initialization
+}
+```
 
 ### Compiling the entire project {#sec-compile-project}
 
