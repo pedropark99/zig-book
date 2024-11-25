@@ -360,6 +360,80 @@ zig run src/main.zig
 Hello, world!
 ```
 
+
+### Important note for Windows users
+
+First of all, this is a Windows-specific thing, and, therefore, does not apply to other
+operational systems, such as Linux and MacOs. In summary, if you have a piece of Zig code that
+includes some global variables whose initialization rely on runtime resources, then,
+you might have some troubles while trying to compile this Zig code on Windows.
+
+An example of that is accessing the `stdout` (i.e. the *standard output* of your system), which is usually
+done in Zig by using the expression `std.io.getStdOut()`. Thus, if you use this expression to instantiate
+a global variable in a Zig module, then, the compilation of your Zig code will very likely fail on Windows,
+with a "unable to evaluate comptime expression" error message.
+
+This failure in the compilation process happens because all global variables in Zig are initialized
+at *compile-time*. However, operations like accessing the `stdout` (or opening a file) on Windows
+depends on resources that are available only at *runtime* (you will learn more about compile-time
+versus runtime at @sec-compile-time).
+
+For example, if you try to compile this code example on Windows, you will likely get the error message
+exposed below:
+
+```{zig}
+#| eval: false
+#| auto_main: false
+const std = @import("std");
+// ERROR! Compile-time error that emerge from
+// this next line, on the `stdout` object
+const stdout = std.io.getStdOut().writer();
+
+pub fn main() !void {
+    _ = try stdout.write("Hello\n");
+}
+```
+
+```
+t.zig:2107:28: error: unable to evaluate comptime expression
+    break :blk asm {
+               ^~~
+```
+
+
+
+To avoid this problem on Windows, we need to force the `zig` compiler to instantiate this
+`stdout` object only at runtime, instead of instantiating it at compile-time. We can achieve
+that by simply moving the expression to a function body.
+
+This solves the problem because all expressions that are inside a function body in Zig
+are evaluated only at runtime, unless you use the `comptime` keyword explicitly to change this behaviour.
+You will learn more about this `comptime` keyword at @sec-comptime.
+
+
+```{zig}
+#| eval: false
+#| auto_main: false
+const std = @import("std");
+pub fn main() !void {
+    // SUCCESS: Stdout initialized at runtime.
+    const stdout = std.io.getStdOut().writer();
+    _ = try stdout.write("Hello\n");
+}
+```
+
+```
+Hello
+```
+
+You can read more details about this Windows-specific limitation at a couple of
+GitHub issues opened at the official Zig repository. More specifically, the issues 
+17186 [^cissue1] and 19864 [^cissue2].
+
+[^cissue1]: <https://github.com/ziglang/zig/issues/17186>
+[^cissue2]: <https://github.com/ziglang/zig/issues/19864>
+
+
 ### Compiling the entire project {#sec-compile-project}
 
 Just as I described at @sec-project-files, as our project grows in size and
