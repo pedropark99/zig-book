@@ -7,5 +7,5 @@ install.packages(
     "gt",
     "tibble"
   )
+  , repos = "http://cran.us.r-project.org"
 )
-
