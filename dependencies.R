@@ -7,5 +7,6 @@ install.packages(
     "gt",
     "tibble"
   )
-)
+  , repos = "https://cloud.r-project.org"
 
+)
