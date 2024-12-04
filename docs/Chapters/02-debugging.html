@@ -356,14 +356,17 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> result = add(<span class="dv">34</span>, <span class="dv">16</span>);</span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Result: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>result<span class="op">}</span>);</span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Result: 50</code></pre>
+</div>
 </div>
 <pre><code>Result: 50</code></pre>
 <p>You could also achieve the exact same result by getting a file descriptor object to <code>stderr</code>, then, creating a <em>writer</em> object to <code>stderr</code>, then, using the <code>print()</code> method of this <em>writer</em> object, like in the example below:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stderr = std.io.getStdErr().writer();</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">// some more lines ...</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> stderr.print(<span class="st">"Result: {d}"</span>, .<span class="op">{</span>result<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stderr = std.io.getStdErr().writer();</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">// some more lines ...</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>_ = <span class="kw">try</span> stderr.print(<span class="st">"Result: {d}"</span>, .<span class="op">{</span>result<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="debugging-through-debuggers" class="level2" data-number="5.2">
@@ -379,83 +382,83 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <h3 data-number="5.2.2" class="anchored" data-anchor-id="lets-debug-a-program"><span class="header-section-number">5.2.2</span> Let’s debug a program</h3>
 <p>As an example, let’s use LLDB to navigate and investigate the following piece of Zig code:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add_and_increment(a: <span class="dt">u8</span>, b: <span class="dt">u8</span>) <span class="dt">u8</span> <span class="op">{</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> sum = a + b;</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> incremented = sum + <span class="dv">1</span>;</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> incremented;</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> n = add_and_increment(<span class="dv">2</span>, <span class="dv">3</span>);</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    n = add_and_increment(n, n);</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.print(<span class="st">"Result: {d}!</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n<span class="op">}</span>);</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add_and_increment(a: <span class="dt">u8</span>, b: <span class="dt">u8</span>) <span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> sum = a + b;</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> incremented = sum + <span class="dv">1</span>;</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> incremented;</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> n = add_and_increment(<span class="dv">2</span>, <span class="dv">3</span>);</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    n = add_and_increment(n, n);</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.print(<span class="st">"Result: {d}!</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n<span class="op">}</span>);</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Result: 13!</code></pre>
 </div>
 </div>
 <p>There is nothing wrong with this program. But it is a good start for us. First, we need to compile this program with the <code>zig build-exe</code> command. For this example, suppose that I have compiled the above Zig code into a binary executable called <code>add_program</code>.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> build-exe add_program.zig</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> build-exe add_program.zig</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Now, we can start LLDB with <code>add_program</code>, like this:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">lldb</span> add_program</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">lldb</span> add_program</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>From now on, LLDB is started, and you can know that I’m executing LLDB commands by looking at the prefix <code>(lldb)</code>. If something is prefixed with <code>(lldb)</code>, then you know that it is a LLDB command.</p>
 <p>The first thing I will do, is to set a breakpoint at the <code>main()</code> function, by executing <code>b main</code>. After that, I just start the execution of the program with <code>run</code>. You can see in the output below, that the execution stopped at the first line in the function <code>main()</code>, as we expected.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">b</span> main</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Breakpoint</span> 1: where = debugging<span class="kw">`</span><span class="ex">debug1.main</span> + 22</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">at</span> debug1.zig:11:30, address = 0x00000000010341a6</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">run</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Process</span> 8654 launched: <span class="st">'add_program'</span> <span class="er">(</span><span class="ex">x86_64</span><span class="kw">)</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="ex">Process</span> 8654 stopped</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> thread <span class="co">#1, name = 'add_program',</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="ex">stop</span> reason = breakpoint 1.1 frame <span class="co">#0: 0x10341a6</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="ex">add_program</span><span class="kw">`</span>debug1.main at add_program.zig:11:30</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>   <span class="ex">8</span>    }</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>   <span class="ex">9</span>    </span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>   <span class="ex">10</span>   pub fn main<span class="er">(</span><span class="kw">)</span> <span class="ex">!void</span> {</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span><span class="op">&gt;</span> 11       var n = add_and_increment<span class="er">(</span><span class="ex">2,</span> 3<span class="kw">);</span></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>   <span class="ex">12</span>       n = add_and_increment<span class="er">(</span><span class="ex">n,</span> n<span class="kw">);</span></span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>   <span class="ex">13</span>       try stdout.print<span class="er">(</span><span class="st">"Result: {d}!\n"</span><span class="ex">,</span> .{n}<span class="kw">);</span></span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>   <span class="ex">14</span>   }</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">b</span> main</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Breakpoint</span> 1: where = debugging<span class="kw">`</span><span class="ex">debug1.main</span> + 22</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">at</span> debug1.zig:11:30, address = 0x00000000010341a6</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">run</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Process</span> 8654 launched: <span class="st">'add_program'</span> <span class="er">(</span><span class="ex">x86_64</span><span class="kw">)</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="ex">Process</span> 8654 stopped</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> thread <span class="co">#1, name = 'add_program',</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="ex">stop</span> reason = breakpoint 1.1 frame <span class="co">#0: 0x10341a6</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="ex">add_program</span><span class="kw">`</span>debug1.main at add_program.zig:11:30</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>   <span class="ex">8</span>    }</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>   <span class="ex">9</span>    </span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>   <span class="ex">10</span>   pub fn main<span class="er">(</span><span class="kw">)</span> <span class="ex">!void</span> {</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span><span class="op">&gt;</span> 11       var n = add_and_increment<span class="er">(</span><span class="ex">2,</span> 3<span class="kw">);</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>   <span class="ex">12</span>       n = add_and_increment<span class="er">(</span><span class="ex">n,</span> n<span class="kw">);</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>   <span class="ex">13</span>       try stdout.print<span class="er">(</span><span class="st">"Result: {d}!\n"</span><span class="ex">,</span> .{n}<span class="kw">);</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>   <span class="ex">14</span>   }</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>I can start navigating through the code, and checking the objects that are being generated. If you are not familiar with the commands available in LLDB, I recommend you to read the official documentation of the project<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. You can also look for cheat sheets, which quickly describes all commands available for you<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>.</p>
 <p>Currently, we are in the first line at the <code>main()</code> function. In this line, we create the <code>n</code> object, by executing the <code>add_and_increment()</code> function. To execute the current line of code, and go to the next line, we can run the <code>n</code> LLDB command. Let’s execute this command.</p>
 <p>After we executed this line, we can also look at the value stored inside this <code>n</code> object by using the <code>p</code> LLDB command. The syntax for this command is <code>p &lt;name-of-object&gt;</code>.</p>
 <p>If we take a look at the value stored in the <code>n</code> object (<code>p n</code>), notice that it stores the hexadecimal value <code>0x06</code>, which is the number 6 in decimal. We can also see that, this value have a type <code>unsigned char</code>, which is an unsigned 8-bit integer. We have talked already about this at <a href="01-zig-weird.html#sec-zig-strings" class="quarto-xref"><span>Section 1.8</span></a>, that <code>u8</code> integers in Zig are equivalent to the C data type <code>unsigned char</code>.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">n</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Process</span> 4798 stopped</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> thread <span class="co">#1, name = 'debugging',</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">stop</span> reason = step over frame <span class="co">#0: 0x10341ae</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="ex">debugging</span><span class="kw">`</span><span class="ex">debug1.main</span> at debug1.zig:12:26</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>   <span class="ex">9</span>    </span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>   <span class="ex">10</span>   pub fn main<span class="er">(</span><span class="kw">)</span> <span class="ex">!void</span> {</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>   <span class="ex">11</span>       var n = add_and_increment<span class="er">(</span><span class="ex">2,</span> 3<span class="kw">);</span></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span><span class="op">&gt;</span> 12       n = add_and_increment<span class="er">(</span><span class="ex">n,</span> n<span class="kw">);</span></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>   <span class="ex">13</span>       try stdout.print<span class="er">(</span><span class="st">"Result: {d}!\n"</span><span class="ex">,</span> .{n}<span class="kw">);</span></span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>   <span class="ex">14</span>   }</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">p</span> n</span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">unsigned</span> char<span class="kw">)</span> <span class="va">$1</span> = <span class="st">'\x06'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">n</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Process</span> 4798 stopped</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> thread <span class="co">#1, name = 'debugging',</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">stop</span> reason = step over frame <span class="co">#0: 0x10341ae</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="ex">debugging</span><span class="kw">`</span><span class="ex">debug1.main</span> at debug1.zig:12:26</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>   <span class="ex">9</span>    </span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>   <span class="ex">10</span>   pub fn main<span class="er">(</span><span class="kw">)</span> <span class="ex">!void</span> {</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>   <span class="ex">11</span>       var n = add_and_increment<span class="er">(</span><span class="ex">2,</span> 3<span class="kw">);</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span><span class="op">&gt;</span> 12       n = add_and_increment<span class="er">(</span><span class="ex">n,</span> n<span class="kw">);</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>   <span class="ex">13</span>       try stdout.print<span class="er">(</span><span class="st">"Result: {d}!\n"</span><span class="ex">,</span> .{n}<span class="kw">);</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>   <span class="ex">14</span>   }</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">p</span> n</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">unsigned</span> char<span class="kw">)</span> <span class="va">$1</span> = <span class="st">'\x06'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Now, on the next line of code, we are executing the <code>add_and_increment()</code> function once again. Why not step inside this function? Shall we? We can do that, by executing the <code>s</code> LLDB command. Notice in the example below that, after executing this command, we have entered into the context of the <code>add_and_increment()</code> function.</p>
 <p>Also notice in the example below that, I have walked two more lines in the function’s body, then, I execute the <code>frame variable</code> LLDB command, to see at once, the value stored in each of the variables that were created inside the current scope.</p>
 <p>You can see in the output below that, the object <code>sum</code> stores the value <code>\f</code>, which represents the <em>form feed</em> character. This character in the ASCII table, corresponds to the hexadecimal value <code>0x0C</code>, or, in decimal, the number 12. So, this means that the result of the expression <code>a + b</code> executed at line 5, resulted in the number 12.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">s</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Process</span> 4798 stopped</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> thread <span class="co">#1, name = 'debugging',</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">stop</span> reason = step in frame <span class="co">#0: 0x10342de</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="ex">debugging</span><span class="kw">`</span><span class="ex">debug1.add_and_increment</span><span class="er">(</span><span class="va">a</span><span class="op">=</span><span class="st">'\x02'</span>, <span class="va">b</span><span class="op">=</span><span class="st">'\x03'</span><span class="kw">)</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="ex">at</span> debug1.zig:4:39</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span><span class="op">&gt;</span> 4    fn add_and_increment<span class="er">(</span><span class="ex">a:</span> u8, b: u8<span class="kw">)</span> <span class="ex">u8</span> {</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>   <span class="ex">5</span>        const sum = a + b<span class="kw">;</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>   <span class="ex">6</span>        const incremented = sum + 1<span class="kw">;</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>   <span class="ex">7</span>        return incremented<span class="kw">;</span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">n</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">n</span></span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">frame</span> variable</span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">unsigned</span> char<span class="kw">)</span> <span class="ex">a</span> = <span class="st">'\x06'</span></span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">unsigned</span> char<span class="kw">)</span> <span class="ex">b</span> = <span class="st">'\x06'</span></span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">unsigned</span> char<span class="kw">)</span> <span class="fu">sum</span> = <span class="st">'\f'</span></span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">unsigned</span> char<span class="kw">)</span> <span class="ex">incremented</span> = <span class="st">'\x06'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">s</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Process</span> 4798 stopped</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="ex">*</span> thread <span class="co">#1, name = 'debugging',</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">stop</span> reason = step in frame <span class="co">#0: 0x10342de</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="ex">debugging</span><span class="kw">`</span><span class="ex">debug1.add_and_increment</span><span class="er">(</span><span class="va">a</span><span class="op">=</span><span class="st">'\x02'</span>, <span class="va">b</span><span class="op">=</span><span class="st">'\x03'</span><span class="kw">)</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="ex">at</span> debug1.zig:4:39</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span><span class="op">&gt;</span> 4    fn add_and_increment<span class="er">(</span><span class="ex">a:</span> u8, b: u8<span class="kw">)</span> <span class="ex">u8</span> {</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>   <span class="ex">5</span>        const sum = a + b<span class="kw">;</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>   <span class="ex">6</span>        const incremented = sum + 1<span class="kw">;</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>   <span class="ex">7</span>        return incremented<span class="kw">;</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">n</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">n</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">lldb</span><span class="kw">)</span> <span class="ex">frame</span> variable</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">unsigned</span> char<span class="kw">)</span> <span class="ex">a</span> = <span class="st">'\x06'</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">unsigned</span> char<span class="kw">)</span> <span class="ex">b</span> = <span class="st">'\x06'</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">unsigned</span> char<span class="kw">)</span> <span class="fu">sum</span> = <span class="st">'\f'</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">unsigned</span> char<span class="kw">)</span> <span class="ex">incremented</span> = <span class="st">'\x06'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 </section>
 <section id="how-to-investigate-the-data-type-of-your-objects" class="level2" data-number="5.3">
@@ -464,15 +467,15 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>When you walk through your program with a debugger, you can inspect the types of your objects by simply printing them to the console, with the LLDB <code>p</code> command. But you also have alternatives embedded in the language itself to access the data types of your objects.</p>
 <p>In Zig, you can retrieve the data type of an object, by using the built-in function <code>@TypeOf()</code>. Just apply this function over the object, and you get access to the data type of the object.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expect = std.testing.expect;</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> number: <span class="dt">i32</span> = <span class="dv">5</span>;</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect(<span class="bu">@TypeOf</span>(number) == <span class="dt">i32</span>);</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(number)<span class="op">}</span>);</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expect = std.testing.expect;</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> number: <span class="dt">i32</span> = <span class="dv">5</span>;</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect(<span class="bu">@TypeOf</span>(number) == <span class="dt">i32</span>);</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(number)<span class="op">}</span>);</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>i32</code></pre>
 </div>

@@ -98,16 +98,17 @@ whose value can be identified at compile time.
 
 
 ```{zig}
-#| auto_main: true
+#| auto_main: false
 #| build_type: "run"
-// ======== Variables
-const name = "Pedro";
-const array = [_]u8{1, 2, 3, 4};
-_ = name; _ = array;
-// ========= Function
 fn input_length(input: []const u8) usize {
     const n = input.len;
     return n;
+}
+
+pub fn main() !void {
+    const name = "Pedro";
+    const array = [_]u8{1, 2, 3, 4};
+    _ = name; _ = array;
 }
 ```
 
@@ -203,15 +204,16 @@ But since it is declared in the "outer" scope, this object is stored in the
 stack space that belongs to this outer scope.
 
 ```{zig}
-#| auto_main: true
+#| auto_main: false
 #| build_type: "run"
-// ==== Variable
-const r = add(5, 27);
-_ = r;
-// ====== Function
 fn add(x: u8, y: u8) u8 {
     const result = x + y;
     return result;
+}
+
+pub fn main() !void {
+    const r = add(5, 27);
+    _ = r;
 }
 ```
 
@@ -297,18 +299,18 @@ bugs in your program [@zigdocs, see "Lifetime and Ownership"[^life] and "Undefin
 
 
 ```{zig}
-#| auto_main: true
+#| auto_main: false
 #| build_type: "run"
-// This code compiles successfully. But it has
-// undefined behaviour. Never do this!!!
-// ==== Variable
-// The `r` object is undefined!
-const r = add(5, 27);
-_ = r;
-// ====== Function
 fn add(x: u8, y: u8) *const u8 {
     const result = x + y;
     return &result;
+}
+
+pub fn main() !void {
+    // This code compiles successfully. But it has
+    // undefined behaviour. Never do this!!!
+    // The `r` object is undefined!
+    const r = add(5, 27); _ = r;
 }
 ```
 
@@ -411,8 +413,7 @@ on the stack. You can see below that this program does not run succesfully, beca
 with a "segmentation fault" error message.
 
 ```{zig}
-#| eval: false
-#| build_type: "run"
+#| build_type: "ast"
 #| auto_main: true
 var very_big_alloc: [1000 * 1000 * 24]u64 = undefined;
 @memset(very_big_alloc[0..], 0);
@@ -628,8 +629,7 @@ allocator objects. You would have to allocate this very big buffer object on the
 The example below demonstrates this case.
 
 ```{zig}
-#| eval: false
-#| build_type: "run"
+#| build_type: "ast"
 #| auto_main: true
 const heap = std.heap.page_allocator;
 const memory_buffer = try heap.alloc(
@@ -665,17 +665,16 @@ below, I called `alloc()` 3 times. So, if I did not use an arena allocator, then
 `free()` 3 times to free all the allocated memory.
 
 ```{zig}
-#| eval: false
 #| auto_main: true
-#| build_type: "run"
+#| build_type: "lib"
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var aa = std.heap.ArenaAllocator.init(gpa.allocator());
 defer aa.deinit();
 const allocator = aa.allocator();
 
-const in1 = allocator.alloc(u8, 5);
-const in2 = allocator.alloc(u8, 10);
-const in3 = allocator.alloc(u8, 15);
+const in1 = try allocator.alloc(u8, 5);
+const in2 = try allocator.alloc(u8, 10);
+const in3 = try allocator.alloc(u8, 15);
 _ = in1; _ = in2; _ = in3;
 ```
 

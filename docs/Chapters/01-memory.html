@@ -367,14 +367,16 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>In contrast, if the type of this struct that you are declaring, includes a data member that is an array, but this array has a known fixed size, like <code>[60]u8</code> (which declares an array of 60 <code>u8</code> values), then, this type, or, this struct that you are declaring, becomes a type with a known fixed size at compile-time. And because of that, in this case, the <code>zig</code> compiler does not need to know at compile-time the exact value of any object of this type. Since the compiler can find the necessary size to store this object by looking at the size of its type.</p>
 <p>Let’s look at an example. In the source code below, we have two constant objects (<code>name</code> and <code>array</code>) declared. Because the values of these particular objects are written down, in the source code itself (<code>"Pedro"</code> and the number sequence from 1 to 4), the <code>zig</code> compiler can easily discover the values of these constant objects (<code>name</code> and <code>array</code>) during the compilation process. This is what “known at compile time” means. It refers to any object that you have in your Zig source code whose value can be identified at compile time.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> name = <span class="st">"Pedro"</span>;</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> array = [_]<span class="dt">u8</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span><span class="op">}</span>;</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>_ = name; _ = array;</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> input_length(input: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">usize</span> <span class="op">{</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n = input.len;</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> n;</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> input_length(input: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">usize</span> <span class="op">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n = input.len;</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> n;</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> name = <span class="st">"Pedro"</span>;</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> array = [_]<span class="dt">u8</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span><span class="op">}</span>;</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    _ = name; _ = array;</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>The other side of the spectrum are objects whose values are not known at compile time. Function arguments are a classic example of this. Because the value of each function argument depends on the value that you assign to this particular argument, when you call the function.</p>
 <p>For example, the function <code>input_length()</code> contains an argument named <code>input</code>, which is an array of constant <code>u8</code> integers (<code>[]const u8</code>). It is impossible to know the value of this particular argument at compile time. And it also is impossible to know the size/length of this particular argument. Because it is an array that do not have a fixed size specified explicitly in the argument type annotation.</p>
@@ -401,13 +403,15 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>Every time you make a function call in Zig, an amount of space in the stack is reserved for this particular function call <span class="citation" data-cites="jenny2022 zigdocs">(<a href="../references.html#ref-jenny2022" role="doc-biblioref">Chen and Guo 2022</a>; <a href="../references.html#ref-zigdocs" role="doc-biblioref">Zig Software Foundation 2024</a>)</span>. The value of each function argument given to the function in this function call is stored in this stack space. Also, every local object that you declare inside the function scope is usually stored in this same stack space.</p>
 <p>Looking at the example below, the object <code>result</code> is a local object declared inside the scope of the <code>add()</code> function. Because of that, this object is stored inside the stack space reserved for the <code>add()</code> function. The <code>r</code> object (which is declared outside of the <code>add()</code> function scope) is also stored in the stack. But since it is declared in the “outer” scope, this object is stored in the stack space that belongs to this outer scope.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> r = add(<span class="dv">5</span>, <span class="dv">27</span>);</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>_ = r;</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add(x: <span class="dt">u8</span>, y: <span class="dt">u8</span>) <span class="dt">u8</span> <span class="op">{</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> result = x + y;</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> result;</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add(x: <span class="dt">u8</span>, y: <span class="dt">u8</span>) <span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> result = x + y;</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> result;</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> r = add(<span class="dv">5</span>, <span class="dv">27</span>);</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    _ = r;</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>So, any object that you declare inside the scope of a function is always stored inside the space that was reserved for that particular function in the stack memory. This also counts for any object declared inside the scope of your <code>main()</code> function for example. As you would expect, in this case, they are stored inside the stack space reserved for the <code>main()</code> function.</p>
 <p>One very important detail about the stack memory is that <strong>it frees itself automatically</strong>. This is very important, remember that. When objects are stored in the stack memory, you don’t have the work (or the responsibility) of freeing/destroying these objects. Because they will be automatically destroyed once the stack space is freed at the end of the function scope.</p>
@@ -444,16 +448,16 @@ Important
 <p>So, using again the <code>add()</code> function as an example, if you rewrite this function so that it returns a pointer to the local object <code>result</code>, the <code>zig</code> compiler will actually compile your program, with no warnings or errors. At first glance, it looks that this is good code that works as expected. But this is a lie!</p>
 <p>If you try to take a look at the value inside of the <code>r</code> object, or, if you try to use this <code>r</code> object in another expression or function call, then, you would have undefined behaviour, and major bugs in your program <span class="citation" data-cites="zigdocs">(<a href="../references.html#ref-zigdocs" role="doc-biblioref">Zig Software Foundation 2024</a>, see “Lifetime and Ownership”<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> and “Undefined Behaviour”<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> sections)</span>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">// This code compiles successfully. But it has</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">// undefined behaviour. Never do this!!!</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">// The `r` object is undefined!</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> r = add(<span class="dv">5</span>, <span class="dv">27</span>);</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>_ = r;</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add(x: <span class="dt">u8</span>, y: <span class="dt">u8</span>) *<span class="kw">const</span> <span class="dt">u8</span> <span class="op">{</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> result = x + y;</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> &amp;result;</span>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add(x: <span class="dt">u8</span>, y: <span class="dt">u8</span>) *<span class="kw">const</span> <span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> result = x + y;</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> &amp;result;</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">// This code compiles successfully. But it has</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// undefined behaviour. Never do this!!!</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// The `r` object is undefined!</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> r = add(<span class="dv">5</span>, <span class="dv">27</span>); _ = r;</span>
 <span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>This “invalid pointer to stack variable” problem is very known across many programming language communities. If you try to do the same thing, for example, in a C or C++ program (i.e.&nbsp;returning an address to a local object stored in the stack), you would also get undefined behaviour in the program.</p>
@@ -642,9 +646,9 @@ Important
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> aa.deinit();</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = aa.allocator();</span>
 <span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> in1 = allocator.alloc(<span class="dt">u8</span>, <span class="dv">5</span>);</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> in2 = allocator.alloc(<span class="dt">u8</span>, <span class="dv">10</span>);</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> in3 = allocator.alloc(<span class="dt">u8</span>, <span class="dv">15</span>);</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> in1 = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">5</span>);</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> in2 = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">10</span>);</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> in3 = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">15</span>);</span>
 <span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>_ = in1; _ = in2; _ = in3;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>

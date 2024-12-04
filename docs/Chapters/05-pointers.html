@@ -347,22 +347,25 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pointer = &amp;number;</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> doubled = <span class="dv">2</span> * pointer.*;</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>doubled<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>10</code></pre>
+</div>
 </div>
 <pre><code>10</code></pre>
 <p>This syntax to dereference the pointer is nice. Because we can easily chain it with methods of the value pointed by the pointer. We can use the <code>User</code> struct that we have created at <a href="03-structs.html#sec-structs-and-oop" class="quarto-xref"><span>Section 2.3</span></a> as an example. If you comeback to that section, you will see that this struct have a method named <code>print_name()</code>.</p>
 <p>So, for example, if we have an user object, and a pointer that points to this user object, we can use the pointer to access this user object, and, at the same time, call the method <code>print_name()</code> on it, by chaining the dereference method (<code>*</code>) with the <code>print_name()</code> method. Like in the example below:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> u = User.init(<span class="dv">1</span>, <span class="st">"pedro"</span>, <span class="st">"email@gmail.com"</span>);</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pointer = &amp;u;</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> pointer.*.print_name();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> u = User.init(<span class="dv">1</span>, <span class="st">"pedro"</span>, <span class="st">"email@gmail.com"</span>);</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pointer = &amp;u;</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> pointer.*.print_name();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>pedro</code></pre>
 <p>We can also use pointers to effectively alter the value of an object. For example, I could use the <code>pointer</code> object to set the value of the object <code>number</code> to 6, like in the example below.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> number: <span class="dt">u8</span> = <span class="dv">5</span>;</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pointer = &amp;number;</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>pointer.* = <span class="dv">6</span>;</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>number<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> number: <span class="dt">u8</span> = <span class="dv">5</span>;</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pointer = &amp;number;</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>pointer.* = <span class="dv">6</span>;</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>number<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>6</code></pre>
 </div>
@@ -375,18 +378,18 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>You can have a pointer that points to a constant object, or, a pointer that points to a variable object. But regardless of who this pointer is, a pointer <strong>must always respect the characteristics of the object that it points to</strong>. As a consequence, if the pointer points to a constant object, then, you cannot use this pointer to change the value that it points to. Because it points to a value that is constant. As we discussed at <a href="01-zig-weird.html#sec-assignments" class="quarto-xref"><span>Section 1.4</span></a>, you cannot change a value that is constant.</p>
 <p>For example, if I have a <code>number</code> object, which is constant, I cannot execute the expression below where I’m trying to change the value of <code>number</code> to 6 through the <code>pointer</code> object. As demonstrated below, when you try to do something like that, you get a compile time error:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> number = <span class="dv">5</span>;</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pointer = &amp;number;</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>pointer.* = <span class="dv">6</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> number = <span class="dv">5</span>;</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pointer = &amp;number;</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>pointer.* = <span class="dv">6</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>p.zig:6:12: error: cannot assign to constant
     pointer.* = 6;</code></pre>
 <p>If I change the <code>number</code> object to be a variable object, by introducing the <code>var</code> keyword, then, I can successfully change the value of this object through a pointer, as demonstrated below:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> number: <span class="dt">u8</span> = <span class="dv">5</span>;</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pointer = &amp;number;</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>pointer.* = <span class="dv">6</span>;</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>number<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> number: <span class="dt">u8</span> = <span class="dv">5</span>;</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> pointer = &amp;number;</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>pointer.* = <span class="dv">6</span>;</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>number<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>6</code></pre>
 </div>
@@ -397,12 +400,12 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>Until this point, the <code>pointer</code> object was always constant, but what this means for us? What is the consequence of the <code>pointer</code> object being constant? The consequence is that we cannot change the pointer object, because it is constant. We can use the pointer object in multiple ways, but we cannot change the memory address that is inside this pointer object.</p>
 <p>However, if we mark the <code>pointer</code> object as a variable object, then, we can change the memory address pointed by this <code>pointer</code> object. The example below demonstrates that. Notice that the object pointed by the <code>pointer</code> object changes from <code>c1</code> to <code>c2</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c1: <span class="dt">u8</span> = <span class="dv">5</span>;</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c2: <span class="dt">u8</span> = <span class="dv">6</span>;</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> pointer = &amp;c1;</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>pointer.*<span class="op">}</span>);</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>pointer = &amp;c2;</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>pointer.*<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c1: <span class="dt">u8</span> = <span class="dv">5</span>;</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c2: <span class="dt">u8</span> = <span class="dv">6</span>;</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> pointer = &amp;c1;</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>pointer.*<span class="op">}</span>);</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>pointer = &amp;c2;</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>pointer.*<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>5
 6</code></pre>
@@ -424,13 +427,13 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>Pointer arithmetic is available in Zig, and they work the same way they work in C. When you have a pointer that points to an array, the pointer usually points to the first element in the array, and you can use pointer arithmetic to advance this pointer and access the other elements in the array.</p>
 <p>Notice in the example below, that initially, the <code>ptr</code> object was pointing to the first element in the array <code>ar</code>. But then, I started to walk through the array, by advancing the pointer with simple pointer arithmetic.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ar = [_]<span class="dt">i32</span><span class="op">{</span><span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span><span class="op">}</span>;</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> ptr = &amp;ar;</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr.*<span class="op">}</span>);</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>ptr += <span class="dv">1</span>;</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr.*<span class="op">}</span>);</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>ptr += <span class="dv">1</span>;</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr.*<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ar = [_]<span class="dt">i32</span><span class="op">{</span><span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span><span class="op">}</span>;</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> ptr = &amp;ar;</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr.*<span class="op">}</span>);</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>ptr += <span class="dv">1</span>;</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr.*<span class="op">}</span>);</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>ptr += <span class="dv">1</span>;</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>ptr.*<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>1
 2
@@ -439,9 +442,9 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>Behind the hood, slices already are pointers, and they also come with the <code>len</code> property, which indicates how many elements are in the slice. This is good because the <code>zig</code> compiler can use it to check for potential buffer overflows, and other problems like that.</p>
 <p>Also, you don’t need to use pointer arithmetic to walk through the elements of a slice. You can simply use the <code>slice[index]</code> syntax to directly access any element you want in the slice. As I mentioned at <a href="01-zig-weird.html#sec-arrays" class="quarto-xref"><span>Section 1.6</span></a>, you can get a slice from an array by using a range selector inside brackets. In the example below, I’m creating a slice (<code>sl</code>) that covers the entire <code>ar</code> array. I can access any element of <code>ar</code> from this slice, and, the slice itself already is a pointer behind the hood.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ar = [_]<span class="dt">i32</span><span class="op">{</span><span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span><span class="op">}</span>;</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> sl = ar[<span class="dv">0</span>..ar.len];</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>_ = sl;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ar = [_]<span class="dt">i32</span><span class="op">{</span><span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span><span class="op">}</span>;</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> sl = ar[<span class="dv">0</span>..ar.len];</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>_ = sl;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="optionals-and-optional-pointers" class="level2" data-number="6.4">
@@ -450,8 +453,8 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>This is a powerful feature of Zig when you compare it to the developer experience in C. Because in C, any object can be null at any point, and, as consequence, a pointer in C might point to a null value. This is a common source of undefined behaviour in C. When programmers work with pointers in C, they have to constantly check if their pointers are pointing to null values or not.</p>
 <p>If for some reason, your Zig code produces a null value somewhere, and, this null value ends up in an object that is non-nullable, a runtime error is always raised by your Zig program. Take the program below as an example. The <code>zig</code> compiler can see the <code>null</code> value at compile time, and, as result, it raises a compile time error. But, if a <code>null</code> value is raised during runtime, a runtime error is also raised by the Zig program, with a “attempt to use null value” message.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> number: <span class="dt">u8</span> = <span class="dv">5</span>;</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>number = <span class="cn">null</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> number: <span class="dt">u8</span> = <span class="dv">5</span>;</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>number = <span class="cn">null</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>p5.zig:5:14: error: expected type 'u8',
         found '@TypeOf(null)'
@@ -465,8 +468,8 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>An optional object in Zig is an object that can be null. To mark an object as optional, we use the <code>?</code> operator. When you put this <code>?</code> operator right before the data type of an object, you transform this data type into an optional data type, and the object becomes an optional object.</p>
 <p>Take the snippet below as an example. We are creating a new variable object called <code>num</code>. This object have the data type <code>?i32</code>, which means that, this object contains either a signed 32-bit integer (<code>i32</code>), or, a null value. Both alternatives are valid values to the <code>num</code> object. That is why, I can actually change the value of this object to null, and, no errors are raised by the <code>zig</code> compiler, as demonstrated below:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> num: ?<span class="dt">i32</span> = <span class="dv">5</span>;</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>num = <span class="cn">null</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> num: ?<span class="dt">i32</span> = <span class="dv">5</span>;</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>num = <span class="cn">null</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="optional-pointers" class="level3" data-number="6.4.2">
@@ -475,18 +478,18 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>In the example below, we are creating a variable object named <code>num</code>, and an optional pointer object named <code>ptr</code>. Notice that the data type of the object <code>ptr</code> indicates that it is either a null value, or a pointer to an <code>i32</code> value. Also, notice that the pointer object (<code>ptr</code>) can be marked as optional, even if the object <code>num</code> is not optional.</p>
 <p>What this code tells us is that, the <code>num</code> variable will never contain a null value. This variable will always contain a valid <code>i32</code> value. But in contrast, the <code>ptr</code> object might contain either a null value, or, a pointer to an <code>i32</code> value.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> num: <span class="dt">i32</span> = <span class="dv">5</span>;</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> ptr: ?*<span class="dt">i32</span> = &amp;num;</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>ptr = <span class="cn">null</span>;</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>num = <span class="dv">6</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> num: <span class="dt">i32</span> = <span class="dv">5</span>;</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> ptr: ?*<span class="dt">i32</span> = &amp;num;</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>ptr = <span class="cn">null</span>;</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>num = <span class="dv">6</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>But what happens if we turn the table, and mark the <code>num</code> object as optional, instead of the pointer object. If we do that, then, the pointer object is not optional anymore. It would be a similar (although different) result. Because then, we would have a pointer to an optional value. In other words, a pointer to a value that is either a null value, or, a not-null value.</p>
 <p>In the example below, we are recreating this idea. Now, the <code>ptr</code> object have a data type of <code>*?i32</code>, instead of <code>?*i32</code>. Notice that the <code>*</code> symbol comes before of <code>?</code> this time. So now, we have a pointer that points to a value that is either null , or, a signed 32-bit integer.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> num: ?<span class="dt">i32</span> = <span class="dv">5</span>;</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="co">// ptr have type `*?i32`, instead of `?*i32`.</span></span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ptr = &amp;num;</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>_ = ptr;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> num: ?<span class="dt">i32</span> = <span class="dv">5</span>;</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="co">// ptr have type `*?i32`, instead of `?*i32`.</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ptr = &amp;num;</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>_ = ptr;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="sec-null-handling" class="level3" data-number="6.4.3">
@@ -500,10 +503,10 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 </ul>
 <p>When you use an if statement, you use a pair of pipes to unwrap the optional value, and use this “unwrapped object” inside the if block. Using the example below as a reference, if the object <code>num</code> is null, then, the code inside the if statement is not executed. Otherwise, the if statement will unwrap the object <code>num</code> into the <code>not_null_num</code> object. This <code>not_null_num</code> object is guaranteed to be not null inside the scope of the if statement.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num: ?<span class="dt">i32</span> = <span class="dv">5</span>;</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> (num) |not_null_num| <span class="op">{</span></span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>not_null_num<span class="op">}</span>);</span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> num: ?<span class="dt">i32</span> = <span class="dv">5</span>;</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> (num) |not_null_num| <span class="op">{</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>not_null_num<span class="op">}</span>);</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>5</code></pre>
 </div>
@@ -512,9 +515,9 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>The idea behind the <code>orelse</code> keyword is: if the expression on the left side result in a not-null value, then, this not-null value is used. However, if this expression on the left side result in a null value, then, the value of the expression on the right side is used instead.</p>
 <p>Looking at the example below, since the <code>x</code> object is currently null, the <code>orelse</code> decided to use the alternative value, which is the number 15.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> x: ?<span class="dt">i32</span> = <span class="cn">null</span>;</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dbl = (x <span class="kw">orelse</span> <span class="dv">15</span>) * <span class="dv">2</span>;</span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>dbl<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> x: ?<span class="dt">i32</span> = <span class="cn">null</span>;</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dbl = (x <span class="kw">orelse</span> <span class="dv">15</span>) * <span class="dv">2</span>;</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>dbl<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>30</code></pre>
 </div>
@@ -522,18 +525,18 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>You can use the if statement or the <code>orelse</code> keyword, when you want to solve (or deal with) this null value. However, if there is no clear solution to this null value, and the most logic and sane path is to simply panic and raise a loud error in your program when this null value is encountered, you can use the <code>?</code> method of your optional object.</p>
 <p>In essence, when you use this <code>?</code> method, the optional object is unwrapped. If a not-null value is found in the optional object, then, this not-null value is used. Otherwise, the <code>unreachable</code> keyword is used. You can read more about this <a href="https://ziglang.org/documentation/master/#unreachable"><code>unreacheable</code> keyword at the official documentation</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. But in essence, when you build your Zig source code using the build modes <code>ReleaseSafe</code> or <code>Debug</code>, this <code>unreacheable</code> keyword causes the program to panic and raise an error during runtime, like in the example below:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> return_null(n: <span class="dt">i32</span>) ?<span class="dt">i32</span> <span class="op">{</span></span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (n == <span class="dv">5</span>) <span class="kw">return</span> <span class="cn">null</span>;</span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> n;</span>
-<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x: <span class="dt">i32</span> = <span class="dv">5</span>;</span>
-<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> y: ?<span class="dt">i32</span> = return_null(x);</span>
-<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>y.?<span class="op">}</span>);</span>
-<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> return_null(n: <span class="dt">i32</span>) ?<span class="dt">i32</span> <span class="op">{</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (n == <span class="dv">5</span>) <span class="kw">return</span> <span class="cn">null</span>;</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> n;</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x: <span class="dt">i32</span> = <span class="dv">5</span>;</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> y: ?<span class="dt">i32</span> = return_null(x);</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>y.?<span class="op">}</span>);</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>thread 12767 panic: attempt to use null value
 p7.zig:12:34: 0x103419d in main (p7):

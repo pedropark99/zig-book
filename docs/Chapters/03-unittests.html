@@ -322,6 +322,10 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> b: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect((a + b) == <span class="dv">4</span>);</span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>1/1 file103bc24525048.test.testing simple sum...OK
+  KAll 1 tests passed.</code></pre>
+</div>
 </div>
 <p>You can have multiple <code>test</code> blocks written on the same Zig module. Also, you can mix <code>test</code> blocks with your source code, with no problems or consequences. If you mix <code>test</code> blocks with your normal source code, when you execute the <code>build</code>, <code>build-exe</code>, <code>build-obj</code> or <code>build-lib</code> commands from the <code>zig</code> compiler that we exposed at <a href="01-zig-weird.html#sec-compile-code" class="quarto-xref"><span>Section 1.2.4</span></a>, these <code>test</code> blocks are automatically ignored by the compiler.</p>
 <p>In other words, the <code>zig</code> compiler builds and execute your unit tests only when you ask it to. By default, the compiler always ignore <code>test</code> blocks written in your Zig modules. The compiler normally checks only if there are any syntax errors in these <code>test</code> blocks.</p>
@@ -331,7 +335,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <section id="how-to-run-your-tests" class="level2" data-number="8.2">
 <h2 data-number="8.2" class="anchored" data-anchor-id="how-to-run-your-tests"><span class="header-section-number">8.2</span> How to run your tests</h2>
 <p>If the <code>zig</code> compiler ignores any <code>test</code> block by default, how can you compile and run your unit tests? The answer is the <code>test</code> command from the <code>zig</code> compiler. By running the <code>zig test</code> command, the compiler will find every instance of a <code>test</code> block in your Zig modules, and, it will compile and run the unit tests that you wrote.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> test simple_sum.zig</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> test simple_sum.zig</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <pre><code>1/1 simple_sum.test.testing simple sum... OK
 All 1 tests passed.</code></pre>
 </section>
@@ -344,19 +348,19 @@ All 1 tests passed.</code></pre>
 <p>Look at the example below, where I’m defining a function that clearly causes a memory leak. Because we allocate memory, but, at the same time, we do not free this allocated memory at any point. So, when the function returns, we lose the reference to the <code>buffer</code> object, which contains the allocated memory, and, as a result, we can no longer free this memory.</p>
 <p>Notice that, inside a <code>test</code> block I execute this function with the <code>std.testing.allocator</code>. The allocator object was capable of looking deeper in our program, and detecting the memory leak. As a result, this allocator object returns an error message of “memory leaked”, and also, a stack trace showing the exact point where the memory was leaked.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Allocator = std.mem.Allocator;</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> some_memory_leak(allocator: Allocator) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> buffer = <span class="kw">try</span> allocator.alloc(<span class="dt">u32</span>, <span class="dv">10</span>);</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    _ = buffer;</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Return without freeing the</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">// allocated memory</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"memory leak"</span> <span class="op">{</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = std.testing.allocator;</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> some_memory_leak(allocator);</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Allocator = std.mem.Allocator;</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> some_memory_leak(allocator: Allocator) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> buffer = <span class="kw">try</span> allocator.alloc(<span class="dt">u32</span>, <span class="dv">10</span>);</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    _ = buffer;</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Return without freeing the</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">// allocated memory</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"memory leak"</span> <span class="op">{</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = std.testing.allocator;</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> some_memory_leak(allocator);</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Test [1/1] leak_memory.test.memory leak...
     [gpa] (err): memory address 0x7c1fddf39000 leaked: 
@@ -376,21 +380,25 @@ All 1 tests passed.</code></pre>
 <p>The code example below demonstrates such type of unit test in Zig. Notice that, inside the function <code>alloc_error()</code> we are allocating 100 bytes of memory, or, an array of 100 elements, for the object <code>ibuffer</code>. However, in the <code>test</code> block, we are using the <code>FixedBufferAllocator()</code> allocator object, which is limited to 10 bytes of space, because the object <code>buffer</code>, which we provided to the allocator object, have only 10 bytes of space.</p>
 <p>That is why, the <code>alloc_error()</code> function raises an <code>OutOfMemory</code> error on this case. Because this function is trying to allocate more space than the allocator object allows. So, in essence, we are testing for a specific type of error, which is <code>OutOfMemory</code>. If the <code>alloc_error()</code> function returns any other type of error, then, the <code>expectError()</code> function would make the entire test fail.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Allocator = std.mem.Allocator;</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expectError = std.testing.expectError;</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> alloc_error(allocator: Allocator) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> ibuffer = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">100</span>);</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.free(ibuffer);</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    ibuffer[<span class="dv">0</span>] = <span class="dv">2</span>;</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"testing error"</span> <span class="op">{</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">10</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> fba = std.heap.FixedBufferAllocator.init(&amp;buffer);</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = fba.allocator();</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expectError(<span class="kw">error</span>.OutOfMemory, alloc_error(allocator));</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Allocator = std.mem.Allocator;</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> expectError = std.testing.expectError;</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> alloc_error(allocator: Allocator) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> ibuffer = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">100</span>);</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.free(ibuffer);</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    ibuffer[<span class="dv">0</span>] = <span class="dv">2</span>;</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"testing error"</span> <span class="op">{</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">10</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> fba = std.heap.FixedBufferAllocator.init(&amp;buffer);</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = fba.allocator();</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expectError(<span class="kw">error</span>.OutOfMemory, alloc_error(allocator));</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>1/1 file103bc545495c8.test.testing error...OKAll 1
+  1 tests passed.</code></pre>
+</div>
 </div>
 <pre><code>1/1 oom.test.testing error... OK
 All 1 tests passed.</code></pre>
@@ -401,12 +409,12 @@ All 1 tests passed.</code></pre>
 <p>The <code>expectEqual()</code> function, as the name suggests, is a classic test equality function. It receives two objects as input. The first object is the value that you expect to be in the second object. While second object is the object you have, or, the object that your application produced as result. So, with <code>expectEqual()</code> you are essentially testing if the values stored inside these two objects are equal or not.</p>
 <p>You can see in the example below that, the test performed by <code>expectEqual()</code> failed. Because the objects <code>v1</code> and <code>v2</code> contain different values in them.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"values are equal?"</span> <span class="op">{</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> v1 = <span class="dv">15</span>;</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> v2 = <span class="dv">18</span>;</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqual(v1, v2);</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"values are equal?"</span> <span class="op">{</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> v1 = <span class="dv">15</span>;</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> v2 = <span class="dv">18</span>;</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqual(v1, v2);</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>1/1 ve.test.values are equal?...
     expected 15, found 18
@@ -418,28 +426,32 @@ ve.zig:5:5: test.values are equal? (test)
 <p>Although useful, the <code>expectEqual()</code> function does not work with arrays. For testing if two arrays are equal, you should use the <code>expectEqualSlices()</code> function instead. This function have three arguments. First, you provide the data type contained in both arrays that you are trying to compare. While the second and third arguments corresponds to the array objects that you want to compare.</p>
 <p>In the example below, we are using this function to test if two array objects (<code>array1</code> and <code>array2</code>) are equal or not. Since they are in fact equal, the unit test passed with no errors.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"arrays are equal?"</span> <span class="op">{</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> array1 = [<span class="dv">3</span>]<span class="dt">u32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span><span class="op">}</span>;</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> array2 = [<span class="dv">3</span>]<span class="dt">u32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span><span class="op">}</span>;</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqualSlices(</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u32</span>, &amp;array1, &amp;array2</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"arrays are equal?"</span> <span class="op">{</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> array1 = [<span class="dv">3</span>]<span class="dt">u32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span><span class="op">}</span>;</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> array2 = [<span class="dv">3</span>]<span class="dt">u32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span><span class="op">}</span>;</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqualSlices(</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u32</span>, &amp;array1, &amp;array2</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>1/1 file103bc78cf09de.test.arrays are equal?...OKA
+  All 1 tests passed.</code></pre>
+</div>
 </div>
 <pre><code>1/1 oom.test.arrays are equal?... OK
 All 1 tests passed.</code></pre>
 <p>At last, you might also want to use the <code>expectEqualStrings()</code> function. As the name suggests, you can use this function to test if two strings are equal or not. Just provide the two string objects that you want to compare, as inputs to the function.</p>
 <p>If the function finds any existing differences between the two strings, then, the function will raise an error, and also, print an error message that shows the exact difference between the two string objects provided, as the example below demonstrates:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"strings are equal?"</span> <span class="op">{</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> str1 = <span class="st">"hello, world!"</span>;</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> str2 = <span class="st">"Hello, world!"</span>;</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqualStrings(</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        str1, str2</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"strings are equal?"</span> <span class="op">{</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> str1 = <span class="st">"hello, world!"</span>;</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> str2 = <span class="st">"Hello, world!"</span>;</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.testing.expectEqualStrings(</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>        str1, str2</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>1/1 t.test.strings are equal?... 
 ====== expected this output: =========
