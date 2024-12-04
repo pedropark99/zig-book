@@ -370,7 +370,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    _ = twice(<span class="dv">5678</span>);</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>1/1 file1054863994c6f.test.test comptime...OKAll 1
+<pre><code>1/1 file1105a40478a9d.test.test comptime...OKAll 1
   1 tests passed.</code></pre>
 </div>
 </div>
@@ -426,8 +426,8 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> <span class="kw">comptime</span> expect(fibonacci(<span class="dv">7</span>) == <span class="dv">13</span>);</span>
 <span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>1/1 file10548bb87337.test.fibonacci...OKAll 1 test
-  ts passed.</code></pre>
+<pre><code>1/1 file1105a31c0f24f.test.fibonacci...OKAll 1 tes
+  sts passed.</code></pre>
 </div>
 </div>
 <p>A lot of your Zig source code might be potentially executed at compile-time, because the <code>zig</code> compiler can figure it out the output of some expressions. Especially if these expressions depends only at compile-time known values. We have talked about this at <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a>.</p>
@@ -455,7 +455,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    _ = x;</span>
 <span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>1/1 file105482dc0b880.test.fibonacci in a block...
+<pre><code>1/1 file1105a37ca2b0d.test.fibonacci in a block...
   .OKAll 1 tests passed.</code></pre>
 </div>
 </div>
@@ -475,27 +475,20 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> max(<span class="kw">comptime</span> T: <span class="dt">type</span>, a: T, b: T) T <span class="op">{</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">if</span> (a &gt; b) a <span class="kw">else</span> b;</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>All 0 tests passed.</code></pre>
-</div>
 </div>
 <p>Also notice that the value of the <code>T</code> argument is actually used to define the data type of the other arguments in the function, <code>a</code> and <code>b</code>, and also at the return type annotation of the function. That is, the data type of these arguments (<code>a</code> and <code>b</code>), and, the return data type of the function itself, are determined by the input value given to the <code>T</code> argument.</p>
 <p>As a result, we have a generic function that works with different data types. For example, I can provide <code>u8</code> values to this <code>max()</code> function, and it will work as expected. But if I provide <code>f64</code> values instead, it will also work as expected. Without a generic function, I would have to write a different <code>max()</code> function for each one of the data types that I wanted to use. This generic function provides a very useful shortcut for us.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> max(<span class="kw">comptime</span> T: <span class="dt">type</span>, a: T, b: T) T <span class="op">{</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">if</span> (a &gt; b) a <span class="kw">else</span> b;</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"test max"</span> <span class="op">{</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n1 = max(<span class="dt">u8</span>, <span class="dv">4</span>, <span class="dv">10</span>);</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Max n1: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n1<span class="op">}</span>);</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n2 = max(<span class="dt">f64</span>, <span class="fl">89.24</span>, <span class="fl">64.001</span>);</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Max n2: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n2<span class="op">}</span>);</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>1/1 file105482071daf3.test.test max...Max n1: 10Ma
-  ax n2: 89.24OKAll 1 tests passed.</code></pre>
-</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> max(<span class="kw">comptime</span> T: <span class="dt">type</span>, a: T, b: T) T <span class="op">{</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">if</span> (a &gt; b) a <span class="kw">else</span> b;</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"test max"</span> <span class="op">{</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n1 = max(<span class="dt">u8</span>, <span class="dv">4</span>, <span class="dv">10</span>);</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Max n1: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n1<span class="op">}</span>);</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n2 = max(<span class="dt">f64</span>, <span class="fl">89.24</span>, <span class="fl">64.001</span>);</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Max n2: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n2<span class="op">}</span>);</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Max n1: 10
 Max n2: 89.24</code></pre>
@@ -533,24 +526,24 @@ Figure&nbsp;12.1: A diagram of a stack structure. Source: Wikipedia, the free en
 <p>Also notice in our <code>Stack</code> struct that we have three other data members: <code>capacity</code>, <code>length</code> and <code>allocator</code>. The <code>capacity</code> member contains the capacity of the underlying array that stores the values in the stack. The <code>length</code> contains the number of values that are currently being stored in the stack. And the <code>allocator</code> contains the allocator object that will be used by the stack structure whenever it needs to allocate more space for the values that are being stored.</p>
 <p>We begin by defining an <code>init()</code> method of this struct, which is going to be responsible for instantiating a <code>Stack</code> object. Notice that, inside this <code>init()</code> method, we start by allocating an array with the capacity specified in the <code>capacity</code> argument.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Allocator = std.mem.Allocator;</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Stack = <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    items: []<span class="dt">u32</span>,</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    capacity: <span class="dt">usize</span>,</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    length: <span class="dt">usize</span>,</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    allocator: Allocator,</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(allocator: Allocator, capacity: <span class="dt">usize</span>) !Stack <span class="op">{</span></span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">var</span> buf = <span class="kw">try</span> allocator.alloc(<span class="dt">u32</span>, capacity);</span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> .<span class="op">{</span></span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>            .items = buf[<span class="dv">0</span>..],</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>            .capacity = capacity,</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>            .length = <span class="dv">0</span>,</span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>            .allocator = allocator,</span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
-<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Allocator = std.mem.Allocator;</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Stack = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    items: []<span class="dt">u32</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    capacity: <span class="dt">usize</span>,</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    length: <span class="dt">usize</span>,</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    allocator: Allocator,</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(allocator: Allocator, capacity: <span class="dt">usize</span>) !Stack <span class="op">{</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">var</span> buf = <span class="kw">try</span> allocator.alloc(<span class="dt">u32</span>, capacity);</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> .<span class="op">{</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>            .items = buf[<span class="dv">0</span>..],</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>            .capacity = capacity,</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>            .length = <span class="dv">0</span>,</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>            .allocator = allocator,</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="implementing-the-push-operation" class="level3" data-number="12.4.1">
 <h3 data-number="12.4.1" class="anchored" data-anchor-id="implementing-the-push-operation"><span class="header-section-number">12.4.1</span> Implementing the <code>push</code> operation</h3>
@@ -562,22 +555,22 @@ Figure&nbsp;12.1: A diagram of a stack structure. Source: Wikipedia, the free en
 <p>We are using this <code>@memcpy()</code> built-in function to copy the values that are currently stored in the underlying array of the stack object (<code>self.items</code>) into our new and bigger array that we have allocated (<code>new_buf</code>). After we execute this function, the <code>new_buf</code> contains a copy of the values that are present at <code>self.items</code>.</p>
 <p>Now that we have secured a copy of our current values in the <code>new_buf</code> object, we can now free the memory currently allocated at <code>self.items</code>. After that, we just need to assign our new and bigger array to <code>self.items</code>. This is the sequence of steps necessary to expand our array.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> push(self: *Stack, val: <span class="dt">u32</span>) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> ((self.length + <span class="dv">1</span>) &gt; self.capacity) <span class="op">{</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>        <span class="kw">var</span> new_buf = <span class="kw">try</span> self.allocator.alloc(</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>            <span class="dt">u32</span>, self.capacity * <span class="dv">2</span></span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>        );</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>        <span class="bu">@memcpy</span>(</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>            new_buf[<span class="dv">0</span>..self.capacity], self.items</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>        );</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>        self.allocator.free(self.items);</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>        self.items = new_buf;</span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>        self.capacity = self.capacity * <span class="dv">2</span>;</span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>    self.items[self.length] = val;</span>
-<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>    self.length += <span class="dv">1</span>;</span>
-<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> push(self: *Stack, val: <span class="dt">u32</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> ((self.length + <span class="dv">1</span>) &gt; self.capacity) <span class="op">{</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>        <span class="kw">var</span> new_buf = <span class="kw">try</span> self.allocator.alloc(</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>            <span class="dt">u32</span>, self.capacity * <span class="dv">2</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        <span class="bu">@memcpy</span>(</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>            new_buf[<span class="dv">0</span>..self.capacity], self.items</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>        self.allocator.free(self.items);</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>        self.items = new_buf;</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        self.capacity = self.capacity * <span class="dv">2</span>;</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    self.items[self.length] = val;</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    self.length += <span class="dv">1</span>;</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>After we make sure that we have enough room to store this new value that we are adding to the stack, all we have to do is to assign this value to the top element in this stack, and, increase the value of the <code>length</code> attribute by one. We find the top element in the stack by using the <code>length</code> attribute.</p>
 </section>
@@ -587,12 +580,12 @@ Figure&nbsp;12.1: A diagram of a stack structure. Source: Wikipedia, the free en
 <p>We just have to find the element in the underlying array that currently represents the top of the stack, and set this element to “undefined”, to indicate that this element is “empty”. After that, we also need to decrease the <code>length</code> attribute of the stack by one.</p>
 <p>If the current length of the stack is zero, it means that there is no values being stored in the stack currently. So, in this case, we could just return from the function and do nothing really. This is what the if statement inside this function is checking for.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> pop(self: *Stack) <span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (self.length == <span class="dv">0</span>) <span class="kw">return</span>;</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    self.items[self.length - <span class="dv">1</span>] = <span class="cn">undefined</span>;</span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    self.length -= <span class="dv">1</span>;</span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> pop(self: *Stack) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (self.length == <span class="dv">0</span>) <span class="kw">return</span>;</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    self.items[self.length - <span class="dv">1</span>] = <span class="cn">undefined</span>;</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    self.length -= <span class="dv">1</span>;</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="implementing-the-deinit-method" class="level3" data-number="12.4.3">
@@ -601,9 +594,9 @@ Figure&nbsp;12.1: A diagram of a stack structure. Source: Wikipedia, the free en
 <p>But now, we need to implement also the method responsible for destroying a <code>Stack</code> object. In Zig, this task is commonly associated with the method named <code>deinit()</code>. Most struct objects in Zig have such method, and it is commonly nicknamed “the destructor method”.</p>
 <p>In theory, all we have to do to destroy the <code>Stack</code> object is to make sure that we free the allocated memory for the underlying array, using the allocator object that is stored inside the <code>Stack</code> object. This is what the <code>deinit()</code> method below is doing.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> deinit(self: *Stack) <span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    self.allocator.free(self.items);</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> deinit(self: *Stack) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    self.allocator.free(self.items);</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>
@@ -615,56 +608,56 @@ Figure&nbsp;12.1: A diagram of a stack structure. Source: Wikipedia, the free en
 <p>We do that by using a generic function. Because a generic function can receive a data type as input, and we can pass this data type to the struct definition of our <code>Stack</code> object. Therefore, we can use the generic function to create a <code>Stack</code> object that can store the data type we want. If we want to create a stack structure that stores <code>User</code> values, we pass the <code>User</code> data type to this generic function, and it will create for us the struct definition that describes a <code>Stack</code> object that can store <code>User</code> values in it.</p>
 <p>Look at the code example below. I have omitted some parts of the <code>Stack</code> struct definition for brevity reasons. However, if a specific part of our <code>Stack</code> struct is not exposed here in this example, then it is because this part did not change from the previous example. It remains the same.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> Stack(<span class="kw">comptime</span> T: <span class="dt">type</span>) <span class="dt">type</span> <span class="op">{</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>        items: []T,</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>        capacity: <span class="dt">usize</span>,</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>        length: <span class="dt">usize</span>,</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>        allocator: Allocator,</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> Self = <span class="bu">@This</span>();</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">pub</span> <span class="kw">fn</span> init(allocator: Allocator,</span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>                    capacity: <span class="dt">usize</span>) !Stack(T) <span class="op">{</span></span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>            <span class="kw">var</span> buf = <span class="kw">try</span> allocator.alloc(T, capacity);</span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> .<span class="op">{</span></span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>                .items = buf[<span class="dv">0</span>..],</span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>                .capacity = capacity,</span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>                .length = <span class="dv">0</span>,</span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>                .allocator = allocator,</span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>;</span>
-<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>        <span class="kw">pub</span> <span class="kw">fn</span> push(self: *Self, val: T) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>        <span class="co">// Truncate the rest of the struct</span></span>
-<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>;</span>
-<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> Stack(<span class="kw">comptime</span> T: <span class="dt">type</span>) <span class="dt">type</span> <span class="op">{</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>        items: []T,</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>        capacity: <span class="dt">usize</span>,</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>        length: <span class="dt">usize</span>,</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>        allocator: Allocator,</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> Self = <span class="bu">@This</span>();</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">pub</span> <span class="kw">fn</span> init(allocator: Allocator,</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>                    capacity: <span class="dt">usize</span>) !Stack(T) <span class="op">{</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>            <span class="kw">var</span> buf = <span class="kw">try</span> allocator.alloc(T, capacity);</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> .<span class="op">{</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>                .items = buf[<span class="dv">0</span>..],</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>                .capacity = capacity,</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>                .length = <span class="dv">0</span>,</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>                .allocator = allocator,</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span>;</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>        <span class="kw">pub</span> <span class="kw">fn</span> push(self: *Self, val: T) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>        <span class="co">// Truncate the rest of the struct</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>;</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Notice that we have created a function in this example named <code>Stack()</code>. This function takes a type as input, and passes this type to the struct definition of our <code>Stack</code> object. The data member <code>items</code> is now, an array of type <code>T</code>, which is the data type that we have provided as input to the function. The function argument <code>val</code> in the <code>push()</code> function is now a value of type <code>T</code> too.</p>
 <p>We can just provide a data type to this function, and it will create a definition of a <code>Stack</code> object that can store values of the data type that we have provided. In the example below, we are creating the definition of a <code>Stack</code> object that can store <code>u8</code> values in it. This definition is stored at the <code>Stacku8</code> object. This <code>Stacku8</code> object becomes our new struct, it is the struct that we are going to use to create our <code>Stack</code> object.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = gpa.allocator();</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Stacku8 = Stack(<span class="dt">u8</span>);</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stack = <span class="kw">try</span> Stacku8.init(allocator, <span class="dv">10</span>);</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> stack.deinit();</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">1</span>);</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">2</span>);</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">3</span>);</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">4</span>);</span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">5</span>);</span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">6</span>);</span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack len: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.length<span class="op">}</span>);</span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack capacity: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.capacity<span class="op">}</span>);</span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>stack.pop();</span>
-<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack len: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.length<span class="op">}</span>);</span>
-<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>stack.pop();</span>
-<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack len: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.length<span class="op">}</span>);</span>
-<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>std.debug.print(</span>
-<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Stack state: {any}</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span>stack.items[<span class="dv">0</span>..stack.length]<span class="op">}</span></span>
-<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Stacku8 = Stack(<span class="dt">u8</span>);</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stack = <span class="kw">try</span> Stacku8.init(allocator, <span class="dv">10</span>);</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> stack.deinit();</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">1</span>);</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">2</span>);</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">3</span>);</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">4</span>);</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">5</span>);</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stack.push(<span class="dv">6</span>);</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack len: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.length<span class="op">}</span>);</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack capacity: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.capacity<span class="op">}</span>);</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>stack.pop();</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack len: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.length<span class="op">}</span>);</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>stack.pop();</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"Stack len: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>stack.length<span class="op">}</span>);</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>std.debug.print(</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Stack state: {any}</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span>stack.items[<span class="dv">0</span>..stack.length]<span class="op">}</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Stack len: 6
 Stack capacity: 10
