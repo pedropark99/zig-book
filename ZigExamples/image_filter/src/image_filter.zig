@@ -103,7 +103,7 @@ fn apply_image_filter(image_data: *ImageData) !void {
     const green_factor: f16 = 0.7152;
     const blue_factor: f16 = 0.0722;
     var index: u64 = 0;
-    while (index <= (len - 4)) : (index += 4) {
+    while (index < len) : (index += 4) {
         const rf: f16 = @floatFromInt(image_data.data[index]);
         const gf: f16 = @floatFromInt(image_data.data[index + 1]);
         const bf: f16 = @floatFromInt(image_data.data[index + 2]);
