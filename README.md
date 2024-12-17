@@ -55,7 +55,7 @@ If you do have a Revolut account, you can scan the following QR code:
 
 ## About this book
 
-This an open (i.e. it is open-source), technical and introductory book for the [Zig programming language](https://ziglang.org/),
+This is an open (i.e. it is open-source), technical and introductory book for the [Zig programming language](https://ziglang.org/),
 which is a new general purpose, and low-level programming language for building optimal and robust software.
 
 Official repository of the book: <https://github.com/pedropark99/zig-book>.
