@@ -159,13 +159,29 @@ So, everything you need to build a complex Zig project is the
 [^zig-build-system]: <https://ziglang.org/learn/overview/#zig-build-system>.
 
 
-The second generated file (`build.zig.zon`) is the Zig package manager configuration file,
-where you can list and manage the dependencies of your project. Yes, Zig has
-a package manager (like `pip` in Python, `cargo` in Rust, or `npm` in Javascript) called Zon,
-and this `build.zig.zon` file is similar to the `package.json` file
-in Javascript projects, or, the `Pipfile` file in Python projects,
-or the `Cargo.toml` file in Rust projects.
+The second generated file (`build.zig.zon`) is a JSON-like file, in which you can describe
+your project, and also, declare a set of dependencies of your project that you want to fetch from the internet.
+In other words, you can use this `build.zig.zon` file to include a list of external libraries in your project.
 
+One possible way to include an external Zig library in your project, is to manually build
+and install the library in your system, and just link your source code
+with the library at the build step of your project.
+
+However, if this external Zig library is available on GitHub for example,
+and it has a valid `build.zig.zon` file in root folder of the project,
+which describes the project, you can easily include this library in
+your project by simply listing this external library in your `build.zig.zon` file.
+
+In other words, this `build.zig.zon` file works similarly to the `package.json`
+file in Javascript projects, or the `Pipfile` file in Python projects,
+or the `Cargo.toml` file in Rust projects. You can read more about this
+specific file in a couple of articles on the internet[^zig-zon][^zig-zon2], and
+you can also see the expected schema for this `build.zig.zon` file
+in a documentation file inside the official repository of Zig[^zig-zon-schema].
+
+[^zig-zon]: <https://zig.news/edyu/zig-package-manager-wtf-is-zon-558e>
+[^zig-zon2]: <https://medium.com/@edlyuu/zig-package-manager-2-wtf-is-build-zig-zon-and-build-zig-0-11-0-update-5bc46e830fc1>
+[^zig-zon-schema]: <https://github.com/ziglang/zig/blob/master/doc/build.zig.zon.md>
 
 ### The file `root.zig` {#sec-root-file}
 
@@ -239,18 +255,22 @@ A lot of the elements we saw in `root.zig` are also present in `main.zig`.
 But there are some other elements that we haven't seen yet, so let's dive in.
 
 First, look at the return type of the `main()` function in this file.
-We can see a small change. The return
-type of the function (`void`) is accompanied by an exclamation mark (`!`).
-This exclamation mark tells us that this `main()` function
-might return an error.
+We can see a small change. The return type of the function (`void`) is accompanied by an exclamation mark (`!`).
+This exclamation mark tells us that this `main()` function might return an error.
 
-In this example, the `main()` function can either return `void` or return an error.
-This is an interesting feature of Zig. If you write a function and something inside of
-the body of this function might return an error then you are forced to:
+Is worth noting that, a `main()` function in Zig is allowed to return nothing (`void`),
+or an unsigned 8-bit integer (`u8`) value, or an error. In other words, you can write your `main()` function in Zig
+to return essentially nothing (`void`), or, if you prefer, you can also write a more C-like `main()` function,
+which returns an integer value that usually serves as a "status code" for the process.
+
+In this example, the return type annotation of `main()` indicates that this function can either
+return nothing (`void`), or return an error. This exclamation mark in the return type annotation
+is an interesting and powerful feature of Zig. In summary, if you write a function and something inside
+the body of this function might return an error, then, you are forced to:
 
 - either add the exclamation mark to the return type of the function and make it clear that
-this function might return an error
-- explicitly handle this error inside the function
+this function might return an error.
+- explicitly handle this error inside the function.
 
 In most programming languages, we normally handle (or deal with) an error through
 a *try catch* pattern. Zig does have both `try` and `catch` keywords. But they work
@@ -262,9 +282,10 @@ In Zig, we use the `try` keyword to execute an expression that might return an e
 which, in this example, is the `stdout.print()` expression.
 
 In essence, the `try` keyword executes the expression `stdout.print()`. If this expression
-returns a valid value, then, the `try` keyword does nothing. It only passes the value forward.
-But if the expression does return an error, then, the `try` keyword just unwrap the error value,
-and return this error from the function and also prints the current stack trace to `stderr`.
+returns a valid value, then, the `try` keyword does absolutely nothing. It only passes the value forward.
+It is like if this `try` keyword was never there. However, if the expression does return an error, then,
+the `try` keyword will unwrap the error value, then, it returns this error from the function
+and also prints the current stack trace to `stderr`.
 
 This might sound weird to you if you come from a high-level language. Because in
 high-level languages, such as Python, if an error occurs somewhere, this error is automatically
@@ -284,17 +305,15 @@ pub fn main() !void {
 ```
 
 Another thing that you might have noticed in this code example, is that
-the `main()` function is marked with the `pub` keyword.
-It marks the `main()` function as a *public function* from this module.
-
-Every function in your Zig module is by default private to this Zig module and can only be called from within the module.
+the `main()` function is marked with the `pub` keyword. It marks the `main()`
+function as a *public function* from this module. Every function in your Zig
+module is by default private to this Zig module and can only be called from within the module.
 Unless, you explicitly mark this function as a public function with the `pub` keyword.
-This means that the `pub` keyword in Zig does essentially the opposite of what the `static` keyword
-do in C/C++.
 
-By making a function "public" you allow other Zig modules to access and call it.
-A calling Zig module imports the module with the `@import()`
-built-in. That makes all public functions from the imported module visible.
+If you think about it, this `pub` keyword in Zig does essentially the opposite of what the `static` keyword
+do in C/C++. By making a function "public" you allow other Zig modules to access and call this function.
+A calling Zig module imports another module by using the `@import()` built-in function, which makes
+all public functions from the imported module visible to the calling Zig module.
 
 
 ### Compiling your source code {#sec-compile-code}
@@ -365,7 +384,7 @@ Hello, world!
 ### Important note for Windows users
 
 First of all, this is a Windows-specific thing, and, therefore, does not apply to other
-operational systems, such as Linux and MacOs. In summary, if you have a piece of Zig code that
+operating systems, such as Linux and macOs. In summary, if you have a piece of Zig code that
 includes some global variables whose initialization rely on runtime resources, then,
 you might have some troubles while trying to compile this Zig code on Windows.
 
@@ -1525,7 +1544,7 @@ exploited, by ensuring memory safety for example. But this is not enough
 to achieve "true safety" territory.
 
 Because even if you write your program in a "safe language", hackers can still
-exploit failures in the operational system where your program is running (e.g. maybe the
+exploit failures in the operating system where your program is running (e.g. maybe the
 system where your code is running has a "backdoor exploit" that can still
 affect your code in unexpected ways), or also, they can exploit the features
 from the architecture of your computer. A recently found exploit
