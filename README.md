@@ -13,10 +13,11 @@ the Zig compiler to compile and run the Zig code examples.
 
 ## Support the project!
 
-If you like this project, and you want to support it, you can buy an eBook or a physical copy
-of the book on Amazon:
+If you like this project, and you want to support it, you can buy a PDF, eBook or a physical copy
+of the book, either at Amazon, or at Leanpub:
 
-<https://www.amazon.com/dp/B0DJYMDRLP>
+- Amazon: <https://www.amazon.com/dp/B0DJYMDRLP>
+- Leanpub: <https://leanpub.com/introductiontozigaproject-basedbook>
 
 ### Sending donations directly
 
