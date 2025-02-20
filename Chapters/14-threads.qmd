@@ -275,15 +275,15 @@ which also starts the execution as soon as the thread is created.
 
 ## Returning from a thread
 
-We have learned on the previous section that the execution of the thread starts at the moment
-that the thread get's created. Now, we will learn how to "join" or "detach" a thread in Zig.
+We have learned in the previous section that the execution of the thread starts as soon as
+the thread is created. Now, we will learn how to "join" or "detach" a thread in Zig.
 "Join" and "detach" are operations that control how the thread returns to
-the main thread, or, to the main process in our program.
+the main thread, or to the main process in our program.
 
 We perform these operations by using the methods `join()` and `detach()` from the thread handler object.
 Every thread that you create can be marked as either *joinable* or *detached* [@linux_pthread_create].
 You can turn a thread into a *detached* thread by calling the `detach()` method
-from the thread handler object. But if you call the `join()` method instead, then, this thread
+from the thread handler object. But if you call the `join()` method instead, then this thread
 becomes a *joinable* thread.
 
 A thread cannot be both *joinable* and *detached*. Which in general means
@@ -291,7 +291,7 @@ that you cannot call both `join()` and `detach()` on the same thread.
 But a thread must be one of the two, meaning that, you should always call
 either `join()` or `detach()` over a thread. If you don't call
 one of these two methods over your thread, you introduce undefined behaviour into your program,
-which is described at @sec-not-call-join-detach.
+which is described in @sec-not-call-join-detach.
 
 Now, let's describe what each of these two methods do to your thread.
 
@@ -299,13 +299,13 @@ Now, let's describe what each of these two methods do to your thread.
 ### Joining a thread
 
 When you join a thread, you are essentially saying: "Hey! Could you please wait for the thread to finish,
-before you continue with your execution?". For example, if we comeback to our first and simpliest example
-of a thread in Zig, in that example we have created a single thread inside the `main()` function of our program,
-and just called `join()` over this thread at the end. This section of the code example is reproduced below.
+before you continue with your execution?". For example, if we come back to our first and simplest example
+of a thread in Zig, we created a single thread inside the `main()` function of our program
+and just called `join()` on this thread at the end. This section of the code example is reproduced below.
 
 Because we are joining this new thread inside the `main()`'s scope, it means that the
 execution of the `main()` function is temporarily stopped, to wait for the execution of the thread
-to finish. That is, the execution of `main()` stops temporarily at the line where `join()` get's called,
+to finish. That is, the execution of `main()` stops temporarily at the line where `join()` gets called,
 and it will continue only after the thread has finished its tasks.
 
 ```{zig}
@@ -332,11 +332,11 @@ we wait for two whole seconds, then, at last, we join the second thread.
 
 The idea behind this example is that the last `join()` call is executed
 only after the first thread finishes its task (i.e. the first `join()` call),
-and also, after the two seconds of delay. If you compile and run this
+and the two-second delay. If you compile and run this
 example, you will notice that most messages are quickly printed to `stdout`,
 i.e. they appear almost instantly on your screen.
 However, the last message ("Joining thread 2") takes around 2 seconds to appear
-in the screen.
+on the screen.
 
 
 ```{zig}
@@ -369,7 +369,7 @@ Joining thread 2
 This demonstrates that both threads finish their work (i.e. printing the IDs)
 very fast, before the two seconds of delay end. Because of that, the last `join()` call
 returns pretty much instantly. Because when this last `join()` call happens, the second
-thread have already finished its task.
+thread has already finished its task.
 
 Now, if you compile and run this example, you will also notice that, in some cases,
 the messages intertwine with each other. In other words, you might see
@@ -379,12 +379,12 @@ or vice-versa. This happens because:
 - the threads are executing basically at the same time as the main process of the program (i.e. the `main()` function).
 - the threads share the same `stdout` from the main process of the program, which means that the messages that the threads produce are sent to exact same place as the messages produced by the main process.
 
-Both of these points were described previously at @sec-what-thread.
+Both of these points were described previously in @sec-what-thread.
 So the messages might get intertwined because they are being produced and
 sent to the same `stdout` roughly at the same time.
 Anyway, when you call `join()` over a thread, the current process will wait
-for the thread to finish before it continues, and, when the thread does finishes its
-task, the resources associated with this thread are automatically freed, and,
+for the thread to finish before it continues, and, when the thread finishes its
+task, the resources associated with this thread are automatically freed, and
 the current process continues with its execution.
 
 
