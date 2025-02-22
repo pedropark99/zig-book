@@ -258,14 +258,14 @@ pub fn main() !void {
 Notice the use of `try` when calling the `spawn()` method. This means
 that this method can return an error in some circumstances. One circumstance
 in particular is when you attempt to create a new thread, when you have already
-created too much (i.e. you have exceeded the quota of concurrent threads in your system).
+created too much (i.e., you have exceeded the quota of concurrent threads in your system).
 
 But, if the new thread is successfully created, the `spawn()` method returns a handler
 object (which is just an object of type `Thread`) to this new thread. You can use
 this handler object to effectively control all aspects of the thread.
 
 When the thread gets created, the function that you provided as input to `spawn()`
-gets invoked (i.e. gets called) to start the execution on this new thread.
+gets invoked (i.e., gets called) to start the execution on this new thread.
 In other words, every time you call `spawn()`, not only is a new thread created,
 but the "start work button" of this thread is also automatically pressed.
 So the work being performed in this thread starts as soon as the thread is created.
@@ -331,7 +331,7 @@ new threads, one after another. Then, we join the first thread, then,
 we wait for two whole seconds, then, at last, we join the second thread.
 
 The idea behind this example is that the last `join()` call is executed
-only after the first thread finishes its task (i.e. the first `join()` call),
+only after the first thread finishes its task (i.e., the first `join()` call),
 and the two-second delay. If you compile and run this
 example, you will notice that most messages are quickly printed to `stdout`,
 i.e. they appear almost instantly on your screen.
@@ -366,7 +366,7 @@ Thread ID: 2
 Joining thread 2
 ```
 
-This demonstrates that both threads finish their work (i.e. printing the IDs)
+This demonstrates that both threads finish their work (i.e., printing the IDs)
 very fast, before the two seconds of delay end. Because of that, the last `join()` call
 returns pretty much instantly. Because when this last `join()` call happens, the second
 thread has already finished its task.
@@ -376,7 +376,7 @@ the messages intertwine with each other. In other words, you might see
 the message "Joining thread 1" inserted in the middle of the message "Thread 1",
 or vice-versa. This happens because:
 
-- the threads are executing basically at the same time as the main process of the program (i.e. the `main()` function).
+- the threads are executing basically at the same time as the main process of the program (i.e., the `main()` function).
 - the threads share the same `stdout` from the main process of the program, which means that the messages that the threads produce are sent to exact same place as the messages produced by the main process.
 
 Both of these points were described previously in @sec-what-thread.
@@ -593,7 +593,7 @@ So mutexes are not normally used on areas of the codebase that access/modify obj
 
 Critical section is a concept commonly associated with mutexes and thread synchronization.
 In essence, a critical section is the section of the program that a thread access/modify a shared resource
-(i.e. an object, a file descriptor, something that all threads have access to). In other words,
+(i.e., an object, a file descriptor, something that all threads have access to). In other words,
 a critical section is the section of the program where race conditions might happen, and, therefore,
 where undefined behaviour can be introduced into the program.
 
@@ -631,7 +631,7 @@ In this module, you will find a public and generic function called `Value()`. Wi
 a value that contains some native atomic operations, most notably, a `load()` and a `fetchAdd()` operation.
 If you have experience with multithreading in C++, you probably have recognized this pattern. So yes, this generic
 "atomic object" in Zig is essentially identical to the template struct `std::atomic` from the C++ Standard Library.
-It is important to emphasize that only primitive data types (i.e. the types presented in @sec-primitive-data-types)
+It is important to emphasize that only primitive data types (i.e., the types presented in @sec-primitive-data-types)
 are supported by these atomic operations in Zig.
 
 
@@ -642,8 +642,8 @@ are supported by these atomic operations in Zig.
 
 To understand why mutexes are used, we need to understand better the problem that they seek
 to solve, which can be summarized into data race problems. A data race problem is a type of a race condition,
-which happens when one thread is accessing a particular memory location (i.e. a particular shared object) at the same
-time that another thread is trying to write/save new data into this same memory location (i.e. the same shared object).
+which happens when one thread is accessing a particular memory location (i.e., a particular shared object) at the same
+time that another thread is trying to write/save new data into this same memory location (i.e., the same shared object).
 
 We can simply define a race condition as any type of bug in your program that is based
 on a "who gets there first" problem. A data race problem is a type of a race condition, because it occurs when two or more parties
@@ -846,7 +846,7 @@ use this type of lock to control which parts of the codebase are safe to run in 
 
 Therefore, a read/write lock is a little different from a mutex. Because a mutex is always an *exclusive lock*, meaning that, only
 one thread is allowed to execute at all times. With an exclusive lock, the other threads are always "excluded",
-i.e. they are always blocked from executing. But in a read/write lock, the other threads might be authorized
+i.e., they are always blocked from executing. But in a read/write lock, the other threads might be authorized
 to run at the same time, depending on the type of lock that they acquire.
 
 We have two types of locks in a read/write lock, which are: an exclusive lock and a shared lock. An exclusive lock works exactly the same
@@ -860,28 +860,28 @@ this C struct, you can create:
 The terminology might be a little different compared to Zig. But the meaning is still the same.
 Therefore, just remember this relationship, write locks are exclusive locks, while read locks are shared locks.
 
-When a thread tries to acquire a read lock (i.e. a shared lock), this thread get's the shared lock
-if, and only if another thread does not currently holds a write lock (i.e. an exclusive lock), and also,
-if there are no other threads that are already in the queue,
-waiting for their turn to acquire a write lock. In other words, the thread in the queue have attempted
+When a thread tries to acquire a read lock (i.e., a shared lock), this thread gets the shared lock
+if and only if another thread does not currently holds a write lock (i.e., an exclusive lock), and also
+if there are no other threads already in the queue,
+waiting for their turn to acquire a write lock. In other words, the thread in the queue has attempted
 to get a write lock earlier, but this thread was blocked
-because there was another thread running that already had a write lock. As consequence, this thread is on the queue to get a write lock,
+because there was another thread running that already had a write lock. As a consequence, this thread is in the queue to get a write lock,
 and it's currently waiting for the other thread with a write lock to finish its execution.
 
 When a thread tries to acquire a read lock, but it fails in acquiring this read lock, either because there is
-a thread with a write lock already running, or, because there is a thread in the queue to get a write lock,
-the execution of this thread is instantly blocked, i.e. paused. This thread will indefinitely attempt to get the
+a thread with a write lock already running, or because there is a thread in the queue to get a write lock,
+the execution of this thread is instantly blocked, i.e., paused. This thread will indefinitely attempt to get the
 read lock, and its execution will be unblocked (or unpaused) only after this thread successfully acquires the read lock.
 
 If you think deeply about this dynamic between read locks versus write locks, you might notice that a read lock is basically a safety mechanism.
 More specifically, it is a way for us to
-allow a particular thread to run together with the other threads, only when it's safe to. In other words, if there is currently
-a thread with a write lock running, then, it is very likely not safe for the thread that is trying to acquire the read lock to run now.
-As consequence, the read lock protects this thread from running into dangerous waters, and patiently waits for the
+allow a particular thread to run together with the other threads only when it's safe to. In other words, if there is currently
+a thread with a write lock running, then it is very likely not safe for the thread that is trying to acquire the read lock to run now.
+As a consequence, the read lock protects this thread from running into dangerous waters, and patiently waits for the
 "write lock" thread to finishes its tasks before it continues.
 
-On the other hand, if there are only "read lock" (i.e. "shared lock") threads currently running
-(i.e. not a single "write lock" thread currently exists), then,
+On the other hand, if there are only "read lock" (i.e., "shared lock") threads currently running
+(i.e., not a single "write lock" thread currently exists), then it
 is perfectly safe for this thread that is acquiring the read lock to run in parallel with the other
 threads. As a result, the read lock just
 allows for this thread to run together with the other threads.
@@ -1054,7 +1054,7 @@ nobody becomes responsible for clearing (or freeing) the resources associated wi
 You don't want to be in this situation, so remember to always use `join()` or `detach()`
 on the threads that you create. When you don't use one of these methods, we lose
 control over the thread, and its resources are never freed
-(i.e. you have leaked resources in the system).
+(i.e., you have leaked resources in the system).
 
 
 ### Cancelling or killing a particular thread
