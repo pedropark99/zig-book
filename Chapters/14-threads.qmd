@@ -1002,14 +1002,14 @@ After that, the function sleeps for 1 second, to
 simulate some type of work, and then, the function tries to acquire the `mut2` lock.
 
 On the other hand, when we look into the second thread, which executes the `work2()` function,
-we can see that this function acquires the `mut2` lock first. Because when this thread get's created and it tries
+we can see that this function acquires the `mut2` lock first. Because when this thread gets created and it tries
 to acquire this `mut2` lock, the first thread is still sleeping on that "sleep 1 second" line.
 After acquiring `mut2`, the `work2()` function also sleeps for 1 second, to
-simulate some type of work, and then, the function tries to acquire the `mut1` lock.
+simulate some type of work, and then the function tries to acquire the `mut1` lock.
 
 This creates a deadlock situation, because after the "sleep for 1 second" line in both threads,
-the thread 1 is trying to acquire the `mut2` lock, but this lock is currently being used by thread 2.
-However, at this moment, the thread 2 is also trying to acquire the `mut1` lock, which is currently
+thread 1 is trying to acquire the `mut2` lock, but this lock is currently being used by thread 2.
+However, at this moment, thread 2 is also trying to acquire the `mut1` lock, which is currently
 being used by thread 1. Therefore, both threads end up waiting for ever. Waiting for their peer to
 free the lock that they want to acquire.
 
@@ -1044,7 +1044,7 @@ pub fn main() !void {
 
 ### Not calling `join()` or `detach()` {#sec-not-call-join-detach}
 
-When you do not call either `join()` or `detach()` over a thread, then, this thread becomes a "zombie thread",
+When you do not call either `join()` or `detach()` over a thread, then this thread becomes a "zombie thread",
 because it does not have a clear "return point".
 You could also interpret this as: "nobody is properly responsible for managing the thread".
 When we don't establish if a thread is either *joinable* or *detached*,
@@ -1061,21 +1061,21 @@ control over the thread, and its resources are never freed
 
 When we think about the `pthreads` C library, there is a possible way to asynchronously kill or cancel
 a thread, which is by sending a `SIGTERM` signal to the thread through the `pthread_kill()` function.
-But canceling a thread like this is bad. Is dangerously bad. As consequence, the Zig implementation
+But canceling a thread like this is bad. It is dangerously bad. As a consequence, the Zig implementation
 of threads does not have a similar function, or, a similar way to asynchronously cancel or kill
 a thread.
 
 Therefore, if you want to cancel a thread in the middle of its execution in Zig,
-then, one good strategy that you can take is to use control flow in conjunction with `join()`.
-More specifically, you can design your thread around a while loop, that is constantly
+then one good strategy that you can take is to use control flow in conjunction with `join()`.
+More specifically, you can design your thread around a while loop that is constantly
 checking if the thread should continue running.
-If is time to cancel the thread, we could make the while loop break, and join the thread with the main thread
+If is time to cancel the thread, we could make the while loop break and join the thread with the main thread
 by calling `join()`.
 
 The code example below demonstrates to some extent this strategy.
 Here, we are using control flow to break the while loop, and exit the thread earlier than
 what we have initially planned to. This example also demonstrates how can we use
-atomic objects in Zig with the `Value()` generic function that we have mentioned at @sec-atomic-operation.
+atomic objects in Zig with the `Value()` generic function that we have mentioned in @sec-atomic-operation.
 
 
 ```{zig}
