@@ -641,21 +641,21 @@ are supported by these atomic operations in Zig.
 ### Data races and race conditions
 
 To understand why mutexes are used, we need to understand better the problem that they seek
-to solve, which can be summarized into data races problems. A data race problem is a type of a race condition,
+to solve, which can be summarized into data race problems. A data race problem is a type of a race condition,
 which happens when one thread is accessing a particular memory location (i.e. a particular shared object) at the same
 time that another thread is trying to write/save new data into this same memory location (i.e. the same shared object).
 
 We can simply define a race condition as any type of bug in your program that is based
-on a "who get's there first" problem. A data race problem is a type of a race condition, because it occurs when two or more parties
+on a "who gets there first" problem. A data race problem is a type of a race condition, because it occurs when two or more parties
 are trying to read and write into the same memory location at the same time, and, therefore, the end result of this operation
-depends completely on who get's to this memory location first.
-As consequence, a program that have a data race problem will likely produce a different result each time that we execute it.
+depends completely on who gets to this memory location first.
+As a consequence, a program that has a data race problem will likely produce a different result each time that we execute it.
 
 Thus, race conditions produce undefined behaviour and unpredictability because the program produces
-a different answer in each time that a different person get's to the target location first than the others.
-And we have no easy way to either predict or control who is getting to this target location first.
-In other words, in each execution of your program, you get a different answer, because a different person,
-or, a different function, or, a different part of the code is finishing its tasks first than the others.
+a different answer each time a different person gets to the target location before the others.
+And, we have no easy way to either predict or control who is getting to this target location first.
+In other words, each time your program runs, you may get a different answer because a different person,
+function, or part of the code finishes its tasks before the others.
 
 As an example, consider the code snippet exposed below. In this example, we create a global counter
 variable, and we also create an `increment()` function, whose job is to just increment this global counter
@@ -668,8 +668,8 @@ to print 2 hundred thousand at the end, but in practice, every time that I execu
 I get a different answer.
 
 In the example exposed below, you can see that this time the end
-result was 117254, instead of the expected 200000. The second time I have executed this program,
-I got the number 108592 as result. So the end result of this program is varying, but it never gets
+result was 117254, instead of the expected 200000. The second time I executed this program,
+I got the number 108592 as the result. So the end result of this program is varying, but it never gets
 to the expected 200000 that we want.
 
 
@@ -701,13 +701,13 @@ Couter value: 117254
 
 
 Why this is happening? The answer is: because this program contains a data race problem.
-This program would print the correct number 200000, if, and only if the first thread finishes
+This program would print the correct number 200000, if and only if, the first thread finishes
 its tasks before the second thread starts to execute. But that is very unlikely to happen.
-Because the process of creating the thread is too fast, and therefore, both threads starts to execute roughly
+Because the process of creating the thread is too fast, and therefore, both threads start to execute roughly
 at the same time. If you change this code to add some nanoseconds of sleep between the first and the second calls to `spawn()`,
 you will increase the chances of the program producing the "correct result".
 
-So the data race problem happens, because both threads are reading and writing to the same
+So the data race problem happens because both threads are reading and writing to the same
 memory location at roughly the same time. In this example, each thread is essentially performing
 three basic operations at each iteration of the for loop, which are:
 
@@ -717,16 +717,16 @@ three basic operations at each iteration of the for loop, which are:
 
 Ideally, a thread B should read the value of `count`, only after the other thread A has finished
 writing the incremented value back into the `count` object. Therefore, in the ideal scenario, which is demonstrated
-at @tbl-data-race-ideal, the threads should work in sync with each other. But the reality is that these
+in @tbl-data-race-ideal, the threads should work in sync with each other. But the reality is that these
 threads are out of sync, and because of that, they suffer from a data race problem, which is demonstrated
-at @tbl-data-race-not.
+in @tbl-data-race-not.
 
 Notice that, in the data race scenario (@tbl-data-race-not), the read performed by a thread B happens
 before the write operation of thread A, and that ultimately leads to wrong results at the end of the program.
-Because when the thread B reads the value from the `count` variable, the thread A is still processing
-the initial value from `count`, and it did not write the new and incremented value into `count` yet. So what
-happens is that thread B ends up reading the same initial value (the "old" value) from `count`, instead of
-reading the new and incremented version of this value that would be calculated by thread A.
+Because when thread B reads the value of the `count` variable, thread A is still processing
+the initial value from `count`, and has not yet written the new, incremented value back to `count`. As a result,
+thread B ends up reading the same initial (or "old") value from `count` instead of
+the updated, incremented value that thread A would have written.
 
 
 ::: {#tbl-data-race-ideal}
@@ -759,16 +759,16 @@ reading the new and incremented version of this value that would be calculated b
 
 
 If you think about these diagrams exposed in form of tables, you will notice that they relate back to our discussion of atomic operations
-at @sec-atomic-operation. Remember, atomic operations are operations that the CPU executes
+in @sec-atomic-operation. Remember, atomic operations are operations that the CPU executes
 from beginning to end, without interruptions from other threads or processes. So,
-the scenario exposed at @tbl-data-race-ideal do not suffer from a data race, because
+the scenario exposed in @tbl-data-race-ideal does not suffer from a data race, because
 the operations performed by thread A are not interrupted in the middle by the operations
 from thread B.
 
 If we also think about the discussion of critical section from @sec-critical-section, we can identify
 the section that representes the critical section of the program, which is the section that is vulnerable
 to data race conditions. In this example, the critical section of the program is the line where we increment
-the `counter` variable (`counter += 1`). So, ideally, we want to use a mutex, and lock right before this line, and then,
+the `counter` variable (`counter += 1`). So, ideally, we want to use a mutex, and lock right before this line, and then
 unlock right after this line.
 
 
