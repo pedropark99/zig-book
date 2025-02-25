@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 # Zig interoperability with C
 
 In this chapter, we are going to discuss the interoperability of Zig with C.
-We have discussed at @sec-building-c-code how you can use the `zig` compiler to build C code.
+We have discussed in @sec-building-c-code how you can use the `zig` compiler to build C code.
 But we haven't discussed yet how to actually use C code in Zig. In other words,
 we haven't discussed yet how to call and use C code from Zig.
 
@@ -33,7 +33,7 @@ this next project.
 
 Interoperability with C is not something new. Most high-level programming languages have FFI (foreign function interfaces),
 which can be used to call C code. For example, Python have Cython, R have `.Call()`, Javascript have `ccall()`, etc.
-But Zig integrates with C in a deeper level, which affects not only the way that C code get's called, but also,
+But Zig integrates with C in a deeper level, which affects not only the way that C code gets called, but also,
 how this C code is compiled and incorporated into your Zig project.
 
 In summary, Zig have great interoperability with C. If you want to call any C code from Zig,
@@ -111,7 +111,7 @@ installed in your system. Anyway, if you have doubts about this, comeback to @se
 
 ## Importing C header files {#sec-import-c-header}
 
-At @sec-strategy-c, we have described that, currently, there are two different paths that
+In @sec-strategy-c, we have described that, currently, there are two different paths that
 you can take to import a C header file into your Zig modules, `translate-c` or `@cImport()`.
 This section describes each strategy separately in more details.
 
@@ -134,7 +134,7 @@ Also notice that we are saving the results of the translation process inside a Z
 
 Therefore, after running this command, all we have to do is to import this `c.zig` module, and start
 calling the C functions that you want to call from it. The example below demonstrates that.
-Is important to remember what we've discussed at @sec-linking-c. In order to compile this
+It's important to remember what we've discussed in @sec-linking-c. In order to compile this
 example you have to link this code with `libc`, by passing the flag `-lc` to the `zig` compiler.
 
 ```{zig}
@@ -204,7 +204,7 @@ pub fn main() !void {
 
 Zig objects have some intrinsic differences between their C equivalents.
 Probably the most noticeable one is the difference between C strings and Zig strings,
-which I described at @sec-zig-strings.
+which I described in @sec-zig-strings.
 Zig strings are objects that contains both an array of arbitrary bytes and a length value.
 On the other hand, a C string is usually just a pointer to a null-terminated array of arbitrary bytes.
 
@@ -221,7 +221,7 @@ that Zig object into a C compatible value, before passing it to C code.
 
 There is also a third scenario that is not being described here, which is when you create a C object, or, a C struct, or
 a C compatible value in your Zig code, and you pass this C object/value as input to a C function in your Zig code.
-This scenario will be described later at @sec-c-inputs. In this section, we are focused on the scenarios where
+This scenario will be described later in @sec-c-inputs. In this section, we are focused on the scenarios where
 we are passing Zig objects/values to C code, instead of C objects/values being passed to C code.
 
 
@@ -231,7 +231,7 @@ An "auto-conversion" scenario is when the `zig` compiler automatically converts 
 C compatible values for us. This specific scenario happens mostly in two instances:
 
 - with string literal values;
-- with any of the primitive data types that were introduced at @sec-primitive-data-types.
+- with any of the primitive data types that were introduced in @sec-primitive-data-types.
 
 When we think about the second instance described above, the `zig` compiler does automatically
 convert any of the primitive data types into their C equivalents, because the compiler knows how
@@ -321,7 +321,7 @@ Therefore, when we talk exclusively about string literal values, as long as you 
 explicit data type to these string literal values, the `zig` compiler should be capable of automatically
 converting them into C strings as needed.
 
-But what about using one of the primitive data types that were introduced at @sec-primitive-data-types?
+But what about using one of the primitive data types that were introduced in @sec-primitive-data-types?
 Let's take code exposed below as an example of that. Here, we are giving some float literal values as input
 to the C function `powf()`. Notice that this code example compiles and runs successfully.
 
@@ -440,7 +440,7 @@ with no errors.
 ## Creating C objects in Zig {#sec-c-inputs}
 
 Creating C objects, or, in other words, creating instances of C structs in your Zig code
-is actually something quite easy to do. You first need to import the C header file (like I described at @sec-import-c-header) that defines
+is actually something quite easy to do. You first need to import the C header file (like I described in @sec-import-c-header) that defines
 the C struct that you are trying to instantiate in your Zig code. After that, you can just
 create a new object in your Zig code, and annotate it with the data type of the C struct.
 
@@ -469,7 +469,7 @@ i.e. the memory is currently populated with "garbage" values.
 Thus, this expression have the exact same effect of the expression `User new_user;` in C,
 which means "declare a new object named `new_user` of type `User`".
 
-Is our responsibility to properly initialize this memory associated with this `new_user` object,
+It's our responsibility to properly initialize this memory associated with this `new_user` object,
 by assigning valid values to the members (or the fields) of the C struct. In the example below,
 I'm assigning the integer 1 to the member `id`. I am also saving the string `"pedropark99"` into the member `name`.
 Notice in this example that I manually add the null character (zero byte) to the end of the allocated array
@@ -538,7 +538,7 @@ any special manner to use them in C code. This is how we create and use C object
 
 Now that we have learned how to create/declare C objects in our Zig code, we
 need to learn how to pass these C objects as inputs to Zig functions.
-As I described at @sec-c-inputs, we can freely pass these C objects as inputs to C code
+As I described in @sec-c-inputs, we can freely pass these C objects as inputs to C code
 that we call from our Zig code. But what about passing these C objects to Zig functions?
 
 In essence, this specific case requires one small adjustment in the Zig function declaration.
@@ -546,7 +546,7 @@ All you need to do, is to make sure that you pass your C object *by reference* t
 instead of passing it *by value*. To do that, you have to annotate the data type of the function argument
 that is receiving this C object as "a pointer to the C struct", instead of annotating it as "an instance of the C struct".
 
-Let's consider the C struct `User` from the `user.h` C header file that we have used at @sec-c-inputs.
+Let's consider the C struct `User` from the `user.h` C header file that we have used in @sec-c-inputs.
 Now, consider that we want to create a Zig function that sets the value of the `id` field
 in this C struct, like the `set_user_id()` function declared below.
 Notice that the `user` argument in this function is annotated as a pointer (`*`) to a `c.User` object.
@@ -593,4 +593,3 @@ pub fn main() !void {
 ```
 New ID: 25
 ```
-
