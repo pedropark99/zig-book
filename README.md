@@ -95,7 +95,7 @@ You can find instructions on how to install these pieces of software by clicking
 After you installed the three pieces of software listed above, you should run the `dependencies.R` R script, to install
 some R packages that are used across the book. Just run the command below in your terminal, and you should be fine.
 
-OBS: If you are on Linux or MacOS, this command will probably take some time to run, because every single dependency get's built from source.
+OBS: If you are on Linux or MacOS, this command will probably take some time to run, because every single dependency gets built from source.
 In Windows, this usually doesn't take that long because pre-built binaries are usually available.
 
 ```bash
