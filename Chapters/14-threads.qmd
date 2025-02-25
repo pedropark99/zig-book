@@ -36,31 +36,31 @@ parallelism. And when we don't have parallelism, the commands are executed seque
 only one command is executed at a time, one after another. By creating multiple threads inside our program,
 we start to execute multiple commands at the same time.
 
-Programs that create multiple threads are very common on the wild. Because many different types
+Programs that create multiple threads are very common in the wild. Because many different types
 of applications are well suited for parallelism. Good examples are video and photo-editing applications
 (e.g. Adobe Photoshop or DaVinci Resolve), games (e.g. The Witcher 3), and also web browsers
 (e.g. Google Chrome, Firefox, Microsoft Edge, etc).
 For example, in web browsers, threads are normally used to implement tabs.
 The tabs in a web browsers usually run as separate threads in the main process of
-the web browser. That is, each new tab that you open in your web browser,
+the web browser. That is, each new tab that you open in your web browser
 usually runs on a separate thread of execution.
 
 By running each tab in a separate thread, we allow all open tabs in the browser to run at the same time,
-and independently from each other. For example, you might have YouTube, or Spotify, currently opened in
-a tab, and you are listening to some podcast in that tab, while, at the same time,
-you are working in another tab, writing an essay on Google Docs. Even if you are not looking
+and independently from each other. For example, you might have YouTube or Spotify currently open in
+a tab, and you are listening to some podcast in that tab while at the same time
+working in another tab, writing an essay on Google Docs. Even if you are not looking
 into the YouTube tab, you can still hear the podcast only because this YouTube tab is running in parallel
 with the other tab where Google Docs is running.
 
 Without threads, the other alternative would be to run each tab as a completely separate
-process in your computer. But that would be a bad choice, because just a few tabs would already consume
-too much power and resources from your computer. In other words, is very expensive to create a completely new process,
+process in your computer. But that would be a bad choice because just a few tabs would already consume
+too much power and resources from your computer. In other words, it is very expensive to create a completely new process,
 compared to creating a new thread of execution. Also, the chances of you experiencing lag and overhead
 while using the browser would be significant. Threads are faster to create, and they also consume
 much, much less resources from the computer, especially because they share some resources
 with the main process.
 
-Therefore, is the use of threads in modern web browsers that allows you to hear the podcast
+Therefore, it is the use of threads in modern web browsers that allow you to hear the podcast
 at the same time while you are writing something on Google Docs.
 Without threads, a web browser would probably be limited to just one single tab.
 
@@ -78,9 +78,9 @@ the following steps:
 If you think about the bullet points above, you will notice that one big moment of waiting time
 is present in this whole process, which is while the food is being cooked
 inside the kitchen. While the food is being prepped, both the waiter and the client
-itself are waiting for the food to be ready and delivered.
+themselves are waiting for the food to be ready and delivered.
 
-If we write a program to represent this restaurant, more specifically, a single-threaded program, then,
+If we write a program to represent this restaurant, more specifically, a single-threaded program, then
 this program would be very inefficient. Because the program would stay in idle, waiting for a considerable amount
 of time on the "check if food is ready" step. Consider the code snippet exposed below that could
 potentially represent such program.
@@ -186,7 +186,7 @@ is on the heap, then, the other threads can potentially access this object.
 
 Therefore, objects that are stored in the stack are local to the thread where they were created.
 But objects that are stored on the heap are potentially accessible to other threads. All of this means that,
-each thread have its own separate stack frame, but, at the same time, all threads share
+each thread has its own separate stack frame, but, at the same time, all threads share
 the same heap, the same standard file descriptors (which means that they share the same `stdout`, `stdin`, `stderr`),
 and the same global data section in the program.
 
@@ -194,24 +194,24 @@ and the same global data section in the program.
 
 ## Creating a thread
 
-We create new threads in Zig, by first, importing the `Thread` struct into
-our current Zig module, and then, calling the `spawn()` method of this struct,
-which creates (or, "spawns") a new thread of execution from our current process.
-This method have three arguments, which are, respectively:
+We create new threads in Zig by first importing the `Thread` struct into
+our current Zig module and then calling the `spawn()` method of this struct,
+which creates (or "spawns") a new thread of execution from our current process.
+This method has three arguments, which are, respectively:
 
 1. a `SpawnConfig` object, which contains configurations for the spawn process.
-1. the name of the function that is going to be executed (or, that is going to be "called") inside this new thread.
+1. the name of the function that is going to be executed (or that is going to be "called") inside this new thread.
 1. a list of arguments (or inputs) to be passed to the function provided in the second argument.
 
-With these three arguments, you can control how the thread get's created, and also, specify which
+With these three arguments, you can control how the thread gets created, and also, specify which
 work (or "tasks") will be performed inside this new thread. A thread is just a separate context of execution,
-and we usually create new threads in our code, because we want to perform some work inside this
-new context of execution. And we specify which exact work, or, which exact steps that are going to be
-performed inside this context, by providing the name of a function on the second argument of the `spawn()` method.
+and we usually create new threads in our code because we want to perform some work inside this
+new context of execution. And we specify which exact work, or which exact steps that are going to be
+performed inside this context by providing the name of a function as the second argument of the `spawn()` method.
 
-Thus, when this new thread get's created, this function that you provided as input to the `spawn()`
-method get's called, or, get's executed inside this new thread. You can control the
-arguments, or, the inputs that are passed to this function when it get's called, by providing
+Thus, when this new thread gets created, this function that you provided as input to the `spawn()`
+method gets called, or gets executed inside this new thread. You can control the
+arguments, or the inputs that are passed to this function when it gets called by providing
 a list of arguments (or a list of inputs) on the third argument of the `spawn()` method.
 These arguments are passed to the function in the same order that they are
 provided to `spawn()`.
@@ -219,13 +219,13 @@ provided to `spawn()`.
 Furthermore, the `SpawnConfig` is a struct object with only two possible fields, or, two possible members, that you
 can set to tailor the spawn behaviour. These fields are:
 
-- `stack_size`: you can provide an `usize` value to specify the size (in bytes) of the thread's stack frame. By default, this value is: $16 \times 1024 \times 1024$.
+- `stack_size`: you can provide a `usize` value to specify the size (in bytes) of the thread's stack frame. By default, this value is: $16 \times 1024 \times 1024$.
 - `allocator`: you can provide an allocator object to be used when allocating memory for the thread.
 
-To use one of these two fields (or, "configs") you just have to create a new object of type `SpawnConfig`,
+To use one of these two fields (or "configs"), you just have to create a new object of type `SpawnConfig`,
 and provide this object as input to the `spawn()` method. But, if you are not interested in using
 one of these configs, and you are ok with using just the defaults, you can just provide an anonymous
-struct literal (`.{}`) in the place of this `SpawnConfig` argument.
+struct literal (`.{}`) in place of this `SpawnConfig` argument.
 
 As our first, and very simple example, consider the code exposed below.
 Inside the same program, you can create multiple threads of execution if you want to.
@@ -234,8 +234,8 @@ we call `spawn()` only once.
 
 Also, notice in this example that we are executing the function `do_some_work()`
 inside the new thread. Since this function receives no inputs, because it has
-no arguments, we have passed an empty list in this instance, or, more precisely,
-an empty and anonymous struct (`.{}`) in the third argument of `spawn()`.
+no arguments, we have passed an empty list in this instance, or more precisely,
+an empty, anonymous struct (`.{}`) in the third argument of `spawn()`.
 
 
 ```{zig}
@@ -258,32 +258,32 @@ pub fn main() !void {
 Notice the use of `try` when calling the `spawn()` method. This means
 that this method can return an error in some circumstances. One circumstance
 in particular is when you attempt to create a new thread, when you have already
-created too much (i.e. you have exceeded the quota of concurrent threads in your system).
+created too much (i.e., you have exceeded the quota of concurrent threads in your system).
 
 But, if the new thread is successfully created, the `spawn()` method returns a handler
 object (which is just an object of type `Thread`) to this new thread. You can use
 this handler object to effectively control all aspects of the thread.
 
-When the thread get's created, the function that you provided as input to `spawn()`
-get's invoked (i.e. get's called) to start the execution on this new thread.
-In other words, everytime you call `spawn()`, not only a new thread get's created,
-but also, the "start work button" of this thread get's automatically pressed.
-So the work being performed in this thread starts at the moment that the thread is created.
+When the thread gets created, the function that you provided as input to `spawn()`
+gets invoked (i.e., gets called) to start the execution on this new thread.
+In other words, every time you call `spawn()`, not only is a new thread created,
+but the "start work button" of this thread is also automatically pressed.
+So the work being performed in this thread starts as soon as the thread is created.
 This is similar to how `pthread_create()` from the `pthreads` library in C works,
-which also starts the execution at the moment that the thread get's created.
+which also starts the execution as soon as the thread is created.
 
 
 ## Returning from a thread
 
-We have learned on the previous section that the execution of the thread starts at the moment
-that the thread get's created. Now, we will learn how to "join" or "detach" a thread in Zig.
+We have learned in the previous section that the execution of the thread starts as soon as
+the thread is created. Now, we will learn how to "join" or "detach" a thread in Zig.
 "Join" and "detach" are operations that control how the thread returns to
-the main thread, or, to the main process in our program.
+the main thread, or to the main process in our program.
 
 We perform these operations by using the methods `join()` and `detach()` from the thread handler object.
 Every thread that you create can be marked as either *joinable* or *detached* [@linux_pthread_create].
 You can turn a thread into a *detached* thread by calling the `detach()` method
-from the thread handler object. But if you call the `join()` method instead, then, this thread
+from the thread handler object. But if you call the `join()` method instead, then this thread
 becomes a *joinable* thread.
 
 A thread cannot be both *joinable* and *detached*. Which in general means
@@ -291,7 +291,7 @@ that you cannot call both `join()` and `detach()` on the same thread.
 But a thread must be one of the two, meaning that, you should always call
 either `join()` or `detach()` over a thread. If you don't call
 one of these two methods over your thread, you introduce undefined behaviour into your program,
-which is described at @sec-not-call-join-detach.
+which is described in @sec-not-call-join-detach.
 
 Now, let's describe what each of these two methods do to your thread.
 
@@ -299,13 +299,13 @@ Now, let's describe what each of these two methods do to your thread.
 ### Joining a thread
 
 When you join a thread, you are essentially saying: "Hey! Could you please wait for the thread to finish,
-before you continue with your execution?". For example, if we comeback to our first and simpliest example
-of a thread in Zig, in that example we have created a single thread inside the `main()` function of our program,
-and just called `join()` over this thread at the end. This section of the code example is reproduced below.
+before you continue with your execution?". For example, if we come back to our first and simplest example
+of a thread in Zig, we created a single thread inside the `main()` function of our program
+and just called `join()` on this thread at the end. This section of the code example is reproduced below.
 
 Because we are joining this new thread inside the `main()`'s scope, it means that the
 execution of the `main()` function is temporarily stopped, to wait for the execution of the thread
-to finish. That is, the execution of `main()` stops temporarily at the line where `join()` get's called,
+to finish. That is, the execution of `main()` stops temporarily at the line where `join()` gets called,
 and it will continue only after the thread has finished its tasks.
 
 ```{zig}
@@ -331,12 +331,12 @@ new threads, one after another. Then, we join the first thread, then,
 we wait for two whole seconds, then, at last, we join the second thread.
 
 The idea behind this example is that the last `join()` call is executed
-only after the first thread finishes its task (i.e. the first `join()` call),
-and also, after the two seconds of delay. If you compile and run this
+only after the first thread finishes its task (i.e., the first `join()` call),
+and the two-second delay. If you compile and run this
 example, you will notice that most messages are quickly printed to `stdout`,
 i.e. they appear almost instantly on your screen.
 However, the last message ("Joining thread 2") takes around 2 seconds to appear
-in the screen.
+on the screen.
 
 
 ```{zig}
@@ -366,25 +366,25 @@ Thread ID: 2
 Joining thread 2
 ```
 
-This demonstrates that both threads finish their work (i.e. printing the IDs)
+This demonstrates that both threads finish their work (i.e., printing the IDs)
 very fast, before the two seconds of delay end. Because of that, the last `join()` call
 returns pretty much instantly. Because when this last `join()` call happens, the second
-thread have already finished its task.
+thread has already finished its task.
 
 Now, if you compile and run this example, you will also notice that, in some cases,
 the messages intertwine with each other. In other words, you might see
 the message "Joining thread 1" inserted in the middle of the message "Thread 1",
 or vice-versa. This happens because:
 
-- the threads are executing basically at the same time as the main process of the program (i.e. the `main()` function).
+- the threads are executing basically at the same time as the main process of the program (i.e., the `main()` function).
 - the threads share the same `stdout` from the main process of the program, which means that the messages that the threads produce are sent to exact same place as the messages produced by the main process.
 
-Both of these points were described previously at @sec-what-thread.
+Both of these points were described previously in @sec-what-thread.
 So the messages might get intertwined because they are being produced and
 sent to the same `stdout` roughly at the same time.
 Anyway, when you call `join()` over a thread, the current process will wait
-for the thread to finish before it continues, and, when the thread does finishes its
-task, the resources associated with this thread are automatically freed, and,
+for the thread to finish before it continues, and, when the thread finishes its
+task, the resources associated with this thread are automatically freed, and
 the current process continues with its execution.
 
 
@@ -393,11 +393,11 @@ the current process continues with its execution.
 When you detach a thread, the resources associated with this thread are automatically
 released back to the system, without the need for another thread to join with this terminated thread.
 
-In other words, when you call `detach()` over a thread it's like when your children becomes adults,
-i.e. they become independent from you. A detached thread frees itself, and when this thread finishes its
+In other words, when you call `detach()` on a thread it's like when your children become adults,
+i.e., they become independent from you. A detached thread frees itself, and when this thread finishes its
 tasks, it does not report the results back to you. Thus, you normally mark a thread as *detached*
-when you don't need to use the return value of the thread, or, when you don't care about
-when exactly the thread finishes its job, i.e. the thread solves everything by itself.
+when you don't need to use the return value of the thread, or when you don't care about
+when exactly the thread finishes its job, i.e., the thread solves everything by itself.
 
 Take the code example below. We create a new thread, detach it, and then, we just
 print a final message before we end our program. We use the same `print_id()`
@@ -425,10 +425,10 @@ Finish main
 Now, if you look closely at the output of this code example, you will notice
 that only the final message in main was printed to the console. The message
 that was supposed to be printed by `print_id()` did not appear in the console.
-Why? Is because the main process of our program has finished first,
+Why? It is because the main process of our program has finished first,
 before the thread was able to say anything.
 
-And that is perfectly ok behaviour, because the thread was detached, so, it was
+And that is perfectly ok behaviour, because the thread was detached, so it was
 able to free itself, without the need to wait for the main process.
 If you ask main to sleep (or "wait") for some extra nanoseconds, before it ends, you will likely
 see the message printed by `print_id()`, because you give enough time for the thread to
@@ -438,8 +438,8 @@ finish before the main process ends.
 ## Thread pools
 
 Thread pools is a very popular programming pattern, which is used especially on servers and daemons processes.
-A thread pool is just a set of threads, or, a "pool" of threads. Many programmers like to use this pattern, because it makes
-easier to manage and use multiple threads in your program, instead of manually creating the threads when you need them.
+A thread pool is just a set of threads, or a "pool" of threads. Many programmers like to use this pattern because it makes
+it easier to manage and use multiple threads in your program, instead of manually creating the threads when you need them.
 
 Also, using thread pools might increase performance as well in your program,
 especially if your program is constantly creating threads to perform short-lived tasks.
@@ -449,7 +449,7 @@ in this constant process of creating and destroying threads.
 
 The main idea behind a thread pool is to have a set of threads already created and ready to perform
 tasks at all times. You create a set of threads at the moment that your program starts, and keep
-these threads alive while your program runs. Each of these threads will be either performing a task, or,
+these threads alive while your program runs. Each of these threads will be either performing a task, or
 waiting for a task to be assigned.
 Every time a new task emerges in your program, this task is added to a "queue of tasks",
 and the moment that a thread becomes available and ready to perform a new task,
@@ -492,7 +492,7 @@ pub fn main() !void {
         .allocator = allocator,
     };
     var pool: Pool = undefined;
-    _ = try pool.init(opt);
+    try pool.init(opt);
     defer pool.deinit();
 }
 ```
@@ -503,17 +503,17 @@ To assign a task to be performed by a thread, we need to call the `spawn()` meth
 from the thread pool object.
 
 This `spawn()` method works identical to the `spawn()` method from the
-`Thread` object. The method have almost the same arguments as the previous one,
+`Thread` object. The method has almost the same arguments as the previous one,
 more precisely, we don't have to provide a `SpawnConfig` object in this case.
 But instead of creating a new thread, this `spawn()` method from
-the thread pool object just register a new task in the internal "queue of tasks" to be performed,
+the thread pool object just registers a new task in the internal "queue of tasks" to be performed,
 and any available thread in the pool will get this task, and it will simply perform the task.
 
 In the example below, we are using our previous `print_id()` function once again.
 But you may notice that the `print_id()` function is a little different this time,
 because now we are using `catch` instead of `try` in the `print()` call.
 Currently, the `Pool` struct only supports functions that don't return errors
-as tasks. Thus, when assigning tasks to threads in a thread pool, is essential to use functions
+as tasks. Thus, when assigning tasks to threads in a thread pool, it is essential to use functions
 that don't return errors. That is why we are using `catch` here, so that the
 `print_id()` function don't return an error.
 
@@ -552,17 +552,17 @@ and, therefore, major bugs and undefined behaviour that are usually difficult to
 
 The main idea behind a mutex is to help us to control the execution of a particular section of the code, and to
 prevent two or more threads from executing this particular section of the code at the same time.
-Many programmers like to compare a mutex to a bathroom door (which usually have a lock).
-When a thread locks its own mutex object, it is like if the bathroom door was locked,
-and, therefore, the other people (in this case, the other threads) that wants to use the same bathroom at the same time
-have to be patient, and simply wait for the other person (or the other thread) to unlock the door and get out of the bathroom.
+Many programmers like to compare a mutex to a bathroom door (which typically has a lock).
+When a thread locks its own mutex object, it is like if the bathroom door was locked.
+Therefore, other people (in this case, other threads) who want to use the same bathroom at the same time
+must be patient and simply wait for the current occupant (or thread) to unlock the door and get out of the bathroom.
 
 Some other programmers also like to explain mutexes by using the analogy of "each person will have their turn to speak".
 This is the analogy used on the [*Multithreading Code* video from the Computerphile project](https://www.youtube.com/watch?v=7ENFeb-J75k&ab_channel=Computerphile)[^computerphile].
 Imagine if you are in a conversation circle. There is a moderator in this circle, which is the person that decides who
-have the right to speak at that particular moment. The moderator gives a green card (or some sort of an authorization card) to the person that
+has the right to speak at that particular moment. The moderator gives a green card (or some sort of an authorization card) to the person that
 is going to speak, and, as a result, everyone else must be silent and hear this person that has the green card.
-When the person finishes talking, it gives the green card back to the moderator, and the moderator decides
+When the person finishes talking, they give the green card back to the moderator, and the moderator decides
 who is going to talk next, and delivers the green card to that person. And the cycle goes on like this.
 
 [^computerphile]: <https://www.youtube.com/watch?v=7ENFeb-J75k&ab_channel=Computerphile>
@@ -572,7 +572,7 @@ A mutex acts like the moderator in this conversation circle. The mutex authorize
 and it also blocks the other threads from executing this same section of the code. If these other threads want to execute this same
 piece of the code, they are forced to wait for the the authorized thread to finish first.
 When the authorized thread finishes executing this code, the mutex authorizes the next thread to execute this code,
-and the other threads are still blocked. Therefore, a mutex is like a moderator that does a "each
+while the remaining threads remain blocked. Therefore, a mutex is like a moderator that does a "each
 thread will have their turn to execute this section of the code" type of control.
 
 
@@ -584,7 +584,7 @@ When a thread tries to run this code that is locked by a mutex, this thread stop
 and patiently waits for this section of the codebase to be unlocked to continue.
 
 Notice that mutexes are normally used to lock areas of the codebase that access/modify data that is **shared** with all threads,
-i.e. objects that are either stored in the global data section, or, in the heap space of your program.
+i.e., objects that are either stored in the global data section, or in the heap space of your program.
 So mutexes are not normally used on areas of the codebase that access/modify objects that are local to the thread.
 
 
@@ -593,7 +593,7 @@ So mutexes are not normally used on areas of the codebase that access/modify obj
 
 Critical section is a concept commonly associated with mutexes and thread synchronization.
 In essence, a critical section is the section of the program that a thread access/modify a shared resource
-(i.e. an object, a file descriptor, something that all threads have access to). In other words,
+(i.e., an object, a file descriptor, something that all threads have access to). In other words,
 a critical section is the section of the program where race conditions might happen, and, therefore,
 where undefined behaviour can be introduced into the program.
 
@@ -611,27 +611,27 @@ and they summarise well the role that a critical section plays in the thread syn
 ### Atomic operations {#sec-atomic-operation}
 
 You will also see the term "atomic operation" a lot when reading about threads, race conditions and mutexes.
-In summary, an operation is categorized as "atomic", when there is no way to happen a context switch in
-the middle of this operation. In other words, this operation is always done from beginning to end, without interruptions
+In summary, an operation is categorized as "atomic" when a context switch cannot occur in
+the middle of the operation. In other words, this operation is always done from beginning to end, without interruptions
 of another process or operation in the middle of its execution phase.
 
-Not many operations today are atomic. But why atomic operations matters here? Is because data races
+Not many operations today are atomic. But why do atomic operations matter here? It is because data races
 (which is a type of a race condition) cannot happen on operations that are atomic.
-So if a particular line in your code performs an atomic operation, then, this line will never
+So if a particular line in your code performs an atomic operation, then this line will never
 suffer from a data race problem. Therefore, programmers sometimes use an atomic operation
 to protect themselves from data race problems in their code.
 
 When you have an operation that is compiled into just one single assembly instruction, this operation might be atomic,
 because it is just one assembly instruction. But this is not guaranteed. This is usually true for old CPU architectures
-(such as `x86`). But nowadays, most assembly instructions in modern CPU architectures turn into multiple micro-tasks,
-which inherently makes the operation not atomic anymore, even though it has just one single assembly instruction.
+(such as `x86`). But nowadays, most assembly instructions in modern CPU architectures are broken down into multiple micro-tasks,
+which inherently makes the operation non-atomic, even if it consists of a single assembly instruction.
 
-The Zig Standard Library offers some atomic functionality at the `std.atomic` module.
+The Zig Standard Library offers some atomic functionality in the `std.atomic` module.
 In this module, you will find a public and generic function called `Value()`. With this function we create an "atomic object", which is
 a value that contains some native atomic operations, most notably, a `load()` and a `fetchAdd()` operation.
 If you have experience with multithreading in C++, you probably have recognized this pattern. So yes, this generic
 "atomic object" in Zig is essentially identical to the template struct `std::atomic` from the C++ Standard Library.
-Is important to emphasize that only primitive data types (i.e. the types presented at @sec-primitive-data-types)
+It is important to emphasize that only primitive data types (i.e., the types presented in @sec-primitive-data-types)
 are supported by these atomic operations in Zig.
 
 
@@ -641,21 +641,21 @@ are supported by these atomic operations in Zig.
 ### Data races and race conditions
 
 To understand why mutexes are used, we need to understand better the problem that they seek
-to solve, which can be summarized into data races problems. A data race problem is a type of a race condition,
-which happens when one thread is accessing a particular memory location (i.e. a particular shared object) at the same
-time that another thread is trying to write/save new data into this same memory location (i.e. the same shared object).
+to solve, which can be summarized into data race problems. A data race problem is a type of a race condition,
+which happens when one thread is accessing a particular memory location (i.e., a particular shared object) at the same
+time that another thread is trying to write/save new data into this same memory location (i.e., the same shared object).
 
 We can simply define a race condition as any type of bug in your program that is based
-on a "who get's there first" problem. A data race problem is a type of a race condition, because it occurs when two or more parties
+on a "who gets there first" problem. A data race problem is a type of a race condition, because it occurs when two or more parties
 are trying to read and write into the same memory location at the same time, and, therefore, the end result of this operation
-depends completely on who get's to this memory location first.
-As consequence, a program that have a data race problem will likely produce a different result each time that we execute it.
+depends completely on who gets to this memory location first.
+As a consequence, a program that has a data race problem will likely produce a different result each time that we execute it.
 
 Thus, race conditions produce undefined behaviour and unpredictability because the program produces
-a different answer in each time that a different person get's to the target location first than the others.
-And we have no easy way to either predict or control who is getting to this target location first.
-In other words, in each execution of your program, you get a different answer, because a different person,
-or, a different function, or, a different part of the code is finishing its tasks first than the others.
+a different answer each time a different person gets to the target location before the others.
+And, we have no easy way to either predict or control who is getting to this target location first.
+In other words, each time your program runs, you may get a different answer because a different person,
+function, or part of the code finishes its tasks before the others.
 
 As an example, consider the code snippet exposed below. In this example, we create a global counter
 variable, and we also create an `increment()` function, whose job is to just increment this global counter
@@ -668,8 +668,8 @@ to print 2 hundred thousand at the end, but in practice, every time that I execu
 I get a different answer.
 
 In the example exposed below, you can see that this time the end
-result was 117254, instead of the expected 200000. The second time I have executed this program,
-I got the number 108592 as result. So the end result of this program is varying, but it never gets
+result was 117254, instead of the expected 200000. The second time I executed this program,
+I got the number 108592 as the result. So the end result of this program is varying, but it never gets
 to the expected 200000 that we want.
 
 
@@ -701,13 +701,13 @@ Couter value: 117254
 
 
 Why this is happening? The answer is: because this program contains a data race problem.
-This program would print the correct number 200000, if, and only if the first thread finishes
+This program would print the correct number 200000 if and only if the first thread finishes
 its tasks before the second thread starts to execute. But that is very unlikely to happen.
-Because the process of creating the thread is too fast, and therefore, both threads starts to execute roughly
+Because the process of creating the thread is too fast, and therefore, both threads start to execute roughly
 at the same time. If you change this code to add some nanoseconds of sleep between the first and the second calls to `spawn()`,
 you will increase the chances of the program producing the "correct result".
 
-So the data race problem happens, because both threads are reading and writing to the same
+So the data race problem happens because both threads are reading and writing to the same
 memory location at roughly the same time. In this example, each thread is essentially performing
 three basic operations at each iteration of the for loop, which are:
 
@@ -717,16 +717,16 @@ three basic operations at each iteration of the for loop, which are:
 
 Ideally, a thread B should read the value of `count`, only after the other thread A has finished
 writing the incremented value back into the `count` object. Therefore, in the ideal scenario, which is demonstrated
-at @tbl-data-race-ideal, the threads should work in sync with each other. But the reality is that these
+in @tbl-data-race-ideal, the threads should work in sync with each other. But the reality is that these
 threads are out of sync, and because of that, they suffer from a data race problem, which is demonstrated
-at @tbl-data-race-not.
+in @tbl-data-race-not.
 
 Notice that, in the data race scenario (@tbl-data-race-not), the read performed by a thread B happens
 before the write operation of thread A, and that ultimately leads to wrong results at the end of the program.
-Because when the thread B reads the value from the `count` variable, the thread A is still processing
-the initial value from `count`, and it did not write the new and incremented value into `count` yet. So what
-happens is that thread B ends up reading the same initial value (the "old" value) from `count`, instead of
-reading the new and incremented version of this value that would be calculated by thread A.
+Because when thread B reads the value of the `count` variable, thread A is still processing
+the initial value from `count`, and has not yet written the new, incremented value back to `count`. As a result,
+thread B ends up reading the same initial (or "old") value from `count` instead of
+the updated, incremented value that thread A would have written.
 
 
 ::: {#tbl-data-race-ideal}
@@ -759,16 +759,16 @@ reading the new and incremented version of this value that would be calculated b
 
 
 If you think about these diagrams exposed in form of tables, you will notice that they relate back to our discussion of atomic operations
-at @sec-atomic-operation. Remember, atomic operations are operations that the CPU executes
+in @sec-atomic-operation. Remember, atomic operations are operations that the CPU executes
 from beginning to end, without interruptions from other threads or processes. So,
-the scenario exposed at @tbl-data-race-ideal do not suffer from a data race, because
+the scenario exposed in @tbl-data-race-ideal does not suffer from a data race, because
 the operations performed by thread A are not interrupted in the middle by the operations
 from thread B.
 
 If we also think about the discussion of critical section from @sec-critical-section, we can identify
 the section that representes the critical section of the program, which is the section that is vulnerable
 to data race conditions. In this example, the critical section of the program is the line where we increment
-the `counter` variable (`counter += 1`). So, ideally, we want to use a mutex, and lock right before this line, and then,
+the `counter` variable (`counter += 1`). So, ideally, we want to use a mutex, and lock right before this line, and then
 unlock right after this line.
 
 
@@ -778,10 +778,10 @@ unlock right after this line.
 
 Now that we know the problem that mutexes seek to solve, we can learn how to use them in Zig.
 Mutexes in Zig are available through the `std.Thread.Mutex` struct from the Zig Standard Library.
-If we take the same code example from the previous example, and improve it with mutexes, to solve
-our data race problem, we get the code example exposed below.
+If we take the same code from the previous example, and improve it with mutexes, to solve
+our data race problem, we get the code example below.
 
-Notice that we had this time to alter the `increment()` function to receive a pointer to
+Notice that this time, we had to alter the `increment()` function to receive a pointer to
 the `Mutex` object as input. All that we need to do, to make this program safe against
 data race problems, is to call the `lock()` method at the beginning of
 the critical section, and then, call `unlock()` at the end of the critical section.
@@ -817,28 +817,28 @@ pub fn main() !void {
 
 ## Read/Write locks
 
-Mutexes are normally used when is always not safe to have two or more threads running the same
+Mutexes are normally used when it is not always safe for two or more threads running the same
 piece of code at the same time. In contrast, read/write locks are normally used in situations
-where you have a mixture of scenarios, i.e. there are some pieces of the codebase that are safe
+where you have a mixture of scenarios, i.e., there are some pieces of the codebase that are safe
 to run in parallel, and other pieces that are not safe.
 
-For example, suppose that you have multiple threads that uses the same shared file in the filesystem to store some configurations, or,
+For example, suppose that you have multiple threads that uses the same shared file in the filesystem to store some configurations, or
 statistics. If two or more threads try to read the data from this same file at the same time, nothing bad happens.
 So this part of the codebase is perfectly safe to be executed in parallel, with multiple threads reading the same file at the same time.
 
-However, if two or more threads try to write data into this same file at the same time, then, we cause some race conditions
+However, if two or more threads try to write data into this same file at the same time, then we cause some race condition
 problems. So this other part of the codebase is not safe to be executed in parallel.
 More specifically, a thread might end up writing data in the middle of the data written by the other thread.
-This process of two or more threads writing to the same location, might lead to data corruption.
-This specific situation is usually called of a *torn write*.
+This process of two or more threads writing to the same location might lead to data corruption.
+This specific situation is usually called a *torn write*.
 
-Thus, what we can extract from this example is that there is certain types of operations that causes
-a race condition, but there are also, other types of operations that do not cause a race condition problem.
-You could also say that, there are types of operations that are susceptible to race condition problems,
+Thus, what we can extract from this example is that there are certain types of operations that cause
+a race condition, but there are also other types of operations that do not cause a race condition problem.
+You could also say that there are types of operations that are susceptible to race condition problems,
 and there are other types of operations that are not.
 
-A read/write lock is a type of lock that acknowledges the existance of this specific scenario, and you can
-use this type of lock to control which parts of the codebase are safe to run in parallel, and which parts are not safe.
+A read/write lock is a type of lock that acknowledges the existence of this specific scenario, and you can
+use this type of lock to control which parts of the codebase are safe to run in parallel and which parts are not. 
 
 
 
@@ -846,7 +846,7 @@ use this type of lock to control which parts of the codebase are safe to run in 
 
 Therefore, a read/write lock is a little different from a mutex. Because a mutex is always an *exclusive lock*, meaning that, only
 one thread is allowed to execute at all times. With an exclusive lock, the other threads are always "excluded",
-i.e. they are always blocked from executing. But in a read/write lock, the other threads might be authorized
+i.e., they are always blocked from executing. But in a read/write lock, the other threads might be authorized
 to run at the same time, depending on the type of lock that they acquire.
 
 We have two types of locks in a read/write lock, which are: an exclusive lock and a shared lock. An exclusive lock works exactly the same
@@ -860,28 +860,28 @@ this C struct, you can create:
 The terminology might be a little different compared to Zig. But the meaning is still the same.
 Therefore, just remember this relationship, write locks are exclusive locks, while read locks are shared locks.
 
-When a thread tries to acquire a read lock (i.e. a shared lock), this thread get's the shared lock
-if, and only if another thread does not currently holds a write lock (i.e. an exclusive lock), and also,
-if there are no other threads that are already in the queue,
-waiting for their turn to acquire a write lock. In other words, the thread in the queue have attempted
+When a thread tries to acquire a read lock (i.e., a shared lock), this thread gets the shared lock
+if and only if another thread does not currently holds a write lock (i.e., an exclusive lock), and also
+if there are no other threads already in the queue,
+waiting for their turn to acquire a write lock. In other words, the thread in the queue has attempted
 to get a write lock earlier, but this thread was blocked
-because there was another thread running that already had a write lock. As consequence, this thread is on the queue to get a write lock,
+because there was another thread running that already had a write lock. As a consequence, this thread is in the queue to get a write lock,
 and it's currently waiting for the other thread with a write lock to finish its execution.
 
 When a thread tries to acquire a read lock, but it fails in acquiring this read lock, either because there is
-a thread with a write lock already running, or, because there is a thread in the queue to get a write lock,
-the execution of this thread is instantly blocked, i.e. paused. This thread will indefinitely attempt to get the
+a thread with a write lock already running, or because there is a thread in the queue to get a write lock,
+the execution of this thread is instantly blocked, i.e., paused. This thread will indefinitely attempt to get the
 read lock, and its execution will be unblocked (or unpaused) only after this thread successfully acquires the read lock.
 
 If you think deeply about this dynamic between read locks versus write locks, you might notice that a read lock is basically a safety mechanism.
 More specifically, it is a way for us to
-allow a particular thread to run together with the other threads, only when it's safe to. In other words, if there is currently
-a thread with a write lock running, then, it is very likely not safe for the thread that is trying to acquire the read lock to run now.
-As consequence, the read lock protects this thread from running into dangerous waters, and patiently waits for the
+allow a particular thread to run together with the other threads only when it's safe to. In other words, if there is currently
+a thread with a write lock running, then it is very likely not safe for the thread that is trying to acquire the read lock to run now.
+As a consequence, the read lock protects this thread from running into dangerous waters, and patiently waits for the
 "write lock" thread to finishes its tasks before it continues.
 
-On the other hand, if there are only "read lock" (i.e. "shared lock") threads currently running
-(i.e. not a single "write lock" thread currently exists), then,
+On the other hand, if there are only "read lock" (i.e., "shared lock") threads currently running
+(i.e., not a single "write lock" thread currently exists), then it
 is perfectly safe for this thread that is acquiring the read lock to run in parallel with the other
 threads. As a result, the read lock just
 allows for this thread to run together with the other threads.
@@ -896,9 +896,9 @@ of our multithreaded code is safe to have parallelism, and which sections are no
 ### Using read/write locks in Zig
 
 The Zig Standard Library supports read/write locks through the `std.Thread.RwLock` module.
-If you want to a particular thread to acquire a shared lock (i.e. a read lock), you should
-call the `lockShared()` method from the `RwLock` object. But, if you want for this thread
-to acquire an exclusive lock (i.e. a write lock) instead, then, you should call the
+If you want a particular thread to acquire a shared lock (i.e., a read lock), you should
+call the `lockShared()` method from the `RwLock` object. But, if you want this thread
+to acquire an exclusive lock (i.e., a write lock) instead, then you should call the
 `lock()` method from the `RwLock` object.
 
 As with mutexes, we also have to unlock the shared or exclusive locks that we acquire through a read/write lock object,
@@ -906,8 +906,8 @@ once we are at the end of our "critical section". If you have acquired an exclus
 this exclusive lock by calling the `unlock()` method from the read/write lock object. In contrast,
 if you have acquired a shared lock instead, then, call `unlockShared()` to unlock this shared lock.
 
-As a simple example, the snippet exposed below creates three separate threads responsible for reading the
-current value in a `counter` object, and it also creates another thread, responsible for writing
+As a simple example, the snippet below creates three separate threads responsible for reading the
+current value in a `counter` object, and it also creates another thread responsible for writing
 new data into the `counter` object (incrementing it, more specifically).
 
 ```{zig}
@@ -950,7 +950,7 @@ pub fn main() !void {
 
 The `Thread` struct supports yielding through the `yield()` method.
 Yielding a thread means that the execution of the thread is temporarily stopped,
-and the thread comes back to the end of the queue of priority of the scheduler from
+and it moves to the end of the priority queue managed by the scheduler of
 your operating system.
 
 That is, when you yield a thread, you are essentially saying the following to your OS:
@@ -960,12 +960,12 @@ to focus on doing other things instead?".
 So this yield operation is also a way for you
 to stop a particular thread, so that you can work and prioritize other threads instead.
 
-Is important to say that, yielding a thread is a "not so common" thread operation these days.
-In other words, not many programmers use yielding in production, simply because is hard to use
+It is important to say that, yielding a thread is a "not so common" thread operation these days.
+In other words, not many programmers use yielding in production, simply because it is hard to use
 this operation and make it work properly, and also, there
 are better alternatives. Most programmers prefer to use `join()` instead.
-In fact, most of the times, when you see somebody using this "yield" operation in some code example,
-they are mostly using it to help them debug race conditions in their applications.
+In fact, most of the time, when you see someone using this "yield" operation in some code example,
+they are usually doing so to help debug race conditions in their applications.
 That is, this "yield" operation is mostly used as a debug tool nowadays.
 
 Anyway, if you want to yield a thread, just call the `yield()` method from it, like this:
@@ -1002,14 +1002,14 @@ After that, the function sleeps for 1 second, to
 simulate some type of work, and then, the function tries to acquire the `mut2` lock.
 
 On the other hand, when we look into the second thread, which executes the `work2()` function,
-we can see that this function acquires the `mut2` lock first. Because when this thread get's created and it tries
+we can see that this function acquires the `mut2` lock first. Because when this thread gets created and it tries
 to acquire this `mut2` lock, the first thread is still sleeping on that "sleep 1 second" line.
 After acquiring `mut2`, the `work2()` function also sleeps for 1 second, to
-simulate some type of work, and then, the function tries to acquire the `mut1` lock.
+simulate some type of work, and then the function tries to acquire the `mut1` lock.
 
 This creates a deadlock situation, because after the "sleep for 1 second" line in both threads,
-the thread 1 is trying to acquire the `mut2` lock, but this lock is currently being used by thread 2.
-However, at this moment, the thread 2 is also trying to acquire the `mut1` lock, which is currently
+thread 1 is trying to acquire the `mut2` lock, but this lock is currently being used by thread 2.
+However, at this moment, thread 2 is also trying to acquire the `mut1` lock, which is currently
 being used by thread 1. Therefore, both threads end up waiting for ever. Waiting for their peer to
 free the lock that they want to acquire.
 
@@ -1044,7 +1044,7 @@ pub fn main() !void {
 
 ### Not calling `join()` or `detach()` {#sec-not-call-join-detach}
 
-When you do not call either `join()` or `detach()` over a thread, then, this thread becomes a "zombie thread",
+When you do not call either `join()` or `detach()` over a thread, then this thread becomes a "zombie thread",
 because it does not have a clear "return point".
 You could also interpret this as: "nobody is properly responsible for managing the thread".
 When we don't establish if a thread is either *joinable* or *detached*,
@@ -1054,28 +1054,28 @@ nobody becomes responsible for clearing (or freeing) the resources associated wi
 You don't want to be in this situation, so remember to always use `join()` or `detach()`
 on the threads that you create. When you don't use one of these methods, we lose
 control over the thread, and its resources are never freed
-(i.e. you have leaked resources in the system).
+(i.e., you have leaked resources in the system).
 
 
 ### Cancelling or killing a particular thread
 
 When we think about the `pthreads` C library, there is a possible way to asynchronously kill or cancel
 a thread, which is by sending a `SIGTERM` signal to the thread through the `pthread_kill()` function.
-But canceling a thread like this is bad. Is dangerously bad. As consequence, the Zig implementation
+But canceling a thread like this is bad. It is dangerously bad. As a consequence, the Zig implementation
 of threads does not have a similar function, or, a similar way to asynchronously cancel or kill
 a thread.
 
 Therefore, if you want to cancel a thread in the middle of its execution in Zig,
-then, one good strategy that you can take is to use control flow in conjunction with `join()`.
-More specifically, you can design your thread around a while loop, that is constantly
+then one good strategy that you can take is to use control flow in conjunction with `join()`.
+More specifically, you can design your thread around a while loop that is constantly
 checking if the thread should continue running.
-If is time to cancel the thread, we could make the while loop break, and join the thread with the main thread
+If is time to cancel the thread, we could make the while loop break and join the thread with the main thread
 by calling `join()`.
 
 The code example below demonstrates to some extent this strategy.
 Here, we are using control flow to break the while loop, and exit the thread earlier than
 what we have initially planned to. This example also demonstrates how can we use
-atomic objects in Zig with the `Value()` generic function that we have mentioned at @sec-atomic-operation.
+atomic objects in Zig with the `Value()` generic function that we have mentioned in @sec-atomic-operation.
 
 
 ```{zig}
