@@ -173,7 +173,7 @@ increase_indentation__ <- function(code_without_main) {
 #' This function is used to get the value of the `auto_main` code block option.
 #' The `auto_main` code block option is used to specify if the Zig code written
 #' in the current code block should (or should not) be encapsulated inside a
-#' `main()` function, before it get's sent to the Zig compiler to be compiled.
+#' `main()` function, before it gets sent to the Zig compiler to be compiled.
 #'
 #' If the user did not configured/setted this
 #' specific option in the current code block that is being analyzed,
