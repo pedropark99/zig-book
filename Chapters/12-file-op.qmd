@@ -47,8 +47,8 @@ In essence, these input/output functions from high-level languages are just abst
 over the *standard output* and *standard input* channels of your operating system.
 
 This means that we receive an input, or send some output, through the operating system.
-It is the OS that makes the bridge between the user and your program. Your program
-does not have a direct access to the user. It is the OS that intermediates every
+It's the OS that makes the bridge between the user and your program. Your program
+does not have a direct access to the user. It's the OS that intermediates every
 message exchanged between your program and the user.
 
 The *standard output* and *standard input* channels of your OS are commonly known as the
@@ -97,12 +97,12 @@ Both of these objects are normally created from a file descriptor object. More s
 methods of this file descriptor object. If you are not familiar with this type of object, go to the next section.
 
 Every `GenericWriter` object have methods like `print()`, which allows you to write/send a formatted string
-(i.e. this formatted string is like a `f` string in Python, or, similar to the `printf()` C function)
+(i.e., this formatted string is like a `f` string in Python, or, similar to the `printf()` C function)
 into the "something" (file, socket, stream, etc.) that you are using. It also have a `writeAll()` method, which allows you to
 write a string, or, an array of bytes into the "something".
 
 Likewise, every `GenericReader` object have methods like `readAll()`, which allows you to read the
-data from the "something" (file, socket, stream, etc.) until it fills a particular array (i.e. a "buffer") object.
+data from the "something" (file, socket, stream, etc.) until it fills a particular array (i.e., a "buffer") object.
 In other words, if you provide an array object of 300 `u8` values to `readAll()`, then, this method attempts to read 300 bytes
 of data from the "something", and it stores them into the array object that you have provided.
 
@@ -110,7 +110,7 @@ We also have other methods, like the `readAtLeast()` method, which allows you to
 many bytes exactly you want to read from the "something". In more details, if you give the
 number $n$ as input to this method, then, it will attempt to read at least $n$ bytes of data
 from the "something". The "something" might have less than $n$ bytes of data available for you
-to read, so, it is not guaranteed that you will get precisely $n$ bytes as result.
+to read, so, it's not guaranteed that you will get precisely $n$ bytes as result.
 
 Another useful method is `readUntilDelimiterOrEof()`. In this method, you specify a "delimiter character".
 The idea is that this function will attempt to read as many bytes of data as possible from the "something",
@@ -126,7 +126,7 @@ This is just a quick description of the methods present in these types of object
 to read the official docs, both for
 [`GenericWriter`](https://ziglang.org/documentation/master/std/#std.io.GenericWriter)[^gen-write] and
 [`GenericReader`](https://ziglang.org/documentation/master/std/#std.io.GenericReader)[^gen-read].
-I also think it is a good idea to read the source code of the modules in the Zig Standard Library
+I also think it's a good idea to read the source code of the modules in the Zig Standard Library
 that defines the methods present in these objects, which are the
 [`Reader.zig`](https://github.com/ziglang/zig/blob/master/lib/std/io/Reader.zig)[^mod-read]
 and [`Writer.zig`]()[^mod-write].
@@ -223,7 +223,7 @@ use them here, from the file descriptor object of `stdout`, and vice-versa.
 
 ### The *standard input*
 
-You can access the *standard input* (i.e. `stdin`) in Zig by using the `getStdIn()` function from the `std.io` module.
+You can access the *standard input* (i.e., `stdin`) in Zig by using the `getStdIn()` function from the `std.io` module.
 Like its brother (`getStdOut()`), this function also returns a file descriptor object that describes the `stdin` channel
 of your OS.
 
@@ -278,22 +278,22 @@ the purpose of this channel.
 ## Buffered IO
 
 As we described in @sec-io-basics, input/output (IO) operations are made directly by the operating system.
-It is the OS that manages the IO resource that you want to use for your IO operations.
-The consequence of this fact is that IO operations are heavily based on system calls (i.e. calling the operating system directly).
+It's the OS that manages the IO resource that you want to use for your IO operations.
+The consequence of this fact is that IO operations are heavily based on system calls (i.e., calling the operating system directly).
 
 Just to be clear, there is nothing particularly wrong with system calls. We use them all the time on
 any serious codebase written in any low-level programming language. However, system calls are
 always orders of magnitude slower than many different types of operations.
 
 So is perfectly fine to use a system call once in a while. But when these system calls are used often,
-you can clearly notice most of the time the loss of performance in your application. So, the good rule of thumbs
-is to use a system call only when it is needed, and also, only in infrequent situations, to reduce
+you can clearly notice most of the time the loss of performance in your application. So, the good rule of thumb
+is to use a system call only when it's needed, and also, only in infrequent situations, to reduce
 the number of system calls performed to a minimum.
 
 
 ### Understanding how buffered IO works
 
-Buffered IO is a strategy to achieve better performance. It is used to reduce the number of system calls made by IO operations, and, as
+Buffered IO is a strategy to achieve better performance. It's used to reduce the number of system calls made by IO operations, and, as
 consequence, achieve a much higher performance. In @fig-unbuffered-io and @fig-buffered-io you can find two different diagrams
 which presents the difference between read operations performed in an unbuffered IO environment versus a buffered IO environment.
 
@@ -306,7 +306,7 @@ More precisely, in the diagram exposed in @fig-unbuffered-io we get one system c
 On the other hand, in @fig-buffered-io we have only one system call at the very beginning.
 
 When we use a buffered IO system, at the first read operation we perform, instead of sending one single byte directly
-to our program, the OS first sends a chunk of bytes from the file to a buffer object (i.e. an array).
+to our program, the OS first sends a chunk of bytes from the file to a buffer object (i.e., an array).
 This chunk of bytes are cached/stored inside this buffer object.
 
 Therefore, from now on, for every new read operation that you perform, instead of making a new system call to ask
@@ -323,7 +323,7 @@ this next byte already cached and ready to go.
 
 
 
-This is the basic logic behind buffered IO systems. The size of the buffer object depends on multiple factors. But it is usually
+This is the basic logic behind buffered IO systems. The size of the buffer object depends on multiple factors. But it's usually
 equal to the size of a full page of memory (4096 bytes). If we follow this logic, then, the OS reads the first 4096 bytes
 of the file and caches it into the buffer object. As long as your program does not consume all of these 4096 bytes from the buffer,
 you will not create new system calls.
@@ -339,7 +339,7 @@ IO operations made through a `FILE` pointer in C are buffered
 by default, so, at least in C, you don't need to worry about this subject. But in contrast, IO operations in both Rust and Zig are not
 buffered depending on which functions from the standard libraries that you are using.
 
-For example, in Rust, buffered IO is implemented through the `BufReader` and `BufWriter` structs, while in Zig, it is implemented
+For example, in Rust, buffered IO is implemented through the `BufReader` and `BufWriter` structs, while in Zig, it's implemented
 through the `BufferedReader` and `BufferedWriter` structs.
 So any IO operation that you perform through the `GenericWriter` and `GenericReader` objects
 that I presented in @sec-writer-reader are not buffered, which means that these objects
@@ -410,7 +410,7 @@ and have the exact same methods. So, although these two types of objects perform
 they have the same interface, so you, the programmer, can interchangeably use them
 without the need to change anything in your source code.
 So a buffered IO reader or a buffered IO writer objects have the same methods than its generic and unbuffered brothers,
-i.e. the generic reader and generic writer objects that I presented in @sec-writer-reader.
+i.e., the generic reader and generic writer objects that I presented in @sec-writer-reader.
 
 ::: {.callout-tip}
 In general, you should always use a buffered IO reader or a buffered IO writer object to perform
@@ -429,15 +429,15 @@ computer are considered an IO resource, as we described in @sec-file-descriptor.
 ### The concept of current working directory (CWD)
 
 The working directory is the folder on your computer where you are currently rooted at.
-In other words, it is the folder that your program is currently looking at.
+In other words, it's the folder that your program is currently looking at.
 Therefore, whenever you are executing a program, this program is always working with
-a specific folder on your computer. It is always in this folder that the program will initially
-look for the files you require, and it is also in this folder that the program
+a specific folder on your computer. It's always in this folder that the program will initially
+look for the files you require, and it's also in this folder that the program
 will initially save all the files you ask it to save.
 
 The working directory is determined by the folder from which you invoke your program
 in the terminal. In other words, if you are in the terminal of your OS, and you
-execute a binary file (i.e. a program) from this terminal, the folder to which your terminal
+execute a binary file (i.e., a program) from this terminal, the folder to which your terminal
 is pointing at is the current working directory of your program that is being executed.
 
 In @fig-cwd we have an example of me executing a program from the terminal. We are executing
@@ -461,12 +461,12 @@ current working directory, you must provide a path to that file or folder.
 A path is essentially a location. It points to a location in your filesystem. We use
 paths to describe the location of files and folders in our computer.
 One important aspect about paths is that they are always written inside strings,
-i.e. they are always provided as text values.
+i.e., they are always provided as text values.
 
 There are two types of paths that you can provide to any program in any OS: a relative path, or an absolute path.
 Absolute paths are paths that start at the root of your filesystem, and go all the way to the file name or the specific folder
 that you are referring to. This type of path is called absolute, because it points to an unique and absolute location on your computer.
-That is, there is no other existing location on your computer that corresponds to this path. It is an unique identifier.
+That is, there is no other existing location on your computer that corresponds to this path. It's an unique identifier.
 
 In Windows, an absolute path is a path that starts with a hard disk identifier (e.g. `C:/Users/pedro`).
 On the other hand, absolute paths in Linux and macOS, are paths that start with a forward slash character (e.g. `/usr/local/bin`).
@@ -545,7 +545,7 @@ and it will create the file by following this path, which is relative to the CWD
 
 This function might return an error, so, you should use `try`, `catch`, or any of the other methods presented
 in @sec-error-handling to handle the possible error. But if everything goes well,
-this `createFile()` method returns a file descriptor object (i.e. a `File` object) as result,
+this `createFile()` method returns a file descriptor object (i.e., a `File` object) as result,
 through which you can add content to the file with the IO operations that I presented before.
 
 Take this code example below. In this example, we are creating a new text file
@@ -585,7 +585,7 @@ in erase all the contents of the existing file.
 
 If you don't want this to happen, meaning, that you don't want to overwrite
 the contents of the existing file, but you want to write data to this file anyway
-(i.e. you want to append data to the file), you should use the `openFile()`
+(i.e., you want to append data to the file), you should use the `openFile()`
 method from the `Dir` object.
 
 Another important aspect about `createFile()` is that this method creates a file
@@ -702,7 +702,7 @@ try cwd.deleteFile("foo.txt");
 ### Copying files
 
 To copy existing files, we use the `copyFile()` method. The first argument in this method
-is the path to the file that you want to copy. The second argument is a `Dir` object, i.e. a directory handler,
+is the path to the file that you want to copy. The second argument is a `Dir` object, i.e., a directory handler,
 more specifically, a `Dir` object that points to the folder in your computer where you want to
 copy the file to. The third argument is the new path of the file, or, in other words, the new location
 of the file. The fourth argument is the options (or flags) to be used in the copy operation.
