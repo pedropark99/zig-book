@@ -173,7 +173,7 @@ increase_indentation__ <- function(code_without_main) {
 #' This function is used to get the value of the `auto_main` code block option.
 #' The `auto_main` code block option is used to specify if the Zig code written
 #' in the current code block should (or should not) be encapsulated inside a
-#' `main()` function, before it get's sent to the Zig compiler to be compiled.
+#' `main()` function, before it gets sent to the Zig compiler to be compiled.
 #'
 #' If the user did not configured/setted this
 #' specific option in the current code block that is being analyzed,
@@ -236,7 +236,7 @@ get_build_type <- function(options) {
 #' @param options The list of code block options.
 #'
 #' @return The knitr engine output, which contains the output of the Zig code
-#'     (i.e. the output of the executable compiled from this Zig code).
+#'     (i.e., the output of the executable compiled from this Zig code).
 zig_engine <- function(options) {
   code <- str_flatten(options$code, "\n")
   if (!options$eval) {
@@ -297,7 +297,7 @@ write_zig <- function(zig_code) {
 #' @param options The list of code block options.
 #'
 #' @return The knitr engine output, which contains the output of the Zig code
-#'     (i.e. the output of the executable compiled from this Zig code).
+#'     (i.e., the output of the executable compiled from this Zig code).
 zig_run <- function(zig_code, options) {
   if (get_auto_main(options)) {
     zig_code <- generate_main(zig_code)
@@ -348,7 +348,7 @@ zig_build_lib <- function(zig_code, options) {
 #' @param options The list of code block options.
 #'
 #' @return The knitr engine output, which contains the output of the Zig code
-#'     (i.e. the output of the executable compiled from this Zig code).
+#'     (i.e., the output of the executable compiled from this Zig code).
 zig_test <- function(zig_code, options) {
   file_path <- write_zig(zig_code)
   output <- zig_compile_file(file_path, "test")
@@ -361,7 +361,7 @@ zig_test <- function(zig_code, options) {
 #' Check syntax of Zig code with ast-check.
 #'
 #' This function is normally used only on code blocks that are not evaluated
-#' (i.e. `eval: false`). This function receives some Zig source code as input,
+#' (i.e., `eval: false`). This function receives some Zig source code as input,
 #' and then, it writes this source code to a Zig file (`*.zig`), then, it checks
 #' if the syntax of the source code in this file is correct, by using the
 #' `zig ast-check` command
@@ -370,7 +370,7 @@ zig_test <- function(zig_code, options) {
 #' @param options The list of code block options.
 #'
 #' @return The knitr engine output, which contains the output of the Zig code
-#'     (i.e. the output of the executable compiled from this Zig code).
+#'     (i.e., the output of the executable compiled from this Zig code).
 zig_ast_check <- function(zig_code, options) {
   if (get_auto_main(options)) {
     zig_code <- generate_main(zig_code)

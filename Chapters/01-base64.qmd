@@ -54,7 +54,7 @@ take a look at @sec-encode-vs-decode.
 ### The base64 scale {#sec-base64-scale}
 
 The base64 encoding system is based on a scale that goes from 0 to 63 (hence the name).
-Each index in this scale is represented by a character (it is a scale of 64 characters).
+Each index in this scale is represented by a character (it's a scale of 64 characters).
 So, in order to convert some binary data, to the base64 encoding, we need to convert each binary number to the corresponding
 character in this "scale of 64 characters".
 
@@ -95,7 +95,7 @@ We retrieve the character that we need directly from memory.
 
 We can start building a Zig struct to store our base64 decoder/encoder logic.
 We start with the `Base64` struct below. For now, we only have one single data member in this
-struct, i.e. the member `_table`, which represents our lookup table. We also have an `init()` method,
+struct, i.e., the member `_table`, which represents our lookup table. We also have an `init()` method,
 to create a new instance of a `Base64` object, and, a `_char_at()` method, which is a
 "get character at index $x$" type of function.
 
@@ -123,7 +123,7 @@ const Base64 = struct {
 
 
 In other words, the `_char_at()` method is responsible for getting the character in the lookup
-table (i.e. the `_table` struct data member) that corresponds to a particular index in the
+table (i.e., the `_table` struct data member) that corresponds to a particular index in the
 "base64 scale". So, in the example below, we know that the character that corresponds to the
 index 28 in the "base64 scale" is the character "c".
 
@@ -155,11 +155,11 @@ into 4 characters from the base64 scale. It keeps iterating through the input st
 per iteration. It keeps iterating, and producing these "new characters"
 until it hits the end of the input string.
 
-Now, you may think, what if you have a particular string that have a number of bytes
-that is not divisible by 3? What happens? For example, if you have a string
-that contains only two characters/bytes, such as "Hi". How the
-algorithm would behave in such situation? You find the answer at @fig-base64-algo1.
-You can see at @fig-base64-algo1 that the string "Hi", when converted to base64,
+Now you may think, what if you have a particular string that has a number of bytes
+that is not divisible by 3 - what happens? For example, if you have a string
+that contains only two characters/bytes, such as "Hi". How would the algorithm
+behave in such situation? You find the answer in @fig-base64-algo1.
+You can see in @fig-base64-algo1 that the string "Hi", when converted to base64,
 becomes the string "SGk=":
 
 ![The logic behind a base64 encoder](./../Figures/base64-encoder-flow.png){#fig-base64-algo1}
@@ -168,11 +168,11 @@ Taking the string "Hi" as an example, we have 2 bytes, or, 16 bits in total. So,
 to complete the window of 24 bits that the base64 algorithm likes to work on. The first thing that
 the algorithm does, is to check how to divide the input bytes into groups of 6 bits.
 
-If the algorithm notices that there is a group of 6 bits that, have some bits in it, but, at the same time, it is not full
-(in other words, $0 < nbits < 6$, being $nbits$ the number of bits), meaning that, it lacks
-some bits to fill the 6-bits requirement, the algorithm simply add extra zeros in this group
-to fill the space that it needs. That is why at @fig-base64-algo1, on the third group after the 6-bit transformation,
-2 extra zeros were added to fill the gap in this group.
+If the algorithm notices that there is a group of 6 bits that it's not complete, meaning that, this group contains $nbits$, where $0 < nbits < 6$,
+
+the algorithm simply adds extra zeros in this group to fill the space that it needs.
+That is why in @fig-base64-algo1, in the third group after the 6-bit transformation,
+2 extra zeros were added to fill the gap.
 
 When we have a 6-bit group that is not completely full, like the third group, extra zeros
 are added to fill the gap. But what about when an entire 6-bit group is empty, or, it
@@ -190,7 +190,7 @@ of meaningful characters in the sequence. Hence, everytime that the algorithm pr
 As another example, if you give the string "0" as input to a base64 encoder, this string is
 translated into the base64 sequence "MA==".
 The character "0" is, in binary, the sequence `00110000`[^zero-note]. So, with the 6-bit transformation
-exposed at @fig-base64-algo1, this single character would produce these two 6-bit groups: `001100`, `000000`.
+exposed in @fig-base64-algo1, this single character would produce these two 6-bit groups: `001100`, `000000`.
 The remaining two 6-bit groups become "padding groups". That is why the last
 two characters in the output sequence (MA==) are `==`.
 
@@ -201,7 +201,7 @@ two characters in the output sequence (MA==) are `==`.
 
 The algorithm behind a base64 decoder is essentially the inverse process of a base64 encoder.
 A base64 decoder needs to translate base64 messages back into their original meaning,
-i.e. into the original sequence of binary data.
+i.e., into the original sequence of binary data.
 
 A base64 decoder usually works on a window of 4 bytes. Because it wants to convert these 4 bytes
 back into the original sequence of 3 bytes, that was converted into 4 groups of 6 bits by the
@@ -211,7 +211,7 @@ by the base64 encoder.
 Each byte in the input string (the base64 encoded string) normally contributes to re-create
 two different bytes in the output (the original binary data).
 In other words, each byte that comes out of a base64 decoder is created by transforming merging two different
-bytes in the input together. You can visualize this relationship at @fig-base64-algo2:
+bytes in the input together. You can visualize this relationship in @fig-base64-algo2:
 
 ![The logic behind a base64 decoder](./../Figures/base64-decoder-flow.png){#fig-base64-algo2}
 
@@ -220,7 +220,7 @@ into the bytes of the output, are a bit tricky to visualize in a figure like thi
 summarized these transformations as "Some bit shifting and additions ..." in the figure. These transformations
 will be described in depth later.
 
-Besides that, if you look again at @fig-base64-algo2, you will notice that the character `=` was completely
+Besides that, if you look again in @fig-base64-algo2, you will notice that the character `=` was completely
 ignored by the algorithm. Remember, this is just a special character that marks the end of meaningful characters
 in the base64 sequence. So, every `=` character in a base64 encoded sequence should be ignored by a base64 decoder.
 
@@ -229,7 +229,7 @@ in the base64 sequence. So, every `=` character in a base64 encoded sequence sho
 
 If you don't have any previous experience with base64, you might not understand the differences
 between "encode" and "decode". Essentially, the terms "encode" and "decode" here
-have the exact same meaning as they have in the field of encryption (i.e. they mean the same thing as "encode" and "decode" in hashing
+have the exact same meaning as they have in the field of encryption (i.e., they mean the same thing as "encode" and "decode" in hashing
 algorithms, like the MD5 algorithm).
 
 Thus, "encode" means that we want to encode, or, in other words, we want to translate some message into
@@ -242,7 +242,7 @@ So, in this process we get a sequence of base64 characters as input, and produce
 the binary data that is represented by this sequence of base64 characters.
 
 Any base64 library is normally composed of these two parts: 1) the encoder, which is a function that encodes
-(i.e. it converts) any sequence of binary data into a sequence of base64 characters; 2) the decoder, which is a function
+(i.e., it converts) any sequence of binary data into a sequence of base64 characters; 2) the decoder, which is a function
 that converts a sequence of base64 characters back into the original sequence of binary data.
 
 
@@ -283,15 +283,15 @@ fn _calc_encode_length(input: []const u8) !usize {
 
 
 Also, you might have notice that, if the input length is less than 3 bytes, then, the output length of the encoder is
-always 4 bytes. This is the case for every input with less than 3 bytes, because, as I described at @sec-base64-encoder-algo,
+always 4 bytes. This is the case for every input with less than 3 bytes, because, as I described in @sec-base64-encoder-algo,
 the algorithm always produces enough "padding-groups" in the end result, to complete the 4 bytes window.
 
 Now, for the decoder, we just need to apply the inverse logic: for each 4 bytes in the input, 3 bytes
 will be produced in the output of the decoder. I mean, this is roughly true, because we also need to
-take the `=` character into account, which is always ignored by the decoder, as we described at @sec-base64-decoder-algo, and,
-at @fig-base64-algo2. But we can ignore this fact for now, just to keep things simple.
+take the `=` character into account, which is always ignored by the decoder, as we described in @sec-base64-decoder-algo, and,
+in @fig-base64-algo2. But we can ignore this fact for now, just to keep things simple.
 
-The function `_calc_decode_length()` exposed below summarizes this logic that we described. It is very similar
+The function `_calc_decode_length()` exposed below summarizes this logic that we described. It's very similar
 to the function `_calc_encode_length()`. Only the division part is twisted, and also, in the special
 case where we have less than 4 bytes in the input to work on. Also notice that this time, we apply
 a floor operation over the output of the division, by using the `divFloor()`
@@ -329,7 +329,7 @@ this book[^zig-base64-algo].
 
 ### The 6-bit transformation {#sec-6bit-transf}
 
-The 6-bit transformation presented at @fig-base64-algo1 is the core part of the base64 encoder algorithm.
+The 6-bit transformation presented in @fig-base64-algo1 is the core part of the base64 encoder algorithm.
 By understanding how this transformation is made in code, the rest of the algorithm becomes much simpler
 to comprehend.
 
@@ -425,13 +425,13 @@ you have, and change them in some way. This ultimately also changes
 the value itself, because the binary representation of this value
 changes.
 
-We have already seen at @fig-encoder-bitshift the effect produced by a bit-shift.
+We have already seen in @fig-encoder-bitshift the effect produced by a bit-shift.
 But let's use the first byte in the output of the base64 encoder as another example of what
 bit-shifting means. This is the easiest byte of the 4 bytes in the output
 to build. Because we only need to move the bits from the first byte in the input two positions to the right,
 with the *bit shift to the right* (`>>`) operator.
 
-If we take the string "Hi" that we used at @fig-base64-algo1 as an example, the first byte in
+If we take the string "Hi" that we used in @fig-base64-algo1 as an example, the first byte in
 this string is "H", which is the sequence `01001000` in binary.
 If we move the bits of this byte, two places to the right, we get the sequence `00010010` as result.
 This binary sequence is the value `18` in decimal, and also, the value `0x12` in hexadecimal.
@@ -512,7 +512,7 @@ pub fn main() !void {
 
 ### Allocating space for the output
 
-As I described at @sec-stack, to store an object in the stack,
+As I described in @sec-stack, to store an object in the stack,
 this object needs to have a known and fixed length at compile-time. This is an important
 limitation for our base64 encoder/decoder case. Because the size of
 the output (from both the encoder and decoder) depends
@@ -525,7 +525,7 @@ this means that we cannot store the output for both the encoder
 and decoder in the stack.
 
 Consequently, we need to store this output on the heap,
-and, as I commented at @sec-heap, we can only
+and, as I commented in @sec-heap, we can only
 store objects in the heap by using allocator objects.
 So, one the arguments to both the `encode()` and `decode()`
 functions, needs to be an allocator object, because
@@ -544,8 +544,8 @@ the type `std.mem.Allocator` from the Zig Standard Library.
 
 Now that we have a basic understanding on how the bitwise operators work, and how
 exactly they help us to achieve the result we want to achieve. We can now encapsulate
-all the logic that we have described at @fig-base64-algo1 and @tbl-transf-6bit into a nice
-function that we can add to our `Base64` struct definition, that we started at @sec-base64-table.
+all the logic that we have described in @fig-base64-algo1 and @tbl-transf-6bit into a nice
+function that we can add to our `Base64` struct definition, that we started in @sec-base64-table.
 
 You can find the `encode()` function below. Notice that the first argument of this function,
 is the `Base64` struct itself. Therefore, this argument clearly signals
@@ -561,7 +561,7 @@ Furthermore, this `encode()` function has two other arguments:
 1. `input` is the input sequence of characters that you want to encode in base64;
 1. `allocator` is an allocator object to use in the necessary memory allocations.
 
-I described everything you need to know about allocator objects at @sec-allocators.
+I described everything you need to know about allocator objects in @sec-allocators.
 So, if you are not familiar with them, I highly recommend you to comeback to
 that section, and read it.
 By looking at the `encode()` function, you will see that we use this
@@ -644,7 +644,7 @@ pub fn encode(self: Base64,
 
 Now, we can focus on writing the base64 decoder logic. Remember from @fig-base64-algo2 that,
 a base64 decoder does the inverse process of an encoder. So, all we need to do, is to
-write a `decode()` function that performs the inverse process that I exposed at @sec-encoder-logic.
+write a `decode()` function that performs the inverse process that I exposed in @sec-encoder-logic.
 
 
 ### Mapping base64 characters to their indexes {#sec-map-base64-index}
@@ -667,9 +667,9 @@ If these characters match, then, we return the index of this character in the
 base64 scale as the result.
 
 Notice that, if the input character is `'='`, the function returns the index 64, which is
-"out of range" in the scale. But, as I described at @sec-base64-scale,
+"out of range" in the scale. But, as I described in @sec-base64-scale,
 the character `'='` does not belong to the base64 scale itself.
-It is a special and meaningless character in base64.
+It's a special and meaningless character in base64.
 
 Also notice that this `_char_index()` function is a method from our `Base64` struct,
 because of the `self` argument. Again, I have omitted the `Base64` struct definition in this example
@@ -724,12 +724,12 @@ So, the steps to produce the 3 bytes in the output are:
 
 
 Before we continue, let's try to visualize how these transformations make the original bytes that we had
-before the encoding process. First, think back to the 6-bit transformation performed by the encoder exposed at @sec-encoder-logic.
+before the encoding process. First, think back to the 6-bit transformation performed by the encoder exposed in @sec-encoder-logic.
 The first byte in the output of the encoder is produced by moving the bits in the first byte of the input two positions to the right.
 
 If for example the first byte in the input of the encoder was the sequence `ABCDEFGH`, then, the first byte in the output of the encoder would be
 `00ABCDEF` (this sequence would be the first byte in the input of the decoder). Now, if the second byte in the input of the encoder was the sequence
-`IJKLMNOP`, then, the second byte in the encoder output would be `00GHIJKL` (as we demonstrated at @fig-encoder-bitshift).
+`IJKLMNOP`, then, the second byte in the encoder output would be `00GHIJKL` (as we demonstrated in @fig-encoder-bitshift).
 
 Hence, if the sequences `00ABCDEF` and `00GHIJKL` are the first and second bytes, respectively, in the input of the decoder, the
 @fig-decoder-bitshift demonstrates visually how these two bytes are transformed into the first byte of the output of the decoder.
