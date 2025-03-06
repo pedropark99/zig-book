@@ -56,7 +56,7 @@ If you do have a Revolut account, you can scan the following QR code:
 
 ## About this book
 
-This is an open (i.e. it is open-source), technical and introductory book for the [Zig programming language](https://ziglang.org/),
+This is an open (i.e., open-source), technical and introductory book for the [Zig programming language](https://ziglang.org/),
 which is a new general purpose, and low-level programming language for building optimal and robust software.
 
 Official repository of the book: <https://github.com/pedropark99/zig-book>.
@@ -138,5 +138,3 @@ slower than the first one, but is more garanteed to work.
 Copyright © 2024 Pedro Duarte Faria. This book is licensed by the CC-BY 4.0 Creative Commons Attribution 4.0 International Public License.
 
 <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a>
-
-

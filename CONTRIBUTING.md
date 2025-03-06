@@ -16,7 +16,7 @@ on the official repository of the project:
 - to give a feedback, or, a suggestion of improvement.
 - to point out an error in the book. This error can be:
     - a typo;
-    - it might also be an error in the code examples (i.e. the code example doesn't work when it is supposed to work);
+    - it might also be an error in the code examples (i.e., the code example doesn't work when it is supposed to work);
     - a knowledge error in the book, meaning that, there is a mistake in the technical explanation of a subject.
 
 Now, maybe, you want to do something more than just open an issue. Maybe you want to actually
@@ -35,4 +35,3 @@ If you've never done this before, the process is very easy:
 
 If you send a Pull Request with significant changes, you need to include the phrase "I assign the copyright of this contribution
 to Pedro Duarte Faria" in the description of your Pull Request - I need this so I can publish the book.
-
