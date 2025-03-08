@@ -2,6 +2,14 @@ library(knitr)
 library(readr)
 library(stringr)
 
+
+minimum_zig_compiler_version <- list(
+  maj_version = 0,
+  min_version = 14,
+  patch_version = 0
+)
+
+
 #' Find path to the Zig compiler in the current machine.
 #'
 #' This function is used to find the full path to the Zig compiler
@@ -61,11 +69,113 @@ find_in_path_ <- function() {
 }
 
 
+
+#' Check Zig compiler version.
+#'
+#' This function will check if the Zig compiler that was found
+#' in the current machine have the minimum required version to
+#' compiler the book.
+check_zig_compiler_version <- function() {
+  fv <- get_zig_compiler_version()
+  ev <- minimum_zig_compiler_version
+  if (fv$maj_version > ev$maj_version) {
+    return()
+  }
+
+  if (fv$maj_version == ev$maj_version) {
+    if (fv$min_version > ev$min_version) {
+      return()
+    }
+
+    if (fv$min_version == ev$min_version
+        && fv$patch_version >= ev$patch_version) {
+      return()
+    }
+  }
+
+  fvmsg <- sprintf(
+    "compiler have a version of %d.%d.%d, ",
+    fv$maj_version, fv$min_version, fv$patch_version
+  )
+  evmsg <- sprintf(
+    "but we expected a compiler with minimum version of %d.%d.%d ",
+    ev$maj_version, ev$min_version, ev$patch_version
+  )
+
+  msg <- paste(
+    c(
+      "[ERROR]: We found a Zig compiler in your computer. However, this ",
+      fvmsg, evmsg,
+      "to compile this book."
+    ),
+    sep = "",
+    collapse = ""
+  )
+
+  stop(msg)
+}
+
+
+
+
+#' Get Zig compiler version.
+#'
+#' This function can be used to get the version of the Zig
+#' compiler that was found in the current machine.
+get_zig_compiler_version <- function() {
+  zig_cmd_path <- getOption("zig_exe_path")
+  output <- system2(
+    zig_cmd_path,
+    shQuote("version"),
+    stdout = TRUE,
+    stderr = TRUE
+  )
+  version <- parse_semantic_version(output)
+  return(version)
+}
+
+
+
+#' Parse a semantic version value.
+#'
+#' This function can be used to parse a semantic version value.
+#'
+#' @param input A string containing the semantic version value to parse.
+parse_semantic_version <- function(input) {
+  regex_str <- "^([0-9])[.]([0-9]+)[.]([0-9]+)"
+  maj_version <- str_extract(input, regex_str, group = 1)
+  min_version <- str_extract(input, regex_str, group = 2)
+  patch_version <- str_extract(input, regex_str, group = 3)
+
+  return(list(
+    maj_version = as.integer(maj_version),
+    min_version = as.integer(min_version),
+    patch_version = as.integer(patch_version)
+  ))
+}
+
+
+
+
+
+
+
+
+
 # The full path to the Zig compiler is registered in the R process
 # inside the global option `zig_exe_path`. And you can retrieve the
 # value registered in this option with `getOption("zig_exe_path")`.
 options(zig_exe_path = find_zig_())
 options(width = 50)
+check_zig_compiler_version()
+
+
+
+
+
+
+
+
 
 
 
