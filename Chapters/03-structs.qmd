@@ -759,7 +759,7 @@ const User = struct {
     name: []const u8,
     email: []const u8,
 
-    pub fn init(id: u64,
+    fn init(id: u64,
                 name: []const u8,
                 email: []const u8) User {
 
@@ -770,7 +770,7 @@ const User = struct {
         };
     }
 
-    pub fn print_name(self: User) !void {
+    fn print_name(self: User) !void {
         try stdout.print("{s}\n", .{self.name});
     }
 };
@@ -781,21 +781,125 @@ pub fn main() !void {
 }
 ```
 
+
+
+### The `pub` keyword
+
 The `pub` keyword plays an important role in struct declarations, and OOP in Zig.
-Every method that you declare in your struct that is marked with the keyword `pub`,
-becomes a public method of this particular struct.
+In essence, this keyword is short for "public", and it makes an item/component available outside of the
+module where this item/component is declared. In other words, if I don't apply the `pub` keyword on
+something, it means that this "something" is available to be called/used only from within the module
+where this "something" is declared.
 
-So every method that you create inside your struct, is, at first, a private method
-of that struct. Meaning that, this method can only be called from within this
-struct. But, if you mark this method as public, with the keyword `pub`, then,
-you can call the method directly from an instance of the `User` struct.
+To demonstrate the effect of this keyword let's focus again on the `User` struct that we have
+declared on the previous section. For our example here, let's suppose that this `User` struct is declared inside
+a Zig module named `user.zig`. If I don't use the `pub` keyword on the `User` struct, it means that I can create
+an `User` object, and call it's methods (`print_name()` and `init()`) only from within the module where the `User`
+struct is declared, which in this case is the `user.zig` module.
 
-In other words, the functions marked by the keyword `pub`
-are members of the public API of that struct.
-For example, if I did not mark the `print_name()` method as public,
-then, I could not execute the line `u.print_name()`. Because I would
-not be authorized to call this method directly in my code.
+This is why the previous code example works fine. Because we declare and also use the `User` struct
+inside the same module. But problems start to arise when we try to import and call/use this struct
+from another module. For example, if I create a new module called `register.zig`, and import the `user.zig`
+module into it, and try to annotate any variable with the `User` type, I get an error from the compiler.
 
+```zig
+// register.zig
+const user = @import("user.zig");
+pub fn main() !void {
+    const u: user.User = undefined;
+    _ = u;
+}
+```
+
+```
+register.zig:3:18: error: 'User' is not marked 'pub'
+    const u: user.User = undefined;
+             ~~~~^~~~~
+user.zig:3:1: note: declared here
+const User = struct {
+^~~~~
+```
+
+Therefore, if you want to use something outside of the module where this "something" is declared,
+you have to mark it with the `pub` keyword. This "something" can be a module,
+a struct, a function, an object, etc.
+
+For our example here, if we go back to the `user.zig` module, and add the `pub` keyword
+to the `User` struct declaration, then, I can successfully compile the `register.zig` module.
+
+```zig
+// user.zig
+// Added the `pub` keyword to `User`
+pub const User = struct {
+// ...
+```
+
+```zig
+// register.zig
+// This works fine now!
+const user = @import("user.zig");
+pub fn main() !void {
+    const u: user.User = undefined;
+    _ = u;
+}
+```
+
+
+Now, what do you think it will happen if I try to actually call from `register.zig` any of the methods
+of the `User` struct? For example, if I try to call the `init()` method? The answer is: I get a similar error message,
+warning me that the `init()` method is not marked as `pub`, as you can see below:
+
+```zig
+const user = @import("user.zig");
+pub fn main() !void {
+    const u: user.User = user.User.init(
+        1, "pedro", "email@gmail.com"
+    );
+    _ = u;
+}
+```
+
+```
+register.zig:3:35: error: 'init' is not marked 'pub'
+    const u: user.User = user.User.init(
+                         ~~~~~~~~~^~~~~
+user.zig:8:5: note: declared here
+    fn init(id: u64,
+    ^~~~~~~
+```
+
+Thus, just because we have applied the `pub` keyword on the struct declaration,
+this does not make the methods of that struct public as well. If we want to use
+any method from a struct (such as the `init()` method) outside of the module
+where this struct is declared, we have to mark this method with the `pub` keyword
+as well.
+
+Going back to the `user.zig` module, and marking both the `init()` and `print_name()`
+methods with the `pub` keyword, makes them both available to the outside world, and,
+as consequence, makes the previous code example work.
+
+
+```zig
+// user.zig
+// Added the `pub` keyword to `User.init`
+    pub fn init(
+// ...
+// Added the `pub` keyword to `User.print_name`
+    pub fn print_name(self: User) !void {
+// ...
+```
+
+```zig
+// register.zig
+// This works fine now!
+const user = @import("user.zig");
+pub fn main() !void {
+    const u: user.User = user.User.init(
+        1, "pedro", "email@gmail.com"
+    );
+    _ = u;
+}
+```
 
 
 ### Anonymous struct literals {#sec-anonymous-struct-literals}
