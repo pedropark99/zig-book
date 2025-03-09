@@ -58,10 +58,10 @@ Each index in this scale is represented by a character (it's a scale of 64 chara
 So, in order to convert some binary data, to the base64 encoding, we need to convert each binary number to the corresponding
 character in this "scale of 64 characters".
 
-The base64 scale starts with all ASCII uppercase letters (A to Z) which represents
-the first 25 indexes in this scale (0 to 25). After that, we have all ASCII lowercase letters
-(a to z), which represents the range 26 to 51 in the scale. After that, we
-have the one digit numbers (0 to 9), which represents the indexes from 52 to 61 in the scale.
+The base64 scale starts with all ASCII uppercase letters (A to Z) which represent
+the first 26 indexes in this scale (0 to 25). After that, we have all ASCII lowercase letters
+(a to z), which represent the range 26 to 51 in the scale. After that, we
+have the one digit numbers (0 to 9), which represent the indexes from 52 to 61 in the scale.
 Finally, the last two indexes in the scale (62 and 63) are represented by the characters `+` and `/`,
 respectively.
 
@@ -69,7 +69,7 @@ These are the 64 characters that compose the base64 scale. The equal sign charac
 but it is a special character in the base64 encoding system. This character is used solely as a suffix, to mark the end of the character sequence,
 or, to mark the end of meaningful characters in the sequence.
 
-The bullet points below summarises the base64 scale:
+The bullet points below summarise the base64 scale:
 
 - range 0 to 25 is represented by: ASCII uppercase letters `-> [A-Z]`;
 - range 26 to 51 is represented by: ASCII lowercase letters `-> [a-z]`;
@@ -88,7 +88,7 @@ is to replace a runtime calculation (which can take a long time to be done) with
 operation.
 
 Instead of calculating the results everytime you need them, you calculate all possible results at once, and then, you store them in an array
-(which behaves lake a "table"). Then, every time you need to use one of the characters in the base64 scale, instead of
+(which behaves like a "table"). Then, every time you need to use one of the characters in the base64 scale, instead of
 using many resources to calculate the exact character to be used, you simply retrieve this character
 from the array where you stored all the possible characters in the base64 scale.
 We retrieve the character that we need directly from memory.
@@ -146,7 +146,7 @@ Character at index 28: c
 ### A base64 encoder {#sec-base64-encoder-algo}
 
 The algorithm behind a base64 encoder usually works on a window of 3 bytes. Because each byte has
-8 bits, so, 3 bytes forms a set of $8 \times 3 = 24$ bits. This is desirable for the base64 algorithm, because
+8 bits, so, 3 bytes form a set of $8 \times 3 = 24$ bits. This is desirable for the base64 algorithm, because
 24 bits is divisible by 6, which forms $24 / 6 = 4$ groups of 6 bits each.
 
 Therefore, the base64 algorithm works by converting 3 bytes at a time
@@ -158,7 +158,7 @@ until it hits the end of the input string.
 Now you may think, what if you have a particular string that has a number of bytes
 that is not divisible by 3 - what happens? For example, if you have a string
 that contains only two characters/bytes, such as "Hi". How would the algorithm
-behave in such situation? You find the answer in @fig-base64-algo1.
+behave in such a situation? You find the answer in @fig-base64-algo1.
 You can see in @fig-base64-algo1 that the string "Hi", when converted to base64,
 becomes the string "SGk=":
 
@@ -168,9 +168,9 @@ Taking the string "Hi" as an example, we have 2 bytes, or, 16 bits in total. So,
 to complete the window of 24 bits that the base64 algorithm likes to work on. The first thing that
 the algorithm does, is to check how to divide the input bytes into groups of 6 bits.
 
-If the algorithm notices that there is a group of 6 bits that it's not complete, meaning that, this group contains $nbits$, where $0 < nbits < 6$,
+If the algorithm notices that there is a group of 6 bits that is not complete, meaning that, this group contains $nbits$, where $0 < nbits < 6$,
 
-the algorithm simply adds extra zeros in this group to fill the space that it needs.
+the algorithm simply adds extra zeros to this group to fill the space that it needs.
 That is why in @fig-base64-algo1, in the third group after the 6-bit transformation,
 2 extra zeros were added to fill the gap.
 
@@ -208,9 +208,9 @@ back into the original sequence of 3 bytes, that was converted into 4 groups of 
 base64 encoder. Remember, in a base64 decoder we are essentially reverting the process made
 by the base64 encoder.
 
-Each byte in the input string (the base64 encoded string) normally contributes to re-create
+Each byte in the input string (the base64 encoded string) normally contributes to recreating
 two different bytes in the output (the original binary data).
-In other words, each byte that comes out of a base64 decoder is created by transforming merging two different
+In other words, each byte that comes out of a base64 decoder is created by transforming and merging two different
 bytes in the input together. You can visualize this relationship in @fig-base64-algo2:
 
 ![The logic behind a base64 decoder](./../Figures/base64-decoder-flow.png){#fig-base64-algo2}
@@ -251,7 +251,7 @@ that converts a sequence of base64 characters back into the original sequence of
 
 One task that we need to do is to calculate how much space we need to reserve for the
 output, both of the encoder and decoder. This is simple math, and can be done easily in Zig
-because every array has its length (its number of elements) easily accesible by consulting
+because every array has its length (its number of elements) easily accessible by consulting
 the `.len` property of the array.
 
 For the encoder, the logic is the following: for each 3 bytes that we find in the input,
@@ -282,7 +282,7 @@ fn _calc_encode_length(input: []const u8) !usize {
 ```
 
 
-Also, you might have notice that, if the input length is less than 3 bytes, then, the output length of the encoder is
+Also, you might notice that, if the input length is less than 3 bytes, then, the output length of the encoder is
 always 4 bytes. This is the case for every input with less than 3 bytes, because, as I described in @sec-base64-encoder-algo,
 the algorithm always produces enough "padding-groups" in the end result, to complete the 4 bytes window.
 
@@ -335,7 +335,7 @@ to comprehend.
 
 In essence, this 6-bit transformation is made with the help of bitwise operators.
 Bitwise operators are essential to any type of low-level operation that is done at the bit-level. For the specific case of the base64 algorithm,
-the operators *bif shift to the left* (`<<`), *bit shift to the right* (`>>`), and the *bitwise and* (`&`) are used. They
+the operators *bit shift to the left* (`<<`), *bit shift to the right* (`>>`), and the *bitwise and* (`&`) are used. They
 are the core solution for the 6-bit transformation.
 
 There are 3 different scenarios that we need to take into account in this transformation. First, is the perfect scenario,
@@ -419,8 +419,8 @@ Here, in the base64 encoder algorithm, they are essential
 to produce the result we want.
 
 For those who are not familiar with these operators, they are
-operators that operates at the bit-level of your values.
-This means that these operators takes the bits that form the value
+operators that operate at the bit-level of your values.
+This means that these operators take the bits that form the value
 you have, and change them in some way. This ultimately also changes
 the value itself, because the binary representation of this value
 changes.
@@ -457,13 +457,13 @@ They both represent the number 18 in decimal, and the value `0x12` in hexadecima
 
 So, don't take the "6-bit group" factor so seriously. We do not need necessarily to
 get a 6-bit sequence as result. As long as the meaning of the 8-bit sequence we get is the same
-of the 6-bit sequence, we are in the clear.
+as the 6-bit sequence, we are in the clear.
 
 
 
 ### Selecting specific bits with the `&` operator
 
-If you comeback to @sec-6bit-transf, you will see that, in order to produce
+If you come back to @sec-6bit-transf, you will see that, in order to produce
 the second and third bytes in the output, we need to select specific
 bits from the first and second bytes in the input string. But how
 can we do that? The answer relies on the *bitwise and* (`&`) operator.
@@ -480,7 +480,7 @@ Otherwise, the corresponding result bit is set to 0 [@microsoftbitwiseand].
 So, if we apply this operator to the binary sequences `1000100` and `00001101`
 the result of this operation is the binary sequence `00000100`. Because only
 at the sixth position in both binary sequences we had a 1 value. So any
-position where we do not have both binary sequences setted to 1, we get
+position where we do not have both binary sequences set to 1, we get
 a 0 bit in the resulting binary sequence.
 
 We lose information about the original bit values
@@ -493,9 +493,9 @@ can we get a new binary sequence which contains only the third and
 fourth bits of this sequence?
 
 We just need to combine this sequence with `00110000` (is `0x30` in hexadecimal) using the `&` operator.
-Notice that only the third and fourth positions in this binary sequence is setted to 1. As a consequence, only the
+Notice that only the third and fourth positions in this binary sequence are set to 1. As a consequence, only the
 third and fourth values of both binary sequences are potentially preserved in the output. All the remaining positions
-are setted to zero in the output sequence, which is `00010000` (is the number 16 in decimal).
+are set to zero in the output sequence, which is `00010000` (is the number 16 in decimal).
 
 ```{zig}
 #| auto_main: false
@@ -527,7 +527,7 @@ and decoder in the stack.
 Consequently, we need to store this output on the heap,
 and, as I commented in @sec-heap, we can only
 store objects in the heap by using allocator objects.
-So, one the arguments to both the `encode()` and `decode()`
+So, one of the arguments to both the `encode()` and `decode()`
 functions, needs to be an allocator object, because
 we know for sure that, at some point inside the body of these
 functions, we need to allocate space on the heap to
@@ -535,14 +535,14 @@ store the output of these functions.
 
 That is why, both the `encode()` and `decode()` functions that I
 present in this book, have an argument called `allocator`,
-which receives a allocator object as input, identified by
+which receives an allocator object as input, identified by
 the type `std.mem.Allocator` from the Zig Standard Library.
 
 
 
 ### Writing the `encode()` function
 
-Now that we have a basic understanding on how the bitwise operators work, and how
+Now that we have a basic understanding of how the bitwise operators work, and how
 exactly they help us to achieve the result we want to achieve. We can now encapsulate
 all the logic that we have described in @fig-base64-algo1 and @tbl-transf-6bit into a nice
 function that we can add to our `Base64` struct definition, that we started in @sec-base64-table.
@@ -562,14 +562,14 @@ Furthermore, this `encode()` function has two other arguments:
 1. `allocator` is an allocator object to use in the necessary memory allocations.
 
 I described everything you need to know about allocator objects in @sec-allocators.
-So, if you are not familiar with them, I highly recommend you to comeback to
+So, if you are not familiar with them, I highly recommend you come back to
 that section, and read it.
 By looking at the `encode()` function, you will see that we use this
 allocator object to allocate enough memory to store the output of
 the encoding process.
 
 The main for loop in the function is responsible for iterating through the entire input string.
-In every iteration, we use a `count` variable to count how many iterations we had at the
+In every iteration, we use a `count` variable to count how many iterations we have at the
 moment. When `count` reaches 3, then, we try to encode the 3 characters (or bytes) that we have accumulated
 in the temporary buffer object (`buf`).
 
@@ -577,7 +577,7 @@ After encoding these 3 characters and storing the result in the `output` variabl
 the `count` variable to zero, and start to count again on the next iteration of the loop.
 If the loop hits the end of the string, and, the `count` variable is less than 3, then, it means that
 the temporary buffer contains the last 1 or 2 bytes from the input.
-That is why we have two `if` statements after the for loop. To deal which each possible case.
+That is why we have two `if` statements after the for loop. To deal with each possible case.
 
 
 ```{zig}
@@ -778,7 +778,7 @@ indexes in `buf` to be converted, and then, we apply the 6-bit transformation
 over the temporary buffer.
 
 Notice that we check if the indexes 2 and 3 in the temporary buffer are the number 64, which, if you recall
-from @sec-map-base64-index, is when the `_calc_index()` function receives a `'='` character
+from @sec-map-base64-index, is when the `_char_index()` function receives a `'='` character
 as input. So, if these indexes are equal to the number 64, the `decode()` function knows
 that it can simply ignore these indexes. They are not converted because, as I described before,
 the character `'='` has no meaning, despite being the end of meaningful characters in the sequence.
@@ -822,8 +822,8 @@ fn decode(self: Base64,
 
 ## The end result
 
-Now that we have both `decode()` and `encode()` implemented. We have a fully functioning
-base64 encoder/decoder implemented in Zig. Here is an usage example of our
+Now that we have both `decode()` and `encode()` implemented, we have a fully functioning
+base64 encoder/decoder implemented in Zig. Here is an example usage of our
 `Base64` struct with the `encode()` and `decode()` methods that we have implemented.
 
 ```{zig}
