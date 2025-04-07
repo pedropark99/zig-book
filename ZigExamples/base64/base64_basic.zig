@@ -111,8 +111,7 @@ const Base64 = struct {
 
 fn _calc_encode_length(input: []const u8) !usize {
     if (input.len < 3) {
-        const n_output: usize = 4;
-        return n_output;
+        return 4;
     }
 
     const n_output: usize = try std.math.divCeil(usize, input.len, 3);
@@ -121,11 +120,22 @@ fn _calc_encode_length(input: []const u8) !usize {
 
 fn _calc_decode_length(input: []const u8) !usize {
     if (input.len < 4) {
-        const n_output: usize = 3;
-        return n_output;
+        return 3;
     }
-    const n_output: usize = try std.math.divFloor(usize, input.len, 4);
-    return n_output * 3;
+
+    const n_groups: usize = try std.math.divFloor(usize, input.len, 4);
+    var multiple_groups: usize = n_groups * 3;
+
+    var i: usize = input.len - 1;
+    while (i > 0) : (i -= 1) {
+        if (input[i] == '=') {
+            multiple_groups -= 1;
+        } else {
+            break;
+        }
+    }
+
+    return multiple_groups;
 }
 
 pub fn main() !void {
@@ -133,11 +143,14 @@ pub fn main() !void {
     var fba = std.heap.FixedBufferAllocator.init(&memory_buffer);
     const allocator = fba.allocator();
 
-    const text = "Testing some more shit";
-    const etext = "VGVzdGluZyBzb21lIG1vcmUgc2hpdA==";
+    const text = "Testing some more stuff";
+    const etext = "VGVzdGluZyBzb21lIG1vcmUgc3R1ZmY=";
     const base64 = Base64.init();
     const encoded_text = try base64.encode(text, allocator);
     const decoded_text = try base64.decode(etext, allocator);
+
     try stdout.print("Encoded text: {s}\n", .{encoded_text});
     try stdout.print("Decoded text: {s}\n", .{decoded_text});
+    try stdout.print("Encoded length: {d}\n", .{encoded_text.len});
+    try stdout.print("Decoded length: {d}\n", .{decoded_text.len});
 }

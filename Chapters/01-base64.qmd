@@ -265,35 +265,38 @@ we divide it by 3, and apply a ceil operation over the result by using the
 `divCeil()` function from the Zig Standard Library. Lastly, we multiply
 the end result by 4 to get the answer we need.
 
+Also, you might have notice that, if the input length is less than 3 bytes, then, the output length of the encoder is
+always 4 bytes. This is the case for every input with less than 3 bytes, because, as I described in @sec-base64-encoder-algo,
+the algorithm always produces enough "padding-groups" in the end result, to complete the 4 bytes window.
+
 ```{zig}
 #| auto_main: false
 #| build_type: "lib"
 const std = @import("std");
 fn _calc_encode_length(input: []const u8) !usize {
     if (input.len < 3) {
-        const n_output: usize = 4;
-        return n_output;
+        return 4;
     }
-    const n_output: usize = try std.math.divCeil(
+    const n_groups: usize = try std.math.divCeil(
         usize, input.len, 3
     );
-    return n_output * 4;
+    return n_groups * 4;
 }
 ```
 
 
-Also, you might have notice that, if the input length is less than 3 bytes, then, the output length of the encoder is
-always 4 bytes. This is the case for every input with less than 3 bytes, because, as I described in @sec-base64-encoder-algo,
-the algorithm always produces enough "padding-groups" in the end result, to complete the 4 bytes window.
-
-Now, for the decoder, we just need to apply the inverse logic: for each 4 bytes in the input, 3 bytes
-will be produced in the output of the decoder. I mean, this is roughly true, because we also need to
+Now, the logic to calculate the length of the output from the decoder is a little bit more complicated. But, it is basically
+just the inverse logic that we've used for the encoder: for each 4 bytes in the input, 3 bytes
+will be produced in the output of the decoder. However, this time we need to
 take the `=` character into account, which is always ignored by the decoder, as we described in @sec-base64-decoder-algo, and,
-in @fig-base64-algo2. But we can ignore this fact for now, just to keep things simple.
+in @fig-base64-algo2.
 
-The function `_calc_decode_length()` exposed below summarizes this logic that we described. It's very similar
-to the function `_calc_encode_length()`. Only the division part is twisted, and also, in the special
-case where we have less than 4 bytes in the input to work on. Also notice that this time, we apply
+In essence, we take the length of the input and divide it by 4, then we apply a floor function on the result, then
+we multiply the result by 3, and then, we subtract from the result how much times the character `=` is found
+in the input.
+
+The function `_calc_decode_length()` exposed below summarizes this logic that we described. It's similar
+to the function `_calc_encode_length()`. Notice that the division part is twisted. Also notice that this time, we apply
 a floor operation over the output of the division, by using the `divFloor()`
 function (instead of a ceiling operation with `divCeil()`).
 
@@ -304,13 +307,23 @@ function (instead of a ceiling operation with `divCeil()`).
 const std = @import("std");
 fn _calc_decode_length(input: []const u8) !usize {
     if (input.len < 4) {
-        const n_output: usize = 3;
-        return n_output;
+        return 3;
     }
-    const n_output: usize = try std.math.divFloor(
+
+    const n_groups: usize = try std.math.divFloor(
         usize, input.len, 4
     );
-    return n_output * 3;
+    var multiple_groups: usize = n_groups * 3;
+    var i: usize = input.len - 1;
+    while (i > 0) : (i -= 1) {
+        if (input[i] == '=') {
+            multiple_groups -= 1;
+        } else {
+            break;
+        }
+    }
+
+    return multiple_groups;
 }
 ```
 

@@ -483,34 +483,44 @@ Figure&nbsp;4.2: The logic behind a base64 decoder
 <p>One task that we need to do is to calculate how much space we need to reserve for the output, both of the encoder and decoder. This is simple math, and can be done easily in Zig because every array has its length (its number of elements) easily accesible by consulting the <code>.len</code> property of the array.</p>
 <p>For the encoder, the logic is the following: for each 3 bytes that we find in the input, 4 new bytes are created in the output. So, we take the number of bytes in the input, divide it by 3, use a ceiling function, then, we multiply the result by 4. That way, we get the total number of bytes that will be produced by the encoder in its output.</p>
 <p>The <code>_calc_encode_length()</code> function below encapsulates this logic. Inside this function, we take the length of the input array, we divide it by 3, and apply a ceil operation over the result by using the <code>divCeil()</code> function from the Zig Standard Library. Lastly, we multiply the end result by 4 to get the answer we need.</p>
+<p>Also, you might have notice that, if the input length is less than 3 bytes, then, the output length of the encoder is always 4 bytes. This is the case for every input with less than 3 bytes, because, as I described in <a href="#sec-base64-encoder-algo" class="quarto-xref"><span>Section 4.1.3</span></a>, the algorithm always produces enough “padding-groups” in the end result, to complete the 4 bytes window.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> _calc_encode_length(input: []<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">usize</span> <span class="op">{</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len &lt; <span class="dv">3</span>) <span class="op">{</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n_output: <span class="dt">usize</span> = <span class="dv">4</span>;</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> n_output;</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n_output: <span class="dt">usize</span> = <span class="kw">try</span> std.math.divCeil(</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>        <span class="dt">usize</span>, input.len, <span class="dv">3</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> n_output * <span class="dv">4</span>;</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="dv">4</span>;</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n_groups: <span class="dt">usize</span> = <span class="kw">try</span> std.math.divCeil(</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        <span class="dt">usize</span>, input.len, <span class="dv">3</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> n_groups * <span class="dv">4</span>;</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Also, you might have notice that, if the input length is less than 3 bytes, then, the output length of the encoder is always 4 bytes. This is the case for every input with less than 3 bytes, because, as I described in <a href="#sec-base64-encoder-algo" class="quarto-xref"><span>Section 4.1.3</span></a>, the algorithm always produces enough “padding-groups” in the end result, to complete the 4 bytes window.</p>
-<p>Now, for the decoder, we just need to apply the inverse logic: for each 4 bytes in the input, 3 bytes will be produced in the output of the decoder. I mean, this is roughly true, because we also need to take the <code>=</code> character into account, which is always ignored by the decoder, as we described in <a href="#sec-base64-decoder-algo" class="quarto-xref"><span>Section 4.1.4</span></a>, and, in <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>4.2</span></a>. But we can ignore this fact for now, just to keep things simple.</p>
-<p>The function <code>_calc_decode_length()</code> exposed below summarizes this logic that we described. It’s very similar to the function <code>_calc_encode_length()</code>. Only the division part is twisted, and also, in the special case where we have less than 4 bytes in the input to work on. Also notice that this time, we apply a floor operation over the output of the division, by using the <code>divFloor()</code> function (instead of a ceiling operation with <code>divCeil()</code>).</p>
+<p>Now, the logic to calculate the length of the output from the decoder is a little bit more complicated. But, it is basically just the inverse logic that we’ve used for the encoder: for each 4 bytes in the input, 3 bytes will be produced in the output of the decoder. However, this time we need to take the <code>=</code> character into account, which is always ignored by the decoder, as we described in <a href="#sec-base64-decoder-algo" class="quarto-xref"><span>Section 4.1.4</span></a>, and, in <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>4.2</span></a>.</p>
+<p>In essence, we take the length of the input and divide it by 4, then we apply a floor function on the result, then we multiply the result by 3, and then, we subtract from the result how much times the character <code>=</code> is found in the input.</p>
+<p>The function <code>_calc_decode_length()</code> exposed below summarizes this logic that we described. It’s similar to the function <code>_calc_encode_length()</code>. Notice that the division part is twisted. Also notice that this time, we apply a floor operation over the output of the division, by using the <code>divFloor()</code> function (instead of a ceiling operation with <code>divCeil()</code>).</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> _calc_decode_length(input: []<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">usize</span> <span class="op">{</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len &lt; <span class="dv">4</span>) <span class="op">{</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> n_output: <span class="dt">usize</span> = <span class="dv">3</span>;</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> n_output;</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n_output: <span class="dt">usize</span> = <span class="kw">try</span> std.math.divFloor(</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="dv">3</span>;</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n_groups: <span class="dt">usize</span> = <span class="kw">try</span> std.math.divFloor(</span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        <span class="dt">usize</span>, input.len, <span class="dv">4</span></span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> n_output * <span class="dv">3</span>;</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> multiple_groups: <span class="dt">usize</span> = n_groups * <span class="dv">3</span>;</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> i: <span class="dt">usize</span> = input.len - <span class="dv">1</span>;</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (i &gt; <span class="dv">0</span>) : (i -= <span class="dv">1</span>) <span class="op">{</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (input[i] == <span class="ch">'='</span>) <span class="op">{</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>            multiple_groups -= <span class="dv">1</span>;</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>            <span class="kw">break</span>;</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> multiple_groups;</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="sec-encoder-logic" class="level2" data-number="4.4">
