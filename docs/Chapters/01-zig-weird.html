@@ -752,7 +752,7 @@ t.zig:7:5: note: consider using 'const'</code></pre>
 <section id="runtime-versus-compile-time-known-length-in-slices" class="level3" data-number="1.6.4">
 <h3 data-number="1.6.4" class="anchored" data-anchor-id="runtime-versus-compile-time-known-length-in-slices"><span class="header-section-number">1.6.4</span> Runtime versus compile-time known length in slices</h3>
 <p>We are going to talk a lot about the differences between compile-time known and runtime known across this book, especially in <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a>. But the basic idea is that a thing is compile-time known, when we know everything (the value, the attributes and the characteristics) about this thing at compile-time. In contrast, a runtime known thing is when the exact value of a thing is calculated only at runtime. Therefore, we don’t know the value of this thing at compile-time, only at runtime.</p>
-<p>We have learned in <a href="#sec-select-array-elem" class="quarto-xref"><span>Section 1.6.1</span></a> that slices are created by using a <em>range selector</em>, which represents a range of indexes. When this “range of indexes” (i.e., the start and the end of this range) is known at compile-time, the slice object that gets created is actually, under the hood, just a single-item pointer to an array.</p>
+<p>We have learned in <a href="#sec-select-array-elem" class="quarto-xref"><span>Section 1.6.1</span></a> that slices are created by using a <em>range selector</em>, which represents a range of indexes. When this “range of indexes” (i.e., both the start and the end of this range) is known at compile-time, the slice object that gets created is actually, under the hood, just a single-item pointer to an array.</p>
 <p>You don’t need to precisely understand what that means now. We are going to talk a lot about pointers in <a href="05-pointers.html" class="quarto-xref"><span>Chapter 6</span></a>. For now, just understand that, when the range of indexes is known at compile-time, the slice that gets created is just a pointer to an array, accompanied by a length value that tells the size of the slice.</p>
 <p>If you have a slice object like this, i.e., a slice that has a compile-time known range, you can use common pointer operations over this slice object. For example, you can dereference the pointer of this slice, by using the <code>.*</code> method, like you would do on a normal pointer object.</p>
 <div class="cell">
@@ -762,7 +762,8 @@ t.zig:7:5: note: consider using 'const'</code></pre>
 <span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
 <span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a><span class="co">// This slice have a compile-time known range.</span></span>
 <span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a><span class="co">// Because we know both the start and end of the range.</span></span>
-<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> slice = arr1[<span class="dv">1</span>..<span class="dv">4</span>];</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> slice = arr1[<span class="dv">1</span>..<span class="dv">4</span>];</span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>_ = slice;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>On the other hand, if the range of indexes is not known at compile time, then, the slice object that gets created is not a pointer anymore, and, thus, it does not support pointer operations. For example, maybe the start index is known at compile time, but the end index is not. In such case, the range of the slice becomes runtime known only.</p>
 <p>In the example below, the <code>slice</code> object have a runtime known range, because the end index of the range is not known at compile time. In other words, the size of the array at <code>buffer</code> is not known at compile time. When we execute this program, the size of the array might be 10, or, it might be 12 depending on where we execute it. Therefore, we don’t know at compile time if the slice object have a range of size 10, or, a range of size 12.</p>
@@ -770,19 +771,23 @@ t.zig:7:5: note: consider using 'const'</code></pre>
 <div class="sourceCode cell-code" id="cb45"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> builtin = <span class="bu">@import</span>(<span class="st">"builtin"</span>);</span>
 <span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
-<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
-<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> n: <span class="dt">usize</span> = <span class="dv">0</span>;</span>
-<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (builtin.target.os.tag == .windows) <span class="op">{</span></span>
-<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a>        n = <span class="dv">10</span>;</span>
-<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a>        n = <span class="dv">12</span>;</span>
-<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> buffer = <span class="kw">try</span> allocator.alloc(<span class="dt">u64</span>, n);</span>
-<span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> slice = buffer[<span class="dv">0</span>..];</span>
-<span id="cb45-15"><a href="#cb45-15" aria-hidden="true" tabindex="-1"></a>    _ = slice;</span>
-<span id="cb45-16"><a href="#cb45-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> read_file(allocator: std.mem.Allocator, path: []<span class="kw">const</span> <span class="dt">u8</span>) ![]<span class="dt">u8</span> <span class="op">{</span></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = <span class="kw">try</span> std.fs.cwd().openFile(path, .<span class="op">{}</span>);</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> file.close();</span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">try</span> file.reader().readAllAlloc(</span>
+<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a>        allocator, std.math.maxInt(<span class="dt">usize</span>)</span>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb45-15"><a href="#cb45-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb45-16"><a href="#cb45-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> path = <span class="st">"../ZigExamples/file-io/shop-list.txt"</span>;</span>
+<span id="cb45-17"><a href="#cb45-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file_contents = <span class="kw">try</span> read_file(allocator, path);</span>
+<span id="cb45-18"><a href="#cb45-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> slice = file_contents[<span class="dv">0</span>..file_contents.len];</span>
+<span id="cb45-19"><a href="#cb45-19" aria-hidden="true" tabindex="-1"></a>    _ = slice;</span>
+<span id="cb45-20"><a href="#cb45-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>

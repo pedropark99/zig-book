@@ -1037,7 +1037,7 @@ In contrast, a runtime known thing is when the exact value of a thing is calcula
 Therefore, we don't know the value of this thing at compile-time, only at runtime.
 
 We have learned in @sec-select-array-elem that slices are created by using a *range selector*,
-which represents a range of indexes. When this "range of indexes" (i.e., the start and the end of this range)
+which represents a range of indexes. When this "range of indexes" (i.e., both the start and the end of this range)
 is known at compile-time, the slice object that gets created is actually, under the hood, just
 a single-item pointer to an array.
 
@@ -1052,8 +1052,8 @@ dereference the pointer of this slice, by using the `.*` method, like you would
 do on a normal pointer object.
 
 ```{zig}
-#| auto_main: false
-#| build_type: "ast"
+#| auto_main: true
+#| build_type: "run"
 const arr1 = [10]u64 {
     1, 2, 3, 4, 5,
     6, 7, 8, 9, 10
@@ -1061,6 +1061,7 @@ const arr1 = [10]u64 {
 // This slice have a compile-time known range.
 // Because we know both the start and end of the range.
 const slice = arr1[1..4];
+_ = slice;
 ```
 
 
@@ -1069,11 +1070,22 @@ that gets created is not a pointer anymore, and, thus, it does not support point
 For example, maybe the start index is known at compile time, but the end index is not. In such
 case, the range of the slice becomes runtime known only.
 
-In the example below, the `slice` object have a runtime known range, because the end index of the range
-is not known at compile time. In other words, the size of the array at `buffer` is not known
-at compile time. When we execute this program, the size of the array might be 10, or, it might be 12
-depending on where we execute it. Therefore, we don't know at compile time if
-the slice object have a range of size 10, or, a range of size 12.
+In the example below, we are reading a file, and then, we try to create a slice object
+that covers the entire buffer that contains the contents of this file. This is obviously
+an example of a runtime known range, because the end index of the range
+is not known at compile time.
+
+In other words, the end index of the range is the size of
+the array `file_contents`. However, the size of `file_contents` is not known at compile time.
+Because we don't know how many bytes are stored inside this `shop-list.txt` file.
+And because this is a file, someone might edit this file tomorrow and add more lines
+or remove lines from it. Therefore, the size of this file might vary drastically from one execution to another.
+
+Now, if the file size can vary from one run to another, then, we can conclude that the value of the expression
+`file_contents.len` exposed in the example below can also vary from one run to another. As consequence,
+the value of the expression `file_contents.len` is runtime-known only, and, as a consequence of that,
+the range `0..file_contents.len` is also runtime-known only.
+
 
 ```{zig}
 #| auto_main: false
@@ -1081,17 +1093,20 @@ the slice object have a range of size 10, or, a range of size 12.
 const std = @import("std");
 const builtin = @import("builtin");
 
+fn read_file(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
+    const file = try std.fs.cwd().openFile(path, .{});
+    defer file.close();
+    return try file.reader().readAllAlloc(
+        allocator, std.math.maxInt(usize)
+    );
+}
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    var n: usize = 0;
-    if (builtin.target.os.tag == .windows) {
-        n = 10;
-    } else {
-        n = 12;
-    }
-    const buffer = try allocator.alloc(u64, n);
-    const slice = buffer[0..];
+    const path = "../ZigExamples/file-io/shop-list.txt";
+    const file_contents = try read_file(allocator, path);
+    const slice = file_contents[0..file_contents.len];
     _ = slice;
 }
 ```
