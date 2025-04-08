@@ -370,28 +370,37 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    _ = twice(<span class="dv">5678</span>);</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>1/1 file833f3ad20be9.test.test comptime...OKAll 1 
+<pre><code>1/1 filee87436f6bc4a.test.test comptime...OKAll 1 
    tests passed.</code></pre>
 </div>
 </div>
-<p>But what if we provide a number that is not compile-time known to this function? For example, we might provide a different input value to this function depending on the target OS of our compilation process. The code example below demonstrates such case.</p>
-<p>Because the value of the object <code>n</code> is determined at runtime, we cannot provide this object as input to the <code>twice()</code> function. The <code>zig</code> compiler will not allow it, because we marked the <code>num</code> argument as a “comptime argument”. That is why the <code>zig</code> compiler raises the compile-time error exposed below:</p>
+<p>But what if we provide a number that is not compile-time known to this function? For example, your program might receive some input from the user through the <code>stdin</code> channel of your system. This input from the user might be many different things, and cannot be predicted at compile-time. These circumstances make this “input from the user” a value that is runtime-known only.</p>
+<p>In the example below, this “input from the user” is initially received as a string, which is then parsed and transformed into a integer value, and the result of this operation is stored inside the <code>n</code> object.</p>
+<p>Because the “input of the user” is known only at runtime, the value of the object <code>n</code> is determined only at runtime. As consequence, we cannot provide this object as input to the <code>twice()</code> function. The <code>zig</code> compiler will not allow it, because we marked the <code>num</code> argument as a “comptime argument”. That is why the <code>zig</code> compiler raises the compile-time error exposed below:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> builtin = <span class="bu">@import</span>(<span class="st">"builtin"</span>);</span>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> twice(<span class="kw">comptime</span> num: <span class="dt">u32</span>) <span class="dt">u32</span> <span class="op">{</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> num * <span class="dv">2</span>;</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">test</span> <span class="st">"test comptime"</span> <span class="op">{</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> n: <span class="dt">u32</span> = <span class="cn">undefined</span>;</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (builtin.target.os.tag == .windows) <span class="op">{</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>        n = <span class="dv">1234</span>;</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        n = <span class="dv">5678</span>;</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    _ = twice(n);</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">5</span>]<span class="dt">u8</span> = .<span class="op">{</span> <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span> <span class="op">}</span>;</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdin = std.io.getStdIn().reader();</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Please write a 4-digit integer number</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdin.readUntilDelimiter(&amp;buffer, <span class="ch">'\n'</span>);</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Input: {s}"</span>, .<span class="op">{</span>buffer<span class="op">}</span>);</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n: <span class="dt">u32</span> = <span class="kw">try</span> std.fmt.parseInt(</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u32</span>, buffer[<span class="dv">0</span> .. buffer.len - <span class="dv">1</span>], <span class="dv">10</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> twice_result = twice(n);</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Result: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>twice_result<span class="op">}</span>);</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<pre><code>t.zig:12:16: error: runtime-known argument passed to comptime parameter</code></pre>
+<pre><code>t.zig:12:16: error: unable to resolve comptime value
+    const twice_result = twice(n);
+                               ^</code></pre>
 <p>Comptime arguments are frequently used on functions that return some sort of generic structure. In fact, <code>comptime</code> is the essence (or the basis) to make generics in Zig. We are going to talk more about generics in <a href="#sec-generics" class="quarto-xref"><span>Section 12.2</span></a>.</p>
 <p>For now, let’s take a look at this code example from <span class="citation" data-cites="karlseguin_generics">Seguin (<a href="../references.html#ref-karlseguin_generics" role="doc-biblioref">2024</a>)</span>. You can see that this <code>IntArray()</code> function has one argument named <code>length</code>. This argument is marked as comptime, and receives a value of type <code>usize</code> as input. So the value given to this argument must be compile-time known. We can also see that this function returns an array of <code>i64</code> values as output.</p>
 <div class="cell">
@@ -426,8 +435,8 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> <span class="kw">comptime</span> expect(fibonacci(<span class="dv">7</span>) == <span class="dv">13</span>);</span>
 <span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>1/1 file833f119d55a3.test.fibonacci...OKAll 1 test
-  ts passed.</code></pre>
+<pre><code>1/1 filee874b9644b4.test.fibonacci...OKAll 1 tests
+  s passed.</code></pre>
 </div>
 </div>
 <p>A lot of your Zig source code might be potentially executed at compile-time, because the <code>zig</code> compiler can figure out the output of some expressions. Especially if these expressions depend only on compile-time known values. We have talked about this in <a href="01-memory.html#sec-compile-time" class="quarto-xref"><span>Section 3.1.1</span></a>.</p>
@@ -455,7 +464,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    _ = x;</span>
 <span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>1/1 file833f6ccf145c.test.fibonacci in a block...O
+<pre><code>1/1 filee8746560ae87.test.fibonacci in a block...O
   OKAll 1 tests passed.</code></pre>
 </div>
 </div>
