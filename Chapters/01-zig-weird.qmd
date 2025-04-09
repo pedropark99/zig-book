@@ -1173,36 +1173,68 @@ The first project that we are going to build and discuss in this book is a base6
 But in order for us to build such a thing, we need to get a better understanding on how strings work in Zig.
 So let's discuss this specific aspect of Zig.
 
-In summary, there are two types of string values that you care about in Zig, which are:
+Strings in Zig work very similarly to strings in C, but they come with some extra caveats which adds more safety
+and efficiency to them. You could also say that Zig simply uses a more modern and safe approach to manage
+and use strings.
 
-- String literal values.
-- String objects.
+A string in Zig is essentially an array of arbitrary bytes, or, more specifically, an array of `u8` values.
+This very similar to a string in C, which is also interpreted as an array of arbitrary bytes, or, in the case
+of C, an array of `char` (which usually represents an unsigned 8-bit integer value in most systems) values.
 
-A string literal value is just a pointer to a null-terminated array of bytes (i.e., similar to a C string).
-But in Zig, a string literal value also embeds the length of the string into the data type of the value itself.
-Therefore, a string literal value has a data type in the format `*const [n:0]u8`. The `n` in the data type
-indicates the size of the string.
+Now, because a string in Zig is an array, you automatically
+get the length of the string (i.e. the length of the array) embedded in the value itself. This makes
+all the difference! Because now, the Zig compiler can use the length value that is embedded in the string to
+check for "buffer overflow" or "wrong memory access" problems in your code.
 
-On the other hand, a string object in Zig is basically a slice to an arbitrary sequence of bytes,
-or, in other words, a slice of `u8` values (slices were presented in @sec-arrays). Thus,
-a string object has a data type of `[]u8` or `[]const u8`, depending if the string object is
-marked as constant with `const`, or as variable with `var`.
 
-Because a string object is essentially a slice, it means that a string object always contains two things:
-a pointer to an array of bytes (i.e., `u8` values) that represents the string value; and also, a length value,
-which specifies the size of the slice, or, how many elements there is in the slice.
-It's worth to emphasize that the array of bytes in a string object is not null-terminated, like in a
-string literal value.
+To achieve this same kind of safety in C, you have to do a lot of work that kind of seems pointless.
+So getting this kind of safety is not automatic and much harder to do in C. For example, if you want
+to track the length of your string throughout your program in C, then, you first need to loop through
+the array of bytes that represents this string, and find the null element (`'\0'`) position to discover
+where exactly the array ends, or, in other words, to find how much elements the array of bytes contain.
 
-```{zig}
+To do that, you would need to do something like this in C. In this example, the C string stored in
+the object `array` is 25 bytes long:
+
+```{c}
 #| eval: false
-// This is a string literal value:
-"A literal value";
-// This is a string object:
-const object: []const u8 = "A string object";
+#include <stdio.h>
+int main() {
+    char* array = "An example of string in C";
+    int index = 0;
+    while (1) {
+        if (array[index] == '\0') {
+            break;
+        }
+        index++;
+    }
+    printf("Number of elements in the array: %d\n", index);
+}
 ```
 
-Zig always assumes that the sequence of bytes in your string is UTF-8 encoded. This might not be true for every
+```
+Number of elements in the array: 25
+```
+
+
+You don't have this kind of work in Zig. Because the length of the string is always
+present and accessible in the string value itself. You can easily access the length of the string
+through the `len` attribute. As an example, the `string_object` object below is 43 bytes long:
+
+
+```{zig}
+#| auto_main: false
+#| build_type: "run"
+const std = @import("std");
+const stdout = std.io.getStdOut().writer();
+pub fn main() !void {
+    const string_object = "This is an example of string literal in Zig";
+    try stdout.print("{d}\n", .{string_object.len});
+}
+```
+
+
+Another point is that Zig always assumes that the sequence of bytes in your string is UTF-8 encoded. This might not be true for every
 sequence of bytes you're working with, but is not really Zig's job to fix the encoding of your strings
 (you can use [`iconv`](https://www.gnu.org/software/libiconv/)[^libiconv] for that).
 Today, most of the text in our modern world, especially on the web, should be UTF-8 encoded.
@@ -1229,6 +1261,80 @@ pub fn main() !void {
 ```
 
 
+
+### Using a slice versus a sentinel-terminated array
+
+In memory, all string values in Zig are always stored in the same way.
+They are simply stored as sequences/arrays of arbitrary bytes. But you can use and access
+this sequence of bytes in two different ways. You can access this sequence of bytes as:
+
+- a sentinel-terminated array of `u8` values.
+- or as a slice of `u8` values.
+
+
+#### Sentinel-terminated arrays
+
+Sentinel-terminated arrays in Zig are described in the Language Reference of Zig[^sentinel].
+In summary a sentinel-terminated array is just a normal array, but, the difference is that they
+contain a "sentinel value" at the last index/element of the array. With a sentinel-terminated array
+you embed both the length of the array, and also, the sentinel value in the type itself of your object.
+
+[^sentinel]: <https://ziglang.org/documentation/master/#Sentinel-Terminated-Arrays>.
+
+For example, if you write a string literal value in your code, and ask Zig to print the data type of this value,
+you usually get a data type in the format `*const [n:0]u8`. The `n` in the data type indicates the size of
+the string (that is the length of the array). The zero after the `n:` part of the data type is the sentinel
+value itself.
+
+```{zig}
+#| eval: true
+#| auto_main: true
+#| build_type: "run"
+// This is a string literal value:
+_ = "A literal value";
+try stdout.print("{any}\n", .{@TypeOf("A literal value")});
+```
+
+
+So, with this data type `*const [n:0]u8` you are essentially saying that you have an array of `u8` values
+of length `n`, where, the element at the index corresponding to the length `n` in the array is the
+number zero. If you really think about this description, you will notice that this is just a fancy way to
+describe a string in C, which is a null-terminated array of bytes. The `NULL` value in C is the number
+zero. So, an array that ends in a null/zero value in C is essentially a sentinel-terminated array in Zig,
+where the sentinel value of the array is the number zero.
+
+Therefore, a string literal value in Zig is just a pointer to a null-terminated array of bytes (i.e., similar to a C string).
+But in Zig, a string literal value also embeds the length of the string, and also, the fact that they are "NULL terminated",
+into the data type of the value itself.
+
+
+
+#### Slice
+
+You can also access and use the arbitrary sequence of bytes that represent your string as a slice of `u8` values.
+The majority of functions from the Zig standard library usually receive strings as inputs as slices of
+`u8` values (slices were presented in @sec-arrays).
+
+Thus, you will see a lot of string values with a data type of `[]u8` or `[]const u8`, depending if the object
+where this string is stored is marked as constant with `const`, or as variable with `var`. Now, because
+the string in this case is being interpreted as a slice, this slice is not necessarilly null-terminated,
+because now, the sentinel value is not mandatory. You can include the null/zero value in the slice if you
+want to, but there is no need to do it.
+
+```{zig}
+#| eval: true
+#| build_type: "run"
+#| auto_main: true
+// This is a string value being
+// interpreted as a slice.
+const str: []const u8 = "A string value";
+try stdout.print("{any}\n", .{@TypeOf(str)});
+```
+
+
+
+### Iterating through the string
+
 If you want to see the actual bytes that represents a string in Zig, you can use
 a `for` loop to iterate through each byte in the string, and ask Zig to print each byte as an hexadecimal
 value to the terminal. You do that by using a `print()` statement with the `X` formatting specifier,
@@ -1252,65 +1358,6 @@ pub fn main() !void {
 ```
 
 
-### Strings in C
-
-At first glance, a string literal value in Zig looks very similar to how C treats strings as well.
-In more details, string values in C are treated internally as an array of arbitrary bytes,
-and this array is also null-terminated.
-
-But one key difference between a Zig string literal and a C string, is that Zig also stores the length of
-the string inside the object itself. In the case of a string literal value, this length is stored in the
-data type of the value (i.e., the `n` variable in `[n:0]u8`). While, in a string object, the length is stored
-in the `len` attribute of the slice that represents the string object. This small detail makes your code safer,
-because it's much easier for the Zig compiler to check if you are trying to access an element that is
-"out of bounds", i.e., if your trying to access memory that does not belong to you.
-
-To achieve this same kind of safety in C, you have to do a lot of work that kind of seems pointless.
-So getting this kind of safety is not automatic and much harder to do in C. For example, if you want
-to track the length of your string throughout your program in C, then, you first need to loop through
-the array of bytes that represents this string, and find the null element (`'\0'`) position to discover
-where exactly the array ends, or, in other words, to find how much elements the array of bytes contain.
-
-To do that, you would need something like this in C. In this example, the C string stored in
-the object `array` is 25 bytes long:
-
-```{c}
-#| eval: false
-#include <stdio.h>
-int main() {
-    char* array = "An example of string in C";
-    int index = 0;
-    while (1) {
-        if (array[index] == '\0') {
-            break;
-        }
-        index++;
-    }
-    printf("Number of elements in the array: %d\n", index);
-}
-```
-
-```
-Number of elements in the array: 25
-```
-
-
-You don't have this kind of work in Zig. Because the length of the string is always
-present and accessible. In a string object for example, you can easily access the length of the string
-through the `len` attribute. As an example, the `string_object` object below is 43 bytes long:
-
-
-```{zig}
-#| auto_main: false
-#| build_type: "run"
-const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-pub fn main() !void {
-    const string_object = "This is an example of string literal in Zig";
-    try stdout.print("{d}\n", .{string_object.len});
-}
-```
-
 
 ### A better look at the object type
 
@@ -1321,7 +1368,8 @@ That is what an object of type `[4]i32` is.
 
 But if we look closely at the type of the string literal value exposed below, you will find that this object is a
 constant pointer (hence the `*const` annotation) to an array of 16 elements (or 16 bytes). Each element is a
-single byte (more precisely, an unsigned 8 bit integer - `u8`), that is why we have the `[16:0]u8` portion of the type below.
+single byte (more precisely, an unsigned 8 bit integer - `u8`), that is why we have the `[16:0]u8` portion of the type below,
+and also, you can see that this is a null-terminated array, because of the zero value after the `:` character in the data type.
 In other words, the string literal value exposed below is 16 bytes long.
 
 Now, if we create an pointer to the `simple_array` object, then, we get a constant pointer to an array of 4 elements (`*const [4]i32`),
@@ -1337,6 +1385,7 @@ the `const u8` portion of the type).
 #| build_type: "run"
 #| auto_main: false
 #| eval: true
+#| results: "hide"
 const std = @import("std");
 pub fn main() !void {
     const simple_array = [_]i32{1, 2, 3, 4};

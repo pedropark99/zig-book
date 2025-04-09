@@ -328,10 +328,11 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
   <li><a href="#sec-blocks" id="toc-sec-blocks" class="nav-link" data-scroll-target="#sec-blocks"><span class="header-section-number">1.7</span> Blocks and scopes</a></li>
   <li><a href="#sec-zig-strings" id="toc-sec-zig-strings" class="nav-link" data-scroll-target="#sec-zig-strings"><span class="header-section-number">1.8</span> How strings work in Zig?</a>
   <ul class="collapse">
-  <li><a href="#strings-in-c" id="toc-strings-in-c" class="nav-link" data-scroll-target="#strings-in-c"><span class="header-section-number">1.8.1</span> Strings in C</a></li>
-  <li><a href="#a-better-look-at-the-object-type" id="toc-a-better-look-at-the-object-type" class="nav-link" data-scroll-target="#a-better-look-at-the-object-type"><span class="header-section-number">1.8.2</span> A better look at the object type</a></li>
-  <li><a href="#byte-vs-unicode-points" id="toc-byte-vs-unicode-points" class="nav-link" data-scroll-target="#byte-vs-unicode-points"><span class="header-section-number">1.8.3</span> Byte vs unicode points</a></li>
-  <li><a href="#sec-strings-useful-funs" id="toc-sec-strings-useful-funs" class="nav-link" data-scroll-target="#sec-strings-useful-funs"><span class="header-section-number">1.8.4</span> Some useful functions for strings</a></li>
+  <li><a href="#using-a-slice-versus-a-sentinel-terminated-array" id="toc-using-a-slice-versus-a-sentinel-terminated-array" class="nav-link" data-scroll-target="#using-a-slice-versus-a-sentinel-terminated-array"><span class="header-section-number">1.8.1</span> Using a slice versus a sentinel-terminated array</a></li>
+  <li><a href="#iterating-through-the-string" id="toc-iterating-through-the-string" class="nav-link" data-scroll-target="#iterating-through-the-string"><span class="header-section-number">1.8.2</span> Iterating through the string</a></li>
+  <li><a href="#a-better-look-at-the-object-type" id="toc-a-better-look-at-the-object-type" class="nav-link" data-scroll-target="#a-better-look-at-the-object-type"><span class="header-section-number">1.8.3</span> A better look at the object type</a></li>
+  <li><a href="#byte-vs-unicode-points" id="toc-byte-vs-unicode-points" class="nav-link" data-scroll-target="#byte-vs-unicode-points"><span class="header-section-number">1.8.4</span> Byte vs unicode points</a></li>
+  <li><a href="#sec-strings-useful-funs" id="toc-sec-strings-useful-funs" class="nav-link" data-scroll-target="#sec-strings-useful-funs"><span class="header-section-number">1.8.5</span> Some useful functions for strings</a></li>
   </ul></li>
   <li><a href="#safety-in-zig" id="toc-safety-in-zig" class="nav-link" data-scroll-target="#safety-in-zig"><span class="header-section-number">1.9</span> Safety in Zig</a></li>
   <li><a href="#other-parts-of-zig" id="toc-other-parts-of-zig" class="nav-link" data-scroll-target="#other-parts-of-zig"><span class="header-section-number">1.10</span> Other parts of Zig</a></li>
@@ -817,136 +818,156 @@ t.zig:7:5: note: consider using 'const'</code></pre>
 <section id="sec-zig-strings" class="level2" data-number="1.8">
 <h2 data-number="1.8" class="anchored" data-anchor-id="sec-zig-strings"><span class="header-section-number">1.8</span> How strings work in Zig?</h2>
 <p>The first project that we are going to build and discuss in this book is a base64 encoder/decoder (<a href="01-base64.html" class="quarto-xref"><span>Chapter 4</span></a>). But in order for us to build such a thing, we need to get a better understanding on how strings work in Zig. So let’s discuss this specific aspect of Zig.</p>
-<p>In summary, there are two types of string values that you care about in Zig, which are:</p>
-<ul>
-<li>String literal values.</li>
-<li>String objects.</li>
-</ul>
-<p>A string literal value is just a pointer to a null-terminated array of bytes (i.e., similar to a C string). But in Zig, a string literal value also embeds the length of the string into the data type of the value itself. Therefore, a string literal value have a data type in the format <code>*const [n:0]u8</code>. The <code>n</code> in the data type indicates the size of the string.</p>
-<p>On the other hand, a string object in Zig is basically a slice to an arbitrary sequence of bytes, or, in other words, a slice of <code>u8</code> values (slices were presented in <a href="#sec-arrays" class="quarto-xref"><span>Section 1.6</span></a>). Thus, a string object have a data type of <code>[]u8</code> or <code>[]const u8</code>, depending if the string object is marked as constant with <code>const</code>, or as variable with <code>var</code>.</p>
-<p>Because a string object is essentially a slice, it means that a string object always contains two things: a pointer to an array of bytes (i.e., <code>u8</code> values) that represents the string value; and also, a length value, which specifies the size of the slice, or, how many elements there is in the slice. It’s worth to emphasize that the array of bytes in a string object is not null-terminated, like in a string literal value.</p>
+<p>Strings in Zig work very similarly to strings in C, but they come with some extra caveats which adds more safety and efficiency to them. You could also say that Zig simply uses a more modern and safe approach to manage and use strings.</p>
+<p>A string in Zig is essentially an array of arbitrary bytes, or, more specifically, an array of <code>u8</code> values. This very similar to a string in C, which is also interpreted as an array of arbitrary bytes, or, in the case of C, an array of <code>char</code> (which usually represents an unsigned 8-bit integer value in most systems) values.</p>
+<p>Now, because a string in Zig is an array, you automatically get the length of the string (i.e.&nbsp;the length of the array) embedded in the value itself. This makes all the difference! Because now, the Zig compiler can use the length value that is embedded in the string to check for “buffer overflow” or “wrong memory access” problems in your code.</p>
+<p>To achieve this same kind of safety in C, you have to do a lot of work that kind of seems pointless. So getting this kind of safety is not automatic and much harder to do in C. For example, if you want to track the length of your string throughout your program in C, then, you first need to loop through the array of bytes that represents this string, and find the null element (<code>'\0'</code>) position to discover where exactly the array ends, or, in other words, to find how much elements the array of bytes contain.</p>
+<p>To do that, you would need to do something like this in C. In this example, the C string stored in the object <code>array</code> is 25 bytes long:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="co">// This is a string literal value:</span></span>
-<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="st">"A literal value"</span>;</span>
-<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a><span class="co">// This is a string object:</span></span>
-<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> object: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"A string object"</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode c code-with-copy"><code class="sourceCode c"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdio.h&gt;</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">char</span><span class="op">*</span> array <span class="op">=</span> <span class="st">"An example of string in C"</span><span class="op">;</span></span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> index <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> <span class="op">(</span><span class="dv">1</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="op">(</span>array<span class="op">[</span>index<span class="op">]</span> <span class="op">==</span> <span class="ch">'</span><span class="sc">\0</span><span class="ch">'</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>            <span class="cf">break</span><span class="op">;</span></span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>        index<span class="op">++;</span></span>
+<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a>    printf<span class="op">(</span><span class="st">"Number of elements in the array: </span><span class="sc">%d\n</span><span class="st">"</span><span class="op">,</span> index<span class="op">);</span></span>
+<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Zig always assumes that the sequence of bytes in your string is UTF-8 encoded. This might not be true for every sequence of bytes you’re working with, but is not really Zig’s job to fix the encoding of your strings (you can use <a href="https://www.gnu.org/software/libiconv/"><code>iconv</code></a><a href="#fn22" class="footnote-ref" id="fnref22" role="doc-noteref"><sup>22</sup></a> for that). Today, most of the text in our modern world, especially on the web, should be UTF-8 encoded. So if your string literal is not UTF-8 encoded, then, you will likely have problems in Zig.</p>
+<pre><code>Number of elements in the array: 25</code></pre>
+<p>You don’t have this kind of work in Zig. Because the length of the string is always present and accessible in the string value itself. You can easily access the length of the string through the <code>len</code> attribute. As an example, the <code>string_object</code> object below is 43 bytes long:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> string_object = <span class="st">"This is an example of string literal in Zig"</span>;</span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>string_object.len<span class="op">}</span>);</span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>43</code></pre>
+</div>
+</div>
+<p>Another point is that Zig always assumes that the sequence of bytes in your string is UTF-8 encoded. This might not be true for every sequence of bytes you’re working with, but is not really Zig’s job to fix the encoding of your strings (you can use <a href="https://www.gnu.org/software/libiconv/"><code>iconv</code></a><a href="#fn22" class="footnote-ref" id="fnref22" role="doc-noteref"><sup>22</sup></a> for that). Today, most of the text in our modern world, especially on the web, should be UTF-8 encoded. So if your string literal is not UTF-8 encoded, then, you will likely have problems in Zig.</p>
 <p>Let’s take for example the word “Hello”. In UTF-8, this sequence of characters (H, e, l, l, o) is represented by the sequence of decimal numbers 72, 101, 108, 108, 111. In hexadecimal, this sequence is <code>0x48</code>, <code>0x65</code>, <code>0x6C</code>, <code>0x6C</code>, <code>0x6F</code>. So if I take this sequence of hexadecimal values, and ask Zig to print this sequence of bytes as a sequence of characters (i.e., a string), then, the text “Hello” will be printed into the terminal:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> bytes = [_]<span class="dt">u8</span><span class="op">{</span><span class="bn">0x48</span>, <span class="bn">0x65</span>, <span class="bn">0x6C</span>, <span class="bn">0x6C</span>, <span class="bn">0x6F</span><span class="op">}</span>;</span>
-<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>bytes<span class="op">}</span>);</span>
-<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> bytes = [_]<span class="dt">u8</span><span class="op">{</span><span class="bn">0x48</span>, <span class="bn">0x65</span>, <span class="bn">0x6C</span>, <span class="bn">0x6C</span>, <span class="bn">0x6F</span><span class="op">}</span>;</span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>bytes<span class="op">}</span>);</span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Hello</code></pre>
 </div>
 </div>
-<p>If you want to see the actual bytes that represents a string in Zig, you can use a <code>for</code> loop to iterate through each byte in the string, and ask Zig to print each byte as an hexadecimal value to the terminal. You do that by using a <code>print()</code> statement with the <code>X</code> formatting specifier, like you would normally do with the <a href="https://cplusplus.com/reference/cstdio/printf/"><code>printf()</code> function</a><a href="#fn23" class="footnote-ref" id="fnref23" role="doc-noteref"><sup>23</sup></a> in C.</p>
+<section id="using-a-slice-versus-a-sentinel-terminated-array" class="level3" data-number="1.8.1">
+<h3 data-number="1.8.1" class="anchored" data-anchor-id="using-a-slice-versus-a-sentinel-terminated-array"><span class="header-section-number">1.8.1</span> Using a slice versus a sentinel-terminated array</h3>
+<p>In memory, all string values in Zig are always stored in the same way. They are simply stored as sequences/arrays of arbitrary bytes. But you can use and access this sequence of bytes in two different ways. You can access this sequence of bytes as:</p>
+<ul>
+<li>a sentinel-terminated array of <code>u8</code> values.</li>
+<li>or as a slice of <code>u8</code> values.</li>
+</ul>
+<section id="sentinel-terminated-arrays" class="level4" data-number="1.8.1.1">
+<h4 data-number="1.8.1.1" class="anchored" data-anchor-id="sentinel-terminated-arrays"><span class="header-section-number">1.8.1.1</span> Sentinel-terminated arrays</h4>
+<p>Sentinel-terminated arrays in Zig are described in the Language Reference of Zig<a href="#fn23" class="footnote-ref" id="fnref23" role="doc-noteref"><sup>23</sup></a>. In summary a sentinel-terminated array is just a normal array, but, the difference is that they contain a “sentinel value” at the last index/element of the array. With a sentinel-terminated array you embed both the length of the array, and also, the sentinel value in the type itself of your object.</p>
+<p>For example, if you write a string literal value in your code, and ask Zig to print the data type of this value, you usually get a data type in the format <code>*const [n:0]u8</code>. The <code>n</code> in the data type indicates the size of the string (that is the length of the array). The zero after the <code>n:</code> part of the data type is the sentinel value itself.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> string_object = <span class="st">"This is an example"</span>;</span>
-<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Bytes that represents the string object: "</span>, .<span class="op">{}</span>);</span>
-<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (string_object) |byte| <span class="op">{</span></span>
-<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> stdout.print(<span class="st">"{X} "</span>, .<span class="op">{</span>byte<span class="op">}</span>);</span>
-<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{}</span>);</span>
-<span id="cb51-10"><a href="#cb51-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="co">// This is a string literal value:</span></span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>_ = <span class="st">"A literal value"</span>;</span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(<span class="st">"A literal value"</span>)<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>*const [15:0]u8</code></pre>
+</div>
+</div>
+<p>So, with this data type <code>*const [n:0]u8</code> you are essentially saying that you have an array of <code>u8</code> values of length <code>n</code>, where, the element at the index corresponding to the length <code>n</code> in the array is the number zero. If you really think about this description, you will notice that this is just a fancy way to describe a string in C, which is a null-terminated array of bytes. The <code>NULL</code> value in C is the number zero. So, an array that ends in a null/zero value in C is essentially a sentinel-terminated array in Zig, where the sentinel value of the array is the number zero.</p>
+<p>Therefore, a string literal value in Zig is just a pointer to a null-terminated array of bytes (i.e., similar to a C string). But in Zig, a string literal value also embeds the length of the string, and also, the fact that they are “NULL terminated”, into the data type of the value itself.</p>
+</section>
+<section id="slice" class="level4" data-number="1.8.1.2">
+<h4 data-number="1.8.1.2" class="anchored" data-anchor-id="slice"><span class="header-section-number">1.8.1.2</span> Slice</h4>
+<p>You can also access and use the arbitrary sequence of bytes that represent your string as a slice of <code>u8</code> values. The majority of functions from the Zig standard library usually receive strings as inputs as slices of <code>u8</code> values (slices were presented in <a href="#sec-arrays" class="quarto-xref"><span>Section 1.6</span></a>).</p>
+<p>Thus, you will see a lot of string values with a data type of <code>[]u8</code> or <code>[]const u8</code>, depending if the object where this string is stored is marked as constant with <code>const</code>, or as variable with <code>var</code>. Now, because the string in this case is being interpreted as a slice, this slice is not necessarilly null-terminated, because now, the sentinel value is not mandatory. You can include the null/zero value in the slice if you want to, but there is no need to do it.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="co">// This is a string value being</span></span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a><span class="co">// interpreted as a slice.</span></span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> str: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"A string value"</span>;</span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(str)<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[]const u8</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="iterating-through-the-string" class="level3" data-number="1.8.2">
+<h3 data-number="1.8.2" class="anchored" data-anchor-id="iterating-through-the-string"><span class="header-section-number">1.8.2</span> Iterating through the string</h3>
+<p>If you want to see the actual bytes that represents a string in Zig, you can use a <code>for</code> loop to iterate through each byte in the string, and ask Zig to print each byte as an hexadecimal value to the terminal. You do that by using a <code>print()</code> statement with the <code>X</code> formatting specifier, like you would normally do with the <a href="https://cplusplus.com/reference/cstdio/printf/"><code>printf()</code> function</a><a href="#fn24" class="footnote-ref" id="fnref24" role="doc-noteref"><sup>24</sup></a> in C.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> string_object = <span class="st">"This is an example"</span>;</span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Bytes that represents the string object: "</span>, .<span class="op">{}</span>);</span>
+<span id="cb58-6"><a href="#cb58-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (string_object) |byte| <span class="op">{</span></span>
+<span id="cb58-7"><a href="#cb58-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> stdout.print(<span class="st">"{X} "</span>, .<span class="op">{</span>byte<span class="op">}</span>);</span>
+<span id="cb58-8"><a href="#cb58-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb58-9"><a href="#cb58-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{}</span>);</span>
+<span id="cb58-10"><a href="#cb58-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Bytes that represents the string object: 54 68 69 
    73 20 69 73 20 61 6E 20 65 78 61 6D 70 6C 65 </code></pre>
 </div>
 </div>
-<section id="strings-in-c" class="level3" data-number="1.8.1">
-<h3 data-number="1.8.1" class="anchored" data-anchor-id="strings-in-c"><span class="header-section-number">1.8.1</span> Strings in C</h3>
-<p>At first glance, a string literal value in Zig looks very similar to how C treats strings as well. In more details, string values in C are treated internally as an array of arbitrary bytes, and this array is also null-terminated.</p>
-<p>But one key difference between a Zig string literal and a C string, is that Zig also stores the length of the string inside the object itself. In the case of a string literal value, this length is stored in the data type of the value (i.e., the <code>n</code> variable in <code>[n:0]u8</code>). While, in a string object, the length is stored in the <code>len</code> attribute of the slice that represents the string object. This small detail makes your code safer, because it’s much easier for the Zig compiler to check if you are trying to access an element that is “out of bounds”, i.e., if your trying to access memory that does not belong to you.</p>
-<p>To achieve this same kind of safety in C, you have to do a lot of work that kind of seems pointless. So getting this kind of safety is not automatic and much harder to do in C. For example, if you want to track the length of your string throughout your program in C, then, you first need to loop through the array of bytes that represents this string, and find the null element (<code>'\0'</code>) position to discover where exactly the array ends, or, in other words, to find how much elements the array of bytes contain.</p>
-<p>To do that, you would need something like this in C. In this example, the C string stored in the object <code>array</code> is 25 bytes long:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode c code-with-copy"><code class="sourceCode c"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdio.h&gt;</span></span>
-<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> main<span class="op">()</span> <span class="op">{</span></span>
-<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">char</span><span class="op">*</span> array <span class="op">=</span> <span class="st">"An example of string in C"</span><span class="op">;</span></span>
-<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> index <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> <span class="op">(</span><span class="dv">1</span><span class="op">)</span> <span class="op">{</span></span>
-<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="op">(</span>array<span class="op">[</span>index<span class="op">]</span> <span class="op">==</span> <span class="ch">'</span><span class="sc">\0</span><span class="ch">'</span><span class="op">)</span> <span class="op">{</span></span>
-<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a>            <span class="cf">break</span><span class="op">;</span></span>
-<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a>        index<span class="op">++;</span></span>
-<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb53-11"><a href="#cb53-11" aria-hidden="true" tabindex="-1"></a>    printf<span class="op">(</span><span class="st">"Number of elements in the array: </span><span class="sc">%d\n</span><span class="st">"</span><span class="op">,</span> index<span class="op">);</span></span>
-<span id="cb53-12"><a href="#cb53-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<pre><code>Number of elements in the array: 25</code></pre>
-<p>You don’t have this kind of work in Zig. Because the length of the string is always present and accessible. In a string object for example, you can easily access the length of the string through the <code>len</code> attribute. As an example, the <code>string_object</code> object below is 43 bytes long:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> string_object = <span class="st">"This is an example of string literal in Zig"</span>;</span>
-<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>string_object.len<span class="op">}</span>);</span>
-<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>43</code></pre>
-</div>
-</div>
 </section>
-<section id="a-better-look-at-the-object-type" class="level3" data-number="1.8.2">
-<h3 data-number="1.8.2" class="anchored" data-anchor-id="a-better-look-at-the-object-type"><span class="header-section-number">1.8.2</span> A better look at the object type</h3>
+<section id="a-better-look-at-the-object-type" class="level3" data-number="1.8.3">
+<h3 data-number="1.8.3" class="anchored" data-anchor-id="a-better-look-at-the-object-type"><span class="header-section-number">1.8.3</span> A better look at the object type</h3>
 <p>Now, we can inspect better the type of objects that Zig create. To check the type of any object in Zig, you can use the <code>@TypeOf()</code> function. If we look at the type of the <code>simple_array</code> object below, you will find that this object is an array of 4 elements. Each element is a signed integer of 32 bits which corresponds to the data type <code>i32</code> in Zig. That is what an object of type <code>[4]i32</code> is.</p>
-<p>But if we look closely at the type of the string literal value exposed below, you will find that this object is a constant pointer (hence the <code>*const</code> annotation) to an array of 16 elements (or 16 bytes). Each element is a single byte (more precisely, an unsigned 8 bit integer - <code>u8</code>), that is why we have the <code>[16:0]u8</code> portion of the type below. In other words, the string literal value exposed below is 16 bytes long.</p>
+<p>But if we look closely at the type of the string literal value exposed below, you will find that this object is a constant pointer (hence the <code>*const</code> annotation) to an array of 16 elements (or 16 bytes). Each element is a single byte (more precisely, an unsigned 8 bit integer - <code>u8</code>), that is why we have the <code>[16:0]u8</code> portion of the type below, and also, you can see that this is a null-terminated array, because of the zero value after the <code>:</code> character in the data type. In other words, the string literal value exposed below is 16 bytes long.</p>
 <p>Now, if we create an pointer to the <code>simple_array</code> object, then, we get a constant pointer to an array of 4 elements (<code>*const [4]i32</code>), which is very similar to the type of the string literal value. This demonstrates that a string literal value in Zig is already a pointer to a null-terminated array of bytes.</p>
 <p>Furthermore, if we take a look at the type of the <code>string_obj</code> object, you will see that it’s a slice object (hence the <code>[]</code> portion of the type) to a sequence of constant <code>u8</code> values (hence the <code>const u8</code> portion of the type).</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> simple_array = [_]<span class="dt">i32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span><span class="op">}</span>;</span>
-<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> string_obj: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"A string object"</span>;</span>
-<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>    std.debug.print(</span>
-<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Type 1: {}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(simple_array)<span class="op">}</span></span>
-<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>    std.debug.print(</span>
-<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Type 2: {}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(<span class="st">"A string literal"</span>)<span class="op">}</span></span>
-<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a>    std.debug.print(</span>
-<span id="cb57-12"><a href="#cb57-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Type 3: {}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(&amp;simple_array)<span class="op">}</span></span>
-<span id="cb57-13"><a href="#cb57-13" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb57-14"><a href="#cb57-14" aria-hidden="true" tabindex="-1"></a>    std.debug.print(</span>
-<span id="cb57-15"><a href="#cb57-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Type 4: {}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(string_obj)<span class="op">}</span></span>
-<span id="cb57-16"><a href="#cb57-16" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb57-17"><a href="#cb57-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Type 1: [4]i32Type 2: *const [16:0]u8Type 3: *cons
-  st [4]i32Type 4: []const u8</code></pre>
-</div>
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> simple_array = [_]<span class="dt">i32</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span><span class="op">}</span>;</span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> string_obj: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"A string object"</span>;</span>
+<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a>    std.debug.print(</span>
+<span id="cb60-6"><a href="#cb60-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Type 1: {}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(simple_array)<span class="op">}</span></span>
+<span id="cb60-7"><a href="#cb60-7" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb60-8"><a href="#cb60-8" aria-hidden="true" tabindex="-1"></a>    std.debug.print(</span>
+<span id="cb60-9"><a href="#cb60-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Type 2: {}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(<span class="st">"A string literal"</span>)<span class="op">}</span></span>
+<span id="cb60-10"><a href="#cb60-10" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb60-11"><a href="#cb60-11" aria-hidden="true" tabindex="-1"></a>    std.debug.print(</span>
+<span id="cb60-12"><a href="#cb60-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Type 3: {}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(&amp;simple_array)<span class="op">}</span></span>
+<span id="cb60-13"><a href="#cb60-13" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb60-14"><a href="#cb60-14" aria-hidden="true" tabindex="-1"></a>    std.debug.print(</span>
+<span id="cb60-15"><a href="#cb60-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Type 4: {}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span><span class="bu">@TypeOf</span>(string_obj)<span class="op">}</span></span>
+<span id="cb60-16"><a href="#cb60-16" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb60-17"><a href="#cb60-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Type 1: [4]i32
 Type 2: *const [16:0]u8
 Type 3: *const [4]i32
 Type 4: []const u8</code></pre>
 </section>
-<section id="byte-vs-unicode-points" class="level3" data-number="1.8.3">
-<h3 data-number="1.8.3" class="anchored" data-anchor-id="byte-vs-unicode-points"><span class="header-section-number">1.8.3</span> Byte vs unicode points</h3>
+<section id="byte-vs-unicode-points" class="level3" data-number="1.8.4">
+<h3 data-number="1.8.4" class="anchored" data-anchor-id="byte-vs-unicode-points"><span class="header-section-number">1.8.4</span> Byte vs unicode points</h3>
 <p>It’s important to point out that each byte in the array is not necessarily a single character. This fact arises from the difference between a single byte and a single unicode point.</p>
 <p>The encoding UTF-8 works by assigning a number (which is called a unicode point) to each character in the string. For example, the character “H” is stored in UTF-8 as the decimal number 72. This means that the number 72 is the unicode point for the character “H”. Each possible character that can appear in a UTF-8 encoded string have its own unicode point.</p>
 <p>For example, the Latin Capital Letter A With Stroke (Ⱥ) is represented by the number (or the unicode point) 570. However, this decimal number (570) is higher than the maximum number stored inside a single byte, which is 255. In other words, the maximum decimal number that can be represented with a single byte is 255. That is why, the unicode point 570 is actually stored inside the computer’s memory as the bytes <code>C8 BA</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> string_object = <span class="st">"Ⱥ"</span>;</span>
-<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(</span>
-<span id="cb60-6"><a href="#cb60-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Bytes that represents the string object: "</span></span>
-<span id="cb60-7"><a href="#cb60-7" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb60-8"><a href="#cb60-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (string_object) |char| <span class="op">{</span></span>
-<span id="cb60-9"><a href="#cb60-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> stdout.print(<span class="st">"{X} "</span>, .<span class="op">{</span>char<span class="op">}</span>);</span>
-<span id="cb60-10"><a href="#cb60-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb60-11"><a href="#cb60-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> string_object = <span class="st">"Ⱥ"</span>;</span>
+<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(</span>
+<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Bytes that represents the string object: "</span></span>
+<span id="cb62-7"><a href="#cb62-7" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb62-8"><a href="#cb62-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (string_object) |char| <span class="op">{</span></span>
+<span id="cb62-9"><a href="#cb62-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> stdout.print(<span class="st">"{X} "</span>, .<span class="op">{</span>char<span class="op">}</span>);</span>
+<span id="cb62-10"><a href="#cb62-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb62-11"><a href="#cb62-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Bytes that represents the string object: C8 BA </code></pre>
 </div>
@@ -958,27 +979,27 @@ Type 4: []const u8</code></pre>
 <p>If you need to iterate through the characters of a string, instead of its bytes, then, you can use the <code>std.unicode.Utf8View</code> struct to create an iterator that iterates through the unicode points of your string.</p>
 <p>In the example below, we loop through the japanese characters “アメリカ”. Each of the four characters in this string is represented by three bytes. But the for loop iterates four times, one iteration for each character/unicode point in this string:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
-<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> utf8 = <span class="kw">try</span> std.unicode.Utf8View.init(<span class="st">"アメリカ"</span>);</span>
-<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> iterator = utf8.iterator();</span>
-<span id="cb62-7"><a href="#cb62-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (iterator.nextCodepointSlice()) |codepoint| <span class="op">{</span></span>
-<span id="cb62-8"><a href="#cb62-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> stdout.print(</span>
-<span id="cb62-9"><a href="#cb62-9" aria-hidden="true" tabindex="-1"></a>            <span class="st">"got codepoint {}</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb62-10"><a href="#cb62-10" aria-hidden="true" tabindex="-1"></a>            .<span class="op">{</span>std.fmt.fmtSliceHexUpper(codepoint)<span class="op">}</span>,</span>
-<span id="cb62-11"><a href="#cb62-11" aria-hidden="true" tabindex="-1"></a>        );</span>
-<span id="cb62-12"><a href="#cb62-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb62-13"><a href="#cb62-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
+<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb64-4"><a href="#cb64-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb64-5"><a href="#cb64-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> utf8 = <span class="kw">try</span> std.unicode.Utf8View.init(<span class="st">"アメリカ"</span>);</span>
+<span id="cb64-6"><a href="#cb64-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> iterator = utf8.iterator();</span>
+<span id="cb64-7"><a href="#cb64-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (iterator.nextCodepointSlice()) |codepoint| <span class="op">{</span></span>
+<span id="cb64-8"><a href="#cb64-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> stdout.print(</span>
+<span id="cb64-9"><a href="#cb64-9" aria-hidden="true" tabindex="-1"></a>            <span class="st">"got codepoint {}</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb64-10"><a href="#cb64-10" aria-hidden="true" tabindex="-1"></a>            .<span class="op">{</span>std.fmt.fmtSliceHexUpper(codepoint)<span class="op">}</span>,</span>
+<span id="cb64-11"><a href="#cb64-11" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb64-12"><a href="#cb64-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb64-13"><a href="#cb64-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>got codepoint E382A2
 got codepoint E383A1
 got codepoint E383AA
 got codepoint E382AB</code></pre>
 </section>
-<section id="sec-strings-useful-funs" class="level3" data-number="1.8.4">
-<h3 data-number="1.8.4" class="anchored" data-anchor-id="sec-strings-useful-funs"><span class="header-section-number">1.8.4</span> Some useful functions for strings</h3>
+<section id="sec-strings-useful-funs" class="level3" data-number="1.8.5">
+<h3 data-number="1.8.5" class="anchored" data-anchor-id="sec-strings-useful-funs"><span class="header-section-number">1.8.5</span> Some useful functions for strings</h3>
 <p>In this section, I just want to quickly describe some functions from the Zig Standard Library that are very useful to use when working with strings. Most notably:</p>
 <ul>
 <li><code>std.mem.eql()</code>: to compare if two strings are equal.</li>
@@ -994,10 +1015,10 @@ got codepoint E382AB</code></pre>
 <p>Notice that all of these functions come from the <code>mem</code> module of the Zig Standard Library. This module contains multiple functions and methods that are useful to work with memory and sequences of bytes in general.</p>
 <p>The <code>eql()</code> function is used to check if two arrays of data are equal or not. Since strings are just arbitrary arrays of bytes, we can use this function to compare two strings together. This function returns a boolean value indicating if the two strings are equal or not. The first argument of this function is the data type of the elements of the arrays that are being compared.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> name: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"Pedro"</span>;</span>
-<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(</span>
-<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>std.mem.eql(<span class="dt">u8</span>, name, <span class="st">"Pedro"</span>)<span class="op">}</span></span>
-<span id="cb64-4"><a href="#cb64-4" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> name: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"Pedro"</span>;</span>
+<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(</span>
+<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>std.mem.eql(<span class="dt">u8</span>, name, <span class="st">"Pedro"</span>)<span class="op">}</span></span>
+<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>true</code></pre>
 </div>
@@ -1005,33 +1026,33 @@ got codepoint E382AB</code></pre>
 <p>The <code>splitScalar()</code> and <code>splitSequence()</code> functions are useful to split a string into multiple fragments, like the <code>split()</code> method from Python strings. The difference between these two methods is that the <code>splitScalar()</code> uses a single character as the separator to split the string, while <code>splitSequence()</code> uses a sequence of characters (a.k.a. a substring) as the separator. There is a practical example of these functions later in the book.</p>
 <p>The <code>startsWith()</code> and <code>endsWith()</code> functions are pretty straightforward. They return a boolean value indicating if the string (or, more precisely, if the array of data) begins (<code>startsWith</code>) or ends (<code>endsWith</code>) with the sequence provided.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> name: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"Pedro"</span>;</span>
-<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(</span>
-<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>std.mem.startsWith(<span class="dt">u8</span>, name, <span class="st">"Pe"</span>)<span class="op">}</span></span>
-<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> name: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"Pedro"</span>;</span>
+<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(</span>
+<span id="cb68-3"><a href="#cb68-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>std.mem.startsWith(<span class="dt">u8</span>, name, <span class="st">"Pe"</span>)<span class="op">}</span></span>
+<span id="cb68-4"><a href="#cb68-4" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>true</code></pre>
 </div>
 </div>
 <p>The <code>concat()</code> function, as the name suggests, concatenate two or more strings together. Because the process of concatenating the strings involves allocating enough space to accomodate all the strings together, this <code>concat()</code> function receives an allocator object as input.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> str1 = <span class="st">"Hello"</span>;</span>
-<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> str2 = <span class="st">" you!"</span>;</span>
-<span id="cb68-3"><a href="#cb68-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> str3 = <span class="kw">try</span> std.mem.concat(</span>
-<span id="cb68-4"><a href="#cb68-4" aria-hidden="true" tabindex="-1"></a>    allocator, <span class="dt">u8</span>, &amp;[_][]<span class="kw">const</span> <span class="dt">u8</span><span class="op">{</span> str1, str2 <span class="op">}</span></span>
-<span id="cb68-5"><a href="#cb68-5" aria-hidden="true" tabindex="-1"></a>);</span>
-<span id="cb68-6"><a href="#cb68-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>str3<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> str1 = <span class="st">"Hello"</span>;</span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> str2 = <span class="st">" you!"</span>;</span>
+<span id="cb70-3"><a href="#cb70-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> str3 = <span class="kw">try</span> std.mem.concat(</span>
+<span id="cb70-4"><a href="#cb70-4" aria-hidden="true" tabindex="-1"></a>    allocator, <span class="dt">u8</span>, &amp;[_][]<span class="kw">const</span> <span class="dt">u8</span><span class="op">{</span> str1, str2 <span class="op">}</span></span>
+<span id="cb70-5"><a href="#cb70-5" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb70-6"><a href="#cb70-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>str3<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>As you can imagine, the <code>replace()</code> function is used to replace substrings in a string by another substring. This function works very similarly to the <code>replace()</code> method from Python strings. Therefore, you provide a substring to search, and every time that the <code>replace()</code> function finds this substring within the input string, it replaces this substring with the “replacement substring” that you provided as input.</p>
 <p>In the example below, we are taking the input string “Hello”, and replacing all occurrences of the substring “el” inside this input string with “34”, and saving the results inside the <code>buffer</code> object. As result, the <code>replace()</code> function returns an <code>usize</code> value that indicates how many replacements were performed.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> str1 = <span class="st">"Hello"</span>;</span>
-<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffer: [<span class="dv">5</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb69-3"><a href="#cb69-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> nrep = std.mem.replace(</span>
-<span id="cb69-4"><a href="#cb69-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">u8</span>, str1, <span class="st">"el"</span>, <span class="st">"34"</span>, buffer[<span class="dv">0</span>..]</span>
-<span id="cb69-5"><a href="#cb69-5" aria-hidden="true" tabindex="-1"></a>);</span>
-<span id="cb69-6"><a href="#cb69-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"New string: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer<span class="op">}</span>);</span>
-<span id="cb69-7"><a href="#cb69-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"N of replacements: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>nrep<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> str1 = <span class="st">"Hello"</span>;</span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffer: [<span class="dv">5</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> nrep = std.mem.replace(</span>
+<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">u8</span>, str1, <span class="st">"el"</span>, <span class="st">"34"</span>, buffer[<span class="dv">0</span>..]</span>
+<span id="cb71-5"><a href="#cb71-5" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb71-6"><a href="#cb71-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"New string: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer<span class="op">}</span>);</span>
+<span id="cb71-7"><a href="#cb71-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"N of replacements: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>nrep<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>New string: H34lo
 N of replacements: 1</code></pre>
@@ -1041,9 +1062,9 @@ N of replacements: 1</code></pre>
 <h2 data-number="1.9" class="anchored" data-anchor-id="safety-in-zig"><span class="header-section-number">1.9</span> Safety in Zig</h2>
 <p>A general trend in modern low-level programming languages is safety. As our modern world becomes more interconnected with technology and computers, the data produced by all of this technology becomes one of the most important (and also, one of the most dangerous) assets that we have.</p>
 <p>This is probably the main reason why modern low-level programming languages have been giving great attention to safety, especially memory safety, because memory corruption is still the main target for hackers to exploit. The reality is that we don’t have an easy solution for this problem. For now, we only have techniques and strategies that mitigates these problems.</p>
-<p>As Richard Feldman explains on his <a href="https://www.youtube.com/watch?v=jIZpKpLCOiU&amp;ab_channel=GOTOConferences">most recent GOTO conference talk</a><a href="#fn24" class="footnote-ref" id="fnref24" role="doc-noteref"><sup>24</sup></a> , we haven’t figured it out yet a way to achieve <strong>true safety in technology</strong>. In other words, we haven’t found a way to build software that won’t be exploited with 100% certainty. We can greatly reduce the risks of our software being exploited, by ensuring memory safety for example. But this is not enough to achieve “true safety” territory.</p>
+<p>As Richard Feldman explains on his <a href="https://www.youtube.com/watch?v=jIZpKpLCOiU&amp;ab_channel=GOTOConferences">most recent GOTO conference talk</a><a href="#fn25" class="footnote-ref" id="fnref25" role="doc-noteref"><sup>25</sup></a> , we haven’t figured it out yet a way to achieve <strong>true safety in technology</strong>. In other words, we haven’t found a way to build software that won’t be exploited with 100% certainty. We can greatly reduce the risks of our software being exploited, by ensuring memory safety for example. But this is not enough to achieve “true safety” territory.</p>
 <p>Because even if you write your program in a “safe language”, hackers can still exploit failures in the operating system where your program is running (e.g.&nbsp;maybe the system where your code is running has a “backdoor exploit” that can still affect your code in unexpected ways), or also, they can exploit the features from the architecture of your computer. A recently found exploit that involves memory invalidation through a feature of “memory tags” present in ARM chips is an example of that <span class="citation" data-cites="exploit1">(<a href="../references.html#ref-exploit1" role="doc-biblioref">Kim et al. 2024</a>)</span>.</p>
-<p>The question is: what have Zig and other languages been doing to mitigate this problem? If we take Rust as an example, Rust is, for the most part<a href="#fn25" class="footnote-ref" id="fnref25" role="doc-noteref"><sup>25</sup></a>, a memory safe language by enforcing specific rules to the developer. In other words, the key feature of Rust, the <em>borrow checker</em>, forces you to follow a specific logic when you are writing your Rust code, and the Rust compiler will always complain everytime you try to go out of this pattern.</p>
+<p>The question is: what have Zig and other languages been doing to mitigate this problem? If we take Rust as an example, Rust is, for the most part<a href="#fn26" class="footnote-ref" id="fnref26" role="doc-noteref"><sup>26</sup></a>, a memory safe language by enforcing specific rules to the developer. In other words, the key feature of Rust, the <em>borrow checker</em>, forces you to follow a specific logic when you are writing your Rust code, and the Rust compiler will always complain everytime you try to go out of this pattern.</p>
 <p>In contrast, the Zig language is not a memory safe language by default. There are some memory safety features that you get for free in Zig, especially in arrays and pointer objects. But there are other tools offered by the language, that are not used by default. In other words, the <code>zig</code> compiler does not obligate you to use such tools.</p>
 <p>The tools listed below are related to memory safety. That is, they help you to achieve memory safety in your Zig code:</p>
 <ul>
@@ -1117,9 +1138,10 @@ Sobeston. 2024. <span>“Zig Guide.”</span> <a href="https://zig.guide/">https
 <li id="fn20"><p><a href="https://adventofcode.com/" class="uri">https://adventofcode.com/</a><a href="#fnref20" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn21"><p><a href="https://ziglang.org/documentation/master/#Primitive-Types" class="uri">https://ziglang.org/documentation/master/#Primitive-Types</a>.<a href="#fnref21" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn22"><p><a href="https://www.gnu.org/software/libiconv/" class="uri">https://www.gnu.org/software/libiconv/</a><a href="#fnref22" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn23"><p><a href="https://cplusplus.com/reference/cstdio/printf/" class="uri">https://cplusplus.com/reference/cstdio/printf/</a><a href="#fnref23" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn24"><p><a href="https://www.youtube.com/watch?v=jIZpKpLCOiU&amp;ab_channel=GOTOConferences" class="uri">https://www.youtube.com/watch?v=jIZpKpLCOiU&amp;ab_channel=GOTOConferences</a><a href="#fnref24" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn25"><p>Actually, a lot of existing Rust code is still memory unsafe, because they communicate with external libraries through FFI (<em>foreign function interface</em>), which disables the borrow-checker features through the <code>unsafe</code> keyword.<a href="#fnref25" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn23"><p><a href="https://ziglang.org/documentation/master/#Sentinel-Terminated-Arrays" class="uri">https://ziglang.org/documentation/master/#Sentinel-Terminated-Arrays</a>.<a href="#fnref23" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn24"><p><a href="https://cplusplus.com/reference/cstdio/printf/" class="uri">https://cplusplus.com/reference/cstdio/printf/</a><a href="#fnref24" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn25"><p><a href="https://www.youtube.com/watch?v=jIZpKpLCOiU&amp;ab_channel=GOTOConferences" class="uri">https://www.youtube.com/watch?v=jIZpKpLCOiU&amp;ab_channel=GOTOConferences</a><a href="#fnref25" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn26"><p>Actually, a lot of existing Rust code is still memory unsafe, because they communicate with external libraries through FFI (<em>foreign function interface</em>), which disables the borrow-checker features through the <code>unsafe</code> keyword.<a href="#fnref26" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
