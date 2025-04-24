@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 
 In this chapter, I want to discuss how error handling is done in Zig.
 We already briefly learned about one of the available strategies to handle errors in Zig,
-which is the `try` keyword presented at @sec-main-file. But we still haven't learned about
+which is the `try` keyword presented in @sec-main-file. But we still haven't learned about
 the other methods, such as the `catch` keyword.
 I also want to discuss in this chapter how union types are created in Zig.
 
@@ -73,7 +73,7 @@ t.zig:8:17: note: consider using 'try', 'catch', or 'if'
 
 ### Returning errors from functions
 
-As we described at @sec-main-file, when we have a function that might return an error
+As we described in @sec-main-file, when we have a function that might return an error
 value, this function normally includes an exclamation mark (`!`) in its return type
 annotation. The presence of this exclamation mark indicates that this function might
 return an error value as result, and, the `zig` compiler forces you to always handle explicitly
@@ -92,8 +92,8 @@ fn print_name() !void {
 
 In the example above, we are using the exclamation mark to tell the `zig` compiler
 that this function might return some error. But which error exactly is returned from
-this function? For now, we are not specifying a specific error value. We only
-known for now that some error value (whatever it is) might be returned.
+this function? For now, we are not specifying a specific error value. For now,
+we only know that some error value (whatever it is) might be returned.
 
 But in fact, you can (if you want to) specify clearly which exact error values
 might be returned from this function. There are lot of examples of
@@ -110,9 +110,9 @@ pub fn fill(conn: *Connection) ReadError!void {
 
 This idea of specifying the exact error values that you expect to be returned
 from the function is interesting. Because they automatically become some sort of documentation
-of your function, and also, it allows the `zig` compiler to perform some extra checks over
-your code. Because it can check if there is any other type of error value
-that is being generated inside your function, and, that it is not being accounted
+of your function, and also, this allows the `zig` compiler to perform some extra checks over
+your code. Because the compiler can check if there is any other type of error value
+that is being generated inside your function, and, that it's not being accounted
 for in this return type annotation.
 
 Anyway, you can list the types of errors that can be returned from the function
@@ -131,14 +131,14 @@ When you have such a function, you can list
 all of these different types of errors that can be returned from this function,
 through a structure in Zig that we call of an *error set*.
 
-An error set is a special case of an union type. It is an union that contains error values in it.
-Not all programming languages have a notion of an "union object".
-But in summary, an union is just a set of data types.
+An error set is a special case of a union type. It's a union that contains error values in it.
+Not all programming languages have a notion of a "union object".
+But in summary, a union is just a set of data types.
 Unions are used to allow an object to have multiple data types.
 For example, a union of `x`, `y` and `z`, means that
 an object can be either of type `x`, or type `y` or type `z`.
 
-We are going to talk in more depth about unions at @sec-unions.
+We are going to talk in more depth about unions in @sec-unions.
 But you can write an error set by writing the keyword `error` before
 a pair of curly braces, then you list the error values that can be
 returned from the function inside this pair of curly braces.
@@ -173,7 +173,7 @@ of the error set in the return type annotation, instead of using the error set d
 We can see that in the `ReadError` error set that we showed earlier in the `fill()` function,
 which is defined in the `http.Client` module.
 So yes, I presented the `ReadError` as if it was just a standard and single error value, but in fact,
-it is an error set defined in the `http.Client` module, and therefore, it actually represents
+it's an error set defined in the `http.Client` module, and therefore, it actually represents
 a set of different error values that might happen inside the `fill()` function.
 
 
@@ -269,7 +269,7 @@ return an error, we are basically referring to an expression that have
 a return type in the format `!T`.
 The `!` indicates that this expression returns either an error value, or a value of type `T`.
 
-At @sec-main-file, I presented the `try` keyword and where to use it.
+In @sec-main-file, I presented the `try` keyword and where to use it.
 But I did not talked about what exactly this keyword does to your code,
 or, in other words, I have not explained yet what `try` means in your code.
 
@@ -349,7 +349,7 @@ by the expression.
 The Zig official language reference, provides a great example of this "default value"
 strategy with `catch`. This example is reproduced below. Notice that we are trying to parse
 some unsigned integer from a string object named `str`. In other words, this function
-is trying to transform an object of type `[]const u8` (i.e. an array of characters, a string, etc.)
+is trying to transform an object of type `[]const u8` (i.e., an array of characters, a string, etc.)
 into an object of type `u64`.
 
 But this parsing process done by the function `parseU64()` may fail, resulting in a runtime error.
@@ -383,7 +383,7 @@ But if this expression returns a valid value instead, then, this value is unwrap
 into the `number` object.
 
 This means that, if the `parseU64()` expression returns a valid value, this value becomes available
-inside the scope of this "if branch" (i.e. the "true branch") through the object that we listed inside the pair
+inside the scope of this "if branch" (i.e., the "true branch") through the object that we listed inside the pair
 of pipe character (`|`), which is the object `number`.
 
 If an error occurs, we can use an "else branch" (or the "false branch") of the if statement
@@ -446,18 +446,18 @@ our program to leak resources of the system.
 
 The `errdefer` keyword is a tool to perform such "cleanup actions" in hostile situations.
 This keyword is commonly used to clean (or to free) allocated resources, before the execution of our program
-get's stopped because of an error value being generated.
+gets stopped because of an error value being generated.
 
 The basic idea is to provide an expression to the `errdefer` keyword. Then,
 `errdefer` executes this expression if, and only if, an error occurs
 during the execution of the current scope.
-In the example below, we are using an allocator object (that we have presented at @sec-allocators)
+In the example below, we are using an allocator object (that we have presented in @sec-allocators)
 to create a new `User` object. If we are successful in creating and registering this new user,
 this `create_user()` function will return this new `User` object as its return value.
 
 However, if for some reason, an error value is generated by some expression
 that is after the `errdefer` line, for example, in the `db.add(user)` expression,
-the expression registered by `errdefer` get's executed before the error value is returned
+the expression registered by `errdefer` gets executed before the error value is returned
 from the function, and before the program enters in panic mode and stops the
 current execution.
 
@@ -476,7 +476,7 @@ fn create_user(db: Database, allocator: Allocator) !User {
 
 By using `errdefer` to destroy the `user` object that we have just created,
 we guarantee that the memory allocated for this `user` object
-get's freed, before the execution of the program stops.
+gets freed, before the execution of the program stops.
 Because if the expression `try db.add(user)` returns an error value,
 the execution of our program stops, and we lose all references and control over the memory
 that we have allocated for the `user` object.
@@ -485,19 +485,19 @@ we cannot free this memory anymore. We simply lose our chance to do the right th
 That is why `errdefer` is essential in this situation.
 
 Just to state clearly the differences between `defer` and `errdefer`
-(which I described at @sec-defer and @sec-errdefer1), it might be worth
+(which I described in @sec-defer and @sec-errdefer1), it might be worth
 to discuss the subject a bit further. You might still have the question
 "why use `errdefer` if we can use `defer` instead?" in your mind.
 
 Although being similar, the key difference between `errdefer` and `defer` keyword
-is when the provided expression get's executed.
+is when the provided expression gets executed.
 The `defer` keyword always execute the provided expression at the end of the
 current scope, no matter how your code exits this scope.
 In contrast, `errdefer` executes the provided expression only when an error occurs in the
 current scope.
 
 This becomes important if a resource that you allocate in the
-current scope get's freed later in your code, in a different scope.
+current scope gets freed later in your code, in a different scope.
 The `create_user()` functions is an example of this. If you think
 closely about this function, you will notice that this function returns
 the `user` object as the result.
@@ -520,7 +520,7 @@ that our program will free the allocated memory for the `user` object,
 even if an error occurs inside the `create_user()` function.
 
 If you allocate and free some memory for an object inside the same scope, then,
-just use `defer` and be happy, i.e. `errdefer` have no use for you in such situation.
+just use `defer` and be happy, i.e., `errdefer` have no use for you in such situation.
 But if you allocate some memory in a scope A, but you only free this memory
 later, in a scope B for example, then, `errdefer` becomes useful to avoid leaking memory
 in sketchy situations.
@@ -529,7 +529,7 @@ in sketchy situations.
 
 ## Union type in Zig {#sec-unions}
 
-An union type defines a set of types that an object can be. It is like a list of
+A union type defines a set of types that an object can be. It's like a list of
 options. Each option is a type that an object can assume. Therefore, unions in Zig
 have the same meaning, or, the same role as unions in C. They are used for the same purpose.
 You could also say that unions in Zig produces a similar effect to
@@ -581,7 +581,7 @@ in this instantiation.
 You could also interpret this as: only one data member of an union type can be activated at a time, the other data
 members remain deactivated and unaccessible. For example, if you create a `LakeTarget` object that uses
 the `azure` data member, you can no longer use or access the data members `google` or `amazon`.
-It is like if these other data members didn't exist at all in the `LakeTarget` type.
+It's like if these other data members didn't exist at all in the `LakeTarget` type.
 
 You can see this logic in the example below. Notice that, we first instantiate the union
 object using the `azure` data member. As a result, this `target` object contains only
@@ -627,7 +627,7 @@ target = LakeTarget {
 };
 ```
 
-A curious fact about union types, is that, at first, you cannot use them in switch statements (which were presented at @sec-switch).
+A curious fact about union types, is that, at first, you cannot use them in switch statements (which were presented in @sec-switch).
 In other words, if you have an object of type `LakeTarget` for example, you cannot give this object
 as input to a switch statement.
 
@@ -654,4 +654,3 @@ pub const Registry = union(enum) {
     extension: ExtensionRegistry,
 };
 ```
-
