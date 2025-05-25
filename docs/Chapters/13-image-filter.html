@@ -2,12 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.5.57">
+<meta name="generator" content="quarto-1.4.554">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>15&nbsp; Project 4 - Developing an image filter – Introduction to Zig</title>
+<title>Introduction to Zig - 15&nbsp; Project 4 - Developing an image filter</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -172,13 +172,13 @@ window.Quarto = {
   <header id="quarto-header" class="headroom fixed-top">
   <nav class="quarto-secondary-nav">
     <div class="container-fluid d-flex">
-      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
         <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/13-image-filter.html"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Project 4 - Developing an image filter</span></a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
-      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
         <i class="bi bi-search"></i>
       </button>
     </div>
@@ -371,7 +371,7 @@ window.Quarto = {
 
 <p>In this chapter we are going to build a new project. The objective of this project is to write a program that applies a filter over an image. More specifically, a “grayscale filter”, which transforms any color image into a grayscale image.</p>
 <p>We are going to use the image displayed in <a href="#fig-pascal" class="quarto-xref">Figure&nbsp;<span>15.1</span></a> in this project. In other words, we want to transform this colored image into a grayscale image, by using our “image filter program” written in Zig.</p>
-<div id="fig-pascal" class="quarto-float quarto-figure quarto-figure-center anchored">
+<div id="fig-pascal" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-pascal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="../ZigExamples/image_filter/pedro_pascal.png" class="img-fluid figure-img">
@@ -383,7 +383,7 @@ Figure&nbsp;15.1: A photo of the chilean-american actor Pedro Pascal. Source: Go
 </div>
 <p>We don’t need to write a lot of code to build such “image filter program”. However, we first need to understand how digital images work. That is why we begin this chapter by explaining the theory behind digital images and how colors are represented in modern computers. We also give a brief explanation about the PNG (Portable Network Graphics) file format, which is the format used in the example images.</p>
 <p>At the end of this chapter, we should have a full example of a program that takes the PNG image displayed in <a href="#fig-pascal" class="quarto-xref">Figure&nbsp;<span>15.1</span></a> as input, and writes a new image to the current working directory that is the grayscale version of this input image. This grayscale version of <a href="#fig-pascal" class="quarto-xref">Figure&nbsp;<span>15.1</span></a> is exposed in <a href="#fig-pascal-gray" class="quarto-xref">Figure&nbsp;<span>15.2</span></a>. You can find the full source code of this small project at the <code>ZigExamples/image_filter</code> <a href="https://github.com/pedropark99/zig-book/tree/main/ZigExamples/image_filter">folder at the official repository of this book</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
-<div id="fig-pascal-gray" class="quarto-float quarto-figure quarto-figure-center anchored">
+<div id="fig-pascal-gray" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-pascal-gray-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="../ZigExamples/image_filter/pedro_pascal_filter.png" class="img-fluid figure-img">
@@ -415,7 +415,7 @@ Figure&nbsp;15.2: The grayscale version of the photo.
 <p>A digital image is a “digital representation” of an image that we see with our eyes. In other words, a digital image is a “digital representation” of the colors that we see and perceive through the light. In the digital world, we have two types of images, which are: vector images and raster images. Vector images are not described here. So just remember that the content discussed here <strong>is related solely to raster images</strong>, and not vector images.</p>
 <p>A raster image is a type of digital image that is represented as a 2D (two dimensional) matrix of pixels. In other words, every raster image is basically a rectangle of pixels, and each pixel have a particular color. So, a raster image is just a rectangle of pixels, and each of these pixels are displayed in the screen of your computer (or the screen of any other device, e.g.&nbsp;laptop, tablet, smartphone, etc.) as a color.</p>
 <p><a href="#fig-raster" class="quarto-xref">Figure&nbsp;<span>15.3</span></a> demonstrates this idea. If you take any raster image, and you zoom into it very hard, you will see the actual pixels of the image. JPEG, TIFF and PNG are file formats that are commonly used to store raster images.</p>
-<div id="fig-raster" class="quarto-float quarto-figure quarto-figure-center anchored">
+<div id="fig-raster" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-raster-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="../Figures/imagem-raster.png" class="img-fluid figure-img">
@@ -432,7 +432,7 @@ Figure&nbsp;15.3: Zooming over a raster image to see the pixels. Source: Google 
 <p>This is not a rule written in stone, but the big majority of digital images are displayed from top to bottom and left to right. Most computers screens also follow this pattern. So, the first pixels in the image are the ones that are at the top and left corner of the image. You can find a visual representation of this logic in <a href="#fig-img-display" class="quarto-xref">Figure&nbsp;<span>15.4</span></a>.</p>
 <p>Also notice in <a href="#fig-img-display" class="quarto-xref">Figure&nbsp;<span>15.4</span></a> that, because a raster image is essentially a 2D matrix of pixels, the image is organized into rows and columns of pixels. The columns are defined by the horizontal x axis, while the rows are defined by the vertical y axis.</p>
 <p>Each pixel (i.e., the gray rectangles) exposed in <a href="#fig-img-display" class="quarto-xref">Figure&nbsp;<span>15.4</span></a> contains a number inside of it. These numbers are the indexes of the pixels. You can notice that the first pixels are in the top and left corner, and also, that the indexes of these pixels “grow to the sides”, or, in other words, they grow in the direction of the horizontal x axis. Most raster images are organized as rows of pixels. Thus, when these digital images are displayed, the screen display the first row of pixels, then, the second row, then, the third row, etc.</p>
-<div id="fig-img-display" class="quarto-float quarto-figure quarto-figure-center anchored">
+<div id="fig-img-display" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-img-display-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="./../Figures/image-display.png" class="img-fluid figure-img">
@@ -889,7 +889,18 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
     return false;
   }
-  const onCopySuccess = function(e) {
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
     // button target
     const button = e.trigger;
     // don't keep focus
@@ -921,29 +932,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }, 1000);
     // clear code selection
     e.clearSelection();
-  }
-  const getTextToCopy = function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-  }
-  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
-    text: getTextToCopy
   });
-  clipboard.on('success', onCopySuccess);
-  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-    // For code content inside modals, clipBoardJS needs to be initialized with a container option
-    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
-    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
-      text: getTextToCopy,
-      container: window.document.getElementById('quarto-embedded-source-code-modal')
-    });
-    clipboardModal.on('success', onCopySuccess);
-  }
     var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
     var mailtoRegex = new RegExp(/^mailto:/);
       var filterRegex = new RegExp('/' + window.location.host + '/');
@@ -951,7 +940,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
     }
     // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
     for (var i=0; i<links.length; i++) {
       const link = links[i];
       if (!isInternal(link.href)) {
