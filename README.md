@@ -103,7 +103,7 @@ First of all, you need to care about the dependencies of the project. This book 
 
 1. The [Zig compiler](https://ziglang.org/download/), which is responsible for compiling most of the code examples exposed in the book.
 2. The [R programming language](https://cran.r-project.org/), which provides some useful tools, specially `knitr` and `rmarkdown`, which are responsible for collecting the code examples exposed across the book, and sending them to the zig compiler to be compiled and executed, and also, collecting the results back to include them in the book.
-3. The [Quarto publishing system](https://quarto.org/docs/get-started/), which is responsible for compiling the book, creating internal links, references, a chapters structure, the HTML content of the book, etc.
+3. The [Quarto publishing system](https://quarto.org/docs/get-started/), which is responsible for compiling the book, creating internal links, references, a chapters structure, the HTML content of the book. It does all of that by using the amazing [Pandoc](https://pandoc.org/) with some extra features implemented by Quarto.
 
 So, installing these three pieces of software (Zig, R, Quarto) in your current machine is the first step to build the book.
 There are two strategies that you can take here:
