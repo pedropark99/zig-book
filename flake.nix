@@ -66,7 +66,6 @@
             # without imposing a specific language or requiring extra locale packages.
             export LANG="C.UTF-8"
             export LC_ALL="C.UTF-8"
-            # REMOVED: export LOCALE_ARCHIVE="${localeDefinitions}/lib/locale/locale-archive"
             # C.UTF-8 does not need LOCALE_ARCHIVE to be explicitly set from glibcLocalesUtf8.
 
             echo "--- Nix Shell Environment (HTML Only) ---"
