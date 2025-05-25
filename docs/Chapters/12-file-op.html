@@ -2,12 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.5.57">
+<meta name="generator" content="quarto-1.4.554">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>13&nbsp; Filesystem and Input/Output (IO) – Introduction to Zig</title>
+<title>Introduction to Zig - 13&nbsp; Filesystem and Input/Output (IO)</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -172,13 +172,13 @@ window.Quarto = {
   <header id="quarto-header" class="headroom fixed-top">
   <nav class="quarto-secondary-nav">
     <div class="container-fluid d-flex">
-      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
         <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/12-file-op.html"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Filesystem and Input/Output (IO)</span></a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
-      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
         <i class="bi bi-search"></i>
       </button>
     </div>
@@ -485,7 +485,7 @@ Your name is: Pedro
 <p>To give a better context to these diagrams, let’s suppose that we have a text file that contains the famous Lorem ipsum text<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a> in our filesystem. Let’s also suppose that these diagrams in <a href="#fig-unbuffered-io" class="quarto-xref">Figure&nbsp;<span>13.1</span></a> and <a href="#fig-buffered-io" class="quarto-xref">Figure&nbsp;<span>13.2</span></a> are showing the read operations that we are performing to read the Lorem ipsum text from this text file. The first thing you will notice when looking at these diagrams, is that in an unbuffered environment the read operations leads to many system calls. More precisely, in the diagram exposed in <a href="#fig-unbuffered-io" class="quarto-xref">Figure&nbsp;<span>13.1</span></a> we get one system call per each byte that we read from the text file. On the other hand, in <a href="#fig-buffered-io" class="quarto-xref">Figure&nbsp;<span>13.2</span></a> we have only one system call at the very beginning.</p>
 <p>When we use a buffered IO system, at the first read operation we perform, instead of sending one single byte directly to our program, the OS first sends a chunk of bytes from the file to a buffer object (i.e., an array). This chunk of bytes are cached/stored inside this buffer object.</p>
 <p>Therefore, from now on, for every new read operation that you perform, instead of making a new system call to ask for the next byte in the file to the OS, this read operation is redirected to the buffer object, that have this next byte already cached and ready to go.</p>
-<div id="fig-unbuffered-io" class="quarto-float quarto-figure quarto-figure-center anchored">
+<div id="fig-unbuffered-io" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-unbuffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="./../Figures/unbuffered-io.png" class="img-fluid figure-img" style="width:60.0%">
@@ -495,7 +495,7 @@ Figure&nbsp;13.1: Unbuffered IO
 </figcaption>
 </figure>
 </div>
-<div id="fig-buffered-io" class="quarto-float quarto-figure quarto-figure-center anchored">
+<div id="fig-buffered-io" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-buffered-io-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="./../Figures/buffered-io.png" class="img-fluid figure-img">
@@ -573,7 +573,7 @@ Tip
 <p>The working directory is the folder on your computer where you are currently rooted at. In other words, it’s the folder that your program is currently looking at. Therefore, whenever you are executing a program, this program is always working with a specific folder on your computer. It’s always in this folder that the program will initially look for the files you require, and it’s also in this folder that the program will initially save all the files you ask it to save.</p>
 <p>The working directory is determined by the folder from which you invoke your program in the terminal. In other words, if you are in the terminal of your OS, and you execute a binary file (i.e., a program) from this terminal, the folder to which your terminal is pointing at is the current working directory of your program that is being executed.</p>
 <p>In <a href="#fig-cwd" class="quarto-xref">Figure&nbsp;<span>13.3</span></a> we have an example of me executing a program from the terminal. We are executing the program outputted by the <code>zig</code> compiler by compiling the Zig module named <code>hello.zig</code>. The CWD in this case is the <code>zig-book</code> folder. In other words, while the <code>hello.zig</code> program is executing, it will be looking at the <code>zig-book</code> folder, and any file operation that we perform inside this program, will be using this <code>zig-book</code> folder as the “starting point”, or, as the “central focus”.</p>
-<div id="fig-cwd" class="quarto-float quarto-figure quarto-figure-center anchored">
+<div id="fig-cwd" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-cwd-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="./../Figures/cwd.png" class="img-fluid figure-img">
@@ -977,7 +977,18 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
     return false;
   }
-  const onCopySuccess = function(e) {
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
     // button target
     const button = e.trigger;
     // don't keep focus
@@ -1009,29 +1020,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }, 1000);
     // clear code selection
     e.clearSelection();
-  }
-  const getTextToCopy = function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-  }
-  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
-    text: getTextToCopy
   });
-  clipboard.on('success', onCopySuccess);
-  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-    // For code content inside modals, clipBoardJS needs to be initialized with a container option
-    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
-    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
-      text: getTextToCopy,
-      container: window.document.getElementById('quarto-embedded-source-code-modal')
-    });
-    clipboardModal.on('success', onCopySuccess);
-  }
     var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
     var mailtoRegex = new RegExp(/^mailto:/);
       var filterRegex = new RegExp('/' + window.location.host + '/');
@@ -1039,7 +1028,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
     }
     // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
     for (var i=0; i<links.length; i++) {
       const link = links[i];
       if (!isInternal(link.href)) {
