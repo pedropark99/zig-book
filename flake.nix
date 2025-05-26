@@ -4,9 +4,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
     flake-utils.url = "github:numtide/flake-utils";
+    zig.url = "github:mitchellh/zig-overlay";
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }:
+  outputs = { self, nixpkgs, flake-utils, zig, ... } @ inputs:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -52,13 +53,14 @@
           buildInputs = [
             R_env       # Provides R and Rscript
             pkgs.quarto # The Quarto CLI
+            zig.packages.${system}.master
             # REMOVED: localeDefinitions
           ] ++ nativeDeps;
 
           shellHook = ''
             # QUARTO_R: Point Quarto to the Rscript from our Nix-provided R environment
             unset QUARTO_R # Clear any pre-existing value
-            export QUARTO_R="${R_env}/bin/Rscript"
+            export QUARTO_R=$(which Rscript)
 
             # --- GENERAL LOCALE SETUP ---
             # Set a universally available, UTF-8 compatible locale.
@@ -66,14 +68,16 @@
             # without imposing a specific language or requiring extra locale packages.
             export LANG="C.UTF-8"
             export LC_ALL="C.UTF-8"
-            # C.UTF-8 does not need LOCALE_ARCHIVE to be explicitly set from glibcLocalesUtf8.
+
 
             echo "--- Nix Shell Environment (HTML Only) ---"
             echo "Locale set to C.UTF-8 for broad compatibility." # Added this line for clarity
-            echo "Zig is assumed to be available via \$PATH: $(which zig || echo 'Not found in PATH')"
+            echo "Zig is assumed to be available via \$PATH: $(which zig || echo 'Not found zig in PATH')"
             echo "R environment configured."
             echo "  To check R's library paths: R -e '.libPaths()'"
             echo "  To list R packages: R -e 'installed.packages()[,1]'"
+            echo "R environment is set to: $R_env"
+            echo "Rscript is at: $(which Rscript || echo 'Not found Rscript')"
             echo "QUARTO_R set to: $QUARTO_R"
             # REMOVED: echo "LOCALE_ARCHIVE set to: $LOCALE_ARCHIVE"
             echo ""
