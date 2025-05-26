@@ -345,7 +345,13 @@ window.Quarto = {
   <li><a href="#sec-string-hash-map" id="toc-sec-string-hash-map" class="nav-link" data-scroll-target="#sec-string-hash-map"><span class="header-section-number">11.2.5</span> The <code>StringHashMap</code> hashtable</a></li>
   <li><a href="#the-stringarrayhashmap-hashtable" id="toc-the-stringarrayhashmap-hashtable" class="nav-link" data-scroll-target="#the-stringarrayhashmap-hashtable"><span class="header-section-number">11.2.6</span> The <code>StringArrayHashMap</code> hashtable</a></li>
   </ul></li>
-  <li><a href="#linked-lists" id="toc-linked-lists" class="nav-link" data-scroll-target="#linked-lists"><span class="header-section-number">11.3</span> Linked lists</a></li>
+  <li><a href="#linked-lists" id="toc-linked-lists" class="nav-link" data-scroll-target="#linked-lists"><span class="header-section-number">11.3</span> Linked lists</a>
+  <ul class="collapse">
+  <li><a href="#recent-change-in-the-api" id="toc-recent-change-in-the-api" class="nav-link" data-scroll-target="#recent-change-in-the-api"><span class="header-section-number">11.3.1</span> Recent change in the API</a></li>
+  <li><a href="#how-to-use-a-singly-linked-list" id="toc-how-to-use-a-singly-linked-list" class="nav-link" data-scroll-target="#how-to-use-a-singly-linked-list"><span class="header-section-number">11.3.2</span> How to use a singly linked list</a></li>
+  <li><a href="#how-to-use-a-doubly-linked-list" id="toc-how-to-use-a-doubly-linked-list" class="nav-link" data-scroll-target="#how-to-use-a-doubly-linked-list"><span class="header-section-number">11.3.3</span> How to use a doubly linked list</a></li>
+  <li><a href="#iterating-through-the-linked-list" id="toc-iterating-through-the-linked-list" class="nav-link" data-scroll-target="#iterating-through-the-linked-list"><span class="header-section-number">11.3.4</span> Iterating through the linked list</a></li>
+  </ul></li>
   <li><a href="#multi-array-structure" id="toc-multi-array-structure" class="nav-link" data-scroll-target="#multi-array-structure"><span class="header-section-number">11.4</span> Multi array structure</a></li>
   <li><a href="#conclusion-1" id="toc-conclusion-1" class="nav-link" data-scroll-target="#conclusion-1"><span class="header-section-number">11.5</span> Conclusion</a></li>
   </ul>
@@ -685,7 +691,8 @@ Key: Matheus | Age: 21</code></pre>
 </section>
 <section id="linked-lists" class="level2" data-number="11.3">
 <h2 data-number="11.3" class="anchored" data-anchor-id="linked-lists"><span class="header-section-number">11.3</span> Linked lists</h2>
-<p>The Zig Standard Library provides an implementation for both singly and doubly linked lists. A linked list is a linear data structure that looks like a chain, or, a rope. The main advantage of this data structure is that you normally have very fast insertion and deletion operations. But, as a disadvantage, iterating through this data structure is usually not so fast as iterating through an array.</p>
+<p>The Zig Standard Library provides an implementation for both singly and doubly linked lists. More specifically, through the structs <code>SinglyLinkedList</code> and <code>DoublyLinkedList</code>.</p>
+<p>In case you are not familiar with these data structures, a linked list is a linear data structure that looks like a chain, or, a rope. The main advantage of this data structure is that you normally have very fast insertion and deletion operations. But, as a disadvantage, iterating through this data structure is usually not so fast as iterating through an array.</p>
 <p>The idea behind a linked list is to build a structure that consists of a sequence of nodes connected to each other by pointers. This means that linked lists are usually not contiguous in memory, because each node might be anywhere in memory. They do not need to be close to one another.</p>
 <p>In <a href="#fig-linked-list" class="quarto-xref">Figure&nbsp;<span>11.3</span></a> we can see a diagram of a singly linked list. We begin at the first node (which is usually called “the head of the linked list”). Then, from this first node we uncover the remaining nodes in the structure, by following the locations pointed by the pointers found in each node.</p>
 <p>Each node has two things in it. It has the value that is stored in the current node , and also, a pointer. This pointer points to the next node in the list. If this pointer is null, then, it means that we have reached the end of our linked list.</p>
@@ -711,75 +718,189 @@ Figure&nbsp;11.4: A diagram of a doubly linked list.
 </figcaption>
 </figure>
 </div>
-<p>Linked lists are available in Zig through the functions <code>SinglyLinkedList()</code> and <code>DoublyLinkedList()</code>, for “singly linked lists” and “doubly linked lists”, respectively. These functions are actually generic functions, which we are going to talk more about in <a href="10-stack-project.html#sec-generic-fun" class="quarto-xref"><span>Section 12.2.1</span></a>.</p>
-<p>For now, just understand that, in order to create a linked list object, we begin by providing a data type to these functions. This data type defines the type of data that each node in this linked list will store. In the example below, we are creating a singly linked list of <code>u32</code> values. So each node in this linked list will store a <code>u32</code> value.</p>
-<p>Both the <code>SinglyLinkedList()</code> and <code>DoublyLinkedList()</code> functions returns a type, i.e., a struct definition, as output. Therefore, the object <code>Lu32</code> is actually a struct definition. It defines the type “singly linked list of <code>u32</code> values”.</p>
-<p>Now that we have the definition of the struct, we need to instantiate a <code>Lu32</code> object. We normally instantiate struct objects in Zig by using an <code>init()</code> method. But in this case, we are instantiating the struct directly, by using an empty <code>struct</code> literal, in the expression <code>Lu32{}</code>.</p>
-<p>In this example, we first create multiple node objects, and after we create them, we start to insert and connect these nodes to build the linked list, using the <code>prepend()</code> and <code>insertAfter()</code> methods. Notice that the <code>prepend()</code> method is a method from the linked list object, while the <code>insertAfter()</code> is a method present in the node objects.</p>
-<p>In essence, the <code>prepend()</code> method inserts a node at the beginning of the linked list. In other words, the node that you provide to this method, becomes the new “head node” of the linked list. It becomes the first node in the list (see <a href="#fig-linked-list" class="quarto-xref">Figure&nbsp;<span>11.3</span></a>).</p>
-<p>On the other side, the <code>insertAfter()</code> method is used to basically connect two nodes together. When you provide a node to this method, it creates a pointer to this input node, and stores this pointer in the <code>next</code> attribute of the current node, from which the method was called from.</p>
-<p>Because doubly linked lists have both a <code>next</code> and a <code>prev</code> attributes in each node (as described in <a href="#fig-linked-list2" class="quarto-xref">Figure&nbsp;<span>11.4</span></a>), a node object created from a <code>DoublyLinkedList</code> object have both an <code>insertBefore()</code> (for <code>prev</code>) and an <code>insertAfter()</code> (for <code>next</code>) methods available.</p>
-<p>Thus, if we have used a doubly linked list, we can use the <code>insertBefore()</code> method to store the pointer to the input node in the <code>prev</code> attribute. This would put the input node as the “previous node”, or, the node before the current node. In contrast, the <code>insertAfter()</code> method puts the pointer created to the input node in the <code>next</code> attribute of the current node, and as result, the input node becomes the “next node” of the current node.</p>
-<p>Since we are using a singly linked list in this example, we have only the <code>insertAfter()</code> method available in the node objects that we create from our <code>Lu32</code> type.</p>
+<section id="recent-change-in-the-api" class="level3" data-number="11.3.1">
+<h3 data-number="11.3.1" class="anchored" data-anchor-id="recent-change-in-the-api"><span class="header-section-number">11.3.1</span> Recent change in the API</h3>
+<p>On previous versions of Zig, the <code>SinglyLinkedList</code> and <code>DoublyLinkedList</code> structs were initially implemented as “generics data structures”. Meaning that, you would use a generic function to create a singly (or doubly) linked list that could store the specific data type that you wanted to use. We will learn more about generics at <a href="10-stack-project.html#sec-generics" class="quarto-xref"><span>Section 12.2</span></a>, and also, how we can create a “generic data structure” at <a href="10-stack-project.html#sec-generic-struct" class="quarto-xref"><span>Section 12.2.2</span></a>.</p>
+<p>However, on the latest versions of Zig, the structs <code>SinglyLinkedList</code> and <code>DoublyLinkedList</code> were altered to use a “less generic API”. This specific change was introduced on April 3, 2025. Therefore, check if your Zig version is one released after this date. Just have in mind that if you don’t have a very recent version of the Zig compiler, you might have problems while trying to compile the next examples exposed here.</p>
+</section>
+<section id="how-to-use-a-singly-linked-list" class="level3" data-number="11.3.2">
+<h3 data-number="11.3.2" class="anchored" data-anchor-id="how-to-use-a-singly-linked-list"><span class="header-section-number">11.3.2</span> How to use a singly linked list</h3>
+<p>For example, consider that you are creating a singly linked list that is going to store <code>u32</code> values. Given this scenario, the first thing that we need to do, is to create a “node type” that is capable of storing a <code>u32</code> value. The <code>NodeU32</code> type exposed below demonstrates such “node type”.</p>
+<p>Notice that the data type associated with the member named <code>data</code> is the most important part of this custom “node type”. It determines the data type that is going to be stored in each node.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> SinglyLinkedList = std.SinglyLinkedList;</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Lu32 = SinglyLinkedList(<span class="dt">u32</span>);</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> list = Lu32<span class="op">{}</span>;</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> one = Lu32.Node<span class="op">{</span> .data = <span class="dv">1</span> <span class="op">}</span>;</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> two = Lu32.Node<span class="op">{</span> .data = <span class="dv">2</span> <span class="op">}</span>;</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> three = Lu32.Node<span class="op">{</span> .data = <span class="dv">3</span> <span class="op">}</span>;</span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> four = Lu32.Node<span class="op">{</span> .data = <span class="dv">4</span> <span class="op">}</span>;</span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> five = Lu32.Node<span class="op">{</span> .data = <span class="dv">5</span> <span class="op">}</span>;</span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    list.prepend(&amp;two); <span class="co">// {2}</span></span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>    two.insertAfter(&amp;five); <span class="co">// {2, 5}</span></span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>    list.prepend(&amp;one); <span class="co">// {1, 2, 5}</span></span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>    two.insertAfter(&amp;three); <span class="co">// {1, 2, 3, 5}</span></span>
-<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>    three.insertAfter(&amp;four); <span class="co">// {1, 2, 3, 4, 5}</span></span>
-<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> NodeU32 = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    data: <span class="dt">u32</span>,</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    node: std.SinglyLinkedList.Node = .<span class="op">{}</span>,</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>There are other methods available from the linked list object, depending if this object is a singly linked list or a doubly linked list, that might be very useful for you. You can find a summary of them in the bullet points below:</p>
+<p>After we created our custom “node type” that can store the specific data type that we want, we can just create a new and empty singly linked list, which will store our nodes. To do that, we just create a new object with the type <code>SinglyLinkedList</code>, like this:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> list: std.SinglyLinkedList = .<span class="op">{}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now, we have our linked list… But how can we insert nodes in it? Well, first of all, we need to create our nodes. So let’s focus on that first. The snippet exposed below demonstrates how we could use our <code>NodeU32</code> struct to create such nodes.</p>
+<p>Notice in this snippet that we are just setting the <code>data</code> member of the struct for now. We don’t need to connect these nodes together in this first instance. This is why we ignore the <code>node</code> member at first. But we are going to connect these nodes in a future point of the code, which is why these objects are marked as “variable objects”, so that we can alter them in the future.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> one: NodeU32 = .<span class="op">{</span> .data = <span class="dv">1</span> <span class="op">}</span>;</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> two: NodeU32 = .<span class="op">{</span> .data = <span class="dv">2</span> <span class="op">}</span>;</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> three: NodeU32 = .<span class="op">{</span> .data = <span class="dv">3</span> <span class="op">}</span>;</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> five: NodeU32 = .<span class="op">{</span> .data = <span class="dv">5</span> <span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now that we have both the linked list and also the nodes created, we can start to connect them together. You can use the <code>prepend()</code> method from the linked list object to insert the first node in the list, which is the “head” of the linked list. As the name suggests, this specific method prepends the input node to the linked list, or, in other words, it transforms the input node into the first node of the list.</p>
+<p>After we added the “head node” of the list, we can start to add the “next nodes” in the list by using the <code>insertAfter()</code> method from the <code>SinglyLinkedList.Node</code> type, which, in our case here, is accessible through the <code>node</code> member of our <code>NodeU32</code> type. Thus, we can start to create the connections between the nodes by calling this method from the node objects that are present in the list. Like in this example below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>list.prepend(&amp;two.node); <span class="co">// {2}</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>two.node.insertAfter(&amp;five.node); <span class="co">// {2, 5}</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>two.node.insertAfter(&amp;three.node); <span class="co">// {2, 3, 5}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>You can also call the <code>prepend()</code> method again to add new nodes to the beginning of the linked list, which means, effectively, changing the “head node” of the list, like this:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>list.prepend(&amp;one.node); <span class="co">// {1, 2, 3, 5}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>There are other methods available from the singly linked list object that you might be interested. You can find a summary of them in the bullet points below:</p>
 <ul>
 <li><code>remove()</code> to remove a specific node from the linked list.</li>
-<li>if singly linked list, <code>len()</code> to count how many nodes there is in the linked list.</li>
-<li>if doubly linked list, checkout the <code>len</code> attribute to see how many nodes there is in the linked list.</li>
-<li>if singly linked list, <code>popFirst()</code> to remove the first node (i.e., the “head”) from the linked list.</li>
-<li>if doubly linked list, <code>pop()</code> and <code>popFirst()</code> to remove the last and first nodes from the linked list, respectively.</li>
-<li>if doubly linked list, <code>append()</code> to add a new node to end of the linked list (i.e., inverse of <code>prepend()</code>).</li>
+<li><code>len()</code> to count how many nodes there is in the linked list.</li>
+<li><code>popFirst()</code> to remove the first node (i.e., the “head”) from the linked list.</li>
 </ul>
+<p>So, that is how singly linked lists work in Zig in a nutshell. To sum up, this is all the source code that was exposed in this section inside the single cell:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> NodeU32 = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>    data: <span class="dt">u32</span>,</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    node: std.SinglyLinkedList.Node = .<span class="op">{}</span>,</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> list: std.SinglyLinkedList = .<span class="op">{}</span>;</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> one: NodeU32 = .<span class="op">{</span> .data = <span class="dv">1</span> <span class="op">}</span>;</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> two: NodeU32 = .<span class="op">{</span> .data = <span class="dv">2</span> <span class="op">}</span>;</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> three: NodeU32 = .<span class="op">{</span> .data = <span class="dv">3</span> <span class="op">}</span>;</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> five: NodeU32 = .<span class="op">{</span> .data = <span class="dv">5</span> <span class="op">}</span>;</span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>list.prepend(&amp;two.node); <span class="co">// {2}</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>two.node.insertAfter(&amp;five.node); <span class="co">// {2, 5}</span></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>two.node.insertAfter(&amp;three.node); <span class="co">// {2, 3, 5}</span></span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>list.prepend(&amp;one.node); <span class="co">// {1, 2, 3, 5}</span></span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"Number of nodes: {}"</span>, .<span class="op">{</span>list.len()<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Number of nodes: 4</code></pre>
+</div>
+</div>
+</section>
+<section id="how-to-use-a-doubly-linked-list" class="level3" data-number="11.3.3">
+<h3 data-number="11.3.3" class="anchored" data-anchor-id="how-to-use-a-doubly-linked-list"><span class="header-section-number">11.3.3</span> How to use a doubly linked list</h3>
+<p>If you want to use a doubly linked list instead, you will face a similar workflow compared to the singly linked list:</p>
+<ol type="1">
+<li>You first create a “custom node type” that can store the specific data type that you want.</li>
+<li>Create an empty doubly linked list object.</li>
+<li>Create the nodes of linked list.</li>
+<li>Start to insert the nodes inside the list.</li>
+</ol>
+<p>In your “custom node type”, you should use the <code>DoublyLinkedList.Node</code> type to denote the <code>node</code> member of the struct. The snippet below demonstrates that. Here we are creating, once again, a node type that can store <code>u32</code> values. But this time, this struct is tailored to be used inside a <code>DoublyLinkedList</code> struct.</p>
+<p>After this step, the way that you create the new empty linked list, and the nodes that you want insert, is practically identical to the singly linked list case. But, this time, we normally use the <code>append()</code> method from the linked list object to add new nodes to the list.</p>
+<p>This <code>append()</code> method from the linked list object will always append the input node to the end of the linked list. However, in case you want to add the new node into a different position of the list, then, you should take a look at the <code>insertAfter()</code> and <code>insertBefore()</code> methods of the linked list object. These methods allow you to insert the new node either after or before an existing node in the list.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> NodeU32 = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>    data: <span class="dt">u32</span>,</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>    node: std.DoublyLinkedList.Node = .<span class="op">{}</span>,</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> list: std.DoublyLinkedList = .<span class="op">{}</span>;</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> one: NodeU32 = .<span class="op">{</span> .data = <span class="dv">1</span> <span class="op">}</span>;</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> two: NodeU32 = .<span class="op">{</span> .data = <span class="dv">2</span> <span class="op">}</span>;</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> three: NodeU32 = .<span class="op">{</span> .data = <span class="dv">3</span> <span class="op">}</span>;</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> five: NodeU32 = .<span class="op">{</span> .data = <span class="dv">5</span> <span class="op">}</span>;</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>list.append(&amp;one.node); <span class="co">// {1}</span></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>list.append(&amp;three.node); <span class="co">// {1, 3}</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>list.insertAfter(</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>    &amp;one.node,</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>    &amp;five.node</span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>); <span class="co">// {1, 5, 3}</span></span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>list.append(&amp;two.node); <span class="co">// {1, 5, 3, 2}</span></span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"Number of nodes: {}"</span>, .<span class="op">{</span>list.len()<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Number of nodes: 4</code></pre>
+</div>
+</div>
+<p>These are other methods from the <code>DoublyLinkedList</code> object that might interest you:</p>
+<ul>
+<li><code>remove()</code>: to remove a specific node from the list.</li>
+<li><code>len()</code>: to count the number of nodes in the list.</li>
+<li><code>prepend()</code>: to add a node to the beginning of the list (i.e.&nbsp;set the head node of the list).</li>
+<li><code>pop()</code>: to remove the last node of the list.</li>
+<li><code>popFirst()</code>: to remove the first node of the list.</li>
+<li><code>concatByMoving()</code>: to concat two doubly linked lists together.</li>
+</ul>
+</section>
+<section id="iterating-through-the-linked-list" class="level3" data-number="11.3.4">
+<h3 data-number="11.3.4" class="anchored" data-anchor-id="iterating-through-the-linked-list"><span class="header-section-number">11.3.4</span> Iterating through the linked list</h3>
+<p>If you want to iterate over the elements of the linked list, all you need to do is to follow the trail created by the “pointer to next node”. We usually do that inside a while loop, that simply goes to the next node over and over, until it finds a null pointer, which means that we hit the end of the list.</p>
+<p>This next example demonstrates how such while loop would work. Notice that we are using the <code>@fieldParentPtr()</code> built-in function to get access to a pointer that points to the parent instance of the <code>node</code> object. In other words, we get access to a pointer to the <code>NodeU32</code> instance that contains the current node. This way, we can use this pointer to access the data that is currently stored in this node.</p>
+<p>Also notice that in each iteration of the while loop, we are changing the value of the <code>it</code> variable to the next node in the list. The while loop is interrupted in the moment that this <code>it</code> variable becomes null, which will happen when the there is not “next node” in the list, which means that we have reached the end of the list.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> NodeU32 = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>    data: <span class="dt">u32</span>,</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>    node: std.SinglyLinkedList.Node = .<span class="op">{}</span>,</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> list: std.SinglyLinkedList = .<span class="op">{}</span>;</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> one: NodeU32 = .<span class="op">{</span> .data = <span class="dv">1</span> <span class="op">}</span>;</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> two: NodeU32 = .<span class="op">{</span> .data = <span class="dv">2</span> <span class="op">}</span>;</span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> three: NodeU32 = .<span class="op">{</span> .data = <span class="dv">3</span> <span class="op">}</span>;</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> five: NodeU32 = .<span class="op">{</span> .data = <span class="dv">5</span> <span class="op">}</span>;</span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>list.prepend(&amp;two.node); <span class="co">// {2}</span></span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>list.prepend(&amp;five.node); <span class="co">// {5, 2}</span></span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>list.prepend(&amp;three.node); <span class="co">// {3, 5, 2}</span></span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a>list.prepend(&amp;one.node); <span class="co">// {1, 3, 5, 2}</span></span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-17"><a href="#cb29-17" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> it = list.first;</span>
+<span id="cb29-18"><a href="#cb29-18" aria-hidden="true" tabindex="-1"></a><span class="kw">while</span> (it) |node| : (it = node.next) <span class="op">{</span></span>
+<span id="cb29-19"><a href="#cb29-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> l: *NodeU32 = <span class="bu">@fieldParentPtr</span>(</span>
+<span id="cb29-20"><a href="#cb29-20" aria-hidden="true" tabindex="-1"></a>        <span class="st">"node"</span>, node</span>
+<span id="cb29-21"><a href="#cb29-21" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb29-22"><a href="#cb29-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
+<span id="cb29-23"><a href="#cb29-23" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Current value: {}"</span>, .<span class="op">{</span>l.data<span class="op">}</span></span>
+<span id="cb29-24"><a href="#cb29-24" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb29-25"><a href="#cb29-25" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Current value: 1
+Current value: 3
+Current value: 5
+Current value: 2</code></pre>
+</section>
 </section>
 <section id="multi-array-structure" class="level2" data-number="11.4">
 <h2 data-number="11.4" class="anchored" data-anchor-id="multi-array-structure"><span class="header-section-number">11.4</span> Multi array structure</h2>
 <p>Zig introduces a new data structure called <code>MultiArrayList()</code>. It’s a different version of the dynamic array that we have introduced in <a href="#sec-dynamic-array" class="quarto-xref"><span>Section 11.1</span></a>. The difference between this structure and the <code>ArrayList()</code> that we know from <a href="#sec-dynamic-array" class="quarto-xref"><span>Section 11.1</span></a>, is that <code>MultiArrayList()</code> creates a separate dynamic array for each field of the struct that you provide as input.</p>
 <p>Consider the following code example. We create a new custom struct called <code>Person</code>. This struct contains three different data members, or, three different fields. As consequence, when we provide this <code>Person</code> data type as input to <code>MultiArrayList()</code>, this creates a “struct of three different arrays” called <code>PersonArray</code>. In other words, this <code>PersonArray</code> is a struct that contains three internal dynamic arrays in it. One array for each field found in the <code>Person</code> struct definition.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Person = <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    name: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    age: <span class="dt">u8</span>,</span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    height: <span class="dt">f32</span>,</span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> PersonArray = std.MultiArrayList(Person);</span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
-<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
-<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> people = PersonArray<span class="op">{}</span>;</span>
-<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> people.deinit(allocator);</span>
-<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> people.append(allocator, .<span class="op">{</span></span>
-<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"Auguste"</span>, .age = <span class="dv">15</span>, .height = <span class="fl">1.54</span></span>
-<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
-<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> people.append(allocator, .<span class="op">{</span></span>
-<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"Elena"</span>, .age = <span class="dv">26</span>, .height = <span class="fl">1.65</span></span>
-<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
-<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> people.append(allocator, .<span class="op">{</span></span>
-<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"Michael"</span>, .age = <span class="dv">64</span>, .height = <span class="fl">1.87</span></span>
-<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
-<span id="cb21-24"><a href="#cb21-24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Person = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>    name: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>    age: <span class="dt">u8</span>,</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>    height: <span class="dt">f32</span>,</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> PersonArray = std.MultiArrayList(Person);</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> people = PersonArray<span class="op">{}</span>;</span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> people.deinit(allocator);</span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> people.append(allocator, .<span class="op">{</span></span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"Auguste"</span>, .age = <span class="dv">15</span>, .height = <span class="fl">1.54</span></span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> people.append(allocator, .<span class="op">{</span></span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"Elena"</span>, .age = <span class="dv">26</span>, .height = <span class="fl">1.65</span></span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
+<span id="cb31-21"><a href="#cb31-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> people.append(allocator, .<span class="op">{</span></span>
+<span id="cb31-22"><a href="#cb31-22" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"Michael"</span>, .age = <span class="dv">64</span>, .height = <span class="fl">1.87</span></span>
+<span id="cb31-23"><a href="#cb31-23" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
+<span id="cb31-24"><a href="#cb31-24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>In other words, instead of creating an array of “persons”, the <code>MultiArrayList()</code> function creates a “struct of arrays”. Each data member of this struct is a different array that stores the values of a specific field from the <code>Person</code> values that were added (or, appended) to this “struct of arrays”. One important detail is that each of these separate internal arrays stored inside <code>PersonArray</code> are dynamic arrays. This means that these arrays can grow in capacity automatically as needed, to accomodate more values.</p>
 <p>The <a href="#fig-multi-array" class="quarto-xref">Figure&nbsp;<span>11.5</span></a> exposed below presents a diagram that describes the <code>PersonArray</code> struct that we have created in the previous code example. Notice that the values of the data members present in each of the three <code>Person</code> values that we have appended into the <code>PersonArray</code> object , are scattered across three different internal arrays of the <code>PersonArray</code> object.</p>
@@ -795,9 +916,9 @@ Figure&nbsp;11.5: A diagram of the <code>PersonArray</code> struct.
 </div>
 <p>You can easily access each of these arrays separately, and iterate over the values of each array. For that, you will need to call the <code>items()</code> method from the <code>PersonArray</code> object, and provide as input to this method, the name of the field that you want to iterate over. If you want to iterate through the <code>.age</code> array for example, then, you need to call <code>items(.age)</code> from the <code>PersonArray</code> object, like in the example below:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (people.items(.age)) |*age| <span class="op">{</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Age: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>age.*<span class="op">}</span>);</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (people.items(.age)) |*age| <span class="op">{</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Age: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>age.*<span class="op">}</span>);</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Age: 15
 Age: 26
@@ -806,15 +927,15 @@ Age: 64</code></pre>
 <p>In this example we are calling the <code>items()</code> method directly from the <code>PersonArray</code> object. However, in most situations it’s recommened to call this <code>items()</code> method from a “slice object”, which you can create from the <code>slice()</code> method. The reason for this is that calling <code>items()</code> multiple times have better performance if you use a slice object.</p>
 <p>Therefore, if you are planning to access only one of the internal arrays from your “multi array struct”, it’s fine to call <code>items()</code> directly from the multi array object. But if you need to access many of the internal arrays from your “multi array struct”, then, you will likely need to call <code>items()</code> more than once, and, in such circumstance, is better to call <code>items()</code> through a slice object. The example below demonstrates the use of such object:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> slice = people.slice();</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (slice.items(.age)) |*age| <span class="op">{</span></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    age.* += <span class="dv">10</span>;</span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (slice.items(.name), slice.items(.age)) |*n,*a| <span class="op">{</span></span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Name: {s}, Age: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n.*, a.*<span class="op">}</span></span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> slice = people.slice();</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (slice.items(.age)) |*age| <span class="op">{</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>    age.* += <span class="dv">10</span>;</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (slice.items(.name), slice.items(.age)) |*n,*a| <span class="op">{</span></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Name: {s}, Age: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n.*, a.*<span class="op">}</span></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Name: Auguste, Age: 25
 Name: Elena, Age: 36

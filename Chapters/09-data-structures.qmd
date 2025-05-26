@@ -706,8 +706,10 @@ var ages = std.StringArrayHashMap(u8).init(allocator);
 ## Linked lists
 
 The Zig Standard Library provides an implementation for both singly and doubly linked lists.
-A linked list is a linear data structure that looks like a chain, or, a rope.
-The main advantage of this data structure is that you normally have very fast
+More specifically, through the structs `SinglyLinkedList` and `DoublyLinkedList`.
+
+In case you are not familiar with these data structures, a linked list is a linear data structure that looks
+like a chain, or, a rope. The main advantage of this data structure is that you normally have very fast
 insertion and deletion operations. But, as a disadvantage, iterating through
 this data structure is usually not so fast as iterating through an array.
 
@@ -740,87 +742,238 @@ normally have only the `next` pointer in them.
 ![A diagram of a doubly linked list.](./../Figures/doubly-linked-list.png){#fig-linked-list2}
 
 
-Linked lists are available in Zig through the functions `SinglyLinkedList()` and
-`DoublyLinkedList()`, for "singly linked lists" and "doubly linked lists", respectively. These functions are
-actually generic functions, which we are going to talk more about in @sec-generic-fun.
 
-For now, just understand that, in order to create a linked list object,
-we begin by providing a data type to these functions. This data type defines
-the type of data that each node in this linked list will store. In the example below,
-we are creating a singly linked list of `u32` values.
-So each node in this linked list will store a `u32` value.
+### Recent change in the API
 
-Both the `SinglyLinkedList()` and `DoublyLinkedList()` functions returns a type,
-i.e., a struct definition, as output. Therefore, the object `Lu32` is actually
-a struct definition. It defines the type "singly linked list of `u32` values".
+On previous versions of Zig, the `SinglyLinkedList` and `DoublyLinkedList` structs were initially implemented as "generics data structures".
+Meaning that, you would use a generic function to create a singly (or doubly) linked list that could store
+the specific data type that you wanted to use. We will learn more about generics at @sec-generics, and also,
+how we can create a "generic data structure" at @sec-generic-struct.
 
-Now that we have the definition of the struct, we need to instantiate a `Lu32` object.
-We normally instantiate struct objects in Zig by using an `init()` method.
-But in this case, we are instantiating the struct directly, by using an empty
-`struct` literal, in the expression `Lu32{}`.
+However, on the latest versions of Zig, the structs `SinglyLinkedList` and `DoublyLinkedList` were altered to use a
+"less generic API". This specific change was introduced on April 3, 2025. Therefore, check if your Zig version is one released after this
+date. Just have in mind that if you don't have a very recent version of the Zig compiler,
+you might have problems while trying to compile the next examples exposed here.
 
-In this example, we first create multiple node objects, and after we create them,
-we start to insert and connect these nodes to build the linked list, using the
-`prepend()` and `insertAfter()` methods. Notice that the `prepend()` method
-is a method from the linked list object, while the `insertAfter()` is a method
-present in the node objects.
 
-In essence, the `prepend()` method inserts a node at the beginning of the linked
-list. In other words, the node that you provide to this method, becomes the new
-"head node" of the linked list. It becomes the first node in the list (see @fig-linked-list).
 
-On the other side, the `insertAfter()` method is used to basically connect two nodes together.
-When you provide a node to this method, it creates a pointer to this input node,
-and stores this pointer in the `next` attribute of the current node, from which the method was called from.
+### How to use a singly linked list
 
-Because doubly linked lists have both a `next` and a `prev` attributes in each node
-(as described in @fig-linked-list2), a node object created from
-a `DoublyLinkedList` object have both an `insertBefore()` (for `prev`)
-and an `insertAfter()` (for `next`) methods available.
+For example, consider that you are creating a singly linked list that is going to store `u32` values.
+Given this scenario, the first thing that we need to do, is to create a "node type" that is capable
+of storing a `u32` value. The `NodeU32` type exposed below demonstrates such "node type".
 
-Thus, if we have used a doubly linked list, we can use the `insertBefore()` method
-to store the pointer to the input node in the `prev` attribute. This would put the input
-node as the "previous node", or, the node before the current node. In contrast, the `insertAfter()` method
-puts the pointer created to the input node in the `next` attribute of the current node,
-and as result, the input node becomes the "next node" of the current node.
-
-Since we are using a singly linked list in this example, we have only the `insertAfter()` method
-available in the node objects that we create from our `Lu32` type.
-
+Notice that the data type associated with the member named `data` is the most important part of this
+custom "node type". It determines the data type that is going to be stored in each node.
 
 ```{zig}
-#| auto_main: false
+#| eval: false
 const std = @import("std");
-const SinglyLinkedList = std.SinglyLinkedList;
-const Lu32 = SinglyLinkedList(u32);
+const NodeU32 = struct {
+    data: u32,
+    node: std.SinglyLinkedList.Node = .{},
+};
+```
 
-pub fn main() !void {
-    var list = Lu32{};
-    var one = Lu32.Node{ .data = 1 };
-    var two = Lu32.Node{ .data = 2 };
-    var three = Lu32.Node{ .data = 3 };
-    var four = Lu32.Node{ .data = 4 };
-    var five = Lu32.Node{ .data = 5 };
+After we created our custom "node type" that can store the specific data type that we
+want, we can just create a new and empty singly linked list, which will store our nodes.
+To do that, we just create a new object with the type `SinglyLinkedList`, like this:
 
-    list.prepend(&two); // {2}
-    two.insertAfter(&five); // {2, 5}
-    list.prepend(&one); // {1, 2, 5}
-    two.insertAfter(&three); // {1, 2, 3, 5}
-    three.insertAfter(&four); // {1, 2, 3, 4, 5}
-}
+```{zig}
+#| eval: false
+var list: std.SinglyLinkedList = .{};
+```
+
+Now, we have our linked list... But how can we insert nodes in it? Well, first of all,
+we need to create our nodes. So let's focus on that first. The snippet exposed below demonstrates
+how we could use our `NodeU32` struct to create such nodes.
+
+Notice in this snippet that we are just setting the `data` member of the struct for now.
+We don't need to connect these nodes together in this first instance. This is why we ignore
+the `node` member at first. But we are going to connect these nodes in a future point of the code, which is
+why these objects are marked as "variable objects", so that we can alter them in the future.
+
+```{zig}
+#| eval: false
+var one: NodeU32 = .{ .data = 1 };
+var two: NodeU32 = .{ .data = 2 };
+var three: NodeU32 = .{ .data = 3 };
+var five: NodeU32 = .{ .data = 5 };
+```
+
+Now that we have both the linked list and also the nodes created, we can start to connect them together.
+You can use the `prepend()` method from the linked list object to insert the first node in the list, which
+is the "head" of the linked list. As the name suggests, this specific method prepends the input node to the linked list,
+or, in other words, it transforms the input node into the first node of the list.
+
+After we added the "head node" of the list, we can start to add the "next nodes" in the list by using the `insertAfter()` method
+from the `SinglyLinkedList.Node` type, which, in our case here, is accessible through the `node` member of our
+`NodeU32` type. Thus, we can start to create the connections between the nodes by calling this method from the node objects
+that are present in the list. Like in this example below:
+
+```{zig}
+#| eval: false
+list.prepend(&two.node); // {2}
+two.node.insertAfter(&five.node); // {2, 5}
+two.node.insertAfter(&three.node); // {2, 3, 5}
+```
+
+You can also call the `prepend()` method again to add new nodes to the beginning of the linked list, which
+means, effectively, changing the "head node" of the list, like this:
+
+```{zig}
+#| eval: false
+list.prepend(&one.node); // {1, 2, 3, 5}
 ```
 
 
-There are other methods available from the linked list object, depending if this object is
-a singly linked list or a doubly linked list, that might be very useful for you. You can find a
+There are other methods available from the singly linked list object that you might be interested. You can find a
 summary of them in the bullet points below:
 
 - `remove()` to remove a specific node from the linked list.
-- if singly linked list, `len()` to count how many nodes there is in the linked list.
-- if doubly linked list, checkout the `len` attribute to see how many nodes there is in the linked list.
-- if singly linked list, `popFirst()` to remove the first node (i.e., the "head") from the linked list.
-- if doubly linked list, `pop()` and `popFirst()` to remove the last and first nodes from the linked list, respectively.
-- if doubly linked list, `append()` to add a new node to end of the linked list (i.e., inverse of `prepend()`).
+- `len()` to count how many nodes there is in the linked list.
+- `popFirst()` to remove the first node (i.e., the "head") from the linked list.
+
+So, that is how singly linked lists work in Zig in a nutshell. To sum up,
+this is all the source code that was exposed in this section inside the single cell:
+
+```{zig}
+#| build_type: "run"
+#| auto_main: true
+const NodeU32 = struct {
+    data: u32,
+    node: std.SinglyLinkedList.Node = .{},
+};
+
+var list: std.SinglyLinkedList = .{};
+var one: NodeU32 = .{ .data = 1 };
+var two: NodeU32 = .{ .data = 2 };
+var three: NodeU32 = .{ .data = 3 };
+var five: NodeU32 = .{ .data = 5 };
+
+list.prepend(&two.node); // {2}
+two.node.insertAfter(&five.node); // {2, 5}
+two.node.insertAfter(&three.node); // {2, 3, 5}
+list.prepend(&one.node); // {1, 2, 3, 5}
+
+try stdout.print("Number of nodes: {}", .{list.len()});
+```
+
+
+### How to use a doubly linked list
+
+If you want to use a doubly linked list instead, you will face a similar workflow compared to the
+singly linked list:
+
+1. You first create a "custom node type" that can store the specific data type that you want.
+2. Create an empty doubly linked list object.
+3. Create the nodes of linked list.
+4. Start to insert the nodes inside the list.
+
+In your "custom node type", you should use the `DoublyLinkedList.Node` type to denote
+the `node` member of the struct. The snippet below demonstrates that. Here we are creating,
+once again, a node type that can store `u32` values. But this time, this struct is tailored
+to be used inside a `DoublyLinkedList` struct.
+
+After this step, the way that you create the new empty linked list, and the nodes that you want insert,
+is practically identical to the singly linked list case. But, this time,
+we normally use the `append()` method from the linked list object to add new nodes to the list.
+
+This `append()` method from the linked list object will always append the input node to the end of the
+linked list. However, in case you want to add the new node into a different position of the list, then,
+you should take a look at the `insertAfter()` and `insertBefore()` methods of the linked list object.
+These methods allow you to insert the new node either after or before an existing node in the list.
+
+
+```{zig}
+#| build_type: "run"
+#| auto_main: true
+const NodeU32 = struct {
+    data: u32,
+    node: std.DoublyLinkedList.Node = .{},
+};
+
+var list: std.DoublyLinkedList = .{};
+var one: NodeU32 = .{ .data = 1 };
+var two: NodeU32 = .{ .data = 2 };
+var three: NodeU32 = .{ .data = 3 };
+var five: NodeU32 = .{ .data = 5 };
+
+list.append(&one.node); // {1}
+list.append(&three.node); // {1, 3}
+list.insertAfter(
+    &one.node,
+    &five.node
+); // {1, 5, 3}
+list.append(&two.node); // {1, 5, 3, 2}
+
+try stdout.print("Number of nodes: {}", .{list.len()});
+```
+
+These are other methods from the `DoublyLinkedList` object that might interest you:
+
+- `remove()`: to remove a specific node from the list.
+- `len()`: to count the number of nodes in the list.
+- `prepend()`: to add a node to the beginning of the list (i.e. set the head node of the list).
+- `pop()`: to remove the last node of the list.
+- `popFirst()`: to remove the first node of the list.
+- `concatByMoving()`: to concat two doubly linked lists together.
+
+
+### Iterating through the linked list
+
+If you want to iterate over the elements of the linked list, all you need to do is to follow
+the trail created by the "pointer to next node". We usually do that inside a while loop, that simply goes to the
+next node over and over, until it finds a null pointer, which means that we hit the end of the list.
+
+This next example demonstrates how such while loop would work. Notice that we are using the `@fieldParentPtr()`
+built-in function to get access to a pointer that points to the parent instance of the `node` object. In other words,
+we get access to a pointer to the `NodeU32` instance that contains the current node. This way, we can use this pointer
+to access the data that is currently stored in this node.
+
+Also notice that in each iteration of the while loop, we are changing the value of the `it` variable to the next node
+in the list. The while loop is interrupted in the moment that this `it` variable becomes null, which will happen
+when the there is not "next node" in the list, which means that we have reached the end of the list.
+
+
+```{zig}
+#| build_type: "run"
+#| auto_main: true
+#| results: "hide"
+const NodeU32 = struct {
+    data: u32,
+    node: std.SinglyLinkedList.Node = .{},
+};
+
+var list: std.SinglyLinkedList = .{};
+var one: NodeU32 = .{ .data = 1 };
+var two: NodeU32 = .{ .data = 2 };
+var three: NodeU32 = .{ .data = 3 };
+var five: NodeU32 = .{ .data = 5 };
+
+list.prepend(&two.node); // {2}
+list.prepend(&five.node); // {5, 2}
+list.prepend(&three.node); // {3, 5, 2}
+list.prepend(&one.node); // {1, 3, 5, 2}
+
+var it = list.first;
+while (it) |node| : (it = node.next) {
+    const l: *NodeU32 = @fieldParentPtr(
+        "node", node
+    );
+    try stdout.print(
+        "Current value: {}", .{l.data}
+    );
+}
+```
+
+```
+Current value: 1
+Current value: 3
+Current value: 5
+Current value: 2
+```
+
 
 
 
