@@ -769,7 +769,6 @@ custom "node type". It determines the data type that is going to be stored in ea
 ```{zig}
 #| eval: false
 const std = @import("std");
-
 const NodeU32 = struct {
     data: u32,
     node: std.SinglyLinkedList.Node = .{},
@@ -859,6 +858,69 @@ list.prepend(&one.node); // {1, 2, 3, 5}
 
 try stdout.print("Number of nodes: {}", .{list.len()});
 ```
+
+
+### How to use a doubly linked list
+
+If you want to use a doubly linked list instead, you will face a similar workflow compared to the
+singly linked list:
+
+1. You first create a "custom node type" that can store the specific data type that you want.
+2. Create an empty doubly linked list object.
+3. Create the nodes of linked list.
+4. Start to insert the nodes inside the list.
+
+In your "custom node type", you should use the `DoublyLinkedList.Node` type to denote
+the `node` member of the struct. The snippet below demonstrates that. Here we are creating,
+once again, a node type that can store `u32` values. But this time, this struct is tailored
+to be used inside a `DoublyLinkedList` struct.
+
+After this step, the way that you create the new empty linked list, and the nodes that you want insert,
+is practically identical to the singly linked list case. But, this time,
+we normally use the `append()` method from the linked list object to add new nodes to the list.
+
+This `append()` method from the linked list object will always append the input node to the end of the
+linked list. However, in case you want to add the new node into a different position of the list, then,
+you should take a look at the `insertAfter()` and `insertBefore()` methods of the linked list object.
+These methods allow you to insert the new node either after or before an existing node in the list.
+
+
+```{zig}
+#| build_type: "run"
+#| auto_main: true
+const NodeU32 = struct {
+    data: u32,
+    node: std.DoublyLinkedList.Node = .{},
+};
+
+var list: std.DoublyLinkedList = .{};
+var one: NodeU32 = .{ .data = 1 };
+var two: NodeU32 = .{ .data = 2 };
+var three: NodeU32 = .{ .data = 3 };
+var five: NodeU32 = .{ .data = 5 };
+
+list.append(&one.node); // {1}
+list.append(&three.node); // {1, 3}
+list.insertAfter(
+    &one.node,
+    &five.node
+); // {1, 5, 3}
+list.append(&two.node); // {1, 5, 3, 2}
+
+try stdout.print("Number of nodes: {}", .{list.len()});
+```
+
+These are other methods from the `DoublyLinkedList` object that might interest you:
+
+- `remove()`: to remove a specific node from the list.
+- `len()`: to count the number of nodes in the list.
+- `prepend()`: to add a node to the beginning of the list (i.e. set the head node of the list).
+- `pop()`: to remove the last node of the list.
+- `popFirst()`: to remove the first node of the list.
+- `concatByMoving()`: to concat two doubly linked lists together.
+
+
+
 
 
 ## Multi array structure
