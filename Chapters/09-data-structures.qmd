@@ -920,6 +920,60 @@ These are other methods from the `DoublyLinkedList` object that might interest y
 - `concatByMoving()`: to concat two doubly linked lists together.
 
 
+### Iterating through the linked list
+
+If you want to iterate over the elements of the linked list, all you need to do is to follow
+the trail created by the "pointer to next node". We usually do that inside a while loop, that simply goes to the
+next node over and over, until it finds a null pointer, which means that we hit the end of the list.
+
+This next example demonstrates how such while loop would work. Notice that we are using the `@fieldParentPtr()`
+built-in function to get access to a pointer that points to the parent instance of the `node` object. In other words,
+we get access to a pointer to the `NodeU32` instance that contains the current node. This way, we can use this pointer
+to access the data that is currently stored in this node.
+
+Also notice that in each iteration of the while loop, we are changing the value of the `it` variable to the next node
+in the list. The while loop is interrupted in the moment that this `it` variable becomes null, which will happen
+when the there is not "next node" in the list, which means that we have reached the end of the list.
+
+
+```{zig}
+#| build_type: "run"
+#| auto_main: true
+#| results: "hide"
+const NodeU32 = struct {
+    data: u32,
+    node: std.SinglyLinkedList.Node = .{},
+};
+
+var list: std.SinglyLinkedList = .{};
+var one: NodeU32 = .{ .data = 1 };
+var two: NodeU32 = .{ .data = 2 };
+var three: NodeU32 = .{ .data = 3 };
+var five: NodeU32 = .{ .data = 5 };
+
+list.prepend(&two.node); // {2}
+list.prepend(&five.node); // {5, 2}
+list.prepend(&three.node); // {3, 5, 2}
+list.prepend(&one.node); // {1, 3, 5, 2}
+
+var it = list.first;
+while (it) |node| : (it = node.next) {
+    const l: *NodeU32 = @fieldParentPtr(
+        "node", node
+    );
+    try stdout.print(
+        "Current value: {}", .{l.data}
+    );
+}
+```
+
+```
+Current value: 1
+Current value: 3
+Current value: 5
+Current value: 2
+```
+
 
 
 
