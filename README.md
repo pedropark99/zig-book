@@ -150,7 +150,7 @@ to open a terminal, and run the `nix develop` command on the root of the project
 nix develop
 ```
 
-With this command, Onix will download the necessary packages and libraries, and then create a new bash session that points
+With this command, Nix will download the necessary packages and libraries, and then create a new bash session that points
 to a new environment that contains these packages and libraries in it. Then, inside this new bash session that is created
 by Nix, all you need to do is to run the `quarto render` command, which will kickstart Quarto, and make it build the book
 for you:
