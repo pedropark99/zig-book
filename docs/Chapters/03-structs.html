@@ -476,7 +476,10 @@ t.zig:9:13: 0x1033c58 in main (switch2)
 </section>
 <section id="sec-defer" class="level3" data-number="2.1.3">
 <h3 data-number="2.1.3" class="anchored" data-anchor-id="sec-defer"><span class="header-section-number">2.1.3</span> The <code>defer</code> keyword</h3>
-<p>With the <code>defer</code> keyword you can register an expression to be executed when you exit the current scope. Therefore, this keyword has a similar functionality as the <code>on.exit()</code> function from R. Take the <code>foo()</code> function below as an example. When we execute this <code>foo()</code> function, the expression that prints the message “Exiting function …” is getting executed only when the function exits its scope.</p>
+<p>Zig has a <code>defer</code> keyword, which plays a very important role in control flow, and also, in releasing resources. In summary, the <code>defer</code> keyword allows you to register an expression to be executed when you exit the current scope.</p>
+<p>At this point, you might attempt to compare the Zig <code>defer</code> keyword to it’s sibling in the Go language (i.e.&nbsp;<a href="https://go.dev/tour/flowcontrol/12">Go also has a <code>defer</code> keyword</a>). However, the Go <code>defer</code> keyword behaves slightly different than it’s sibling in Zig. More specifically, the <code>defer</code> keyword in Go always move an expression to be executed at the <strong>exit of the current function</strong>.</p>
+<p>If you think deeply about this statement, you will notice that the “exit of the current function” is something slightly different than the “exit of the current scope”. So, just be careful when comparing the two keywords together. A single function in Zig might contain many different scopes inside of it, and, therefore, the <code>defer</code> input expression might be executed at different places of the function, depending on which scope you are currently in.</p>
+<p>As a first example, consider the <code>foo()</code> function exposed below. When we execute this <code>foo()</code> function, the expression that prints the message “Exiting function …” is getting executed only when the function exits its scope.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = std.io.getStdOut().writer();</span>
@@ -988,7 +991,7 @@ Note
 <span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect(<span class="bu">@TypeOf</span>(y) == <span class="dt">u32</span>);</span>
 <span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>1/1 file3fc93b4ea641.test_0...OKAll 1 tests passed
+<pre><code>1/1 file26f81ac33a52.test_0...OKAll 1 tests passed
   d.</code></pre>
 </div>
 </div>
@@ -1005,7 +1008,7 @@ Note
 <span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect(<span class="bu">@TypeOf</span>(y) == <span class="dt">f32</span>);</span>
 <span id="cb59-7"><a href="#cb59-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>1/1 file3fc91795a712.test_0...OKAll 1 tests passed
+<pre><code>1/1 file26f81f277e9b.test_0...OKAll 1 tests passed
   d.</code></pre>
 </div>
 </div>
@@ -1022,7 +1025,7 @@ Note
 <span id="cb61-8"><a href="#cb61-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> expect(<span class="bu">@TypeOf</span>(u32_ptr) == *<span class="kw">const</span> <span class="dt">u32</span>);</span>
 <span id="cb61-9"><a href="#cb61-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>1/1 file3fc945f8b4b0.test_0...OKAll 1 tests passed
+<pre><code>1/1 file26f843ae7baf.test_0...OKAll 1 tests passed
   d.</code></pre>
 </div>
 </div>
