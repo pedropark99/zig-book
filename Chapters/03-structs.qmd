@@ -301,9 +301,22 @@ xsw: switch (@as(u8, 1)) {
 
 ### The `defer` keyword {#sec-defer}
 
-With the `defer` keyword you can register an expression to be executed when you exit the current scope.
-Therefore, this keyword has a similar functionality as the `on.exit()` function from R.
-Take the `foo()` function below as an example. When we execute this `foo()` function, the expression
+Zig has a `defer` keyword, which plays a very important role in control flow, and also, in releasing resources.
+In summary, the `defer` keyword allows you to register an expression to be executed when you exit the current scope.
+
+At this point, you might attempt to compare the Zig `defer` keyword to it's sibling in the Go language
+(i.e. [Go also has a `defer` keyword](https://go.dev/tour/flowcontrol/12)).
+However, the Go `defer` keyword behaves slightly different
+than it's sibling in Zig. More specifically, the `defer` keyword in Go always move an expression to be
+executed at the **exit of the current function**.
+
+If you think deeply about this statement, you will notice that the "exit of the current function" is something
+slightly different than the "exit of the current scope". So, just be careful when comparing the two
+keywords together. A single function in Zig might contain many different scopes inside of it, and, therefore,
+the `defer` input expression might be executed at different places of the function, depending on which scope you
+are currently in.
+
+As a first example, consider the `foo()` function exposed below. When we execute this `foo()` function, the expression
 that prints the message "Exiting function ..." is getting executed only when the function exits
 its scope.
 
