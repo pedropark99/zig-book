@@ -28,7 +28,7 @@ fn calc_output_length(input_length: usize) u8 {
     return @intFromFloat(@ceil(d));
 }
 
-fn decode(input: []const u8, allocator: std.mem.Allocator) !void {
+fn decode(allocator: std.mem.Allocator, input: []const u8) !void {
     try stdout.print("Start decoding of {s}\n", .{input});
     // var output = [_]u8{ 0, 0, 0, 0 };
     // _ = output;
@@ -50,5 +50,5 @@ pub fn main() !void {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    try decode(text, allocator);
+    try decode(allocator, text);
 }

@@ -35,7 +35,7 @@ const Base64 = struct {
         return index;
     }
 
-    fn encode(self: Base64, input: []const u8, allocator: std.mem.Allocator) ![]u8 {
+    fn encode(self: Base64, allocator: std.mem.Allocator, input: []const u8) ![]u8 {
         if (input.len == 0)
             return "";
 
@@ -76,7 +76,7 @@ const Base64 = struct {
         return output;
     }
 
-    fn decode(self: Base64, input: []const u8, allocator: std.mem.Allocator) ![]u8 {
+    fn decode(self: Base64, allocator: std.mem.Allocator, input: []const u8) ![]u8 {
         if (input.len == 0)
             return "";
 
@@ -146,8 +146,8 @@ pub fn main() !void {
     const text = "Testing some more stuff";
     const etext = "VGVzdGluZyBzb21lIG1vcmUgc3R1ZmY=";
     const base64 = Base64.init();
-    const encoded_text = try base64.encode(text, allocator);
-    const decoded_text = try base64.decode(etext, allocator);
+    const encoded_text = try base64.encode(allocator, text);
+    const decoded_text = try base64.decode(allocator, etext);
 
     try stdout.print("Encoded text: {s}\n", .{encoded_text});
     try stdout.print("Decoded text: {s}\n", .{decoded_text});
