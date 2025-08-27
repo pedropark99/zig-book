@@ -328,7 +328,7 @@ to the C function `powf()`. Notice that this code example compiles and runs succ
 ```{zig}
 #| eval: false
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
 const cmath = @cImport({
     @cInclude("math.h");
 });
@@ -479,7 +479,7 @@ for this string. This null character marks the end of the array in C.
 #| auto_main: false
 #| eval: false
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
 const c = @cImport({
     @cInclude("user.h");
 });
@@ -565,7 +565,9 @@ the value in the `id` field of the `User` struct pointed by the input pointer.
 #| auto_main: false
 #| eval: false
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 const c = @cImport({
     @cInclude("user.h");
 });
