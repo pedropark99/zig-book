@@ -114,6 +114,8 @@ fn twice(comptime num: u32) u32 {
 pub fn main() !void {
     var buffer: [5]u8 = .{ 0, 0, 0, 0, 0 };
     var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     const stdin = std.io.getStdIn().reader();
     _ = try stdout.write("Please write a 4-digit integer number\n");
     _ = try stdin.readUntilDelimiter(&buffer, '\n');
@@ -124,6 +126,7 @@ pub fn main() !void {
     );
     const twice_result = twice(n);
     try stdout.print("Result: {d}\n", .{twice_result});
+    try stdout.flush();
 }
 ```
 
