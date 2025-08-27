@@ -291,10 +291,13 @@ But we are going to use it in the next section.
 const std = @import("std");
 const SocketConf = @import("config.zig");
 var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 
 pub fn main() !void {
     const socket = try SocketConf.Socket.init();
     try stdout.print("Server Addr: {any}\n", .{socket._address});
+    try stdout.flush();
     var server = try socket._address.listen(.{});
     const connection = try server.accept();
     _ = connection;
@@ -406,6 +409,8 @@ const std = @import("std");
 const SocketConf = @import("config.zig");
 const Request = @import("request.zig");
 var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 
 pub fn main() !void {
     const socket = try SocketConf.Socket.init();
@@ -420,6 +425,7 @@ pub fn main() !void {
         connection, buffer[0..buffer.len]
     );
     try stdout.print("{s}\n", .{buffer});
+    try stdout.flush();
 }
 ```
 
@@ -878,6 +884,8 @@ const std = @import("std");
 const SocketConf = @import("config.zig");
 const Request = @import("request.zig");
 var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 
 pub fn main() !void {
     const socket = try SocketConf.Socket.init();
@@ -895,6 +903,7 @@ pub fn main() !void {
         buffer[0..buffer.len]
     );
     try stdout.print("{any}\n", .{request});
+    try stdout.flush();
 }
 ```
 
@@ -999,10 +1008,13 @@ const Request = @import("request.zig");
 const Response = @import("response.zig");
 const Method = Request.Method;
 var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 
 pub fn main() !void {
     const socket = try SocketConf.Socket.init();
     try stdout.print("Server Addr: {any}\n", .{socket._address});
+    try stdout.flush();
     var server = try socket._address.listen(.{});
     const connection = try server.accept();
 
