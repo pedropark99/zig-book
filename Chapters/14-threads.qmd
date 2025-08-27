@@ -242,11 +242,14 @@ an empty, anonymous struct (`.{}`) in the third argument of `spawn()`.
 #| build_type: "run"
 const std = @import("std");
 var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
 fn do_some_work() !void {
     _ = try stdout.write("Starting the work.\n");
     std.time.sleep(100 * std.time.ns_per_ms);
     _ = try stdout.write("Finishing the work.\n");
+    try stdout.flush();
 }
 
 pub fn main() !void {
@@ -791,6 +794,8 @@ Notice that the output of this program is now the correct number of 200000.
 #| build_type: "run"
 const std = @import("std");
 var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
 const Mutex = std.Thread.Mutex;
 var counter: usize = 0;
@@ -809,6 +814,7 @@ pub fn main() !void {
     thr1.join();
     thr2.join();
     try stdout.print("Couter value: {d}\n", .{counter});
+    try stdout.flush();
 }
 ```
 
@@ -1084,8 +1090,11 @@ atomic objects in Zig with the `Value()` generic function that we have mentioned
 const std = @import("std");
 const Thread = std.Thread;
 var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 var running = std.atomic.Value(bool).init(true);
 var counter: u64 = 0;
+
 fn do_more_work() void {
     std.time.sleep(2 * std.time.ns_per_s);
 }
@@ -1103,6 +1112,7 @@ fn work() !void {
             running.store(false, .monotonic);
         }
     }
+    try stdout.flush();
 }
 
 pub fn main() !void {
