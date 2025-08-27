@@ -88,6 +88,8 @@ with the `d` format specifier.
 #| build_type: "run"
 const std = @import("std");
 var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 fn add(x: u8, y: u8) u8 {
     return x + y;
 }
@@ -95,6 +97,7 @@ fn add(x: u8, y: u8) u8 {
 pub fn main() !void {
     const result = add(34, 16);
     try stdout.print("Result: {d}", .{result});
+    try stdout.flush();
 }
 ```
 
@@ -174,6 +177,8 @@ piece of Zig code:
 #| build_type: "run"
 const std = @import("std");
 var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 
 fn add_and_increment(a: u8, b: u8) u8 {
     const sum = a + b;
@@ -185,6 +190,7 @@ pub fn main() !void {
     var n = add_and_increment(2, 3);
     n = add_and_increment(n, n);
     try stdout.print("Result: {d}!\n", .{n});
+    try stdout.flush();
 }
 ```
 
@@ -335,12 +341,15 @@ the data type of the object.
 #| build_type: "run"
 const std = @import("std");
 var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 const expect = std.testing.expect;
 
 pub fn main() !void {
     const number: i32 = 5;
     try expect(@TypeOf(number) == i32);
     try stdout.print("{any}\n", .{@TypeOf(number)});
+    try stdout.flush();
 }
 ```
 
