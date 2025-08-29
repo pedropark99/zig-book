@@ -117,13 +117,13 @@ to read the official docs, both for
 [`Reader`](https://ziglang.org/documentation/master/std/#std.io.Reader)[^gen-read].
 I also think it's a good idea to read the source code of the modules in the Zig Standard Library
 that defines the methods present in these objects, which are the
-[`Reader.zig`](https://github.com/ziglang/zig/blob/master/lib/std/io/Reader.zig)[^mod-read]
-and [`Writer.zig`]()[^mod-write].
+[`Reader.zig`](https://github.com/ziglang/zig/blob/master/lib/std/Io/Reader.zig)[^mod-read]
+and [`Writer.zig`](https://github.com/ziglang/zig/blob/master/lib/std/Io/Writer.zig)[^mod-write].
 
 [^gen-read]: <https://ziglang.org/documentation/master/std/#std.io.Reader>.
 [^gen-write]: <https://ziglang.org/documentation/master/std/#std.io.Writer>.
-[^mod-read]: <https://github.com/ziglang/zig/blob/master/lib/std/io/Reader.zig>.
-[^mod-write]: <https://github.com/ziglang/zig/blob/master/lib/std/io/Writer.zig>.
+[^mod-read]: <https://github.com/ziglang/zig/blob/master/lib/std/Io/Reader.zig>.
+[^mod-write]: <https://github.com/ziglang/zig/blob/master/lib/std/Io/Writer.zig>.
 
 
 
@@ -354,7 +354,7 @@ Because they deliver better performance to your IO operations.
 Previously, IO operations in Zig were not buffered by default. However, since the new IO interface introduced in Zig 0.15,
 the `Reader` and `Writer` interfaces take a buffer object as input when they are instantiated, like we demonstrated in @sec-standard-output.
 In other words, a buffer object must be provided to instantiate a `Reader` or `Writer` object in your code. And because of that,
-we have buffered IO operations by default on the most recent versions of Zig.
+we have buffered IO operations by default on recent versions of Zig.
 
 If you compare it with other languages, you will notice that Zig takes a slightly different approach in it's "buffered IO strategy". If we take C as an example, the IO operations made
 through a `FILE` pointer in C are buffered by default. However, in C, you don't need to explicitly pass a buffer object when instantiating such `FILE` pointer,
@@ -368,6 +368,31 @@ which fits very well with the "no hidden allocations" mantra of Zig.
 
 Thus, if you want to use buffered IO in Zig, just make sure to pass a reference to a buffer object as input to either the `writer()` or `reader()`
 methods to create a `Writer` or `Reader` object that performs buffered IO operations by default.
+
+
+### Don't forget to flush!
+
+When you use buffered IO operations in your code, is important to not forget to flush your buffers, specially on write operations.
+Basically, when we are in a buffered IO scenario, and we try to write data into "something", this data is first written into the IO buffer that we've provided
+to the `Writer` object as input, and this data in the IO buffer will only be effectively written into the "something" when we "commit" it.
+We "commit" the bytes written into the IO buffer to our target output by "flushing our IO buffer".
+
+So, when we flush our IO buffer, we are effectively commiting the chunk of data that is present in the IO buffer to
+be written into the IO resource that is described by our file descriptor object. If we don't flush our IO buffer, then,
+this data never leaves the IO buffer (i.e. it never reaches the IO resource). Therefore, when you forget to flush your IO
+resource, what happens, most of the times, is that you don't get any kind of output in your IO resource.
+
+For example, if you are writing data into the `stdout`, and you forget to flush it, what usually happens is that you
+don't get any kind of output written into the terminal. The program seems to run successfully, but you don't get any type of
+visual output in the terminal to confirm it, and you get really frustrated and confused.
+
+Thus, if you are writing data in Zig, don't forget to flush your IO buffers by calling the `flush()` method of your `Writer` object.
+This will make sure that the bytes/data that you are writing are effectivelly written into the IO resource described by your file descriptor
+object.
+
+::: {.callout-warn}
+If you are writing data, do not forget to flush your IO buffer, by calling the `flush()` method of your `Writer` object.
+:::
 
 
 ## Filesystem basics
