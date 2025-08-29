@@ -135,11 +135,12 @@ you should always use `initCapacity()` to create your dynamic array.
 
 ```{zig}
 #| auto_main: true
+#| build_type: "run"
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 var buffer = try std.ArrayList(u8)
     .initCapacity(allocator, 100);
-defer buffer.deinit();
+defer buffer.deinit(allocator);
 ```
 
 
@@ -164,12 +165,12 @@ in this slice to your dynamic array.
 
 ```{zig}
 #| eval: false
-try buffer.append('H');
-try buffer.append('e');
-try buffer.append('l');
-try buffer.append('l');
-try buffer.append('o');
-try buffer.appendSlice(" World!");
+try buffer.append(allocator, 'H');
+try buffer.append(allocator, 'e');
+try buffer.append(allocator, 'l');
+try buffer.append(allocator, 'l');
+try buffer.append(allocator, 'o');
+try buffer.appendSlice(allocator, " World!");
 ```
 
 ### Removing elements from the array {#sec-dynamic-array-remove}
@@ -212,11 +213,11 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 var buffer = try std.ArrayList(u8)
     .initCapacity(allocator, 100);
-defer buffer.deinit();
+defer buffer.deinit(allocator);
 
 for (0..10) |i| {
     const index: u8 = @intCast(i);
-    try buffer.append(index);
+    try buffer.append(allocator, index);
 }
 
 std.debug.print(
@@ -262,18 +263,20 @@ and they insert the values that you provide at that index in the array.
 
 ```{zig}
 #| auto_main: true
+#| eval: false
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 var buffer = try std.ArrayList(u8)
     .initCapacity(allocator, 10);
-defer buffer.deinit();
+defer buffer.deinit(allocator);
 
-try buffer.appendSlice("My Pedro");
-try buffer.insert(4, '3');
-try buffer.insertSlice(2, " name");
+try buffer.appendSlice(allocator, "My Pedro");
+try buffer.insert(allocator, 4, '3');
+try buffer.insertSlice(allocator, 2, " name");
 for (buffer.items) |char| {
     try stdout.print("{c}", .{char});
 }
+try stdout.flush();
 ```
 
 ```
@@ -857,6 +860,7 @@ two.node.insertAfter(&three.node); // {2, 3, 5}
 list.prepend(&one.node); // {1, 2, 3, 5}
 
 try stdout.print("Number of nodes: {}", .{list.len()});
+try stdout.flush();
 ```
 
 
@@ -908,6 +912,7 @@ list.insertAfter(
 list.append(&two.node); // {1, 5, 3, 2}
 
 try stdout.print("Number of nodes: {}", .{list.len()});
+try stdout.flush();
 ```
 
 These are other methods from the `DoublyLinkedList` object that might interest you:
@@ -965,6 +970,7 @@ while (it) |node| : (it = node.next) {
         "Current value: {}", .{l.data}
     );
 }
+try stdout.flush();
 ```
 
 ```
@@ -1045,6 +1051,7 @@ the `PersonArray` object, like in the example below:
 for (people.items(.age)) |*age| {
     try stdout.print("Age: {d}\n", .{age.*});
 }
+try stdout.flush();
 ```
 
 ```
@@ -1082,6 +1089,7 @@ for (slice.items(.name), slice.items(.age)) |*n,*a| {
         "Name: {s}, Age: {d}\n", .{n.*, a.*}
     );
 }
+try stdout.flush();
 ```
 
 ```

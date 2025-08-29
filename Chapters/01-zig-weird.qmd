@@ -300,8 +300,11 @@ to stop the execution. You are obligated to face the error.
 const std = @import("std");
 
 pub fn main() !void {
-    const stdout = std.io.getStdOut().writer();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.print("Hello, {s}!\n", .{"world"});
+    try stdout.flush();
 }
 ```
 
@@ -390,7 +393,7 @@ includes some global variables whose initialization rely on runtime resources, t
 you might have some troubles while trying to compile this Zig code on Windows.
 
 An example of that is accessing the `stdout` (i.e., the *standard output* of your system), which is usually
-done in Zig by using the expression `std.io.getStdOut()`. If you use this expression to instantiate
+done in Zig by using the expression `std.fs.File.stdout()`. If you use this expression to instantiate
 a global variable in a Zig module, then, the compilation of your Zig code will very likely fail on Windows,
 with an "unable to evaluate comptime expression" error message.
 
@@ -408,10 +411,13 @@ exposed below:
 const std = @import("std");
 // ERROR! Compile-time error that emerges from
 // this next line, on the `stdout` object
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 
 pub fn main() !void {
     _ = try stdout.write("Hello\n");
+    try stdout.flush();
 }
 ```
 
@@ -433,19 +439,19 @@ You will learn more about this `comptime` keyword in @sec-comptime.
 
 
 ```{zig}
-#| build_type: "ast"
+#| build_type: "run"
 #| auto_main: false
 const std = @import("std");
 pub fn main() !void {
     // SUCCESS: Stdout initialized at runtime.
-    const stdout = std.io.getStdOut().writer();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     _ = try stdout.write("Hello\n");
+    try stdout.flush();
 }
 ```
 
-```
-Hello
-```
 
 You can read more details about this Windows-specific limitation in a couple of
 GitHub issues opened at the official Zig repository. More specifically, the issues
@@ -894,6 +900,7 @@ like C, C++, Rust, Python, and many other languages.
 #| build_type: "run"
 const ns = [4]u8{48, 24, 12, 6};
 try stdout.print("{d}\n", .{ ns[2] });
+try stdout.flush();
 ```
 
 In contrast, you can also select specific slices (or sections) of your array, by using a
@@ -978,6 +985,7 @@ has 2 elements in it.
 const ns = [4]u8{48, 24, 12, 6};
 const sl = ns[1..3];
 try stdout.print("{d}\n", .{sl.len});
+try stdout.flush();
 ```
 
 
@@ -1004,6 +1012,7 @@ const a = [_]u8{1,2,3};
 const b = [_]u8{4,5};
 const c = a ++ b;
 try stdout.print("{any}\n", .{c});
+try stdout.flush();
 ```
 
 This `++` operator is particularly useful to concatenate strings together.
@@ -1021,6 +1030,7 @@ which contains the elements of the array `a` repeated 3 times.
 const a = [_]u8{1,2,3};
 const c = a ** 2;
 try stdout.print("{any}\n", .{c});
+try stdout.flush();
 ```
 
 
@@ -1091,11 +1101,18 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 fn read_file(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
+    var reader_buffer: [1024]u8 = undefined;
+    var file_buffer = try allocator.alloc(u8, 1024);
+    @memset(file_buffer[0..], 0);
+
     const file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
-    return try file.reader().readAllAlloc(
-        allocator, std.math.maxInt(usize)
+
+    var reader = file.reader(reader_buffer[0..]);
+    const nbytes = try reader.read(
+        file_buffer[0..]
     );
+    return file_buffer[0..nbytes];
 }
 
 pub fn main() !void {
@@ -1157,6 +1174,7 @@ const x = add_one: {
 };
 if (x == 124 and y == 124) {
     try stdout.print("Hey!", .{});
+    try stdout.flush();
 }
 ```
 
@@ -1223,10 +1241,14 @@ through the `len` attribute. As an example, the `string_object` object below is 
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
+
 pub fn main() !void {
     const string_object = "This is an example of string literal in Zig";
     try stdout.print("{d}\n", .{string_object.len});
+    try stdout.flush();
 }
 ```
 
@@ -1249,11 +1271,14 @@ the text "Hello" will be printed into the terminal:
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 
 pub fn main() !void {
     const bytes = [_]u8{0x48, 0x65, 0x6C, 0x6C, 0x6F};
     try stdout.print("{s}\n", .{bytes});
+    try stdout.flush();
 }
 ```
 
@@ -1290,6 +1315,7 @@ value itself.
 // This is a string literal value:
 _ = "A literal value";
 try stdout.print("{any}\n", .{@TypeOf("A literal value")});
+try stdout.flush();
 ```
 
 
@@ -1326,6 +1352,7 @@ want to, but there is no need to do it.
 // interpreted as a slice.
 const str: []const u8 = "A string value";
 try stdout.print("{any}\n", .{@TypeOf(str)});
+try stdout.flush();
 ```
 
 
@@ -1343,7 +1370,10 @@ like you would normally do with the [`printf()` function](https://cplusplus.com/
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
+
 pub fn main() !void {
     const string_object = "This is an example";
     try stdout.print("Bytes that represents the string object: ", .{});
@@ -1351,6 +1381,7 @@ pub fn main() !void {
         try stdout.print("{X} ", .{byte});
     }
     try stdout.print("\n", .{});
+    try stdout.flush();
 }
 ```
 
@@ -1430,7 +1461,10 @@ the unicode point 570 is actually stored inside the computer’s memory as the b
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
+
 pub fn main() !void {
     const string_object = "Ⱥ";
     _ = try stdout.write(
@@ -1439,6 +1473,7 @@ pub fn main() !void {
     for (string_object) |char| {
         try stdout.print("{X} ", .{char});
     }
+    try stdout.flush();
 }
 ```
 
@@ -1472,26 +1507,30 @@ character/unicode point in this string:
 #| auto_main: false
 #| build_type: "lib"
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 
 pub fn main() !void {
     var utf8 = try std.unicode.Utf8View.init("アメリカ");
     var iterator = utf8.iterator();
     while (iterator.nextCodepointSlice()) |codepoint| {
         try stdout.print(
-            "got codepoint {}\n",
-            .{std.fmt.fmtSliceHexUpper(codepoint)},
+            "got codepoint {x}\n",
+            .{codepoint},
         );
     }
+
+    try stdout.flush();
 }
 
 ```
 
 ```
-got codepoint E382A2
-got codepoint E383A1
-got codepoint E383AA
-got codepoint E382AB
+got codepoint e382a2
+got codepoint e383a1
+got codepoint e383aa
+got codepoint e382ab
 ```
 
 
@@ -1527,6 +1566,7 @@ const name: []const u8 = "Pedro";
 try stdout.print(
     "{any}\n", .{std.mem.eql(u8, name, "Pedro")}
 );
+try stdout.flush();
 ```
 
 The `splitScalar()` and `splitSequence()` functions are useful to split
@@ -1546,6 +1586,7 @@ const name: []const u8 = "Pedro";
 try stdout.print(
     "{any}\n", .{std.mem.startsWith(u8, name, "Pe")}
 );
+try stdout.flush();
 ```
 
 The `concat()` function, as the name suggests, concatenate two or more strings together.
@@ -1563,6 +1604,7 @@ const str3 = try std.mem.concat(
     allocator, u8, &[_][]const u8{ str1, str2 }
 );
 try stdout.print("{s}\n", .{str3});
+try stdout.flush();
 ```
 
 
@@ -1588,6 +1630,7 @@ const nrep = std.mem.replace(
 );
 try stdout.print("New string: {s}\n", .{buffer});
 try stdout.print("N of replacements: {d}\n", .{nrep});
+try stdout.flush();
 ```
 
 ```

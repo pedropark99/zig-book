@@ -469,6 +469,7 @@ const output = try std.fmt.allocPrint(
     .{name}
 );
 try stdout.print("{s}\n", .{output});
+try stdout.flush();
 ```
 
 
@@ -684,7 +685,7 @@ _ = in1; _ = in2; _ = in3;
 
 In the code example below, we are accessing the `stdin`, which is
 the standard input channel, to receive an input from the
-user. We read the input given by the user with the `readUntilDelimiterOrEof()`
+user. We read the input given by the user with the `readSliceAll()`
 method.
 
 Now, after reading the input of the user, we need to store this input somewhere in
@@ -700,9 +701,11 @@ define the size of the allocated array, by specifying how many elements
 this array will contain. In the case below, we are allocating an array of 50 elements.
 
 In @sec-zig-strings we described that strings in Zig are simply arrays of characters.
-Each character is represented by a `u8` value. So, this means that the array that
+Each character is represented by a `u8` value[^charn]. So, this means that the array that
 was allocated in the object `input` is capable of storing a string that is
 50-characters long.
+
+[^charn]: Just remember that this is an oversimplification. If we are talking only about ASCII strings, then yes, every `u8` value represents a separate character in the string. But if we enter the realm of UTF-8 encoded string, then, this scenario is not always true.
 
 So, in essence, the expression `var input: [50]u8 = undefined` would create
 an array for 50 `u8` values in the stack of the current scope. But, you
@@ -710,24 +713,26 @@ can allocate the same array in the heap by using the expression `var input = try
 
 ```{zig}
 #| auto_main: false
-#| build_type: "run"
+#| build_type: "lib"
 const std = @import("std");
-const stdin = std.io.getStdIn();
+var stdin_buffer: [1024]u8 = undefined;
+var stdin_reader = std.fs.File.stdin().reader(&stdin_buffer);
+const stdin = &stdin_reader.interface;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     var input = try allocator.alloc(u8, 50);
     defer allocator.free(input);
-    for (0..input.len) |i| {
-        input[i] = 0; // initialize all fields to zero.
-    }
-    // read user input
-    const input_reader = stdin.reader();
-    _ = try input_reader.readUntilDelimiterOrEof(
-        input,
-        '\n'
-    );
+    @memset(input[0..], 0);
+
+    // Read user input
+    stdin.readSliceAll(input[0..]) catch |err| switch(err) {
+        // Reached end of input, do nothing else
+        error.EndOfStream => {},
+        // If it's other kind of error, then return it
+        else => return err,
+    };
     std.debug.print("{s}\n", .{input});
 }
 ```

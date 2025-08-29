@@ -255,7 +255,9 @@ generate_main <- function(code_without_main) {
   code_without_main <- increase_indentation__(code_without_main)
   main_fmt <- c(
     "const std = @import(\"std\");\n",
-    "const stdout = std.io.getStdOut().writer();\n",
+    "var stdout_buffer: [1024]u8 = undefined;\n",
+    "var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);\n",
+    "const stdout = &stdout_writer.interface;\n",
     "pub fn main() !void {\n",
     "%s",
     "\n}\n"

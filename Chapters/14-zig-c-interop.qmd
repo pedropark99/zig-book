@@ -328,7 +328,9 @@ to the C function `powf()`. Notice that this code example compiles and runs succ
 ```{zig}
 #| eval: false
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 const cmath = @cImport({
     @cInclude("math.h");
 });
@@ -336,6 +338,7 @@ const cmath = @cImport({
 pub fn main() !void {
     const y = cmath.powf(15.68, 2.32);
     try stdout.print("{d}\n", .{y});
+    try stdout.flush();
 }
 ```
 
@@ -479,7 +482,6 @@ for this string. This null character marks the end of the array in C.
 #| auto_main: false
 #| eval: false
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
 const c = @cImport({
     @cInclude("user.h");
 });
@@ -565,7 +567,9 @@ the value in the `id` field of the `User` struct pointed by the input pointer.
 #| auto_main: false
 #| eval: false
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 const c = @cImport({
     @cInclude("user.h");
 });
@@ -587,6 +591,7 @@ pub fn main() !void {
 
     set_user_id(25, &new_user);
     try stdout.print("New ID: {any}\n", .{new_user.id});
+    try stdout.flush();
 }
 ```
 

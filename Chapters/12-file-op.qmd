@@ -78,61 +78,50 @@ regardless of the programming language that you are using.
 
 In Zig, there is a pattern around input/output (IO). I (the author of this book) don't know if there
 is an official name for this pattern. But here, in this book, I will call it the "writer and reader pattern".
-In essence, every IO operation in Zig is made through either a `GenericReader` or a `GenericWriter` object[^gen-zig].
+In essence, every IO operation in Zig is made through either a `Reader` or a `Writer` object[^gen-zig].
 
 These two data types come from the `std.io` module of the Zig Standard Library. As their names suggests, a
-`GenericReader` is an object that offers tools to read data from "something" (or "somewhere"), while a `GenericWriter`
+`Reader` is an object that offers tools to read data from "something" (or "somewhere"), while a `Writer`
 offers tools to write data into this "something". This "something" might be different things: like a
 file that exists in your filesystem; or, it might be a network socket in your system[^sock]; or,
 a continuous stream of data, like a standard input device from your system, that might be constantly
 receiving new data from users, or, as another example, a live chat in a game that is constantly
 receiving and displaying new messages from the players of the game.
 
-[^gen-zig]: Previously, these objects were known as the `Reader` and `Writer` objects.
+[^gen-zig]: Previously, these objects were known as the `GenericReader` and `GenericWriter` objects. But both of these types were deprecated in 0.15.
 [^sock]: The socket objects that we have created in @sec-create-socket, are examples of network sockets.
 
-So, if you want to **read** data from something, or somewhere, it means that you need to use a `GenericReader` object.
-But if you need instead, to **write** data into this "something", then, you need to use a `GenericWriter` object instead.
+So, if you want to **read** data from something, or somewhere, it means that you need to use a `Reader` object.
+But if you need instead, to **write** data into this "something", then, you need to use a `Writer` object instead.
 Both of these objects are normally created from a file descriptor object. More specifically, through the `writer()` and `reader()`
 methods of this file descriptor object. If you are not familiar with this type of object, go to the next section.
 
-Every `GenericWriter` object have methods like `print()`, which allows you to write/send a formatted string
+Every `Writer` object has methods like `print()`, which allows you to write/send a formatted string
 (i.e., this formatted string is like a `f` string in Python, or, similar to the `printf()` C function)
-into the "something" (file, socket, stream, etc.) that you are using. It also have a `writeAll()` method, which allows you to
+into the "something" (file, socket, stream, etc.) that you are using. It also has a `writeAll()` method, which allows you to
 write a string, or, an array of bytes into the "something".
 
-Likewise, every `GenericReader` object have methods like `readAll()`, which allows you to read the
+Likewise, every `Reader` object have methods like `readSliceAll()`, which allows you to read the
 data from the "something" (file, socket, stream, etc.) until it fills a particular array (i.e., a "buffer") object.
-In other words, if you provide an array object of 300 `u8` values to `readAll()`, then, this method attempts to read 300 bytes
+In other words, if you provide an array object of 300 `u8` values to `readSliceAll()`, then, this method attempts to read 300 bytes
 of data from the "something", and it stores them into the array object that you have provided.
 
-We also have other methods, like the `readAtLeast()` method, which allows you to specify how
-many bytes exactly you want to read from the "something". In more details, if you give the
-number $n$ as input to this method, then, it will attempt to read at least $n$ bytes of data
-from the "something". The "something" might have less than $n$ bytes of data available for you
-to read, so, it's not guaranteed that you will get precisely $n$ bytes as result.
+Another useful method is `takeDelimiterExclusive()`. In this method, you specify a "delimiter character".
+The idea is that this function will attempt to read as many bytes of data as possible from the "something"
+until it finds the "delimiter character" that you have specified, and, it returns a slice with the data to you.
 
-Another useful method is `readUntilDelimiterOrEof()`. In this method, you specify a "delimiter character".
-The idea is that this function will attempt to read as many bytes of data as possible from the "something",
-until it encounters the end of the stream, or, it encounters the "delimiter character" that you have specified.
-
-If you don't know exactly how many bytes will come from the "something", you may find the `readAllAlloc()` method
-useful. In essence, you provide an allocator object to this method, so that it can allocate more space if needed.
-As consequence, this method will try to read all bytes of the "something", and, if it runs out of space at some point
-during the "reading process", it uses the allocator object to allocate more space to continue reading the bytes.
-As result, this method returns a slice to the array object containing all the bytes read.
 
 This is just a quick description of the methods present in these types of objects. But I recommend you
 to read the official docs, both for
-[`GenericWriter`](https://ziglang.org/documentation/master/std/#std.io.GenericWriter)[^gen-write] and
-[`GenericReader`](https://ziglang.org/documentation/master/std/#std.io.GenericReader)[^gen-read].
+[`Writer`](https://ziglang.org/documentation/master/std/#std.io.Writer)[^gen-write] and
+[`Reader`](https://ziglang.org/documentation/master/std/#std.io.Reader)[^gen-read].
 I also think it's a good idea to read the source code of the modules in the Zig Standard Library
 that defines the methods present in these objects, which are the
 [`Reader.zig`](https://github.com/ziglang/zig/blob/master/lib/std/io/Reader.zig)[^mod-read]
 and [`Writer.zig`]()[^mod-write].
 
-[^gen-read]: <https://ziglang.org/documentation/master/std/#std.io.GenericReader>.
-[^gen-write]: <https://ziglang.org/documentation/master/std/#std.io.GenericWriter>.
+[^gen-read]: <https://ziglang.org/documentation/master/std/#std.io.Reader>.
+[^gen-write]: <https://ziglang.org/documentation/master/std/#std.io.Writer>.
 [^mod-read]: <https://github.com/ziglang/zig/blob/master/lib/std/io/Reader.zig>.
 [^mod-write]: <https://github.com/ziglang/zig/blob/master/lib/std/io/Writer.zig>.
 
@@ -177,11 +166,11 @@ filesystem. The `net.Stream` object that we have created in @sec-create-socket i
 file descriptor object.
 
 
-### The *standard output*
+### The *standard output* {#sec-standard-output}
 
 You already saw across this book, how can we access and use specifically the `stdout` in Zig
 to send some output to the user.
-For that, we use the `getStdOut()` function from the `std.io` module. This function returns
+For that, we use the `File.stdout()` function from the `std.fs` module. This function returns
 a file descriptor that describes the `stdout` channel of your current OS. Through this file
 descriptor object, we can read from or write stuff to the `stdout` of our program.
 
@@ -196,17 +185,26 @@ through this channel. Since the `stdout` is a channel to send output to the user
 is **send**. We want to send something to someone, and, as consequence, we want to **write** something
 into some channel.
 
-That is why, when we use `getStdOut()`, most of the times, we also use the `writer()` method from the `stdout` file descriptor,
+That is why, when we access `File.stdout()`, most of the times, we also use the `writer()` method from the `stdout` file descriptor,
 to get access to a writer object that we can use to write stuff into this `stdout` channel.
-More specifically, this `writer()` method returns a `GenericWriter` object. One of the
-main methods of this `GenericWriter` object is the `print()` method that we have used
-before to write (or "print") a formatted string into the `stdout` channel.
+As we described in @sec-writer-reader, this `writer()` method returns a `Writer` object, and one of the
+main methods of this `Writer` object is the `print()` method that we have used extensively across this book
+to write (or "print") a formatted string into the `stdout` channel.
+
+You should also notice in the example below, that in order to instantiate this `Writer` object,
+we must provide a reference to a buffer object as input to the `writer()` method. In the example below,
+this buffer object is `stdout_buffer`. By providing such buffer, we transform the IO operations performed by
+the `Writer` object into "buffered IO operations". We are going to talk more about "buffered IO" in @sec-buffered-io,
+so, don't worry too much about that for now.
 
 ```{zig}
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
+
 pub fn main() !void {
     try stdout.writeAll(
         "This message was written into stdout.\n"
@@ -216,25 +214,29 @@ pub fn main() !void {
 
 
 
-This `GenericWriter` object is like any other generic writer object that you would normally get from a file descriptor object.
-So, the same methods from a generic writer object that you would use while writing files to the filesystem for example, you could also
+This `Writer` object is like any other writer object that you would normally get from a file descriptor object.
+So, the same methods from a writer object that you would use while writing files to the filesystem for example, you could also
 use them here, from the file descriptor object of `stdout`, and vice-versa.
 
 
 ### The *standard input*
 
-You can access the *standard input* (i.e., `stdin`) in Zig by using the `getStdIn()` function from the `std.io` module.
-Like its brother (`getStdOut()`), this function also returns a file descriptor object that describes the `stdin` channel
+You can access the *standard input* (i.e., `stdin`) in Zig by using the `File.stdin()` function from the `std.fs` module.
+Like its brother (`File.stdout()`), this function also returns a file descriptor object that describes the `stdin` channel
 of your OS.
 
 Because we want to receive some input from the user, the key verb here becomes **receive**, and, as consequence,
 we usually want to **read** data from the `stdin` channel, instead of writing data into it. So, we normally use
-the `reader()` method of the file descriptor object returned by `getStdIn()`, to get access to a `GenericReader`
+the `reader()` method of the file descriptor object returned by `File.stdin()`, to get access to a `Reader`
 object that we can use to read data from `stdin`.
 
-In the example below, we are creating a small buffer capable of holding 20 characters. Then, we try to read
-the data from the `stdin` with the `readUntilDelimiterOrEof()` method, and save this data into the `buffer` object.
-Also notice that we are reading the data from the `stdin` until we hit a new line character (`'\n'`).
+In the example below, we try to read the data from the `stdin` with the `takeDelimiterExclusive()` method
+(which will read all the data from the `stdin` until it hits a new line character - `'\n'`, in the stream),
+and save this data into the `name` object.
+
+You should also notice that, like we did with the `writer()` method, we also need to provide a reference to a buffer
+object as input to the `reader()` method, when instantiating our `Reader` object. The reasons are exactly the same.
+This input buffer transforms the IO operations performed by the `Reader` object into "buffered IO operations".
 
 If you execute this program, you will notice that it stops the execution, ands start to wait indefinitely
 for some input from the user. In other words, you need to type your name into the terminal, and then, you press Enter to
@@ -246,28 +248,34 @@ by printing the given name to `stdout`. In the example below, I typed my name (P
 #| eval: false
 #| auto_main: false
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-const stdin = std.io.getStdIn().reader();
+var stdin_buffer: [1024]u8 = undefined;
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+var stdin_reader = std.fs.File.stdin().reader(&stdin_buffer);
+const stdin = &stdin_reader.interface;
+const stdout = &stdout_writer.interface;
+
 pub fn main() !void {
     try stdout.writeAll("Type your name\n");
-    var buffer: [20]u8 = undefined;
-    @memset(buffer[0..], 0);
-    _ = try stdin.readUntilDelimiterOrEof(buffer[0..], '\n');
-    try stdout.print("Your name is: {s}\n", .{buffer});
+    try stdout.flush();
+
+    const name = try stdin.takeDelimiterExclusive('\n');
+
+    try stdout.print("Your name is: {s}\n", .{name});
+    try stdout.flush();
 }
 ```
 
 ```
 Type your name
 Your name is: Pedro
-
 ```
 
 
 ### The *standard error*
 
 The *standard error* (a.k.a. the `stderr`) works exactly the same as `stdout` and `stdin`.
-You just call the `getStdErr()` function from the `std.io` module, and you get the file descriptor to `stderr`.
+You just call the `File.stderr()` function from the `std.fs` module, and you get the file descriptor to `stderr`.
 Ideally, you should write only error or warning messages to `stderr`, because this is
 the purpose of this channel.
 
@@ -275,7 +283,7 @@ the purpose of this channel.
 
 
 
-## Buffered IO
+## Buffered IO {#sec-buffered-io}
 
 As we described in @sec-io-basics, input/output (IO) operations are made directly by the operating system.
 It's the OS that manages the IO resource that you want to use for your IO operations.
@@ -333,89 +341,33 @@ In this situation, a new system call is made to ask the OS to send the next 4096
 these bytes are cached into the buffer object, and the cycle starts once again.
 
 
-### Buffered IO across different languages
+::: {.callout-tip}
+In general, you should always use a buffered IO reader or a buffered IO writer object in your code.
+Because they deliver better performance to your IO operations.
+:::
 
-IO operations made through a `FILE` pointer in C are buffered
-by default, so, at least in C, you don't need to worry about this subject. But in contrast, IO operations in both Rust and Zig are not
-buffered depending on which functions from the standard libraries that you are using.
 
-For example, in Rust, buffered IO is implemented through the `BufReader` and `BufWriter` structs, while in Zig, it's implemented
-through the `BufferedReader` and `BufferedWriter` structs.
-So any IO operation that you perform through the `GenericWriter` and `GenericReader` objects
-that I presented in @sec-writer-reader are not buffered, which means that these objects
-might create a lot of system calls depending on the situation.
 
 
 ### Using buffered IO in Zig
 
-Using buffered IO in Zig is actually very easy. All you have to do is to just
-give the `GenericWriter` object to the `bufferedWriter()` function, or, to give the `GenericReader`
-object to the `bufferedReader()` function. These functions come from the `std.io` module,
-and they will construct the `BufferedWriter` or `BufferedReader` object for you.
+Previously, IO operations in Zig were not buffered by default. However, since the new IO interface introduced in Zig 0.15,
+the `Reader` and `Writer` interfaces take a buffer object as input when they are instantiated, like we demonstrated in @sec-standard-output.
+In other words, a buffer object must be provided to instantiate a `Reader` or `Writer` object in your code. And because of that,
+we have buffered IO operations by default on the most recent versions of Zig.
 
-After you create this new `BufferedWriter` or `BufferedReader` object, you can call the `writer()`
-or `reader()` method of this new object, to get access to a new (and buffered) generic reader or
-generic writer.
+If you compare it with other languages, you will notice that Zig takes a slightly different approach in it's "buffered IO strategy". If we take C as an example, the IO operations made
+through a `FILE` pointer in C are buffered by default. However, in C, you don't need to explicitly pass a buffer object when instantiating such `FILE` pointer,
+because this buffer object is created behind the scenes for you, and therefore, it becomes invisible to the programmer. While in Zig, you must
+manually create this buffer object yourself.
 
-Let's describe the process once again. Every time that you have a file descriptor object, you first get the generic writer or generic reader
-object from it, by calling the `writer()` or `reader()` methods of this file descriptor object.
-Then, you provide this generic writer or generic reader to the `bufferedWriter()` or `bufferedReader()`
-function, which creates a new `BufferedWriter` or `BufferedReader` object. Then, you call
-the `writer()` or `reader()` methods of this buffered writer or buffered reader object,
-which gives you access to a generic writer or a generic reader object that is buffered.
+So, Zig not only choose to use buffered IO, but it also choose to give the programmer full control over the buffer used in such operations.
+You (as the programmer) can directly control the size of this buffer, and you can also directly control how this specific buffer object
+is allocated in your code (i.e. you can either allocate it in the stack, or, use an `Allocator` object to allocate it in the heap),
+which fits very well with the "no hidden allocations" mantra of Zig.
 
-Take this program as an example. This program is demonstrating the process exposed in @fig-buffered-io.
-We are simply opening a text file that contains the Lorem ipsum text, and then, we create a buffered IO reader object
-at `bufreader`, and we use this `bufreader` object to read the contents of this file into a buffer object, then,
-we end the program by printing this buffer to `stdout`.
-
-
-```{zig}
-#| eval: false
-var file = try std.fs.cwd().openFile(
-    "ZigExamples/file-io/lorem.txt", .{}
-);
-defer file.close();
-var buffered = std.io.bufferedReader(file.reader());
-var bufreader = buffered.reader();
-
-var buffer: [1000]u8 = undefined;
-@memset(buffer[0..], 0);
-
-_ = try bufreader.readUntilDelimiterOrEof(
-    buffer[0..], '\n'
-);
-try stdout.print("{s}\n", .{buffer});
-```
-
-```
-Lorem ipsum dolor sit amet, consectetur
-adipiscing elit. Sed tincidunt erat sed nulla ornare, nec
-aliquet ex laoreet. Ut nec rhoncus nunc. Integer magna metus,
-ultrices eleifend porttitor ut, finibus ut tortor. Maecenas
-sapien justo, finibus tincidunt dictum ac, semper et lectus.
-Vivamus molestie egestas orci ac viverra. Pellentesque nec
-arcu facilisis, euismod eros eu, sodales nisl. Ut egestas
-sagittis arcu, in accumsan sapien rhoncus sit amet. Aenean
-neque lectus, imperdiet ac lobortis a, ullamcorper sed massa.
-Nullam porttitor porttitor erat nec dapibus. Ut vel dui nec
-nulla vulputate molestie eget non nunc. Ut commodo luctus ipsum,
-in finibus libero feugiat eget. Etiam vel ante at urna tincidunt
-posuere sit amet ut felis. Maecenas finibus suscipit tristique.
-Donec viverra non sapien id suscipit.
-```
-
-Despite being a buffered IO reader, this `bufreader` object is similar to any other `GenericReader` object,
-and have the exact same methods. So, although these two types of objects perform very different IO operations,
-they have the same interface, so you, the programmer, can interchangeably use them
-without the need to change anything in your source code.
-So a buffered IO reader or a buffered IO writer objects have the same methods than its generic and unbuffered brothers,
-i.e., the generic reader and generic writer objects that I presented in @sec-writer-reader.
-
-::: {.callout-tip}
-In general, you should always use a buffered IO reader or a buffered IO writer object to perform
-IO operations in Zig. Because they deliver better performance to your IO operations.
-:::
+Thus, if you want to use buffered IO in Zig, just make sure to pass a reference to a buffer object as input to either the `writer()` or `reader()`
+methods to create a `Writer` or `Reader` object that performs buffered IO operations by default.
 
 
 ## Filesystem basics
@@ -624,6 +576,7 @@ try file.seekTo(0);
 var fr = file.reader();
 _ = try fr.readAll(buffer[0..]);
 try stdout.print("{s}\n", .{buffer});
+try stdout.flush();
 ```
 
 
@@ -820,6 +773,7 @@ while (try it.next()) |entry| {
         .{entry.name}
     );
 }
+try stdout.flush();
 ```
 
 ```

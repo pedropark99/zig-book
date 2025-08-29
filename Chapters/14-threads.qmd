@@ -241,12 +241,17 @@ an empty, anonymous struct (`.{}`) in the third argument of `spawn()`.
 ```{zig}
 #| build_type: "run"
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
+
 fn do_some_work() !void {
     _ = try stdout.write("Starting the work.\n");
-    std.time.sleep(100 * std.time.ns_per_ms);
+    try stdout.flush();
+    Thread.sleep(1000 * std.time.ns_per_ms);
     _ = try stdout.write("Finishing the work.\n");
+    try stdout.flush();
 }
 
 pub fn main() !void {
@@ -343,6 +348,7 @@ on the screen.
 #| eval: false
 fn print_id(id: *const u8) !void {
     try stdout.print("Thread ID: {d}\n", .{id.*});
+    try stdout.flush();
 }
 
 pub fn main() !void {
@@ -352,9 +358,13 @@ pub fn main() !void {
     const thread2 = try Thread.spawn(.{}, print_id, .{&id2});
 
     _ = try stdout.write("Joining thread 1\n");
+    try stdout.flush();
     thread1.join();
-    std.time.sleep(2 * std.time.ns_per_s);
+
+    Thread.sleep(2 * std.time.ns_per_s);
+
     _ = try stdout.write("Joining thread 2\n");
+    try stdout.flush();
     thread2.join();
 }
 ```
@@ -408,6 +418,7 @@ function that we have used over the previous examples.
 #| eval: false
 fn print_id(id: *const u8) !void {
     try stdout.print("Thread ID: {d}\n", .{id.*});
+    try stdout.flush();
 }
 
 pub fn main() !void {
@@ -415,6 +426,7 @@ pub fn main() !void {
     const thread1 = try Thread.spawn(.{}, print_id, .{&id1});
     thread1.detach();
     _ = try stdout.write("Finish main\n");
+    try stdout.flush();
 }
 ```
 
@@ -692,6 +704,7 @@ pub fn main() !void {
     thr1.join();
     thr2.join();
     try stdout.print("Couter value: {d}\n", .{counter});
+    try stdout.flush();
 }
 ```
 
@@ -790,7 +803,9 @@ Notice that the output of this program is now the correct number of 200000.
 ```{zig}
 #| build_type: "run"
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
 const Mutex = std.Thread.Mutex;
 var counter: usize = 0;
@@ -809,6 +824,7 @@ pub fn main() !void {
     thr1.join();
     thr2.join();
     try stdout.print("Couter value: {d}\n", .{counter});
+    try stdout.flush();
 }
 ```
 
@@ -918,8 +934,9 @@ fn reader(lock: *RwLock) !void {
         lock.lockShared();
         const v: u32 = counter;
         try stdout.print("{d}", .{v});
+        try stdout.flush();
         lock.unlockShared();
-        std.time.sleep(2 * std.time.ns_per_s);
+        Thread.sleep(2 * std.time.ns_per_s);
     }
 }
 fn writer(lock: *RwLock) void {
@@ -927,7 +944,7 @@ fn writer(lock: *RwLock) void {
         lock.lock();
         counter += 1;
         lock.unlock();
-        std.time.sleep(2 * std.time.ns_per_s);
+        Thread.sleep(2 * std.time.ns_per_s);
     }
 }
 
@@ -1019,7 +1036,7 @@ free the lock that they want to acquire.
 var mut1: Mutex = .{}; var mut2: Mutex = .{};
 fn work1() !void {
     mut1.lock();
-    std.time.sleep(1 * std.time.ns_per_s);
+    Thread.sleep(1 * std.time.ns_per_s);
     mut2.lock();
     _ = try stdout.write("Doing some work 1\n");
     mut2.unlock(); mut1.unlock();
@@ -1027,7 +1044,7 @@ fn work1() !void {
 
 fn work2() !void {
     mut2.lock();
-    std.time.sleep(1 * std.time.ns_per_s);
+    Thread.sleep(1 * std.time.ns_per_s);
     mut1.lock();
     _ = try stdout.write("Doing some work 1\n");
     mut1.unlock(); mut2.unlock();
@@ -1083,11 +1100,14 @@ atomic objects in Zig with the `Value()` generic function that we have mentioned
 #| build_type: "run"
 const std = @import("std");
 const Thread = std.Thread;
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 var running = std.atomic.Value(bool).init(true);
 var counter: u64 = 0;
+
 fn do_more_work() void {
-    std.time.sleep(2 * std.time.ns_per_s);
+    Thread.sleep(2 * std.time.ns_per_s);
 }
 fn work() !void {
     while (running.load(.monotonic)) {
@@ -1103,6 +1123,7 @@ fn work() !void {
             running.store(false, .monotonic);
         }
     }
+    try stdout.flush();
 }
 
 pub fn main() !void {

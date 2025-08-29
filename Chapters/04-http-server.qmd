@@ -290,11 +290,14 @@ But we are going to use it in the next section.
 #| eval: false
 const std = @import("std");
 const SocketConf = @import("config.zig");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 
 pub fn main() !void {
     const socket = try SocketConf.Socket.init();
     try stdout.print("Server Addr: {any}\n", .{socket._address});
+    try stdout.flush();
     var server = try socket._address.listen(.{});
     const connection = try server.accept();
     _ = connection;
@@ -405,7 +408,9 @@ I am using the syntax `array[0..array.len]` to get access to a slice of this `bu
 const std = @import("std");
 const SocketConf = @import("config.zig");
 const Request = @import("request.zig");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 
 pub fn main() !void {
     const socket = try SocketConf.Socket.init();
@@ -420,6 +425,7 @@ pub fn main() !void {
         connection, buffer[0..buffer.len]
     );
     try stdout.print("{s}\n", .{buffer});
+    try stdout.flush();
 }
 ```
 
@@ -877,7 +883,9 @@ the character `/`, which represents our URI in this request.
 const std = @import("std");
 const SocketConf = @import("config.zig");
 const Request = @import("request.zig");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 
 pub fn main() !void {
     const socket = try SocketConf.Socket.init();
@@ -895,6 +903,7 @@ pub fn main() !void {
         buffer[0..buffer.len]
     );
     try stdout.print("{any}\n", .{request});
+    try stdout.flush();
 }
 ```
 
@@ -998,11 +1007,14 @@ const SocketConf = @import("config.zig");
 const Request = @import("request.zig");
 const Response = @import("response.zig");
 const Method = Request.Method;
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 
 pub fn main() !void {
     const socket = try SocketConf.Socket.init();
     try stdout.print("Server Addr: {any}\n", .{socket._address});
+    try stdout.flush();
     var server = try socket._address.listen(.{});
     const connection = try server.accept();
 

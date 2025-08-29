@@ -84,14 +84,11 @@ in the console is compatible with the line of code present in the
 #| build_type: "run"
 const x = 5;
 if (x > 10) {
-    try stdout.print(
-        "x > 10!\n", .{}
-    );
+    try stdout.print("x > 10!\n", .{});
 } else {
-    try stdout.print(
-        "x <= 10!\n", .{}
-    );
+    try stdout.print("x <= 10!\n", .{});
 }
+try stdout.flush();
 ```
 
 
@@ -124,7 +121,9 @@ the `area` variable would contain the value `"Data & Analytics"`, instead of `"P
 #| build_type: "run"
 #| auto_main: false
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 const Role = enum {
     SE, DPE, DE, DA, PM, PO, KS
 };
@@ -144,6 +143,7 @@ pub fn main() !void {
         },
     }
     try stdout.print("{s}\n", .{area});
+    try stdout.flush();
 }
 ```
 
@@ -224,6 +224,7 @@ const category = switch (level) {
     },
 };
 try stdout.print("{s}\n", .{category});
+try stdout.flush();
 ```
 
 ```
@@ -260,6 +261,7 @@ const category = switch (level) {
     },
 };
 try stdout.print("{s}\n", .{category});
+try stdout.flush();
 ```
 
 This is neat, and it works with character ranges too. That is, I could
@@ -294,6 +296,7 @@ xsw: switch (@as(u8, 1)) {
         try stdout.print(
             "Unmatched case, value: {d}\n", .{@as(u8, 1)}
         );
+        try stdout.flush();
     },
 }
 ```
@@ -325,7 +328,9 @@ its scope.
 #| auto_main: false
 #| build_type: "lib"
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 fn foo() !void {
     defer std.debug.print(
         "Exiting function ...\n", .{}
@@ -334,6 +339,7 @@ fn foo() !void {
     const x = 2 + 2; _ = x;
     try stdout.print("Multiplying ...\n", .{});
     const y = 2 * 8; _ = y;
+    try stdout.flush();
 }
 
 pub fn main() !void {
@@ -495,6 +501,7 @@ const name = [_]u8{'P','e','d','r','o'};
 for (name) |char| {
     try stdout.print("{d} | ", .{char});
 }
+try stdout.flush();
 ```
 
 In the above example we are using the value itself of each
@@ -521,6 +528,7 @@ const name = "Pedro";
 for (name, 0..) |_, i| {
     try stdout.print("{d} | ", .{i});
 }
+try stdout.flush();
 ```
 
 ```
@@ -547,6 +555,7 @@ while (i < 5) {
     try stdout.print("{d} | ", .{i});
     i += 1;
 }
+try stdout.flush();
 ```
 
 You can also specify the increment expression to be used at the beginning of a while loop.
@@ -560,6 +569,7 @@ var i: u8 = 1;
 while (i < 5) : (i += 1) {
     try stdout.print("{d} | ", .{i});
 }
+try stdout.flush();
 ```
 
 ### Using `break` and `continue`
@@ -592,6 +602,7 @@ while (true) {
 }
 try std.testing.expect(i == 10);
 try stdout.print("Everything worked!", .{});
+try stdout.flush();
 ```
 
 Since this code example was executed successfully by the `zig` compiler,
@@ -615,6 +626,7 @@ for (ns) |i| {
     }
     try stdout.print("{d} | ", .{i});
 }
+try stdout.flush();
 ```
 
 
@@ -766,7 +778,9 @@ every new `User` object. That is why this `init()` function returns a new `User`
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 const User = struct {
     id: u64,
     name: []const u8,
@@ -785,6 +799,7 @@ const User = struct {
 
     fn print_name(self: User) !void {
         try stdout.print("{s}\n", .{self.name});
+        try stdout.flush();
     }
 };
 
@@ -965,8 +980,11 @@ anonymous struct for you.
 #| auto_main: false
 const std = @import("std");
 pub fn main() !void {
-    const stdout = std.io.getStdOut().writer();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.print("Hello, {s}!\n", .{"world"});
+    try stdout.flush();
 }
 ```
 
