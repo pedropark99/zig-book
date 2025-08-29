@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.33">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>16&nbsp; Introducing threads and parallelism in Zig – Introduction to Zig</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../Chapters/15-vectors.html" rel="next">
+<link href="../Chapters/13-image-filter.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-59898bd1c6b9d2bb783127feaa000c76.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-d329e753491efaeac79c98c4b193a686.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-59898bd1c6b9d2bb783127feaa000c76.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-5a7d69291c2a8c67bc3a157f4354e263.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-459d5fd6defc0ce539eba7af394d0837.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-5a7d69291c2a8c67bc3a157f4354e263.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-6CHJXK4CEV"></script>
+
+<script type="text/javascript">
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
+</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../Chapters/14-threads.html"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Introducing threads and parallelism in Zig</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Introduction to Zig</a> 
+        <div class="sidebar-tools-main">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Welcome</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-zig-weird.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Introducing Zig</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/03-structs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Control flow, structs, modules and types</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-memory.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Memory and Allocators</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/01-base64.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Project 1 - Building a base64 encoder/decoder</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/02-debugging.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Debugging Zig applications</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/05-pointers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Pointers and Optionals</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/04-http-server.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Project 2 - Building a HTTP Server from scratch</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/03-unittests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Unit tests</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/07-build-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Build System</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/09-error-handling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Error handling and unions</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/09-data-structures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Data Structures</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/10-stack-project.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Project 3 - Building a stack data structure</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/12-file-op.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Filesystem and Input/Output (IO)</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/14-zig-c-interop.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Zig interoperability with C</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/13-image-filter.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Project 4 - Developing an image filter</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/14-threads.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Introducing threads and parallelism in Zig</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../Chapters/15-vectors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Introducing Vectors and SIMD</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-what-thread" id="toc-sec-what-thread" class="nav-link active" data-scroll-target="#sec-what-thread"><span class="header-section-number">16.1</span> What are threads?</a></li>
+  <li><a href="#threads-versus-processes" id="toc-threads-versus-processes" class="nav-link" data-scroll-target="#threads-versus-processes"><span class="header-section-number">16.2</span> Threads versus processes</a></li>
+  <li><a href="#creating-a-thread" id="toc-creating-a-thread" class="nav-link" data-scroll-target="#creating-a-thread"><span class="header-section-number">16.3</span> Creating a thread</a></li>
+  <li><a href="#returning-from-a-thread" id="toc-returning-from-a-thread" class="nav-link" data-scroll-target="#returning-from-a-thread"><span class="header-section-number">16.4</span> Returning from a thread</a>
+  <ul class="collapse">
+  <li><a href="#joining-a-thread" id="toc-joining-a-thread" class="nav-link" data-scroll-target="#joining-a-thread"><span class="header-section-number">16.4.1</span> Joining a thread</a></li>
+  <li><a href="#detaching-a-thread" id="toc-detaching-a-thread" class="nav-link" data-scroll-target="#detaching-a-thread"><span class="header-section-number">16.4.2</span> Detaching a thread</a></li>
+  </ul></li>
+  <li><a href="#thread-pools" id="toc-thread-pools" class="nav-link" data-scroll-target="#thread-pools"><span class="header-section-number">16.5</span> Thread pools</a></li>
+  <li><a href="#mutexes" id="toc-mutexes" class="nav-link" data-scroll-target="#mutexes"><span class="header-section-number">16.6</span> Mutexes</a>
+  <ul class="collapse">
+  <li><a href="#sec-critical-section" id="toc-sec-critical-section" class="nav-link" data-scroll-target="#sec-critical-section"><span class="header-section-number">16.6.1</span> Critical section</a></li>
+  <li><a href="#sec-atomic-operation" id="toc-sec-atomic-operation" class="nav-link" data-scroll-target="#sec-atomic-operation"><span class="header-section-number">16.6.2</span> Atomic operations</a></li>
+  <li><a href="#data-races-and-race-conditions" id="toc-data-races-and-race-conditions" class="nav-link" data-scroll-target="#data-races-and-race-conditions"><span class="header-section-number">16.6.3</span> Data races and race conditions</a></li>
+  <li><a href="#using-mutexes-in-zig" id="toc-using-mutexes-in-zig" class="nav-link" data-scroll-target="#using-mutexes-in-zig"><span class="header-section-number">16.6.4</span> Using mutexes in Zig</a></li>
+  </ul></li>
+  <li><a href="#readwrite-locks" id="toc-readwrite-locks" class="nav-link" data-scroll-target="#readwrite-locks"><span class="header-section-number">16.7</span> Read/Write locks</a>
+  <ul class="collapse">
+  <li><a href="#exclusive-lock-vs-shared-lock" id="toc-exclusive-lock-vs-shared-lock" class="nav-link" data-scroll-target="#exclusive-lock-vs-shared-lock"><span class="header-section-number">16.7.1</span> Exclusive lock vs shared lock</a></li>
+  <li><a href="#using-readwrite-locks-in-zig" id="toc-using-readwrite-locks-in-zig" class="nav-link" data-scroll-target="#using-readwrite-locks-in-zig"><span class="header-section-number">16.7.2</span> Using read/write locks in Zig</a></li>
+  </ul></li>
+  <li><a href="#yielding-a-thread" id="toc-yielding-a-thread" class="nav-link" data-scroll-target="#yielding-a-thread"><span class="header-section-number">16.8</span> Yielding a thread</a></li>
+  <li><a href="#common-problems-in-threads" id="toc-common-problems-in-threads" class="nav-link" data-scroll-target="#common-problems-in-threads"><span class="header-section-number">16.9</span> Common problems in threads</a>
+  <ul class="collapse">
+  <li><a href="#deadlocks" id="toc-deadlocks" class="nav-link" data-scroll-target="#deadlocks"><span class="header-section-number">16.9.1</span> Deadlocks</a></li>
+  <li><a href="#sec-not-call-join-detach" id="toc-sec-not-call-join-detach" class="nav-link" data-scroll-target="#sec-not-call-join-detach"><span class="header-section-number">16.9.2</span> Not calling <code>join()</code> or <code>detach()</code></a></li>
+  <li><a href="#cancelling-or-killing-a-particular-thread" id="toc-cancelling-or-killing-a-particular-thread" class="nav-link" data-scroll-target="#cancelling-or-killing-a-particular-thread"><span class="header-section-number">16.9.3</span> Cancelling or killing a particular thread</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span id="sec-thread" class="quarto-section-identifier"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Introducing threads and parallelism in Zig</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>Threads are available in Zig through the <code>Thread</code> struct from the Zig Standard Library. This struct represents a kernel thread, and it follows a POSIX Thread pattern, meaning that, it works similarly to a thread from the <code>pthread</code> C library, which is usually available on any distribution of the GNU C Compiler (<code>gcc</code>). If you are not familiar with threads, I will give you some theory behind it first, shall we?</p>
+<section id="sec-what-thread" class="level2" data-number="16.1">
+<h2 data-number="16.1" class="anchored" data-anchor-id="sec-what-thread"><span class="header-section-number">16.1</span> What are threads?</h2>
+<p>A thread is basically a separate context of execution. We use threads to introduce parallelism into our program, which in most cases, makes the program run faster, because we have multiple tasks being performed at the same time, parallel to each other.</p>
+<p>Programs are normally single-threaded by default. Which means that each program usually runs on a single thread, or, a single context of execution. When we have only one thread running, we have no parallelism. And when we don’t have parallelism, the commands are executed sequentially, that is, only one command is executed at a time, one after another. By creating multiple threads inside our program, we start to execute multiple commands at the same time.</p>
+<p>Programs that create multiple threads are very common in the wild. Because many different types of applications are well suited for parallelism. Good examples are video and photo-editing applications (e.g.&nbsp;Adobe Photoshop or DaVinci Resolve), games (e.g.&nbsp;The Witcher 3), and also web browsers (e.g.&nbsp;Google Chrome, Firefox, Microsoft Edge, etc). For example, in web browsers, threads are normally used to implement tabs. The tabs in a web browsers usually run as separate threads in the main process of the web browser. That is, each new tab that you open in your web browser usually runs on a separate thread of execution.</p>
+<p>By running each tab in a separate thread, we allow all open tabs in the browser to run at the same time, and independently from each other. For example, you might have YouTube or Spotify currently open in a tab, and you are listening to some podcast in that tab while at the same time working in another tab, writing an essay on Google Docs. Even if you are not looking into the YouTube tab, you can still hear the podcast only because this YouTube tab is running in parallel with the other tab where Google Docs is running.</p>
+<p>Without threads, the other alternative would be to run each tab as a completely separate process in your computer. But that would be a bad choice because just a few tabs would already consume too much power and resources from your computer. In other words, it’s very expensive to create a completely new process, compared to creating a new thread of execution. Also, the chances of you experiencing lag and overhead while using the browser would be significant. Threads are faster to create, and they also consume much, much less resources from the computer, especially because they share some resources with the main process.</p>
+<p>Therefore, it’s the use of threads in modern web browsers that allow you to hear the podcast at the same time while you are writing something on Google Docs. Without threads, a web browser would probably be limited to just one single tab.</p>
+<p>Threads are also well-suited for anything that involves serving requests or orders. Because serving a request takes time, and usually involves a lot of “waiting time”. In other words, we spend a lot of time in idle, waiting for something to complete. For example, consider a restaurant. Serving orders in a restaurant usually involves the following steps:</p>
+<ol type="1">
+<li>receive order from the client.</li>
+<li>pass the order to the kitchen, and wait for the food to be cooked.</li>
+<li>start cooking the food in the kitchen.</li>
+<li>when the food is fully cooked deliver this food to the client.</li>
+</ol>
+<p>If you think about the bullet points above, you will notice that one big moment of waiting time is present in this whole process, which is while the food is being cooked inside the kitchen. While the food is being prepped, both the waiter and the client themselves are waiting for the food to be ready and delivered.</p>
+<p>If we write a program to represent this restaurant, more specifically, a single-threaded program, then this program would be very inefficient. Because the program would stay in idle, waiting for a considerable amount of time on the “check if food is ready” step. Consider the code snippet exposed below that could potentially represent such program.</p>
+<p>The problem with this program is the while loop. This program will spend a lot of time waiting on the while loop, doing nothing more than just checking if the food is ready. This is a waste of time. Instead of waiting for something to happen, the waiter could just send the order to the kitchen, and just move on, and continue with receiving more orders from other clients, and sending more orders to the kitchen, instead of doing nothing and waiting for the food to be ready.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> order = Order.init(<span class="st">"Pizza Margherita"</span>, n = <span class="dv">1</span>);</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> waiter = Waiter.init();</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>waiter.receive_order(order);</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>waiter.ask_kitchen_to_cook();</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> food_not_ready = <span class="cn">true</span>;</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">while</span> (food_not_ready) <span class="op">{</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    food_not_ready = waiter.is_food_ready();</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> food = waiter.get_food_from_kitchen();</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>waiter.send_food_to_client(food);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This is why threads would be a great fit for this program. We could use threads to free the waiters from their “waiting duties”, so they can go on with their other tasks, and receive more orders. Take a look at the next example, where I have re-written the above program into a different program that uses threads to cook and deliver the orders.</p>
+<p>You can see in this program that when a waiter receives a new order from a client, this waiter executes the <code>send_order()</code> function. The only thing that this function does is to create a new thread and detaches it. Since creating a thread is a very fast operation, this <code>send_order()</code> function returns almost immediately, so the waiter spends almost no time worrying about the order, and just move on and tries to get the next order from the clients.</p>
+<p>Inside the new thread created, the order gets cooked by a chef, and when the food is ready, it’s delivered to the client’s table.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> cook_and_deliver_order(order: *Order) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> chef = Chef.init();</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> food = chef.cook(order.*);</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    chef.deliver_food(food);</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> send_order(order: Order) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> cook_thread = Thread.spawn(</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        .<span class="op">{}</span>, cook_and_deliver_order, .<span class="op">{</span>&amp;order<span class="op">}</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    cook_thread.detach();</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> waiter = Waiter.init();</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="kw">while</span> (<span class="cn">true</span>) <span class="op">{</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> order = waiter.get_new_order();</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (order) <span class="op">{</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        send_order(order);</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="threads-versus-processes" class="level2" data-number="16.2">
+<h2 data-number="16.2" class="anchored" data-anchor-id="threads-versus-processes"><span class="header-section-number">16.2</span> Threads versus processes</h2>
+<p>When we run a program, this program is executed as a <em>process</em> in the operating system. This is a one to one relationship, each program or application that you execute is a separate process in the operating system. But each program, or each process, can create and contain multiple threads inside of it. Therefore, processes and threads have a one to many relationship.</p>
+<p>This also means that every thread that we create is always associated with a particular process in our computer. In other words, a thread is always a subset (or a children) of an existing process. All threads share some of the resources associated with the process from which they were created. And because threads share resources with the process, they are very good for making communication between tasks easier.</p>
+<p>For example, suppose that you were developing a big and complex application that would be much simpler if you could split it in two, and make these two separate pieces talk with each other. Some programmers opt to effectively write these two pieces of the codebase as two completely separate programs, and then, they use IPC (<em>inter-process communication</em>) to make these two separate programs/processes talk to each other, and make them work together.</p>
+<p>However, some programmers find IPC hard to deal with, and, as consequence, they prefer to write one piece of the codebase as the “main part of the program”, or, as the part of the code that runs as the process in the operating system, while the other piece of the codebase is written as a task to be executed in a new thread. A process and a thread can easily comunicate with each other through both control flow, and also, through data, because they share and have access to the same standard file descriptors (<code>stdout</code>, <code>stdin</code>, <code>stderr</code>), and also to the same memory space on the heap and global data section.</p>
+<p>In more details, each thread that you create have a separate stack frame reserved just for that thread, which essentially means that each local object that you create inside this thread, is local to that thread, i.e., the other threads cannot see this local object. Unless this object that you have created is an object that lives on the heap. In other words, if the memory associated with this object is on the heap, then, the other threads can potentially access this object.</p>
+<p>Therefore, objects that are stored in the stack are local to the thread where they were created. But objects that are stored on the heap are potentially accessible to other threads. All of this means that, each thread has its own separate stack frame, but, at the same time, all threads share the same heap, the same standard file descriptors (which means that they share the same <code>stdout</code>, <code>stdin</code>, <code>stderr</code>), and the same global data section in the program.</p>
+</section>
+<section id="creating-a-thread" class="level2" data-number="16.3">
+<h2 data-number="16.3" class="anchored" data-anchor-id="creating-a-thread"><span class="header-section-number">16.3</span> Creating a thread</h2>
+<p>We create new threads in Zig by first importing the <code>Thread</code> struct into our current Zig module and then calling the <code>spawn()</code> method of this struct, which creates (or “spawns”) a new thread of execution from our current process. This method has three arguments, which are, respectively:</p>
+<ol type="1">
+<li>a <code>SpawnConfig</code> object, which contains configurations for the spawn process.</li>
+<li>the name of the function that is going to be executed (or that is going to be “called”) inside this new thread.</li>
+<li>a list of arguments (or inputs) to be passed to the function provided in the second argument.</li>
+</ol>
+<p>With these three arguments, you can control how the thread gets created, and also, specify which work (or “tasks”) will be performed inside this new thread. A thread is just a separate context of execution, and we usually create new threads in our code because we want to perform some work inside this new context of execution. And we specify which exact work, or which exact steps that are going to be performed inside this context by providing the name of a function as the second argument of the <code>spawn()</code> method.</p>
+<p>Thus, when this new thread gets created, this function that you provided as input to the <code>spawn()</code> method gets called, or gets executed inside this new thread. You can control the arguments, or the inputs that are passed to this function when it gets called by providing a list of arguments (or a list of inputs) in the third argument of the <code>spawn()</code> method. These arguments are passed to the function in the same order that they are provided to <code>spawn()</code>.</p>
+<p>Furthermore, the <code>SpawnConfig</code> is a struct object with only two possible fields, or, two possible members, that you can set to tailor the spawn behaviour. These fields are:</p>
+<ul>
+<li><code>stack_size</code>: you can provide a <code>usize</code> value to specify the size (in bytes) of the thread’s stack frame. By default, this value is: <span class="math inline">\(16 \times 1024 \times 1024\)</span>.</li>
+<li><code>allocator</code>: you can provide an allocator object to be used when allocating memory for the thread.</li>
+</ul>
+<p>To use one of these two fields (or “configs”), you just have to create a new object of type <code>SpawnConfig</code>, and provide this object as input to the <code>spawn()</code> method. But, if you are not interested in using one of these configs, and you are ok with using just the defaults, you can just provide an anonymous struct literal (<code>.{}</code>) in place of this <code>SpawnConfig</code> argument.</p>
+<p>As our first, and very simple example, consider the code exposed below. Inside the same program, you can create multiple threads of execution if you want to. But, in this first example, we are creating just a single thread of execution, because we call <code>spawn()</code> only once.</p>
+<p>Also, notice in this example that we are executing the function <code>do_some_work()</code> inside the new thread. Since this function receives no inputs, because it has no arguments, we have passed an empty list in this instance, or more precisely, an empty, anonymous struct (<code>.{}</code>) in the third argument of <code>spawn()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_writer = std.fs.File.stdout().writer(&amp;stdout_buffer);</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> do_some_work() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Starting the work.</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    Thread.sleep(<span class="dv">1000</span> * std.time.ns_per_ms);</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Finishing the work.</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work, .<span class="op">{}</span>);</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    thread.join();</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Starting the work.Finishing the work.</code></pre>
+</div>
+</div>
+<p>Notice the use of <code>try</code> when calling the <code>spawn()</code> method. This means that this method can return an error in some circumstances. One circumstance in particular is when you attempt to create a new thread, when you have already created too much (i.e., you have exceeded the quota of concurrent threads in your system).</p>
+<p>But, if the new thread is successfully created, the <code>spawn()</code> method returns a handler object (which is just an object of type <code>Thread</code>) to this new thread. You can use this handler object to effectively control all aspects of the thread.</p>
+<p>When the thread gets created, the function that you provided as input to <code>spawn()</code> gets invoked (i.e., gets called) to start the execution on this new thread. In other words, every time you call <code>spawn()</code>, not only is a new thread created, but the “start work button” of this thread is also automatically pressed. So the work being performed in this thread starts as soon as the thread is created. This is similar to how <code>pthread_create()</code> from the <code>pthreads</code> library in C works, which also starts the execution as soon as the thread is created.</p>
+</section>
+<section id="returning-from-a-thread" class="level2" data-number="16.4">
+<h2 data-number="16.4" class="anchored" data-anchor-id="returning-from-a-thread"><span class="header-section-number">16.4</span> Returning from a thread</h2>
+<p>We have learned in the previous section that the execution of the thread starts as soon as the thread is created. Now, we will learn how to “join” or “detach” a thread in Zig. “Join” and “detach” are operations that control how the thread returns to the main thread, or to the main process in our program.</p>
+<p>We perform these operations by using the methods <code>join()</code> and <code>detach()</code> from the thread handler object. Every thread that you create can be marked as either <em>joinable</em> or <em>detached</em> <span class="citation" data-cites="linux_pthread_create">(<a href="../references.html#ref-linux_pthread_create" role="doc-biblioref">Linux man-pages 2024</a>)</span>. You can turn a thread into a <em>detached</em> thread by calling the <code>detach()</code> method from the thread handler object. But if you call the <code>join()</code> method instead, then this thread becomes a <em>joinable</em> thread.</p>
+<p>A thread cannot be both <em>joinable</em> and <em>detached</em>. Which in general means that you cannot call both <code>join()</code> and <code>detach()</code> on the same thread. But a thread must be one of the two, meaning that, you should always call either <code>join()</code> or <code>detach()</code> over a thread. If you don’t call one of these two methods over your thread, you introduce undefined behaviour into your program, which is described in <a href="#sec-not-call-join-detach" class="quarto-xref"><span>Section 16.9.2</span></a>.</p>
+<p>Now, let’s describe what each of these two methods do to your thread.</p>
+<section id="joining-a-thread" class="level3" data-number="16.4.1">
+<h3 data-number="16.4.1" class="anchored" data-anchor-id="joining-a-thread"><span class="header-section-number">16.4.1</span> Joining a thread</h3>
+<p>When you join a thread, you are essentially saying: “Hey! Could you please wait for the thread to finish, before you continue with your execution?”. For example, if we come back to our first and simplest example of a thread in Zig, we created a single thread inside the <code>main()</code> function of our program and just called <code>join()</code> on this thread at the end. This section of the code example is reproduced below.</p>
+<p>Because we are joining this new thread inside the <code>main()</code>’s scope, it means that the execution of the <code>main()</code> function is temporarily stopped, to wait for the execution of the thread to finish. That is, the execution of <code>main()</code> stops temporarily at the line where <code>join()</code> gets called, and it will continue only after the thread has finished its tasks.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work, .<span class="op">{}</span>);</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    thread.join();</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Because we have joined this new thread inside the <code>main()</code> scope, we have a guarantee that this new thread will finish before the end of the execution of <code>main()</code>. Because it’s guaranteed that <code>main()</code> will wait for the thread to finish its tasks.</p>
+<p>In the example above, there are no more expressions after the <code>join()</code> call. We just have the end of the <code>main()</code>’s scope, and, therefore, the execution of our program just ends after the thread finishes its tasks, since there is nothing more to do. But what if we had more stuff to do after the join call?</p>
+<p>To demonstrate this other possibility, consider the next example exposed below. Here, we create a <code>print_id()</code> function, that just receives an id as input, and prints it to <code>stdout</code>. In this example, we are creating two new threads, one after another. Then, we join the first thread, then, we wait for two whole seconds, then, at last, we join the second thread.</p>
+<p>The idea behind this example is that the last <code>join()</code> call is executed only after the first thread finishes its task (i.e., the first <code>join()</code> call), and the two-second delay. If you compile and run this example, you will notice that most messages are quickly printed to <code>stdout</code>, i.e., they appear almost instantly on your screen. However, the last message (“Joining thread 2”) takes around 2 seconds to appear on the screen.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> print_id(id: *<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Thread ID: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>id.*<span class="op">}</span>);</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id1: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id2: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, print_id, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, print_id, .<span class="op">{</span>&amp;id2<span class="op">}</span>);</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Joining thread 1</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    thread1.join();</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    Thread.sleep(<span class="dv">2</span> * std.time.ns_per_s);</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Joining thread 2</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    thread2.join();</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Thread ID: Joining thread 1
+1
+Thread ID: 2
+Joining thread 2</code></pre>
+<p>This demonstrates that both threads finish their work (i.e., printing the IDs) very fast, before the two seconds of delay end. Because of that, the last <code>join()</code> call returns pretty much instantly. Because when this last <code>join()</code> call happens, the second thread has already finished its task.</p>
+<p>Now, if you compile and run this example, you will also notice that, in some cases, the messages intertwine with each other. In other words, you might see the message “Joining thread 1” inserted in the middle of the message “Thread 1”, or vice-versa. This happens because:</p>
+<ul>
+<li>the threads are executing basically at the same time as the main process of the program (i.e., the <code>main()</code> function).</li>
+<li>the threads share the same <code>stdout</code> from the main process of the program, which means that the messages that the threads produce are sent to exact same place as the messages produced by the main process.</li>
+</ul>
+<p>Both of these points were described previously in <a href="#sec-what-thread" class="quarto-xref"><span>Section 16.1</span></a>. So the messages might get intertwined because they are being produced and sent to the same <code>stdout</code> roughly at the same time. Anyway, when you call <code>join()</code> over a thread, the current process will wait for the thread to finish before it continues, and, when the thread finishes its task, the resources associated with this thread are automatically freed, and the current process continues with its execution.</p>
+</section>
+<section id="detaching-a-thread" class="level3" data-number="16.4.2">
+<h3 data-number="16.4.2" class="anchored" data-anchor-id="detaching-a-thread"><span class="header-section-number">16.4.2</span> Detaching a thread</h3>
+<p>When you detach a thread, the resources associated with this thread are automatically released back to the system, without the need for another thread to join with this terminated thread.</p>
+<p>In other words, when you call <code>detach()</code> on a thread it’s like when your children become adults, i.e., they become independent from you. A detached thread frees itself, and when this thread finishes its tasks, it does not report the results back to you. Thus, you normally mark a thread as <em>detached</em> when you don’t need to use the return value of the thread, or when you don’t care about when exactly the thread finishes its job, i.e., the thread solves everything by itself.</p>
+<p>Take the code example below. We create a new thread, detach it, and then, we just print a final message before we end our program. We use the same <code>print_id()</code> function that we have used over the previous examples.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> print_id(id: *<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Thread ID: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>id.*<span class="op">}</span>);</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id1: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, print_id, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    thread1.detach();</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Finish main</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Finish main</code></pre>
+<p>Now, if you look closely at the output of this code example, you will notice that only the final message in main was printed to the console. The message that was supposed to be printed by <code>print_id()</code> did not appear in the console. Why? It’s because the main process of our program has finished first, before the thread was able to say anything.</p>
+<p>And that is perfectly ok behaviour, because the thread was detached, so it was able to free itself, without the need to wait for the main process. If you ask main to sleep (or “wait”) for some extra nanoseconds, before it ends, you will likely see the message printed by <code>print_id()</code>, because you give enough time for the thread to finish before the main process ends.</p>
+</section>
+</section>
+<section id="thread-pools" class="level2" data-number="16.5">
+<h2 data-number="16.5" class="anchored" data-anchor-id="thread-pools"><span class="header-section-number">16.5</span> Thread pools</h2>
+<p>Thread pools is a very popular programming pattern, which is used especially on servers and daemons processes. A thread pool is just a set of threads, or a “pool” of threads. Many programmers like to use this pattern because it makes it easier to manage and use multiple threads in your program, instead of manually creating the threads when you need them.</p>
+<p>Also, using thread pools might increase performance as well in your program, especially if your program is constantly creating threads to perform short-lived tasks. In such instance, a thread pool might cause an increase in performance because you do not have be constantly creating and destroying threads all the time, so you don’t face a lot of the overhead involved in this constant process of creating and destroying threads.</p>
+<p>The main idea behind a thread pool is to have a set of threads already created and ready to perform tasks at all times. You create a set of threads at the moment that your program starts, and keep these threads alive while your program runs. Each of these threads will be either performing a task, or waiting for a task to be assigned. Every time a new task emerges in your program, this task is added to a “queue of tasks”, and the moment that a thread becomes available and ready to perform a new task, this thread takes the next task from the “queue of tasks”, and it simply performs the task.</p>
+<p>The Zig Standard Library offers a thread pool implementation on the <code>std.Thread.Pool</code> struct. You create a new instance of a <code>Pool</code> object by providing a <code>Pool.Options</code> object as input to the <code>init()</code> method of this struct. A <code>Pool.Options</code> object, is a struct object that contains configurations for the pool of threads. The most important settings in this struct object are the members <code>n_jobs</code> and <code>allocator</code>. As the name suggests, the member <code>allocator</code> should receive an allocator object, while the member <code>n_jobs</code> specifies the number of threads to be created and maintained in this pool.</p>
+<p>Consider the example exposed below, that demonstrates how can we create a new thread pool object. Here, we create a <code>Pool.Options</code> object that contains a general purpose allocator object, and also, the <code>n_jobs</code> member was set to 4, which means that the thread pool will create and use 4 threads.</p>
+<p>Also notice that the <code>pool</code> object was initially set to <code>undefined</code>. This allow us to initially declare the thread pool object, but not properly instantiate the underlying memory of the object. You have to initially declare your thread pool object by using <code>undefined</code> like this, because the <code>init()</code> method of <code>Pool</code> needs to have an initial pointer to properly instantiate the object.</p>
+<p>So, just remember to create your thread pool object by using <code>undefined</code>, and then, after that, you call the <code>init()</code> method over the object. You should also not forget to call the <code>deinit()</code> method over the thread pool object, once you are done with it, to release the resources allocated for the thread pool. Otherwise, you will have a memory leak in your program.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Pool = std.Thread.Pool;</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> opt = Pool.Options<span class="op">{</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>        .n_jobs = <span class="dv">4</span>,</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>        .allocator = allocator,</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>;</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> pool: Pool = <span class="cn">undefined</span>;</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> pool.init(opt);</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> pool.deinit();</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now that we know how to create <code>Pool</code> objects, we have to understand how to assign tasks to be executed by the threads in this pool object. To assign a task to be performed by a thread, we need to call the <code>spawn()</code> method from the thread pool object.</p>
+<p>This <code>spawn()</code> method works identical to the <code>spawn()</code> method from the <code>Thread</code> object. The method has almost the same arguments as the previous one, more precisely, we don’t have to provide a <code>SpawnConfig</code> object in this case. But instead of creating a new thread, this <code>spawn()</code> method from the thread pool object just registers a new task in the internal “queue of tasks” to be performed, and any available thread in the pool will get this task, and it will simply perform the task.</p>
+<p>In the example below, we are using our previous <code>print_id()</code> function once again. But you may notice that the <code>print_id()</code> function is a little different this time, because now we are using <code>catch</code> instead of <code>try</code> in the <code>print()</code> call. Currently, the <code>Pool</code> struct only supports functions that don’t return errors as tasks. Thus, when assigning tasks to threads in a thread pool, it is essential to use functions that don’t return errors. That is why we are using <code>catch</code> here, so that the <code>print_id()</code> function don’t return an error.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> print_id(id: *<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    _ = stdout.print(<span class="st">"Thread ID: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>id.*<span class="op">}</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>        <span class="kw">catch</span> <span class="dt">void</span>;</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> id1: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> id2: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> pool.spawn(print_id, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> pool.spawn(print_id, .<span class="op">{</span>&amp;id2<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This limitation should probably not exist, and, in fact, it’s already on the radar of the Zig team to fix this issue, and it’s being tracked in an <a href="https://github.com/ziglang/zig/issues/18810">open issue</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. So, if you do need to provide a function that might return an error as the task to be performed by the threads in the thread pool, then, you are either limited to:</p>
+<ul>
+<li>implementing your own thread pool that does not have this limitation.</li>
+<li>wait for the Zig team to actually fix this issue.</li>
+</ul>
+</section>
+<section id="mutexes" class="level2" data-number="16.6">
+<h2 data-number="16.6" class="anchored" data-anchor-id="mutexes"><span class="header-section-number">16.6</span> Mutexes</h2>
+<p>Mutexes are a classic component of every thread library. In essence, a mutex is a <em>Mutually Exclusive Flag</em>, and this flag acts like a type of “lock”, or as a gate keeper to a particular section of your code. Mutexes are related to thread synchronization, more specifically, they prevent you from having some classic race conditions in your program, and, therefore, major bugs and undefined behaviour that are usually difficult to track and understand.</p>
+<p>The main idea behind a mutex is to help us to control the execution of a particular section of the code, and to prevent two or more threads from executing this particular section of the code at the same time. Many programmers like to compare a mutex to a bathroom door (which typically has a lock). When a thread locks its own mutex object, it’s like if the bathroom door was locked. Therefore, other people (in this case, other threads) who want to use the same bathroom at the same time must be patient and simply wait for the current occupant (or thread) to unlock the door and get out of the bathroom.</p>
+<p>Some other programmers also like to explain mutexes by using the analogy of “each person will have their turn to speak”. This is the analogy used in the <a href="https://www.youtube.com/watch?v=7ENFeb-J75k&amp;ab_channel=Computerphile"><em>Multithreading Code</em> video from the Computerphile project</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. Imagine if you are in a conversation circle. There is a moderator in this circle, which is the person that decides who has the right to speak at that particular moment. The moderator gives a green card (or some sort of an authorization card) to the person that is going to speak, and, as a result, everyone else must be silent and hear this person that has the green card. When the person finishes talking, they give the green card back to the moderator, and the moderator decides who is going to talk next, and delivers the green card to that person. And the cycle goes on like this.</p>
+<p>A mutex acts like the moderator in this conversation circle. The mutex authorizes one single thread to execute a specific section of the code, and it also blocks the other threads from executing this same section of the code. If these other threads want to execute this same piece of the code, they are forced to wait for the the authorized thread to finish first. When the authorized thread finishes executing this code, the mutex authorizes the next thread to execute this code, while the remaining threads remain blocked. Therefore, a mutex is like a moderator that does a “each thread will have their turn to execute this section of the code” type of control.</p>
+<p>Mutexes are especially used to prevent data race problems from happening. A data race problem happens when two or more threads are trying to read from or write to the same shared object at the same time. So, when you have an object that is shared will all threads, and, you want to avoid two or more threads from accessing this same object at the same time, you can use a mutex to lock the part of the code that access this specific object. When a thread tries to run this code that is locked by a mutex, this thread stops its execution, and patiently waits for this section of the codebase to be unlocked to continue.</p>
+<p>Notice that mutexes are normally used to lock areas of the codebase that access/modify data that is <strong>shared</strong> with all threads, i.e., objects that are either stored in the global data section, or in the heap space of your program. So mutexes are not normally used on areas of the codebase that access/modify objects that are local to the thread.</p>
+<section id="sec-critical-section" class="level3" data-number="16.6.1">
+<h3 data-number="16.6.1" class="anchored" data-anchor-id="sec-critical-section"><span class="header-section-number">16.6.1</span> Critical section</h3>
+<p>Critical section is a concept commonly associated with mutexes and thread synchronization. In essence, a critical section is the section of the program that a thread access/modify a shared resource (i.e., an object, a file descriptor, something that all threads have access to). In other words, a critical section is the section of the program where race conditions might happen, and, therefore, where undefined behaviour can be introduced into the program.</p>
+<p>When we use mutexes in our program, the critical section defines the area of the codebase that we want to lock. So we normally lock the mutex object at the beginning of the critical section, and then, we unlock it at the end of the critical section. The two bullet points exposed below comes from the “Critical Section” article from GeekFromGeeks, and they summarise well the role that a critical section plays in the thread synchronization problem <span class="citation" data-cites="geeks_critical_section">(<a href="../references.html#ref-geeks_critical_section" role="doc-biblioref">Geeks for Geeks 2024</a>)</span>.</p>
+<ol type="1">
+<li>The critical section must be executed as an atomic operation, which means that once one thread or process has entered the critical section, all other threads or processes must wait until the executing thread or process exits the critical section. The purpose of synchronization mechanisms is to ensure that only one thread or process can execute the critical section at a time.</li>
+<li>The concept of a critical section is central to synchronization in computer systems, as it is necessary to ensure that multiple threads or processes can execute concurrently without interfering with each other. Various synchronization mechanisms such as semaphores, mutexes, monitors, and condition variables are used to implement critical sections and ensure that shared resources are accessed in a mutually exclusive manner.</li>
+</ol>
+</section>
+<section id="sec-atomic-operation" class="level3" data-number="16.6.2">
+<h3 data-number="16.6.2" class="anchored" data-anchor-id="sec-atomic-operation"><span class="header-section-number">16.6.2</span> Atomic operations</h3>
+<p>You will also see the term “atomic operation” a lot when reading about threads, race conditions and mutexes. In summary, an operation is categorized as “atomic” when a context switch cannot occur in the middle of the operation. In other words, this operation is always done from beginning to end, without interruptions of another process or operation in the middle of its execution phase.</p>
+<p>Not many operations today are atomic. But why do atomic operations matter here? It’s because data races (which is a type of a race condition) cannot happen on operations that are atomic. So if a particular line in your code performs an atomic operation, then this line will never suffer from a data race problem. Therefore, programmers sometimes use an atomic operation to protect themselves from data race problems in their code.</p>
+<p>When you have an operation that is compiled into just one single assembly instruction, this operation might be atomic, because it’s just one assembly instruction. But this is not guaranteed. This is usually true for old CPU architectures (such as <code>x86</code>). But nowadays, most assembly instructions in modern CPU architectures are broken down into multiple micro-tasks, which inherently makes the operation non-atomic, even if it consists of a single assembly instruction.</p>
+<p>The Zig Standard Library offers some atomic functionality in the <code>std.atomic</code> module. In this module, you will find a public and generic function called <code>Value()</code>. With this function we create an “atomic object”, which is a value that contains some native atomic operations, most notably, a <code>load()</code> and a <code>fetchAdd()</code> operation. If you have experience with multithreading in C++, you probably have recognized this pattern. So yes, this generic “atomic object” in Zig is essentially identical to the template struct <code>std::atomic</code> from the C++ Standard Library. It’s important to emphasize that only primitive data types (i.e., the types presented in <a href="01-zig-weird.html#sec-primitive-data-types" class="quarto-xref"><span>Section 1.5</span></a>) are supported by these atomic operations in Zig.</p>
+</section>
+<section id="data-races-and-race-conditions" class="level3" data-number="16.6.3">
+<h3 data-number="16.6.3" class="anchored" data-anchor-id="data-races-and-race-conditions"><span class="header-section-number">16.6.3</span> Data races and race conditions</h3>
+<p>To understand why mutexes are used, we need to understand better the problem that they seek to solve, which can be summarized into data race problems. A data race problem is a type of a race condition, which happens when one thread is accessing a particular memory location (i.e., a particular shared object) at the same time that another thread is trying to write/save new data into this same memory location (i.e., the same shared object).</p>
+<p>We can simply define a race condition as any type of bug in your program that is based on a “who gets there first” problem. A data race problem is a type of a race condition, because it occurs when two or more parties are trying to read and write into the same memory location at the same time, and, therefore, the end result of this operation depends completely on who gets to this memory location first. As a consequence, a program that has a data race problem will likely produce a different result each time that we execute it.</p>
+<p>Thus, race conditions produce undefined behaviour and unpredictability because the program produces a different answer each time a different person gets to the target location before the others. And, we have no easy way to either predict or control who is getting to this target location first. In other words, each time your program runs, you may get a different answer because a different person, function, or part of the code finishes its tasks before the others.</p>
+<p>As an example, consider the code snippet exposed below. In this example, we create a global counter variable, and we also create an <code>increment()</code> function, whose job is to just increment this global counter variable in a for loop.</p>
+<p>Since the for loop iterates 1 hundred thousand times, and, we create two separate threads in this code example, what number do you expect to see in the final message printed to <code>stdout</code>? The answer should be 2 hundred thousand. Right? Well, in theory, this program was supposed to print 2 hundred thousand at the end, but in practice, every time that I execute this program I get a different answer.</p>
+<p>In the example exposed below, you can see that this time the end result was 117254, instead of the expected 200000. The second time I executed this program, I got the number 108592 as the result. So the end result of this program is varying, but it never gets to the expected 200000 that we want.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Global counter variable</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> counter: <span class="dt">usize</span> = <span class="dv">0</span>;</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co">// Function to increment the counter</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> increment() <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..<span class="dv">100000</span>) |_| <span class="op">{</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        counter += <span class="dv">1</span>;</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, increment, .<span class="op">{}</span>);</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, increment, .<span class="op">{}</span>);</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    thr1.join();</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Couter value: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>counter<span class="op">}</span>);</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre><code>Couter value: 117254</code></pre>
+<p>Why this is happening? The answer is: because this program contains a data race problem. This program would print the correct number 200000 if and only if the first thread finishes its tasks before the second thread starts to execute. But that is very unlikely to happen. Because the process of creating the thread is too fast, and therefore, both threads start to execute roughly at the same time. If you change this code to add some nanoseconds of sleep between the first and the second calls to <code>spawn()</code>, you will increase the chances of the program producing the “correct result”.</p>
+<p>So the data race problem happens because both threads are reading and writing to the same memory location at roughly the same time. In this example, each thread is essentially performing three basic operations at each iteration of the for loop, which are:</p>
+<ol type="1">
+<li>reading the current value of <code>count</code>.</li>
+<li>incrementing this value by 1.</li>
+<li>writing the result back into <code>count</code>.</li>
+</ol>
+<p>Ideally, a thread B should read the value of <code>count</code>, only after the other thread A has finished writing the incremented value back into the <code>count</code> object. Therefore, in the ideal scenario, which is demonstrated in <a href="#tbl-data-race-ideal" class="quarto-xref">Table&nbsp;<span>16.1</span></a>, the threads should work in sync with each other. But the reality is that these threads are out of sync, and because of that, they suffer from a data race problem, which is demonstrated in <a href="#tbl-data-race-not" class="quarto-xref">Table&nbsp;<span>16.2</span></a>.</p>
+<p>Notice that, in the data race scenario (<a href="#tbl-data-race-not" class="quarto-xref">Table&nbsp;<span>16.2</span></a>), the read performed by a thread B happens before the write operation of thread A, and that ultimately leads to wrong results at the end of the program. Because when thread B reads the value of the <code>count</code> variable, thread A is still processing the initial value from <code>count</code>, and has not yet written the new, incremented value back to <code>count</code>. As a result, thread B ends up reading the same initial (or “old”) value from <code>count</code> instead of the updated, incremented value that thread A would have written.</p>
+<div id="tbl-data-race-ideal" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-data-race-ideal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;16.1: An ideal scenario for two threads incrementing the same integer value
+</figcaption>
+<div aria-describedby="tbl-data-race-ideal-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Thread 1</th>
+<th>Thread 2</th>
+<th>Integer value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>read value</td>
+<td></td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>increment</td>
+<td></td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>write value</td>
+<td></td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>read value</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>increment</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>write value</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<div id="tbl-data-race-not" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-data-race-not-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;16.2: A data race scenario when two threads are incrementing the same integer value
+</figcaption>
+<div aria-describedby="tbl-data-race-not-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Thread 1</th>
+<th>Thread 2</th>
+<th>Integer value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>read value</td>
+<td></td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>read value</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td>increment</td>
+<td></td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>increment</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>write value</td>
+<td></td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>write value</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>If you think about these diagrams exposed in form of tables, you will notice that they relate back to our discussion of atomic operations in <a href="#sec-atomic-operation" class="quarto-xref"><span>Section 16.6.2</span></a>. Remember, atomic operations are operations that the CPU executes from beginning to end, without interruptions from other threads or processes. So, the scenario exposed in <a href="#tbl-data-race-ideal" class="quarto-xref">Table&nbsp;<span>16.1</span></a> does not suffer from a data race, because the operations performed by thread A are not interrupted in the middle by the operations from thread B.</p>
+<p>If we also think about the discussion of critical section from <a href="#sec-critical-section" class="quarto-xref"><span>Section 16.6.1</span></a>, we can identify the section that representes the critical section of the program, which is the section that is vulnerable to data race conditions. In this example, the critical section of the program is the line where we increment the <code>counter</code> variable (<code>counter += 1</code>). So, ideally, we want to use a mutex, and lock right before this line, and then unlock right after this line.</p>
+</section>
+<section id="using-mutexes-in-zig" class="level3" data-number="16.6.4">
+<h3 data-number="16.6.4" class="anchored" data-anchor-id="using-mutexes-in-zig"><span class="header-section-number">16.6.4</span> Using mutexes in Zig</h3>
+<p>Now that we know the problem that mutexes seek to solve, we can learn how to use them in Zig. Mutexes in Zig are available through the <code>std.Thread.Mutex</code> struct from the Zig Standard Library. If we take the same code from the previous example, and improve it with mutexes, to solve our data race problem, we get the code example below.</p>
+<p>Notice that this time, we had to alter the <code>increment()</code> function to receive a pointer to the <code>Mutex</code> object as input. All that we need to do, to make this program safe against data race problems, is to call the <code>lock()</code> method at the beginning of the critical section, and then, call <code>unlock()</code> at the end of the critical section. Notice that the output of this program is now the correct number of 200000.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_writer = std.fs.File.stdout().writer(&amp;stdout_buffer);</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Mutex = std.Thread.Mutex;</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> counter: <span class="dt">usize</span> = <span class="dv">0</span>;</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> increment(mutex: *Mutex) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..<span class="dv">100000</span>) |_| <span class="op">{</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>        mutex.lock();</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        counter += <span class="dv">1</span>;</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>        mutex.unlock();</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> mutex: Mutex = .<span class="op">{}</span>;</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, increment, .<span class="op">{</span>&amp;mutex<span class="op">}</span>);</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, increment, .<span class="op">{</span>&amp;mutex<span class="op">}</span>);</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    thr1.join();</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Couter value: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>counter<span class="op">}</span>);</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Couter value: 200000</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="readwrite-locks" class="level2" data-number="16.7">
+<h2 data-number="16.7" class="anchored" data-anchor-id="readwrite-locks"><span class="header-section-number">16.7</span> Read/Write locks</h2>
+<p>Mutexes are normally used when it’s not always safe for two or more threads running the same piece of code at the same time. In contrast, read/write locks are normally used in situations where you have a mixture of scenarios, i.e., there are some pieces of the codebase that are safe to run in parallel, and other pieces that are not safe.</p>
+<p>For example, suppose that you have multiple threads that uses the same shared file in the filesystem to store some configurations, or statistics. If two or more threads try to read the data from this same file at the same time, nothing bad happens. So this part of the codebase is perfectly safe to be executed in parallel, with multiple threads reading the same file at the same time.</p>
+<p>However, if two or more threads try to write data into this same file at the same time, then we cause some race condition problems. So this other part of the codebase is not safe to be executed in parallel. More specifically, a thread might end up writing data in the middle of the data written by the other thread. This process of two or more threads writing to the same location might lead to data corruption. This specific situation is usually called a <em>torn write</em>.</p>
+<p>Thus, what we can extract from this example is that there are certain types of operations that cause a race condition, but there are also other types of operations that do not cause a race condition problem. You could also say that there are types of operations that are susceptible to race condition problems, and there are other types of operations that are not.</p>
+<p>A read/write lock is a type of lock that acknowledges the existence of this specific scenario, and you can use this type of lock to control which parts of the codebase are safe to run in parallel and which parts are not.</p>
+<section id="exclusive-lock-vs-shared-lock" class="level3" data-number="16.7.1">
+<h3 data-number="16.7.1" class="anchored" data-anchor-id="exclusive-lock-vs-shared-lock"><span class="header-section-number">16.7.1</span> Exclusive lock vs shared lock</h3>
+<p>Therefore, a read/write lock is a little different from a mutex. Because a mutex is always an <em>exclusive lock</em>, meaning that, only one thread is allowed to execute at all times. With an exclusive lock, the other threads are always “excluded”, i.e., they are always blocked from executing. But in a read/write lock, the other threads might be authorized to run at the same time, depending on the type of lock that they acquire.</p>
+<p>We have two types of locks in a read/write lock, which are: an exclusive lock and a shared lock. An exclusive lock works exactly the same as a mutex, while a shared lock is a lock that does not block the other threads from running at the same time. In the <code>pthreads</code> C library, read/write locks are available through the <code>pthread_rwlock_t</code> C struct. With this C struct, you can create:</p>
+<ul>
+<li>a “write lock”, which corresponds to an exclusive lock.</li>
+<li>a “read lock”, which corresponds to a shared lock.</li>
+</ul>
+<p>The terminology might be a little different compared to Zig. But the meaning is still the same. Therefore, just remember this relationship, write locks are exclusive locks, while read locks are shared locks.</p>
+<p>When a thread tries to acquire a read lock (i.e., a shared lock), this thread gets the shared lock if and only if another thread does not currently hold a write lock (i.e., an exclusive lock), and also if there are no other threads already in the queue, waiting for their turn to acquire a write lock. In other words, the thread in the queue has attempted to get a write lock earlier, but this thread was blocked because there was another thread running that already had a write lock. As a consequence, this thread is in the queue to get a write lock, and it’s currently waiting for the other thread with a write lock to finish its execution.</p>
+<p>When a thread tries to acquire a read lock, but it fails in acquiring this read lock, either because there is a thread with a write lock already running, or because there is a thread in the queue to get a write lock, the execution of this thread is instantly blocked, i.e., paused. This thread will indefinitely attempt to get the read lock, and its execution will be unblocked (or unpaused) only after this thread successfully acquires the read lock.</p>
+<p>If you think deeply about this dynamic between read locks versus write locks, you might notice that a read lock is basically a safety mechanism. More specifically, it’s a way for us to allow a particular thread to run together with the other threads only when it’s safe to. In other words, if there is currently a thread with a write lock running, then it’s very likely not safe for the thread that is trying to acquire the read lock to run now. As a consequence, the read lock protects this thread from running into dangerous waters, and patiently waits for the “write lock” thread to finishes its tasks before it continues.</p>
+<p>On the other hand, if there are only “read lock” (i.e., “shared lock”) threads currently running (i.e., not a single “write lock” thread currently exists), then it is perfectly safe for this thread that is acquiring the read lock to run in parallel with the other threads. As a result, the read lock just allows for this thread to run together with the other threads.</p>
+<p>Thus, by using read locks (shared locks) in conjunction with write locks (exclusive locks), we can control which regions or sections of our multithreaded code is safe to have parallelism, and which sections are not safe to have parallelism.</p>
+</section>
+<section id="using-readwrite-locks-in-zig" class="level3" data-number="16.7.2">
+<h3 data-number="16.7.2" class="anchored" data-anchor-id="using-readwrite-locks-in-zig"><span class="header-section-number">16.7.2</span> Using read/write locks in Zig</h3>
+<p>The Zig Standard Library supports read/write locks through the <code>std.Thread.RwLock</code> module. If you want a particular thread to acquire a shared lock (i.e., a read lock), you should call the <code>lockShared()</code> method from the <code>RwLock</code> object. But, if you want this thread to acquire an exclusive lock (i.e., a write lock) instead, then you should call the <code>lock()</code> method from the <code>RwLock</code> object.</p>
+<p>As with mutexes, we also have to unlock the shared or exclusive locks that we acquire through a read/write lock object, once we are at the end of our “critical section”. If you have acquired an exclusive lock, then, you unlock this exclusive lock by calling the <code>unlock()</code> method from the read/write lock object. In contrast, if you have acquired a shared lock instead, then, call <code>unlockShared()</code> to unlock this shared lock.</p>
+<p>As a simple example, the snippet below creates three separate threads responsible for reading the current value in a <code>counter</code> object, and it also creates another thread responsible for writing new data into the <code>counter</code> object (incrementing it, more specifically).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> counter: <span class="dt">u32</span> = <span class="dv">0</span>;</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> reader(lock: *RwLock) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (<span class="cn">true</span>) <span class="op">{</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>        lock.lockShared();</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> v: <span class="dt">u32</span> = counter;</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> stdout.print(<span class="st">"{d}"</span>, .<span class="op">{</span>v<span class="op">}</span>);</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>        lock.unlockShared();</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>        Thread.sleep(<span class="dv">2</span> * std.time.ns_per_s);</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> writer(lock: *RwLock) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (<span class="cn">true</span>) <span class="op">{</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>        lock.lock();</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>        counter += <span class="dv">1</span>;</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>        lock.unlock();</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>        Thread.sleep(<span class="dv">2</span> * std.time.ns_per_s);</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> lock: RwLock = .<span class="op">{}</span>;</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, reader, .<span class="op">{</span>&amp;lock<span class="op">}</span>);</span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, reader, .<span class="op">{</span>&amp;lock<span class="op">}</span>);</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr3 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, reader, .<span class="op">{</span>&amp;lock<span class="op">}</span>);</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> wthread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, writer, .<span class="op">{</span>&amp;lock<span class="op">}</span>);</span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>    thr1.join();</span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>    thr3.join();</span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a>    wthread.join();</span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="yielding-a-thread" class="level2" data-number="16.8">
+<h2 data-number="16.8" class="anchored" data-anchor-id="yielding-a-thread"><span class="header-section-number">16.8</span> Yielding a thread</h2>
+<p>The <code>Thread</code> struct supports yielding through the <code>yield()</code> method. Yielding a thread means that the execution of the thread is temporarily stopped, and it moves to the end of the priority queue managed by the scheduler of your operating system.</p>
+<p>That is, when you yield a thread, you are essentially saying the following to your OS: “Hey! Could you please stop executing this thread for now, and comeback to continue it later?”. You could also interpret this yield operation as: “Could you please deprioritize this thread, to focus on doing other things instead?”. So this yield operation is also a way for you to stop a particular thread, so that you can work and prioritize other threads instead.</p>
+<p>It’s important to say that, yielding a thread is a “not so common” thread operation these days. In other words, not many programmers use yielding in production, simply because it’s hard to use this operation and make it work properly, and also, there are better alternatives. Most programmers prefer to use <code>join()</code> instead. In fact, most of the time, when you see someone using this “yield” operation in some code example, they are usually doing so to help debug race conditions in their applications. That is, this “yield” operation is mostly used as a debug tool nowadays.</p>
+<p>Anyway, if you want to yield a thread, just call the <code>yield()</code> method from it, like this:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>thread.yield();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="common-problems-in-threads" class="level2" data-number="16.9">
+<h2 data-number="16.9" class="anchored" data-anchor-id="common-problems-in-threads"><span class="header-section-number">16.9</span> Common problems in threads</h2>
+<section id="deadlocks" class="level3" data-number="16.9.1">
+<h3 data-number="16.9.1" class="anchored" data-anchor-id="deadlocks"><span class="header-section-number">16.9.1</span> Deadlocks</h3>
+<p>A deadlock occurs when two or more threads are blocked forever, waiting for each other to release a resource. This usually happens when multiple locks are involved, and the order of acquiring them is not well managed.</p>
+<p>The code example below demonstrates a deadlock situation. We have two different threads that execute two different functions (<code>work1()</code> and <code>work2()</code>) in this example. And we also have two separate mutexes. If you compile and run this code example, you will notice that the program just runs indefinitely, without ending.</p>
+<p>When we look into the first thread, which executes the <code>work1()</code> function, we can notice that this function acquires the <code>mut1</code> lock first. Because this is the first operation that is executed inside this thread, which is the first thread created in the program. After that, the function sleeps for 1 second, to simulate some type of work, and then, the function tries to acquire the <code>mut2</code> lock.</p>
+<p>On the other hand, when we look into the second thread, which executes the <code>work2()</code> function, we can see that this function acquires the <code>mut2</code> lock first. Because when this thread gets created and it tries to acquire this <code>mut2</code> lock, the first thread is still sleeping on that “sleep 1 second” line. After acquiring <code>mut2</code>, the <code>work2()</code> function also sleeps for 1 second, to simulate some type of work, and then the function tries to acquire the <code>mut1</code> lock.</p>
+<p>This creates a deadlock situation, because after the “sleep for 1 second” line in both threads, thread 1 is trying to acquire the <code>mut2</code> lock, but this lock is currently being used by thread 2. However, at this moment, thread 2 is also trying to acquire the <code>mut1</code> lock, which is currently being used by thread 1. Therefore, both threads end up waiting for ever. Waiting for their peer to free the lock that they want to acquire.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> mut1: Mutex = .<span class="op">{}</span>; <span class="kw">var</span> mut2: Mutex = .<span class="op">{}</span>;</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> work1() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    mut1.lock();</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    Thread.sleep(<span class="dv">1</span> * std.time.ns_per_s);</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    mut2.lock();</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Doing some work 1</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    mut2.unlock(); mut1.unlock();</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> work2() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    mut2.lock();</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    Thread.sleep(<span class="dv">1</span> * std.time.ns_per_s);</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    mut1.lock();</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Doing some work 1</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    mut1.unlock(); mut2.unlock();</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, work1, .<span class="op">{}</span>);</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, work2, .<span class="op">{}</span>);</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    thr1.join();</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="sec-not-call-join-detach" class="level3" data-number="16.9.2">
+<h3 data-number="16.9.2" class="anchored" data-anchor-id="sec-not-call-join-detach"><span class="header-section-number">16.9.2</span> Not calling <code>join()</code> or <code>detach()</code></h3>
+<p>When you do not call either <code>join()</code> or <code>detach()</code> over a thread, then this thread becomes a “zombie thread”, because it does not have a clear “return point”. You could also interpret this as: “nobody is properly responsible for managing the thread”. When we don’t establish if a thread is either <em>joinable</em> or <em>detached</em>, nobody becomes responsible for dealing with the return value of this thread, and also, nobody becomes responsible for clearing (or freeing) the resources associated with this thread.</p>
+<p>You don’t want to be in this situation, so remember to always use <code>join()</code> or <code>detach()</code> on the threads that you create. When you don’t use one of these methods, we lose control over the thread, and its resources are never freed (i.e., you have leaked resources in the system).</p>
+</section>
+<section id="cancelling-or-killing-a-particular-thread" class="level3" data-number="16.9.3">
+<h3 data-number="16.9.3" class="anchored" data-anchor-id="cancelling-or-killing-a-particular-thread"><span class="header-section-number">16.9.3</span> Cancelling or killing a particular thread</h3>
+<p>When we think about the <code>pthreads</code> C library, there is a possible way to asynchronously kill or cancel a thread, which is by sending a <code>SIGTERM</code> signal to the thread through the <code>pthread_kill()</code> function. But canceling a thread like this is bad. It’s dangerously bad. As a consequence, the Zig implementation of threads does not have a similar function, or, a similar way to asynchronously cancel or kill a thread.</p>
+<p>Therefore, if you want to cancel a thread in the middle of its execution in Zig, then one good strategy that you can take is to use control flow in conjunction with <code>join()</code>. More specifically, you can design your thread around a while loop that is constantly checking if the thread should continue running. If it’s time to cancel the thread, we could make the while loop break, and join the thread with the main thread by calling <code>join()</code>.</p>
+<p>The code example below demonstrates to some extent this strategy. Here, we are using control flow to break the while loop, and exit the thread earlier than what we have initially planned to. This example also demonstrates how can we use atomic objects in Zig with the <code>Value()</code> generic function that we have mentioned in <a href="#sec-atomic-operation" class="quarto-xref"><span>Section 16.6.2</span></a>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_writer = std.fs.File.stdout().writer(&amp;stdout_buffer);</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> running = std.atomic.Value(<span class="dt">bool</span>).init(<span class="cn">true</span>);</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> counter: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> do_more_work() <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    Thread.sleep(<span class="dv">2</span> * std.time.ns_per_s);</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> work() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (running.load(.monotonic)) <span class="op">{</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>        <span class="kw">for</span> (<span class="dv">0</span>..<span class="dv">10000</span>) |_| <span class="op">{</span> counter += <span class="dv">1</span>; <span class="op">}</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (counter &lt; <span class="dv">15000</span>) <span class="op">{</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>            _ = <span class="kw">try</span> stdout.write(</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>                <span class="st">"Time to cancel the thread.</span><span class="sc">\n</span><span class="st">"</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>            );</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>            running.store(<span class="cn">false</span>, .monotonic);</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>            _ = <span class="kw">try</span> stdout.write(<span class="st">"Time to do more work.</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>            do_more_work();</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>            running.store(<span class="cn">false</span>, .monotonic);</span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, work, .<span class="op">{}</span>);</span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>    thread.join();</span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Time to cancel the thread.</code></pre>
+</div>
+</div>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-geeks_critical_section" class="csl-entry" role="listitem">
+Geeks for Geeks. 2024. <span>“Critical Section.”</span> <span>Geeks for Geeks</span>. <a href="https://www.geeksforgeeks.org/g-fact-70/">https://www.geeksforgeeks.org/g-fact-70/</a>.
+</div>
+<div id="ref-linux_pthread_create" class="csl-entry" role="listitem">
+Linux man-pages. 2024. <span>“Pthread_create(3) — Linux Manual Page.”</span> <a href="https://man7.org/linux/man-pages/man3/pthread_create.3.html">https://man7.org/linux/man-pages/man3/pthread_create.3.html</a>.
+</div>
+</div>
+</section>
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p><a href="https://github.com/ziglang/zig/issues/18810" class="uri">https://github.com/ziglang/zig/issues/18810</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p><a href="https://www.youtube.com/watch?v=7ENFeb-J75k&amp;ab_channel=Computerphile" class="uri">https://www.youtube.com/watch?v=7ENFeb-J75k&amp;ab_channel=Computerphile</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../Chapters/13-image-filter.html" class="pagination-link" aria-label="Project 4 - Developing an image filter">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Project 4 - Developing an image filter</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../Chapters/15-vectors.html" class="pagination-link" aria-label="Introducing Vectors and SIMD">
+        <span class="nav-page-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Introducing Vectors and SIMD</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
