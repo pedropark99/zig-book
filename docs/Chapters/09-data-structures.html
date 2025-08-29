@@ -590,7 +590,7 @@ Figure&nbsp;11.1: Difference between capacity and length in a dynamic array
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = gpa.allocator();</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffer = <span class="kw">try</span> std.ArrayList(<span class="dt">u8</span>)</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    .initCapacity(allocator, <span class="dv">100</span>);</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> buffer.deinit();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> buffer.deinit(allocator);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>In the example above, the <code>buffer</code> object starts as an array of 100 elements. If this <code>buffer</code> object needs to create more space to accomodate more elements during the runtime of your program, the <code>ArrayList</code> internals will perform the necessary actions for you automatically. Also notice the <code>deinit()</code> method being used to destroy the <code>buffer</code> object at the end of the current scope, by freeing all the memory that was allocated for the dynamic array stored in this <code>buffer</code> object.</p>
 </section>
@@ -599,12 +599,12 @@ Figure&nbsp;11.1: Difference between capacity and length in a dynamic array
 <p>Now that we have created our dynamic array, we can start to use it. You can append (a.k.a “add”) new values to this array by using the <code>append()</code> method. This method works the same way as the <code>append()</code> method from a Python list, or, the <code>emplace_back()</code> method from <code>std::vector</code> of C++. You provide a single value to this method, and the method appends this value to the array.</p>
 <p>You can also use the <code>appendSlice()</code> method to append multiple values at once. You provide a slice (slices were described in <a href="01-zig-weird.html#sec-arrays" class="quarto-xref"><span>Section 1.6</span></a>) to this method, and the method adds all values present in this slice to your dynamic array.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.append(<span class="ch">'H'</span>);</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.append(<span class="ch">'e'</span>);</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.append(<span class="ch">'l'</span>);</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.append(<span class="ch">'l'</span>);</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.append(<span class="ch">'o'</span>);</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.appendSlice(<span class="st">" World!"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.append(allocator, <span class="ch">'H'</span>);</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.append(allocator, <span class="ch">'e'</span>);</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.append(allocator, <span class="ch">'l'</span>);</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.append(allocator, <span class="ch">'l'</span>);</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.append(allocator, <span class="ch">'o'</span>);</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.appendSlice(allocator, <span class="st">" World!"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="sec-dynamic-array-remove" class="level3" data-number="11.1.4">
@@ -622,11 +622,11 @@ Figure&nbsp;11.1: Difference between capacity and length in a dynamic array
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = gpa.allocator();</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffer = <span class="kw">try</span> std.ArrayList(<span class="dt">u8</span>)</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    .initCapacity(allocator, <span class="dv">100</span>);</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> buffer.deinit();</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> buffer.deinit(allocator);</span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (<span class="dv">0</span>..<span class="dv">10</span>) |i| <span class="op">{</span></span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> index: <span class="dt">u8</span> = <span class="bu">@intCast</span>(i);</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> buffer.append(index);</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> buffer.append(allocator, index);</span>
 <span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>std.debug.print(</span>
@@ -653,14 +653,15 @@ Figure&nbsp;11.1: Difference between capacity and length in a dynamic array
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = gpa.allocator();</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffer = <span class="kw">try</span> std.ArrayList(<span class="dt">u8</span>)</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    .initCapacity(allocator, <span class="dv">10</span>);</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> buffer.deinit();</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> buffer.deinit(allocator);</span>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.appendSlice(<span class="st">"My Pedro"</span>);</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.insert(<span class="dv">4</span>, <span class="ch">'3'</span>);</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.insertSlice(<span class="dv">2</span>, <span class="st">" name"</span>);</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.appendSlice(allocator, <span class="st">"My Pedro"</span>);</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.insert(allocator, <span class="dv">4</span>, <span class="ch">'3'</span>);</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> buffer.insertSlice(allocator, <span class="dv">2</span>, <span class="st">" name"</span>);</span>
 <span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (buffer.items) |char| <span class="op">{</span></span>
 <span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{c}"</span>, .<span class="op">{</span>char<span class="op">}</span>);</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>My name P3edro</code></pre>
 </section>
@@ -948,7 +949,8 @@ Figure&nbsp;11.4: A diagram of a doubly linked list.
 <span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>two.node.insertAfter(&amp;three.node); <span class="co">// {2, 3, 5}</span></span>
 <span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>list.prepend(&amp;one.node); <span class="co">// {1, 2, 3, 5}</span></span>
 <span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"Number of nodes: {}"</span>, .<span class="op">{</span>list.len()<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"Number of nodes: {}"</span>, .<span class="op">{</span>list.len()<span class="op">}</span>);</span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Number of nodes: 4</code></pre>
 </div>
@@ -986,7 +988,8 @@ Figure&nbsp;11.4: A diagram of a doubly linked list.
 <span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>); <span class="co">// {1, 5, 3}</span></span>
 <span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>list.append(&amp;two.node); <span class="co">// {1, 5, 3, 2}</span></span>
 <span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"Number of nodes: {}"</span>, .<span class="op">{</span>list.len()<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"Number of nodes: {}"</span>, .<span class="op">{</span>list.len()<span class="op">}</span>);</span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Number of nodes: 4</code></pre>
 </div>
@@ -1031,7 +1034,8 @@ Figure&nbsp;11.4: A diagram of a doubly linked list.
 <span id="cb29-22"><a href="#cb29-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
 <span id="cb29-23"><a href="#cb29-23" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Current value: {}"</span>, .<span class="op">{</span>l.data<span class="op">}</span></span>
 <span id="cb29-24"><a href="#cb29-24" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb29-25"><a href="#cb29-25" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb29-25"><a href="#cb29-25" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb29-26"><a href="#cb29-26" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Current value: 1
 Current value: 3
@@ -1085,7 +1089,8 @@ Figure&nbsp;11.5: A diagram of the <code>PersonArray</code> struct.
 <div class="cell">
 <div class="sourceCode cell-code" id="cb32"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (people.items(.age)) |*age| <span class="op">{</span></span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Age: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>age.*<span class="op">}</span>);</span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Age: 15
 Age: 26
@@ -1102,7 +1107,8 @@ Age: 64</code></pre>
 <span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
 <span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Name: {s}, Age: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>n.*, a.*<span class="op">}</span></span>
 <span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Name: Auguste, Age: 25
 Name: Elena, Age: 36
