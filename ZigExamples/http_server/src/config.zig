@@ -1,17 +1,20 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const net = @import("std").net;
 
-pub const Socket = struct {
-    _address: std.net.Address,
-    _stream: std.net.Stream,
+pub const SocketConfig = struct {
+    _address: std.Io.net.IpAddress,
+    _socket: std.Io.net.Socket,
 
-    pub fn init() !Socket {
-        const host = [4]u8{ 127, 0, 0, 1 };
-        const port = 3490;
-        const addr = net.Address.initIp4(host, port);
-        const socket = try std.posix.socket(addr.any.family, std.posix.SOCK.STREAM, std.posix.IPPROTO.TCP);
-        const stream = net.Stream{ .handle = socket };
-        return Socket{ ._address = addr, ._stream = stream };
+    pub fn init() !SocketConfig {
+        const addr = try std.Io.net.IpAddress.parseIp4(
+            "127.0.0.1", 3490
+        );
+        const socket = try std.posix.socket(
+            4,
+            std.posix.SOCK.STREAM,
+            std.posix.IPPROTO.TCP
+        );
+
+        return SocketConfig{ ._address = addr, ._socket = socket};
     }
 };

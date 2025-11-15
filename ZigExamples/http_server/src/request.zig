@@ -1,9 +1,10 @@
 const std = @import("std");
-const Connection = std.net.Server.Connection;
+const Stream = std.Io.net.Stream;
 
-pub fn read_request(conn: Connection, buffer: []u8) !void {
-    const reader = conn.stream.reader();
-    _ = try reader.read(buffer);
+pub fn read_request(conn: Stream, io: std.Io, buffer: []u8) !void {
+    var recv_buffer: [1024]u8 = undefined;
+    var reader = conn.reader(io, &recv_buffer);
+    _ = try reader.interface.readSliceAll(buffer);
 }
 
 const Map = std.static_string_map.StaticStringMap;
