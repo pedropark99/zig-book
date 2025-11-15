@@ -5,7 +5,7 @@ library(stringr)
 
 minimum_zig_compiler_version <- list(
   maj_version = 0,
-  min_version = 15,
+  min_version = 16,
   patch_version = 0
 )
 
