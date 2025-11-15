@@ -1,9 +1,6 @@
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-
-fn print(input: []const u8) !void {
-    try stdout.print("{s}\n", .{input});
-}
+const stdout = std.fs.File.stdout();
+const print = std.debug.print;
 
 const Base64 = struct {
     _table: *const [64]u8,
@@ -149,8 +146,8 @@ pub fn main() !void {
     const encoded_text = try base64.encode(allocator, text);
     const decoded_text = try base64.decode(allocator, etext);
 
-    try stdout.print("Encoded text: {s}\n", .{encoded_text});
-    try stdout.print("Decoded text: {s}\n", .{decoded_text});
-    try stdout.print("Encoded length: {d}\n", .{encoded_text.len});
-    try stdout.print("Decoded length: {d}\n", .{decoded_text.len});
+    print("Encoded text: {s}\n", .{encoded_text});
+    print("Decoded text: {s}\n", .{decoded_text});
+    print("Encoded length: {d}\n", .{encoded_text.len});
+    print("Decoded length: {d}\n", .{decoded_text.len});
 }
