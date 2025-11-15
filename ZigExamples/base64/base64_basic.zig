@@ -1,5 +1,5 @@
 const std = @import("std");
-const stdout = std.fs.File;
+const stdout = std.fs.File.stdout();
 const print = std.debug.print;
 
 const Base64 = struct {
