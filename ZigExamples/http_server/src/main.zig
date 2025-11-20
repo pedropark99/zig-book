@@ -5,7 +5,6 @@ const Protocol = std.Io.net.Protocol;
 const Request = @import("request.zig");
 const Response = @import("response.zig");
 const Method = Request.Method;
-const stdout = std.io.getStdOut().writer();
 
 pub fn main() !void {
     var alloc = std.heap.GeneralPurposeAllocator(.{}){};
@@ -38,6 +37,9 @@ pub fn main() !void {
     @memset(buffer[0..], 0);
     try Request.read_request(connection, io, buffer[0..buffer.len]);
     const request = Request.parse_request(buffer[0..buffer.len]);
+
+    _ = try stdout.write(buffer[0..]);
+
     if (request.method == Method.GET) {
         if (std.mem.eql(u8, request.uri, "/")) {
             try Response.send_200(connection, io);

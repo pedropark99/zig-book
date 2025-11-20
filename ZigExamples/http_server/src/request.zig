@@ -2,9 +2,12 @@ const std = @import("std");
 const Stream = std.Io.net.Stream;
 
 pub fn read_request(conn: Stream, io: std.Io, buffer: []u8) !void {
+    std.debug.print("Start to read request\n", .{});
     var recv_buffer: [1024]u8 = undefined;
     var reader = conn.reader(io, &recv_buffer);
-    _ = try reader.interface.readSliceAll(buffer);
+    const input = try reader.interface.peekArray(1000);
+    @memcpy(buffer[0..], input[0..]);
+    std.debug.print("Finished reading request\n", .{});
 }
 
 const Map = std.static_string_map.StaticStringMap;
