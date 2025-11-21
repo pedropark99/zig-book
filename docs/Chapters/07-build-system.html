@@ -493,7 +493,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>Building code is one of the things that Zig is best at. One thing that is particularly difficult in C/C++ and even in Rust, is to cross-compile source code to multiple targets (e.g.&nbsp;multiple computer architectures and operating systems), and the <code>zig</code> compiler is known for being one of the best existing pieces of software for this particular task.</p>
 <section id="how-source-code-is-built" class="level2" data-number="9.1">
 <h2 data-number="9.1" class="anchored" data-anchor-id="how-source-code-is-built"><span class="header-section-number">9.1</span> How source code is built?</h2>
-<p>We already have talked about the challenges of building source code in low-level languages in <a href="01-zig-weird.html#sec-project-files" class="quarto-xref"><span>Section 1.2.1</span></a>. As we described at that section, programmers invented Build Systems to surpass these challenges on the process of building source code in low-level languages.</p>
+<p>We already have talked about the challenges of building source code in low-level languages in <a href="#sec-project-files" class="quarto-xref"><span class="quarto-unresolved-ref">sec-project-files</span></a>. As we described at that section, programmers invented Build Systems to surpass these challenges on the process of building source code in low-level languages.</p>
 <p>Low-level languages uses a compiler to compile (or to build) your source code into binary instructions. In C and C++, we normally use compilers like <code>gcc</code>, <code>g++</code> or <code>clang</code> to compile our C and C++ source code into these instructions. Every language have its own compiler, and this is no different in Zig.</p>
 <p>In Zig, we have the <code>zig</code> compiler to compile our Zig source code into binary instructions that can be executed by our computer. In Zig, the compilation (or the build) process involves the following components:</p>
 <ul>
@@ -511,11 +511,11 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <li>A static library (e.g.&nbsp;a <code>.a</code> file in Linux or a <code>.lib</code> file on Windows).</li>
 <li>An executable file that executes only unit tests (or, a “unit tests executable”).</li>
 </ul>
-<p>We are going to talk more about these target objects in <a href="#sec-targets" class="quarto-xref"><span>Section 9.3</span></a>.</p>
+<p>We are going to talk more about these target objects in <a href="#sec-targets" class="quarto-xref"><span class="quarto-unresolved-ref">sec-targets</span></a>.</p>
 </section>
 <section id="sec-build-fun" class="level2" data-number="9.2">
 <h2 data-number="9.2" class="anchored" data-anchor-id="sec-build-fun"><span class="header-section-number">9.2</span> The <code>build()</code> function</h2>
-<p>A build script in Zig always contains a public (and top-level) <code>build()</code> function declared. It’s like the <code>main()</code> function in the main Zig module of your project, that we discussed in <a href="01-zig-weird.html#sec-main-file" class="quarto-xref"><span>Section 1.2.3</span></a>. But instead of creating the entrypoint to your code, this <code>build()</code> function is the entrypoint to the build process.</p>
+<p>A build script in Zig always contains a public (and top-level) <code>build()</code> function declared. It’s like the <code>main()</code> function in the main Zig module of your project, that we discussed in <a href="#sec-main-file" class="quarto-xref"><span class="quarto-unresolved-ref">sec-main-file</span></a>. But instead of creating the entrypoint to your code, this <code>build()</code> function is the entrypoint to the build process.</p>
 <p>This <code>build()</code> function should accept a pointer to a <code>Build</code> object as input, and it should use this “build object” to perform the necessary steps to build your project. The return type of this function is always <code>void</code>, and this <code>Build</code> struct comes directly from the Zig Standard Library (<code>std.Build</code>). So, you can access this struct by just importing the Zig Standard Library into your <code>build.zig</code> module.</p>
 <p>Just as a very simple example, here you can see the source code necessary to build an executable file from the <code>hello.zig</code> Zig module.</p>
 <div class="cell">
@@ -523,11 +523,13 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> build(b: *std.Build) <span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"hello"</span>,</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        .target = b.host,</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    b.installArtifact(exe);</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        .root_module = b.createModule(.<span class="op">{</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            .target = b.graph.host</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    b.installArtifact(exe);</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>You can define and use other functions and objects in this build script. You can also import other Zig modules as you would normally do in any other module of your project. The only real requirement for this build script, is to have a public and top-level <code>build()</code> function defined, that accepts a pointer to a <code>Build</code> struct as input.</p>
 </section>
@@ -535,26 +537,28 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <h2 data-number="9.3" class="anchored" data-anchor-id="sec-targets"><span class="header-section-number">9.3</span> Target objects</h2>
 <p>As we described over the previous sections, a build script is composed around target objects. Each target object is normally a binary file (or an output) that you want to get from the build process. You can list multiple target objects in your build script, so that the build process generates multiple binary files for you at once.</p>
 <p>For example, maybe you are a developer working in a cross-platform application, and, because this application is cross-platform, you probably need to release binary files of your software for each OS supported by your application to your end users. Thus, you can define a different target object in your build script for each OS (Windows, Linux, etc.) where you want to publish your software. This will make the <code>zig</code> compiler to build your project to multiple target OS’s at once. The Zig Build System official documentation have a <a href="https://ziglang.org/learn/build-system/#handy-examples">great code example that demonstrates this strategy</a><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>.</p>
-<p>A target object is created by the following methods of the <code>Build</code> struct that we introduced in <a href="#sec-build-fun" class="quarto-xref"><span>Section 9.2</span></a>:</p>
+<p>A target object is created by the following methods of the <code>Build</code> struct that we introduced in <a href="#sec-build-fun" class="quarto-xref"><span class="quarto-unresolved-ref">sec-build-fun</span></a>:</p>
 <ul>
 <li><code>addExecutable()</code> creates an executable file;</li>
 <li><code>addSharedLibrary()</code> creates a shared library file;</li>
 <li><code>addStaticLibrary()</code> creates a static library file;</li>
 <li><code>addTest()</code> creates an executable file that executes unit tests.</li>
 </ul>
-<p>These functions are methods from the <code>Build</code> struct that you receive as input of the <code>build()</code> function. All of them, create as output a <code>Compile</code> object, which represents a target object to be compiled by the <code>zig</code> compiler. All of these functions accept a similar struct literal as input. This struct literal defines three essential specs about this target object that you are building: <code>name</code>, <code>target</code> and <code>root_source_file</code>.</p>
-<p>We have already seen these three options being used on the previous example, where we used the <code>addExecutable()</code> method to create an executable target object. This example is reproduced below. Notice the use of the <code>path()</code> method from the <code>Build</code> struct, to define a path in the <code>root_source_file</code> option.</p>
+<p>These functions are methods from the <code>Build</code> struct that you receive as input of the <code>build()</code> function. All of them, create as output a <code>Compile</code> object, which represents a target object to be compiled by the <code>zig</code> compiler. All of these functions accept a similar struct literal as input. This struct literal defines two essential specs about this target object that you are building: <code>name</code>, <code>root_module</code>.</p>
+<p>We have already seen these two options being used on the previous example, where we used the <code>addExecutable()</code> method to create an executable target object. This example is reproduced below. Notice the use of the <code>path()</code> method from the <code>Build</code> struct, to define the path to our Zig module in the <code>root_module</code> option.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"hello"</span>,</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    .root_module = b.createModule(.<span class="op">{</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        .target = b.graph.host</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>The <code>name</code> option specify the name that you want to give to the binary file defined by this target object. So, in this example, we are building an executable file named <code>hello</code>. It’s common to set this <code>name</code> option to the name of your project.</p>
-<p>Furthermore, the <code>target</code> option specify the target computer architecture (or the target operating system) of this binary file. For example, if you want this target object to run on a Windows machine that uses a <code>x86_64</code> architecture, you can set this <code>target</code> option to <code>x86_64-windows-gnu</code> for example. This will make the <code>zig</code> compiler to compile the project to run on a <code>x86_64</code> Windows machine. You can see the full list of architectures and OS’s that the <code>zig</code> compiler supports by running the <code>zig targets</code> command in the terminal.</p>
-<p>Now, if you are building the project to run on the current machine that you are using to run this build script, you can set this <code>target</code> option to the <code>host</code> method of the <code>Build</code> object, like we did in the example above. This <code>host</code> method identifies the current machine where you are currently running the <code>zig</code> compiler.</p>
-<p>At last, the <code>root_source_file</code> option specifies the root Zig module of your project. That is the Zig module that contains the entrypoint to your application (i.e., the <code>main()</code> function), or, the main API of your library. This also means that, all the Zig modules that compose your project are automatically discovered from the import statements you have inside this “root source file”. The <code>zig</code> compiler can detect when a Zig module depends on the other through the import statements, and, as a result, it can discover the entire map of Zig modules used in your project.</p>
+<p>Furthermore, the <code>target</code> option inside <code>root_module</code> specify the target computer architecture (or the target operating system) of this binary file. For example, if you want this target object to run on a Windows machine that uses a <code>x86_64</code> architecture, you can set this <code>target</code> option to <code>x86_64-windows-gnu</code> for example. This will make the <code>zig</code> compiler to compile the project to run on a <code>x86_64</code> Windows machine. You can see the full list of architectures and OS’s that the <code>zig</code> compiler supports by running the <code>zig targets</code> command in the terminal.</p>
+<p>Now, if you are building the project to run on the current machine that you are using to run this build script, you can set this <code>target</code> option to the <code>host</code> method of the <code>Build.graph</code> object, like we did in the example above. This <code>host</code> method identifies the current machine where you are currently running the <code>zig</code> compiler.</p>
+<p>At last, the <code>.root_source_file</code> option inside <code>root_module</code> specifies the path to the root Zig module of your project. That is the Zig module that contains the entrypoint to your application (i.e., the <code>main()</code> function), or, the main API of your library. This also means that, all the Zig modules that compose your project are automatically discovered from the import statements you have inside this “root source file”. The <code>zig</code> compiler can detect when a Zig module depends on the other through the import statements, and, as a result, it can discover the entire map of Zig modules used in your project.</p>
 <p>This is handy, and it’s different from what happens in other build systems. In CMake for example, you have to explicitly list the paths to all source files that you want to include in your build process. This is probably a symptom of the “lack of conditional compilation” in the C and C++ compilers. Since they lack this feature, you have to explicitly choose which source files should be sent to the C/C++ compiler, because not every C/C++ code is portable or supported in every operating system, and, therefore, would cause a compilation error in the C/C++ compiler.</p>
 <p>Now, one important detail about the build process is that, you have to <strong>explicitly install the target objects that you create in your build script</strong>, by using the <code>installArtifact()</code> method of the <code>Build</code> struct.</p>
 <p>Everytime you invoke the build process of your project, by calling the <code>build</code> command of the <code>zig</code> compiler, a new directory named <code>zig-out</code> is created in the root directory of your project. This new directory contains the outputs of the build process, that is, the binary files built from your source code.</p>
@@ -564,17 +568,19 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"hello"</span>,</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    .root_module = b.createModule(.<span class="op">{</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>        .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>        .target = b.graph.host</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="setting-the-build-mode" class="level2" data-number="9.4">
 <h2 data-number="9.4" class="anchored" data-anchor-id="setting-the-build-mode"><span class="header-section-number">9.4</span> Setting the build mode</h2>
 <p>We have talked about the three essential options that are set when you create a new target object. But there is also a fourth option that you can use to set the build mode of this target object, which is the <code>optimize</code> option. This option is called this way, because the build modes in Zig are treated more of an “optimization vs safety” problem. So optimization plays an important role here. Don’t worry, I’m going back to this question very soon.</p>
-<p>In Zig, we have four build modes (which are listed below). Each one of these build modes offer different advantages and characteristics. As we described in <a href="02-debugging.html#sec-compile-debug-mode" class="quarto-xref"><span>Section 5.2.1</span></a>, the <code>zig</code> compiler uses the <code>Debug</code> build mode by default, when you don’t explicitly choose a build mode.</p>
+<p>In Zig, we have four build modes (which are listed below). Each one of these build modes offer different advantages and characteristics. As we described in <a href="#sec-compile-debug-mode" class="quarto-xref"><span class="quarto-unresolved-ref">sec-compile-debug-mode</span></a>, the <code>zig</code> compiler uses the <code>Debug</code> build mode by default, when you don’t explicitly choose a build mode.</p>
 <ul>
 <li><code>Debug</code>, mode that produces and includes debugging information in the output of the build process (i.e., the binary file defined by the target object);</li>
 <li><code>ReleaseSmall</code>, mode that tries to produce a binary file that is small in size;</li>
@@ -587,11 +593,13 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"hello"</span>,</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    .optimize = .ReleaseSafe</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    .root_module = b.createModule(.<span class="op">{</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        .target = b.graph.host,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>        .optimize = .ReleaseSafe</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="setting-the-version-of-your-build" class="level2" data-number="9.5">
@@ -600,13 +608,15 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"hello"</span>,</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    .version = .<span class="op">{</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        .major = <span class="dv">2</span>, .minor = <span class="dv">9</span>, .patch = <span class="dv">7</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    .root_module = b.createModule(.<span class="op">{</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        .root_source_file = b.path(<span class="st">"hello.zig"</span>),</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        .target = b.graph.host</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>),</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    .version = .<span class="op">{</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        .major = <span class="dv">2</span>, .minor = <span class="dv">9</span>, .patch = <span class="dv">7</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="sec-detect-os" class="level2" data-number="9.6">
@@ -623,17 +633,19 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 </section>
 <section id="adding-a-run-step-to-your-build-process" class="level2" data-number="9.7">
 <h2 data-number="9.7" class="anchored" data-anchor-id="adding-a-run-step-to-your-build-process"><span class="header-section-number">9.7</span> Adding a run step to your build process</h2>
-<p>One thing that is neat in Rust is that you can compile and run your source code with one single command (<code>cargo run</code>) from the Rust compiler. We saw in <a href="01-zig-weird.html#sec-compile-run-code" class="quarto-xref"><span>Section 1.2.5</span></a> how can we perform a similar job in Zig, by building and running our Zig source code through the <code>run</code> command from the <code>zig</code> compiler.</p>
+<p>One thing that is neat in Rust is that you can compile and run your source code with one single command (<code>cargo run</code>) from the Rust compiler. We saw in <a href="#sec-compile-run-code" class="quarto-xref"><span class="quarto-unresolved-ref">sec-compile-run-code</span></a> how can we perform a similar job in Zig, by building and running our Zig source code through the <code>run</code> command from the <code>zig</code> compiler.</p>
 <p>But how can we, at the same time, build and run the binary file specified by a target object in our build script? The answer is by including a “run artifact” in our build script. A run artifact is created through the <code>addRunArtifact()</code> method from the <code>Build</code> struct. We simply provide as input to this function the target object that describes the binary file that we want to execute. As a result, this function creates a run artifact that is capable of executing this binary file.</p>
 <p>In the example below, we are defining an executable binary file named <code>hello</code>, and we use this <code>addRunArtifact()</code> method to create a run artifact that will execute this <code>hello</code> executable file.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"hello"</span>,</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"src/hello.zig"</span>),</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_arti = b.addRunArtifact(exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    .root_module = b.createModule(.<span class="op">{</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>        .root_source_file = b.path(<span class="st">"src/hello.zig"</span>),</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        .target = b.graph.host</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>b.installArtifact(exe);</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> run_arti = b.addRunArtifact(exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Now that we have created this run artifact, we need to include it in the build process. We do that by declaring a new step in our build script to call this artifact, through the <code>step()</code> method of the <code>Build</code> struct.</p>
 <p>We can give any name we want to this step, but, for our context here, I’m going to name this step as “run”. Also, I give it a brief description to this step (“Run the project”).</p>
@@ -643,7 +655,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Now that we have declared this “run step” we need to tell Zig that this “run step” depends on the run artifact. In other words, a run artifact always depends on a “step” to effectively be executed. By creating this dependency we finally stablish the necessary commands to build and run the executable file from the build script.</p>
-<p>We can establish a dependency between the run step and the run artifact by using the <code>dependsOn()</code> method from the run step. So, we first create the run step, and then, we link it with the run artifact, by using this <code>dependsOn()</code> method from the run step.</p>
+<p>We can establish a dependency between the run step and the run artifact by using the <code>dependOn()</code> method from the run step. So, we first create the run step, and then, we link it with the run artifact, by using this <code>dependOn()</code> method from the run step.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>run_step.dependOn(&amp;run_arti.step);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
@@ -659,15 +671,18 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 </section>
 <section id="build-unit-tests-in-your-project" class="level2" data-number="9.8">
 <h2 data-number="9.8" class="anchored" data-anchor-id="build-unit-tests-in-your-project"><span class="header-section-number">9.8</span> Build unit tests in your project</h2>
-<p>We have talked at length about writing unit tests in Zig in <a href="03-unittests.html" class="quarto-xref"><span>Chapter 8</span></a>, and we also have talked about how to execute these unit tests through the <code>test</code> command of the <code>zig</code> compiler. However, as we did with the <code>run</code> command on the previous section, we also might want to include some commands in our build script to also build and execute the unit tests in our project.</p>
-<p>So, once again, we are going to discuss how a specific built-in command from the <code>zig</code> compiler, (in this case, the <code>test</code> command) can be used in a build script in Zig. Here is where a “test target object” comes into play. As was described in <a href="#sec-targets" class="quarto-xref"><span>Section 9.3</span></a>, we can create a test target object by using the <code>addTest()</code> method of the <code>Build</code> struct. The first thing that we need to do is to declare a test target object in our build script.</p>
+<p>We have talked at length about writing unit tests in Zig in <a href="#sec-unittests" class="quarto-xref"><span class="quarto-unresolved-ref">sec-unittests</span></a>, and we also have talked about how to execute these unit tests through the <code>test</code> command of the <code>zig</code> compiler. However, as we did with the <code>run</code> command on the previous section, we also might want to include some commands in our build script to also build and execute the unit tests in our project.</p>
+<p>So, once again, we are going to discuss how a specific built-in command from the <code>zig</code> compiler, (in this case, the <code>test</code> command) can be used in a build script in Zig. Here is where a “test target object” comes into play. As was described in <a href="#sec-targets" class="quarto-xref"><span class="quarto-unresolved-ref">sec-targets</span></a>, we can create a test target object by using the <code>addTest()</code> method of the <code>Build</code> struct. The first thing that we need to do is to declare a test target object in our build script.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> test_exe = b.addTest(.<span class="op">{</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"unit_tests"</span>,</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"src/main.zig"</span>),</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    .target = b.host,</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>b.installArtifact(test_exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    .root_module = b.createModule(.<span class="op">{</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>        .root_source_file = b.path(<span class="st">"src/main.zig"</span>),</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>        .target = b.graph.host</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>)</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>b.installArtifact(test_exe);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>A test target object essentially selects all <code>test</code> blocks in all Zig modules across your project, and builds only the source code present inside these <code>test</code> blocks in your project. As a result, this target object creates an executable file that contains only the source code present in all of these <code>test</code> blocks (i.e., the unit tests) in your project.</p>
 <p>Perfect! Now that we have declared this test target object, an executable file named <code>unit_tests</code> is built by the <code>zig</code> compiler when we trigger the build script with the <code>build</code> command. After the build process is finished, we can simply execute this <code>unit_tests</code> executable in the terminal.</p>
@@ -696,14 +711,16 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    ) <span class="kw">orelse</span> <span class="cn">false</span>;</span>
 <span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
 <span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"hello"</span>,</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>        .root_source_file = b.path(<span class="st">"example.zig"</span>),</span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>        .target = b.host,</span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (use_zlib) <span class="op">{</span></span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>        exe.linkSystemLibrary(<span class="st">"zlib"</span>);</span>
-<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    b.installArtifact(exe);</span>
-<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>        .root_module = b.createModule(.<span class="op">{</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>            .root_source_file = b.path(<span class="st">"example.zig"</span>),</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>            .target = b.graph.host</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>)</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (use_zlib) <span class="op">{</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>        exe.root_module.linkSystemLibrary(<span class="st">"zlib"</span>, .<span class="op">{}</span>);</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>    b.installArtifact(exe);</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> build <span class="at">-Duse_zlib</span><span class="op">=</span>false</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
@@ -711,45 +728,48 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <h2 data-number="9.10" class="anchored" data-anchor-id="linking-to-external-libraries"><span class="header-section-number">9.10</span> Linking to external libraries</h2>
 <p>One essential part of every build process is the linking stage. This stage is responsible for combining the multiple object files that represent your code, into a single executable file. It also links this executable file to external libraries, if you use any in your code.</p>
 <p>In Zig, we have two notions of a “library”, which are: 1) a system’s library; 2) a local library. A system’s library is just a library that is already installed in your system. While a local library is a library that belongs to the current project; a library that is present in your project directory, and that you are building together with your project source code.</p>
-<p>The basic difference between the two, is that a system’s library is already built and installed in your system, supposedly, and all you need to do is to link your source code to this library to start using it. We do that by using the <code>linkSystemLibrary()</code> method from a <code>Compile</code> object. This method accepts the name of the library in a string as input. Remember from <a href="#sec-targets" class="quarto-xref"><span>Section 9.3</span></a> that a <code>Compile</code> object is a target object that you declare in your build script.</p>
+<p>The basic difference between the two, is that a system’s library is already built and installed in your system, supposedly, and all you need to do is to link your source code to this library to start using it. We do that by using the <code>linkSystemLibrary()</code> method from a <code>Compile.root_module</code> object. This method accepts the name of the library in a string as input. Remember from <a href="#sec-targets" class="quarto-xref"><span class="quarto-unresolved-ref">sec-targets</span></a> that a <code>Compile</code> object is a target object that you declare in your build script.</p>
 <p>When you link a particular target object with a system’s library, the <code>zig</code> compiler will use <code>pkg-config</code> to find where are the binary files and also the header files of this library in your system. When it finds these files, the linker present in the <code>zig</code> compiler will link your object files with the files of this library to produce a single binary file for you.</p>
-<p>In the example below, we are creating an executable file named <code>image_filter</code>, and, we are linking this executable file to the C Standard Library with the method <code>linkLibC()</code>, but we also are linking this executable file to the C library <code>libpng</code> that is currently installed in my system.</p>
+<p>In the example below, we are creating an executable file named <code>image_filter</code>, and, we are linking this executable file to the C Standard Library by setting the <code>link_libc</code> option to <code>true</code>. But we also link this executable file to the C library <code>libpng</code> that is currently installed in my system.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> build(b: *std.Build) <span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
 <span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"image_filter"</span>,</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>        .root_source_file = b.path(<span class="st">"src/main.zig"</span>),</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>        .target = target,</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>        .optimize = optimize,</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    exe.linkLibC();</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    exe.linkSystemLibrary(<span class="st">"png"</span>);</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    b.installArtifact(exe);</span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>        .root_module = b.createModule(.<span class="op">{</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>            .root_source_file = b.path(<span class="st">"src/main.zig"</span>),</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>            .target = b.graph.host</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>            .link_libc = <span class="cn">true</span>,</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>)</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    exe.root_module.linkSystemLibrary(<span class="st">"png"</span>, .<span class="op">{}</span>);</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    b.installArtifact(exe);</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>If you are linking with a C library in your project, is generally a good idea to also link your code with the C Standard Library. Because is very likely that this C library uses some functionality of the C Standard Library at some point. The same goes to C++ libraries. So, if you are linking with C++ libraries, is a good idea to link your project with the C++ Standard Library by using the <code>linkLibCpp()</code> method.</p>
-<p>On the order side, when you want to link with a local library, you should use the <code>linkLibrary()</code> method of a <code>Compile</code> object. This method expects to receive another <code>Compile</code> object as input. That is, another target object defined in your build script, using either the <code>addStaticLibrary()</code> or <code>addSharedLibrary()</code> methods which defines a library to be built.</p>
+<p>If you are linking with a C library in your project, is generally a good idea to also link your code with the C Standard Library. Because is very likely that this C library uses some functionality of the C Standard Library at some point. The same goes to C++ libraries. So, if you are linking with C++ libraries, is a good idea to link your project with the C++ Standard Library by setting the <code>link_libcpp</code> option to <code>true</code>.</p>
+<p>On the order side, when you want to link with a local library, you should use the <code>linkLibrary()</code> method of a <code>Compile.root_module</code> object. This method expects to receive another <code>Compile</code> object as input. That is, another target object defined in your build script, using either the <code>addStaticLibrary()</code> or <code>addSharedLibrary()</code> methods which defines a library to be built.</p>
 <p>As we discussed earlier, a local library is a library that is local to your project, and that is being built together with your project. So, you need to create a target object in your build script to build this local library. Then, you link the target objects of interest in your project, with this target object that identifies this local library.</p>
 <p>Take a look at this example extracted from the build script of the <a href="https://github.com/mitchellh/libxev/tree/main"><code>libxev</code> library</a><a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a>. You can see in this snippet that we are declaring a shared library file, from the <code>c_api.zig</code> module. Then, later in the build script, we declare an executable file named <code>"dynamic-binding-test"</code>, which links to this shared library that we defined earlier in the script.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> optimize = b.standardOptimizeOption(.<span class="op">{}</span>);</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> target = b.standardTargetOptions(.<span class="op">{}</span>);</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dynamic_lib = b.addSharedLibrary(.<span class="op">{</span></span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    .name = dynamic_lib_name,</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    .root_source_file = b.path(<span class="st">"src/c_api.zig"</span>),</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    .target = target,</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    .optimize = optimize,</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>b.installArtifact(dynamic_lib);</span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="co">// ... more lines in the script</span></span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dynamic_binding_test = b.addExecutable(.<span class="op">{</span></span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"dynamic-binding-test"</span>,</span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>    .target = target,</span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>    .optimize = optimize,</span>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dynamic_lib = b.addSharedLibrary(.<span class="op">{</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    .name = dynamic_lib_name,</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    .root_module = b.createModule(.<span class="op">{</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>        .root_source_file = b.path(<span class="st">"src/c_api.zig"</span>),</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>        .target = b.graph.host</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>)</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>b.installArtifact(dynamic_lib);</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="co">// ... more lines in the script</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dynamic_binding_test = b.addExecutable(.<span class="op">{</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"dynamic-binding-test"</span>,</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    .root_module = b.createModule(.<span class="op">{</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>        .root_source_file = b.path(<span class="st">"src/test.zig"</span>),</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>        .target = b.graph.host</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>)</span>
 <span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>dynamic_binding_test.linkLibrary(dynamic_lib);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>dynamic_binding_test.root_module.linkLibrary(</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>    dynamic_lib</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="sec-building-c-code" class="level2" data-number="9.11">
@@ -758,16 +778,15 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>As an example, let’s use the famous <a href="https://freetype.org/">FreeType library</a><a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a>. FreeType is one of the most widely used pieces of software in the world. It’s a C library designed to produce high-quality fonts. But it’s also heavily used in the industry to natively render text and fonts in the screen of your computer.</p>
 <p>In this section, we are going to write a build script, piece by piece, that is capable of building the FreeType project from source. You can find the source code of this build script on the <a href="https://github.com/pedropark99/freetype-zig/tree/main"><code>freetype-zig</code> repository</a><a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a> available at GitHub.</p>
 <p>After you download the source code of FreeType from the official website<a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a>, you can start writing the <code>build.zig</code> module. We begin by defining the target object that defines the binary file that we want to compile.</p>
-<p>As an example, I will build the project as a static library file using the <code>addStaticLibrary()</code> method to create the target object. Also, since FreeType is a C library, I will also link the library against <code>libc</code> through the <code>linkLibC()</code> method, to guarantee that any use of the C Standard Library is covered in the compilation process.</p>
+<p>As an example, I will build the project as a static library file using the <code>addStaticLibrary()</code> method to create the target object. Also, since FreeType is a C library, I will also link the library against <code>libc</code> through the <code>link_libc</code> option, to guarantee that any use of the C Standard Library is covered in the compilation process.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> target = b.standardTargetOptions(.<span class="op">{}</span>);</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> opti = b.standardOptimizeOption(.<span class="op">{}</span>);</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> lib = b.addStaticLibrary(.<span class="op">{</span></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"freetype"</span>,</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    .optimize = opti,</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    .target = target,</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>lib.linkLibC();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> lib = b.addStaticLibrary(.<span class="op">{</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    .name = <span class="st">"freetype"</span>,</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    .root_module = b.createModule(.<span class="op">{</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>        .target = b.graph.host,</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>        .link_libc = <span class="cn">true</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>)</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="creating-c-compiler-flags" class="level3" data-number="9.11.1">
 <h3 data-number="9.11.1" class="anchored" data-anchor-id="creating-c-compiler-flags"><span class="header-section-number">9.11.1</span> Creating C compiler flags</h3>
@@ -780,7 +799,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"-Werror"</span>,</span>
 <span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>In theory, there is nothing stopping you from using this array to add “include paths” (with the <code>-I</code> flag) or “library paths” (with the <code>-L</code> flag) to the compilation process. But there are formal ways in Zig to add these types of paths in the compilation process. Both are discussed in <a href="#sec-include-paths" class="quarto-xref"><span>Section 9.11.5</span></a> and <a href="#sec-library-paths" class="quarto-xref"><span>Section 9.11.4</span></a>.</p>
+<p>In theory, there is nothing stopping you from using this array to add “include paths” (with the <code>-I</code> flag) or “library paths” (with the <code>-L</code> flag) to the compilation process. But there are formal ways in Zig to add these types of paths in the compilation process. Both are discussed in <a href="#sec-include-paths" class="quarto-xref"><span class="quarto-unresolved-ref">sec-include-paths</span></a> and <a href="#sec-library-paths" class="quarto-xref"><span class="quarto-unresolved-ref">sec-library-paths</span></a>.</p>
 <p>Anyway, in Zig, we add C flags to the build process together with the C files that we want to compile, by using the <code>addCSourceFile()</code> and <code>addCSourceFiles()</code> methods. In the example above, we have just declared the C flags that we want to use. But we haven’t added them to the build process yet. To do that, we also need to list the C files to be compiled.</p>
 </section>
 <section id="listing-your-c-files" class="level3" data-number="9.11.2">
@@ -805,54 +824,55 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Now that we declared both the files that we want to include and the C compiler flags to be used, we can add them to the target object that describes the FreeType library, by using the <code>addCSourceFile()</code> and <code>addCSourceFiles()</code> methods.</p>
-<p>Both of these functions are methods from a <code>Compile</code> object (i.e., a target object). The <code>addCSourceFile()</code> method is capable of adding a single C file to the target object, while the <code>addCSourceFiles()</code> method is used to add multiple C files in a single command. You might prefer to use <code>addCSourceFile()</code> when you need to use different compiler flags on specific C files in your project. But, if you can use the same compiler flags across all C files, then, you will probably find <code>addCSourceFiles()</code> a better choice.</p>
-<p>Notice that we are using the <code>addCSourceFiles()</code> method in the example below, to add both the C files and the C compiler flags. Also notice that we are using the <code>os.tag</code> that we learned about in <a href="#sec-detect-os" class="quarto-xref"><span>Section 9.6</span></a>, to add the platform-specific C files.</p>
+<p>Both of these functions are methods from a <code>Compile.root_module</code> object. The <code>addCSourceFile()</code> method is capable of adding a single C file to the target object, while the <code>addCSourceFiles()</code> method is used to add multiple C files in a single command. You might prefer to use <code>addCSourceFile()</code> when you need to use different compiler flags on specific C files in your project. But, if you can use the same compiler flags across all C files, then, you will probably find <code>addCSourceFiles()</code> a better choice.</p>
+<p>Notice that we are using the <code>addCSourceFiles()</code> method in the example below, to add both the C files and the C compiler flags. Also notice that we are using the <code>os.tag</code> that we learned about in <a href="#sec-detect-os" class="quarto-xref"><span class="quarto-unresolved-ref">sec-detect-os</span></a>, to add the platform-specific C files.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> builtin = <span class="bu">@import</span>(<span class="st">"builtin"</span>);</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>lib.addCSourceFiles(</span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    &amp;c_source_files, &amp;c_flags</span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>);</span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="kw">switch</span> (builtin.target.os.tag) <span class="op">{</span></span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>    .windows =&gt; <span class="op">{</span></span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>        lib.addCSourceFiles(</span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>            &amp;windows_c_source_files,</span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>            &amp;c_flags</span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>        );</span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>,</span>
-<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>    .linux =&gt; <span class="op">{</span></span>
-<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>        lib.addCSourceFiles(</span>
-<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>            &amp;linux_c_source_files,</span>
-<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>            &amp;c_flags</span>
-<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>        );</span>
-<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>,</span>
-<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">else</span> =&gt; <span class="op">{}</span>,</span>
-<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>lib.root_module.addCSourceFiles(<span class="op">{</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    .files=&amp;c_source_files,</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    .flags=&amp;c_flags</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="kw">switch</span> (builtin.target.os.tag) <span class="op">{</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>    .windows =&gt; <span class="op">{</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>        lib.root_module.addCSourceFiles(<span class="op">{</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>            .files=&amp;windows_c_source_files,</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>            .flags=&amp;c_flags</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>);</span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>,</span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>    .linux =&gt; <span class="op">{</span></span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>        lib.root_module.addCSourceFiles(<span class="op">{</span></span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>            .files=&amp;linux_c_source_files,</span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>            .flags=&amp;c_flags</span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>);</span>
+<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>,</span>
+<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">else</span> =&gt; <span class="op">{}</span>,</span>
+<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="defining-c-macros" class="level3" data-number="9.11.3">
 <h3 data-number="9.11.3" class="anchored" data-anchor-id="defining-c-macros"><span class="header-section-number">9.11.3</span> Defining C Macros</h3>
-<p>C Macros are an essential part of the C programming language, and they are commonly defined through the <code>-D</code> flag from a C compiler. In Zig, you can define a C Macro to be used in your build process by using the <code>defineCMacro()</code> method from the target object that defines the binary file that you are building.</p>
+<p>C Macros are an essential part of the C programming language, and they are commonly defined through the <code>-D</code> flag from a C compiler. In Zig, you can define a C Macro to be used in your build process by using the <code>addCMacro()</code> method from the <code>root_module</code> attribute of the target object that defines the binary file that you are building.</p>
 <p>In the example below, we are using the <code>lib</code> object that we have defined in the previous sections to define some C Macros used by the FreeType project in the compilation process. These C Macros specify if FreeType should (or should not) include functionalities from different external libraries.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>lib.defineCMacro(<span class="st">"FT_DISABLE_ZLIB"</span>, <span class="st">"TRUE"</span>);</span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>lib.defineCMacro(<span class="st">"FT_DISABLE_PNG"</span>, <span class="st">"TRUE"</span>);</span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>lib.defineCMacro(<span class="st">"FT_DISABLE_HARFBUZZ"</span>, <span class="st">"TRUE"</span>);</span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>lib.defineCMacro(<span class="st">"FT_DISABLE_BZIP2"</span>, <span class="st">"TRUE"</span>);</span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>lib.defineCMacro(<span class="st">"FT_DISABLE_BROTLI"</span>, <span class="st">"TRUE"</span>);</span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>lib.defineCMacro(<span class="st">"FT2_BUILD_LIBRARY"</span>, <span class="st">"TRUE"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>lib.root_module.addCMacro(<span class="st">"FT_DISABLE_ZLIB"</span>, <span class="st">"TRUE"</span>);</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>lib.root_module.addCMacro(<span class="st">"FT_DISABLE_PNG"</span>, <span class="st">"TRUE"</span>);</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>lib.root_module.addCMacro(<span class="st">"FT_DISABLE_HARFBUZZ"</span>, <span class="st">"TRUE"</span>);</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>lib.root_module.addCMacro(<span class="st">"FT_DISABLE_BZIP2"</span>, <span class="st">"TRUE"</span>);</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>lib.root_module.addCMacro(<span class="st">"FT_DISABLE_BROTLI"</span>, <span class="st">"TRUE"</span>);</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>lib.root_module.addCMacro(<span class="st">"FT2_BUILD_LIBRARY"</span>, <span class="st">"TRUE"</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="sec-library-paths" class="level3" data-number="9.11.4">
 <h3 data-number="9.11.4" class="anchored" data-anchor-id="sec-library-paths"><span class="header-section-number">9.11.4</span> Adding library paths</h3>
 <p>Library paths are paths in your computer where the C compiler will look (or search) for library files to link against your source code. In other words, when you use a library in your C source code, and you ask the C compiler to link your source code against this library, the C compiler will search for the binary files of this library across the paths listed in this “library paths” set.</p>
 <p>These paths are platform specific, and, by default, the C compiler starts by looking at a pre-defined set of places in your computer. But you can add more paths (or more places) to this list. For example, you may have a library installed in a non-conventional place of your computer, and you can make the C compiler “see” this “non-conventional place” by adding this path to this list of pre-defined paths.</p>
-<p>In Zig, you can add more paths to this set by using the <code>addLibraryPath()</code> method from your target object. First, you defined a <code>LazyPath</code> object, containing the path you want to add, then, you provide this object as input to the <code>addLibraryPath()</code> method, like in the example below:</p>
+<p>In Zig, you can add more paths to this set by using the <code>addLibraryPath()</code> method from the <code>root_module</code> attribute of your target object. First, you defined a <code>LazyPath</code> object, containing the path you want to add, then, you provide this object as input to the <code>addLibraryPath()</code> method, like in the example below:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb26"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> lib_path: std.Build.LazyPath = .<span class="op">{</span></span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>    .cwd_relative = <span class="st">"/usr/local/lib/"</span></span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>lib.addLibraryPath(lib_path);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>lib.root_module.addLibraryPath(lib_path);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="sec-include-paths" class="level3" data-number="9.11.5">
@@ -860,12 +880,12 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>The preprocessor search path is a popular concept from the C community, but it’s also known by many C programmers as “include paths”, because the paths in this “search path” relate to the <code>#include</code> statements found in the C files.</p>
 <p>Include paths are similar to library paths. They are a set of pre-defined places in your computer where the C compiler will look for files during the compilation process. But instead of looking for library files, the include paths are places where the compiler looks for header files included in your C source code. This is why many C programmers prefer to call these paths as the “preprocessor search path”. Because header files are processed during the preprocessor stage of the compilation process.</p>
 <p>So, every header file that you include in your C source code, through a <code>#include</code> statements needs to be found somewhere, and the C compiler will search for this header file across the paths listed in this “include paths” set. Include paths are added to the compilation process through the <code>-I</code> flag.</p>
-<p>In Zig, you can add new paths to this pre-defined set of paths, by using the <code>addIncludePath()</code> method from your target object. This method also accepts a <code>LazyPath</code> object as input.</p>
+<p>In Zig, you can add new paths to this pre-defined set of paths, by using the <code>addIncludePath()</code> method from the <code>root_module</code> attribute of your target object. This method also accepts a <code>LazyPath</code> object as input.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb27"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> inc_path: std.Build.LazyPath = .<span class="op">{</span></span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>    .path = <span class="st">"./include"</span></span>
 <span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>lib.addIncludePath(inc_path);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>lib.root_module.addIncludePath(inc_path);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 

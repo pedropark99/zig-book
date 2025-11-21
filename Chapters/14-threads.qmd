@@ -94,6 +94,8 @@ of doing nothing and waiting for the food to be ready.
 
 ```{zig}
 #| eval: false
+#| build_type: "lib"
+#| auto_main: true
 const order = Order.init("Pizza Margherita", n = 1);
 const waiter = Waiter.init();
 waiter.receive_order(order);
@@ -239,17 +241,22 @@ an empty, anonymous struct (`.{}`) in the third argument of `spawn()`.
 
 
 ```{zig}
+#| eval: true
+#| auto_main: false
 #| build_type: "run"
 const std = @import("std");
 var stdout_buffer: [1024]u8 = undefined;
 var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
 const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
+const io = std.testing.io;
+const clock: std.Io.Clock = .awake;
 
 fn do_some_work() !void {
     _ = try stdout.write("Starting the work.\n");
     try stdout.flush();
-    Thread.sleep(1000 * std.time.ns_per_ms);
+    const duration: std.Io.Duration = .{.nanoseconds = 1000};
+    try std.Io.sleep(io, duration, clock);
     _ = try stdout.write("Finishing the work.\n");
     try stdout.flush();
 }
@@ -345,7 +352,16 @@ on the screen.
 
 
 ```{zig}
-#| eval: false
+#| eval: true
+#| build_type: "lib"
+#| auto_main: false
+const std = @import("std");
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
+const io = std.testing.io;
+const Thread = std.Thread;
+const clock: std.Io.Clock = .awake;
 fn print_id(id: *const u8) !void {
     try stdout.print("Thread ID: {d}\n", .{id.*});
     try stdout.flush();
@@ -361,7 +377,8 @@ pub fn main() !void {
     try stdout.flush();
     thread1.join();
 
-    Thread.sleep(2 * std.time.ns_per_s);
+    const duration: std.Io.Duration = .{.nanoseconds = 1000};
+    try std.Io.sleep(io, duration, clock);
 
     _ = try stdout.write("Joining thread 2\n");
     try stdout.flush();
@@ -415,7 +432,15 @@ function that we have used over the previous examples.
 
 
 ```{zig}
-#| eval: false
+#| eval: true
+#| build_type: "lib"
+#| auto_main: false
+const std = @import("std");
+const Thread = std.Thread;
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
+
 fn print_id(id: *const u8) !void {
     try stdout.print("Thread ID: {d}\n", .{id.*});
     try stdout.flush();
@@ -532,10 +557,13 @@ that don't return errors. That is why we are using `catch` here, so that the
 
 ```{zig}
 #| eval: false
+#| auto_main: false
+#| build_type: "run"
 fn print_id(id: *const u8) void {
     _ = stdout.print("Thread ID: {d}\n", .{id.*})
         catch void;
 }
+
 const id1: u8 = 1;
 const id2: u8 = 2;
 try pool.spawn(print_id, .{&id1});
@@ -686,9 +714,14 @@ to the expected 200000 that we want.
 
 
 ```{zig}
+#| eval: true
 #| auto_main: false
-#| build_type: "run"
-#| eval: false
+#| build_type: "lib"
+const std = @import("std");
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
+const Thread = std.Thread;
 // Global counter variable
 var counter: usize = 0;
 // Function to increment the counter
@@ -802,6 +835,7 @@ Notice that the output of this program is now the correct number of 200000.
 
 ```{zig}
 #| build_type: "run"
+#| auto_main: false
 const std = @import("std");
 var stdout_buffer: [1024]u8 = undefined;
 var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
@@ -927,8 +961,19 @@ current value in a `counter` object, and it also creates another thread responsi
 new data into the `counter` object (incrementing it, more specifically).
 
 ```{zig}
-#| eval: false
+#| eval: true
+#| build_type: "lib"
+#| auto_main: false
+const std = @import("std");
+const Thread = std.Thread;
+const RwLock = std.Thread.RwLock;
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 var counter: u32 = 0;
+const io = std.testing.io;
+const clock: std.Io.Clock = .awake;
+
 fn reader(lock: *RwLock) !void {
     while (true) {
         lock.lockShared();
@@ -936,15 +981,17 @@ fn reader(lock: *RwLock) !void {
         try stdout.print("{d}", .{v});
         try stdout.flush();
         lock.unlockShared();
-        Thread.sleep(2 * std.time.ns_per_s);
+        const duration: std.Io.Duration = .{.nanoseconds = 2};
+        try std.Io.sleep(io, duration, clock);
     }
 }
-fn writer(lock: *RwLock) void {
+fn writer(lock: *RwLock) !void {
     while (true) {
         lock.lock();
         counter += 1;
         lock.unlock();
-        Thread.sleep(2 * std.time.ns_per_s);
+        const duration: std.Io.Duration = .{.nanoseconds = 2};
+        try std.Io.sleep(io, duration, clock);
     }
 }
 
@@ -1104,10 +1151,13 @@ var stdout_buffer: [1024]u8 = undefined;
 var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
 const stdout = &stdout_writer.interface;
 var running = std.atomic.Value(bool).init(true);
+const clock: std.Io.Clock = .awake;
+const io = std.testing.io;
 var counter: u64 = 0;
 
-fn do_more_work() void {
-    Thread.sleep(2 * std.time.ns_per_s);
+fn do_more_work() !void {
+    const duration: std.Io.Duration = .{.nanoseconds = 2};
+    try std.Io.sleep(io, duration, clock);
 }
 fn work() !void {
     while (running.load(.monotonic)) {
@@ -1119,7 +1169,7 @@ fn work() !void {
             running.store(false, .monotonic);
         } else {
             _ = try stdout.write("Time to do more work.\n");
-            do_more_work();
+            try do_more_work();
             running.store(false, .monotonic);
         }
     }

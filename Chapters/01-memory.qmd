@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 
 
 
-# Memory and Allocators
+# Memory and Allocators {#sec-memory-chap}
 
 
 In this chapter, we will talk about memory. How does Zig control memory? What
@@ -685,7 +685,7 @@ _ = in1; _ = in2; _ = in3;
 
 In the code example below, we are accessing the `stdin`, which is
 the standard input channel, to receive an input from the
-user. We read the input given by the user with the `readSliceAll()`
+user. We read the next line of input given by the user with the `takeDelimiterExclusive()`
 method.
 
 Now, after reading the input of the user, we need to store this input somewhere in
@@ -715,24 +715,25 @@ can allocate the same array in the heap by using the expression `var input = try
 #| auto_main: false
 #| build_type: "lib"
 const std = @import("std");
+const io = std.testing.io;
 var stdin_buffer: [1024]u8 = undefined;
-var stdin_reader = std.fs.File.stdin().reader(&stdin_buffer);
+var stdin_reader = std.fs.File.stdin().reader(io, &stdin_buffer);
 const stdin = &stdin_reader.interface;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
+
     var input = try allocator.alloc(u8, 50);
     defer allocator.free(input);
     @memset(input[0..], 0);
 
-    // Read user input
-    stdin.readSliceAll(input[0..]) catch |err| switch(err) {
-        // Reached end of input, do nothing else
-        error.EndOfStream => {},
-        // If it's other kind of error, then return it
-        else => return err,
-    };
+    // Read user input until a line break is found.
+    const stream = try stdin.takeDelimiterExclusive('\n');
+    // Store the input into our heap memory.
+    @memcpy(input[0..stream.len], stream[0..]);
+    // Print our heap memory, so that we can see what
+    // was stored in it.
     std.debug.print("{s}\n", .{input});
 }
 ```

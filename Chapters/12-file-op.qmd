@@ -24,7 +24,7 @@ from the Zig Standard Library that can execute filesystem operations. Most of th
 comes from the `std.fs` module.
 
 We are also going to talk about Input/Output (also known as IO) operations in Zig. Most of
-these operations are made by using the structs and functions from `std.io` module, which defines
+these operations are made by using the structs and functions from `std.Io` module, which defines
 file descriptors for the *standard channels* of your system (`stdout` and `stdin`), and also,
 functions to create and use I/O streams.
 
@@ -74,13 +74,15 @@ That is, your OS is the intermediary between every input/output operation made i
 regardless of the programming language that you are using.
 
 
-### The writer and reader pattern {#sec-writer-reader}
+
+
+## The writer and reader pattern {#sec-writer-reader}
 
 In Zig, there is a pattern around input/output (IO). I (the author of this book) don't know if there
 is an official name for this pattern. But here, in this book, I will call it the "writer and reader pattern".
 In essence, every IO operation in Zig is made through either a `Reader` or a `Writer` object[^gen-zig].
 
-These two data types come from the `std.io` module of the Zig Standard Library. As their names suggests, a
+These two data types are actually interfaces, and they come from the `std.Io` module of the Zig Standard Library. As their names suggests, a
 `Reader` is an object that offers tools to read data from "something" (or "somewhere"), while a `Writer`
 offers tools to write data into this "something". This "something" might be different things: like a
 file that exists in your filesystem; or, it might be a network socket in your system[^sock]; or,
@@ -101,7 +103,7 @@ Every `Writer` object has methods like `print()`, which allows you to write/send
 into the "something" (file, socket, stream, etc.) that you are using. It also has a `writeAll()` method, which allows you to
 write a string, or, an array of bytes into the "something".
 
-Likewise, every `Reader` object have methods like `readSliceAll()`, which allows you to read the
+Likewise, every `Reader` object have methods like `readSliceAll()`, which allows you to read
 data from the "something" (file, socket, stream, etc.) until it fills a particular array (i.e., a "buffer") object.
 In other words, if you provide an array object of 300 `u8` values to `readSliceAll()`, then, this method attempts to read 300 bytes
 of data from the "something", and it stores them into the array object that you have provided.
@@ -113,18 +115,102 @@ until it finds the "delimiter character" that you have specified, and, it return
 
 This is just a quick description of the methods present in these types of objects. But I recommend you
 to read the official docs, both for
-[`Writer`](https://ziglang.org/documentation/master/std/#std.io.Writer)[^gen-write] and
-[`Reader`](https://ziglang.org/documentation/master/std/#std.io.Reader)[^gen-read].
+[`Writer`](https://ziglang.org/documentation/master/std/#std.Io.Writer)[^gen-write] and
+[`Reader`](https://ziglang.org/documentation/master/std/#std.Io.Reader)[^gen-read].
 I also think it's a good idea to read the source code of the modules in the Zig Standard Library
 that defines the methods present in these objects, which are the
 [`Reader.zig`](https://github.com/ziglang/zig/blob/master/lib/std/Io/Reader.zig)[^mod-read]
 and [`Writer.zig`](https://github.com/ziglang/zig/blob/master/lib/std/Io/Writer.zig)[^mod-write].
 
-[^gen-read]: <https://ziglang.org/documentation/master/std/#std.io.Reader>.
-[^gen-write]: <https://ziglang.org/documentation/master/std/#std.io.Writer>.
+[^gen-read]: <https://ziglang.org/documentation/master/std/#std.Io.Reader>.
+[^gen-write]: <https://ziglang.org/documentation/master/std/#std.Io.Writer>.
 [^mod-read]: <https://github.com/ziglang/zig/blob/master/lib/std/Io/Reader.zig>.
 [^mod-write]: <https://github.com/ziglang/zig/blob/master/lib/std/Io/Writer.zig>.
 
+
+
+## The new `io` argument {#sec-new-io-backend}
+
+Since Zig 0.15, a new IO interface was introduced into the language, which was the introduction of the `Reader` and `Writer`
+interfaces that we described on @sec-writer-reader. Not only that happen, but also, since Zig 0.16 a new big step into this new IO interface
+was made, with the introduction of the new `io` argument, from which you can choose the "IO backend implementation" that
+you want to use, with `std.Io.Evented`, `std.Io.Threaded`, and others.
+
+Let's make a quick comparison here. You've probably noticed from @sec-memory-chap that, allocators are an essential type of object in Zig.
+They appear everywhere, and they are essential to any kind of task that needs to allocate some memory to
+complete. Well, with the introduction of this new IO interface, choosing an "IO backend implementation" became an essential
+task in Zig code, like choosing an allocator.
+
+So now, you usually start your Zig code by choosing both an allocator, and also, an "IO backend implementation" to use.
+In the example below, I'm choosing an IO implementation that is based on thread pools. But I could also use
+`std.Io.Evented`, which is based on queue rings, if I wanted to.
+
+The key objects in this code snippet exposed below are `allocator` and `io`.
+
+```{zig}
+#| eval: true
+#| build_type: "lib"
+#| auto_main: true
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
+
+var threaded: std.Io.Threaded = .init(allocator);
+const io = threaded.io();
+defer threaded.deinit();
+_ = io;
+```
+
+If you don't care much, and just want to quickly get an "IO backend implementation" for your code to use,
+you can either: 1) use `std.testing.io`, which, as the name suggests, it is more tailored for unit tests;
+or 2) use `.init_single_threaded` to quickly instantiate a `std.Io.Threaded` object using a single thread
+(example exposed below).
+
+```{zig}
+#| eval: true
+#| build_type: "lib"
+#| auto_main: true
+var threaded: std.Io.Threaded = .init_single_threaded;
+const io = threaded.io();
+_ = io;
+```
+
+Therefore, since Zig 0.16, you will find different functions across the Zig Standard Library that takes an argument named `io`
+of type `std.Io`. A big example of that is the `reader()` method that you find in `std.fs.File`. This method is responsible
+for creating the `Reader` object through which you can read data from the file represented by the `std.fs.File` object.
+And this method have now, an `io` argument, in which you should provide the "IO backend implementation" that you
+want to use while reading the file.
+
+In the example below, I'm demonstrating the use of this `io` argument by opening a file in my computer and reading it. Notice that I provide an
+"IO backend implementation" (i.e. the `io` object) to the `reader()` method. This is just one
+example. You will find this pattern of "providing an IO backend implementation" in many other kinds of tasks.
+Functions related to networking are another instance where you will commonly find this `io` argument.
+
+```{zig}
+#| eval: true
+#| build_type: "lib"
+#| auto_main: true
+const cwd = std.fs.cwd();
+const file = try cwd.openFile(
+    "foo.txt", .{ .mode = .read_only }
+);
+defer file.close();
+
+var read_buffer: [1024]u8 = undefined;
+const io = std.testing.io;
+var fr = file.reader(io, &read_buffer);
+var reader = &fr.interface;
+
+var buffer: [300]u8 = undefined;
+@memset(buffer[0..], 0);
+_ = reader.readSliceAll(buffer[0..]) catch 0;
+
+try stdout.print("{s}\n", .{buffer});
+try stdout.flush();
+```
+
+```
+This is a line from foo.txt
+```
 
 
 ### Introducing file descriptors {#sec-file-descriptor}
@@ -162,7 +248,7 @@ a file descriptor to this particular IO resource.
 
 So you usually get a `File` object by using functions and methods from the Zig Standard Library
 that asks the OS to open some IO resource, like the `openFile()` method that opens a file in the
-filesystem. The `net.Stream` object that we have created in @sec-create-socket is also a type of
+filesystem. The `std.Io.net.Stream` object that we have created in @sec-create-socket is also a type of
 file descriptor object.
 
 
@@ -245,13 +331,15 @@ by printing the given name to `stdout`. In the example below, I typed my name (P
 
 
 ```{zig}
-#| eval: false
+#| eval: true
 #| auto_main: false
+#| build_type: "lib"
 const std = @import("std");
+const io = std.testing.io;
 var stdin_buffer: [1024]u8 = undefined;
 var stdout_buffer: [1024]u8 = undefined;
 var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-var stdin_reader = std.fs.File.stdin().reader(&stdin_buffer);
+var stdin_reader = std.fs.File.stdin().reader(io, &stdin_buffer);
 const stdin = &stdin_reader.interface;
 const stdout = &stdout_writer.interface;
 
@@ -393,6 +481,7 @@ object.
 ::: {.callout-important}
 If you are writing data, do not forget to flush your IO buffer, by calling the `flush()` method of your `Writer` object.
 :::
+
 
 
 ## Filesystem basics
@@ -539,15 +628,15 @@ In Zig, we do this by calling the method `close()` from the file descriptor obje
 
 
 ```{zig}
-#| eval: false
+#| eval: true
 #| auto_main: true
+#| build_type: "lib"
 const cwd = std.fs.cwd();
 const file = try cwd.createFile("foo.txt", .{});
 // Don't forget to close the file at the end.
 defer file.close();
 // Do things with the file ...
-var fw = file.writer();
-_ = try fw.writeAll(
+_ = try file.writeAll(
     "Writing this line to the file\n"
 );
 ```
@@ -582,25 +671,31 @@ a program like this one below becomes valid:
 
 
 ```{zig}
-#| eval: false
+#| eval: true
 #| auto_main: true
-#| build_type: "run"
+#| build_type: "lib"
 const cwd = std.fs.cwd();
+const io = std.testing.io;
 const file = try cwd.createFile(
     "foo.txt",
     .{ .read = true }
 );
 defer file.close();
-
-var fw = file.writer();
-_ = try fw.writeAll("We are going to read this line\n");
+_ = try file.writeAll(
+    "We are going to read this line\n"
+);
 
 var buffer: [300]u8 = undefined;
 @memset(buffer[0..], 0);
+
 try file.seekTo(0);
-var fr = file.reader();
-_ = try fr.readAll(buffer[0..]);
-try stdout.print("{s}\n", .{buffer});
+var read_buffer: [1024]u8 = undefined;
+var fr = file.reader(io, &read_buffer);
+var reader = &fr.interface;
+
+_ = reader.readSliceAll(buffer[0..]) catch 0;
+
+try stdout.print("{s}", .{buffer});
 try stdout.flush();
 ```
 
@@ -650,17 +745,16 @@ such as `seekFromEnd()` are described in more depth in @sec-indicators.
 
 
 ```{zig}
-#| eval: false
+#| eval: true
 #| auto_main: true
-#| build_type: "run"
+#| build_type: "lib"
 const cwd = std.fs.cwd();
 const file = try cwd.openFile(
     "foo.txt", .{ .mode = .write_only }
 );
 defer file.close();
 try file.seekFromEnd(0);
-var fw = file.writer();
-_ = try fw.writeAll("Some random text to write\n");
+_ = try file.writeAll("Some random text to write\n");
 ```
 
 
@@ -672,7 +766,9 @@ file that you want to delete, and this method will try to delete the file locate
 at this path.
 
 ```{zig}
-#| eval: false
+#| eval: true
+#| auto_main: true
+#| build_type: "lib"
 const cwd = std.fs.cwd();
 try cwd.deleteFile("foo.txt");
 ```
@@ -692,7 +788,9 @@ so it might be worth to create a directory handler to that location. But if you 
 file to a subfolder of your CWD, then, you can just simply pass the CWD handler to this argument.
 
 ```{zig}
-#| eval: false
+#| eval: true
+#| auto_main: true
+#| build_type: "lib"
 const cwd = std.fs.cwd();
 try cwd.copyFile(
     "foo.txt",
@@ -783,9 +881,9 @@ second argument of `openDir()`. This flag is important, because without this fla
 we would not be allowed to iterate through the files in this directory.
 
 ```{zig}
-#| eval: false
+#| eval: true
 #| auto_main: true
-#| build_type: "run"
+#| build_type: "lib"
 const cwd = std.fs.cwd();
 const dir = try cwd.openDir(
     "ZigExamples/file-io/",
@@ -834,8 +932,9 @@ as input to `makeDir()`, you would likely get an error as result, since
 this method can only create a single subdirectory.
 
 ```{zig}
+#| eval: true
 #| auto_main: true
-#| eval: false
+#| build_type: "lib"
 const cwd = std.fs.cwd();
 try cwd.makeDir("src");
 try cwd.makePath("src/decoders/jpg/");
@@ -848,8 +947,9 @@ as input to the `deleteDir()` method from a `Dir` object. In the example below,
 we are deleting the `src` directory that we have just created in the previous example.
 
 ```{zig}
+#| eval: true
 #| auto_main: true
-#| eval: false
+#| build_type: "lib"
 const cwd = std.fs.cwd();
 try cwd.deleteDir("src");
 ```

@@ -469,7 +469,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
   <li><a href="#sec-http-how-impl" id="toc-sec-http-how-impl" class="nav-link" data-scroll-target="#sec-http-how-impl"><span class="header-section-number">7.3</span> How a HTTP server is normally implemented?</a></li>
   <li><a href="#implementing-the-server---part-1" id="toc-implementing-the-server---part-1" class="nav-link" data-scroll-target="#implementing-the-server---part-1"><span class="header-section-number">7.4</span> Implementing the server - Part 1</a>
   <ul class="collapse">
-  <li><a href="#sec-create-socket" id="toc-sec-create-socket" class="nav-link" data-scroll-target="#sec-create-socket"><span class="header-section-number">7.4.1</span> Creating the socket object</a></li>
+  <li><a href="#sec-create-socket" id="toc-sec-create-socket" class="nav-link" data-scroll-target="#sec-create-socket"><span class="header-section-number">7.4.1</span> Creating the server object</a></li>
   <li><a href="#listening-and-receiving-connections" id="toc-listening-and-receiving-connections" class="nav-link" data-scroll-target="#listening-and-receiving-connections"><span class="header-section-number">7.4.2</span> Listening and receiving connections</a></li>
   <li><a href="#sec-read-http-message" id="toc-sec-read-http-message" class="nav-link" data-scroll-target="#sec-read-http-message"><span class="header-section-number">7.4.3</span> Reading the message from the client</a></li>
   </ul></li>
@@ -553,66 +553,68 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <section id="implementing-the-server---part-1" class="level2" data-number="7.4">
 <h2 data-number="7.4" class="anchored" data-anchor-id="implementing-the-server---part-1"><span class="header-section-number">7.4</span> Implementing the server - Part 1</h2>
 <section id="sec-create-socket" class="level3" data-number="7.4.1">
-<h3 data-number="7.4.1" class="anchored" data-anchor-id="sec-create-socket"><span class="header-section-number">7.4.1</span> Creating the socket object</h3>
-<p>Let’s begin with creating the socket object for our server. Just to make things shorter, I will create this socket object in a separate Zig module. I will name it <code>config.zig</code>.</p>
-<p>In Zig, we can create a TCP socket using the <code>std.posix.socket()</code> function, from the Zig Standard Library. As I mentioned earlier in <a href="#sec-http-how-impl" class="quarto-xref"><span>Section 7.3</span></a>, every socket object that we create represents a communication channel, and we need to bind this channel to a specific address. An “address” is defined as an IP address, or, more specifically, an IPv4 address<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. Every IPv4 address is composed by two components. The first component is the host, which is a sequence of 4 numbers separated by dot characters (<code>.</code>) that identifies the machine used. While the second component is a port number, which identifies the specific door, or, the specific port to use in the host machine.</p>
-<p>The sequence of 4 numbers (i.e., the host) identifies the machine (i.e., the computer itself) where this socket will live in. Every computer normally have multiple “doors” available inside of him, because this allows the computer to receive and work with multiple connections at the same time. He simply use a single door for each connection. So the port number, is essentially a number that identifies the specific door in the computer that will be responsible for receiving the connection. That is, it identifies the “door” in the computer that the socket will use to receive incoming connections.</p>
-<p>To make things simpler, I will use an IP address that identifies our current machine in this example. This means that, our socket object will reside on the same computer that we are currently using (this is also known as the “localhost”) to write this Zig source code.</p>
-<p>By convention, the IP address that identifies the “localhost”, which is the current machine we are using, is the IP <code>127.0.0.1</code>. So, that is the IP address we are going to use in our server. I can declare it in Zig by using an array of 4 integers, like this:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> localhost = [<span class="dv">4</span>]<span class="dt">u8</span><span class="op">{</span> <span class="dv">127</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span> <span class="op">}</span>;</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>_ = localhost;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
+<h3 data-number="7.4.1" class="anchored" data-anchor-id="sec-create-socket"><span class="header-section-number">7.4.1</span> Creating the server object</h3>
+<p>Let’s begin by writing the code responsible for listening and accepting incoming connections to our server. Just to make things shorter, I will write this code inside a separate Zig module, named <code>server.zig</code>.</p>
+<p>Now, we essentially need to create a TCP socket object in our code. On previous versions of this book, we’ve decided to create such TCP socket through the the <code>std.posix.socket()</code> function, from the Zig Standard Library. But, with the introduction of the new IO interface in Zig 0.16, this function fit’s weird on the new <code>std.Io.net.Stream</code> API.</p>
+<p>Because of that, I will take a different route this time. In summary, we are going to create a TCP socket through the <a href="https://ziglang.org/documentation/master/std/#std.Io.net.IpAddress.listen"><code>listen()</code> method from <code>std.Io.net.IpAddress</code></a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. Then, with this TCP socket represented by the <code>std.Io.net.Server</code> type, we use the <code>accept()</code> method to establish the connection between our server and the client. Through this “connection object” that we get from <code>accept()</code> we get access to a stream, from which we can exchange messages between the server and the client.</p>
+<p>As I mentioned earlier in <a href="#sec-http-how-impl" class="quarto-xref"><span>Section 7.3</span></a>, every socket object that we create represents a communication channel, and we need to bind this channel to a specific address. An “address” is defined as an IP address, or, more specifically, an IPv4 address<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. Every IPv4 address is composed by two components. The first component is the host, which is a sequence of 4 numbers separated by dot characters (<code>.</code>) that identifies the machine used. While the second component is a port number, which identifies the specific door, or, the specific port to use in the host machine.</p>
+<p>The sequence of 4 numbers (i.e., the host) identifies the machine (i.e., the computer itself) where this socket will live in. Every computer normally have multiple “doors” available inside of him, because this allows the computer to receive and work with multiple connections at the same time. He simply use a single door for each connection. So the port number, is essentially a number that identifies the “door” in the computer that the socket will use to receive incoming connections.</p>
+<p>To make things simpler, I will use an IP address that identifies our current machine in this example. This means that, our socket object will reside on the same computer that we are currently using (this is also known as the “localhost”) to write this Zig source code. By convention, the IP address that identifies the “localhost”, which is the current machine we are using, is the IP <code>127.0.0.1</code>. So, that is the IP address we are going to use in our server.</p>
 <p>Now, we need to decide which port number to use. By convention, there are some port numbers that are reserved, meaning that, we cannot use them for our own purposes, like the port 22 (which is normally used for SSH connections). For TCP connections, which is our case here, a port number is a 16-bit unsigned integer (type <code>u16</code> in Zig), thus ranging from 0 to 65535 <span class="citation" data-cites="wikipedia_port">(<a href="references.html#ref-wikipedia_port" role="doc-biblioref">Wikipedia 2024</a>)</span>. So, we can choose a number from 0 to 65535 for our port number. In the example of this book, I will use the port number 3490 (just a random number).</p>
-<p>Now that we have these two informations at hand, I can finally create our socket object, using the <code>std.posix.socket()</code> function. First, we use the host and the port number to create an <code>Address</code> object, with the <code>std.net.Address.initIp4()</code> function, like in the example below. After that, I use this address object inside the <code>socket()</code> function to create our socket object.</p>
-<p>The <code>Socket</code> struct defined below summarizes all the logic behind this process. In this struct, we have two data members, which are: 1) the address object; 2) and a stream object, which is the object we will use to read and write the messages into any connection we establish.</p>
-<p>Notice that, inside the constructor method of this struct, when we create the socket object, we are using the <code>IPROTO.TCP</code> property as an input to tell the function to create a socket for TCP connections.</p>
+<p>All of this process and steps that we’ve described are concentrated inside our own custom struct called <code>Server</code>, which is exposed below. Notice that we create a new <code>std.Io.net.IpAddress</code> object inside this struct. We also create our <code>std.Io.net.Server</code> object through the <code>listen()</code> method from our IP address object.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> builtin = <span class="bu">@import</span>(<span class="st">"builtin"</span>);</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> net = <span class="bu">@import</span>(<span class="st">"std"</span>).net;</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">const</span> Socket = <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    _address: std.net.Address,</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    _stream: std.net.Stream,</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init() !Socket <span class="op">{</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> host = [<span class="dv">4</span>]<span class="dt">u8</span><span class="op">{</span> <span class="dv">127</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span> <span class="op">}</span>;</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> port = <span class="dv">3490</span>;</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> addr = net.Address.initIp4(host, port);</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> socket = <span class="kw">try</span> std.posix.socket(</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>            addr.any.family,</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>            std.posix.SOCK.STREAM,</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>            std.posix.IPPROTO.TCP</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        );</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> stream = net.Stream<span class="op">{</span> .handle = socket <span class="op">}</span>;</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> Socket<span class="op">{</span> ._address = addr, ._stream = stream <span class="op">}</span>;</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Socket = std.Io.net.Socket;</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Protocol = std.Io.net.Protocol;</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">const</span> Server = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    host: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    port: <span class="dt">u16</span>,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    addr: std.Io.net.IpAddress,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    io: std.Io,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(io: std.Io) !Server <span class="op">{</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> host: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"127.0.0.1"</span>;</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> port: <span class="dt">u16</span> = <span class="dv">3490</span>;</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> addr = <span class="kw">try</span> std.Io.net.IpAddress.parseIp4(</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>            host, port</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> .<span class="op">{</span>.host=host, .port=port, .addr=addr, .io=io<span class="op">}</span>;</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> listen(self: Server) !std.Io.net.Server <span class="op">{</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>        std.debug.print(<span class="st">"Server Addr: {s}:{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>self.host, self.port<span class="op">}</span>);</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">try</span> self.addr.listen(</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>            self.io,</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>            .<span class="op">{</span>.mode=Socket.Mode.stream, .protocol=Protocol.tcp<span class="op">}</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>        );</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="listening-and-receiving-connections" class="level3" data-number="7.4.2">
 <h3 data-number="7.4.2" class="anchored" data-anchor-id="listening-and-receiving-connections"><span class="header-section-number">7.4.2</span> Listening and receiving connections</h3>
-<p>Remember that we stored the <code>Socket</code> struct declaration that we built in <a href="#sec-create-socket" class="quarto-xref"><span>Section 7.4.1</span></a> inside a Zig module named <code>config.zig</code>. This is why I imported this module into our main module (<code>main.zig</code>) in the example below, as the <code>SocketConf</code> object, to access the <code>Socket</code> struct.</p>
-<p>Once we created our socket object, we can focus now on making this socket object listen and receive new incoming connections. We do that, by calling the <code>listen()</code> method from the <code>Address</code> object that is contained inside the socket object, and then, we call the <code>accept()</code> method over the result.</p>
-<p>The <code>listen()</code> method from the <code>Address</code> object produces a server object, which is an object that will stay open and running indefinitely, waiting to receive an incoming connection. Therefore, if you try to run the code example below, by calling the <code>run</code> command from the <code>zig</code> compiler, you will notice that the programs keeps running indefinitely, without a clear end.</p>
-<p>This happens, because the program is waiting for something to happen. It’s waiting for someone to try to connect to the address (<code>http://127.0.0.1:3490</code>) where the server is running and listening for incoming connections. This is what the <code>listen()</code> method do, it makes the socket to be active waiting for someone to connect.</p>
+<p>Remember that our <code>Server</code> struct declaration that we’ve built in <a href="#sec-create-socket" class="quarto-xref"><span>Section 7.4.1</span></a> is inside a Zig module named <code>server.zig</code>. This is why I have imported this module into our main module (<code>main.zig</code>) in the example below, to access our <code>Server</code> struct.</p>
+<p>Now, the socket stored inside our <code>Server</code> object needs to start listening and accepting new connections. We can do that by calling the method <code>listen()</code> from it, and then, calling the <code>accept()</code> method from the result. If you run the main module exposed below, you will notice that the program never ends. It just keeps stuck.</p>
+<p>This happens, because the program is waiting for something to happen. It’s waiting for someone to try to connect to the address (<code>127.0.0.1:3490</code>) where the server is running and listening for incoming connections. This is what the <code>listen()</code> method do, it makes the socket to be active waiting for someone to connect.</p>
 <p>On the other side, the <code>accept()</code> method is the function that establishes the connection when someone tries to connect to the socket. This means that, the <code>accept()</code> method returns a new connection object as a result. And you can use this connection object to read or write messages from or to the client. For now, we are not doing anything with this connection object. But we are going to use it in the next section.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> SocketConf = <span class="bu">@import</span>(<span class="st">"config.zig"</span>);</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_writer = std.fs.File.stdout().writer(&amp;stdout_buffer);</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> socket = <span class="kw">try</span> SocketConf.Socket.init();</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Server Addr: {any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>socket._address<span class="op">}</span>);</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> server = <span class="kw">try</span> socket._address.listen(.<span class="op">{}</span>);</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> connection = <span class="kw">try</span> server.accept();</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    _ = connection;</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Server = <span class="bu">@import</span>(<span class="st">"server.zig"</span>).Server;</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> alloc = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> gpa = alloc.allocator();</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> threaded: std.Io.Threaded = .init(gpa);</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> io = threaded.io();</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> threaded.deinit();</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> server = <span class="kw">try</span> Server.init(io);</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> listening = <span class="kw">try</span> server.listen();</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> connection = <span class="kw">try</span> listening.accept(io);</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> connection.close(io);</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>This code example allows one single connection. In other words, the server will wait for one incoming connection, and as soon as the server is done with this first connection that it establishes, the program ends, and the server stops.</p>
 <p>This is not the norm in the real world. Most people that write a HTTP server like this, usually put the <code>accept()</code> method inside a <code>while</code> (infinite) loop, where if a connection is created with <code>accept()</code>, a new thread of execution is created to deal with this new connection and the client. That is, real-world examples of HTTP Servers normally rely on parallel computing to work.</p>
@@ -625,47 +627,54 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>The basic idea is, if we <strong>write</strong> any data into this connection object, then, we are sending data to the client, and if we <strong>read</strong> the data present in this connection object, then, we are reading any data that the client sent to us, through this connection object. So, just have this logic in mind. “Read” is for reading messages from the client, and “write” is to send a message to the client.</p>
 <p>Remember from <a href="#sec-how-http-works" class="quarto-xref"><span>Section 7.2</span></a> that, the first thing that we need to do is to read the HTTP Request sent by the client to our server. Because it is the first message that happens inside the established connection, and, as a consequence, it is the first thing that we need to deal with.</p>
 <p>That is why, I’m going to create a new Zig module in this small project, named <code>request.zig</code> to keep all functions related to the HTTP Request together. Then, I will create a new function named <code>read_request()</code> that will use our connection object to read the message sent by the client, which is the HTTP Request.</p>
+<p>You can see below that our <code>read_request()</code> function receives three inputs. The <code>io</code> argument should receive the IO backend that we want to use in our IO operations. The <code>conn</code> argument receives the connection object that we generated through the <code>accept()</code> method. While the <code>buffer</code> argument receives the buffer object in which we are going to store the request that the client have sent to our server.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Connection = std.net.Server.Connection;</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> read_request(conn: Connection,</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                    buffer: []<span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> reader = conn.stream.reader();</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> reader.read(buffer);</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Stream = std.Io.net.Stream;</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> read_request(io: std.Io, conn: Stream, buffer: []<span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> recv_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> reader = conn.reader(io, &amp;recv_buffer);</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> length: <span class="dt">usize</span> = <span class="dv">400</span>;</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> input = <span class="kw">try</span> reader.interface.peekArray(length);</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memcpy</span>(buffer[<span class="dv">0</span>..length], input[<span class="dv">0</span>..length]);</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>This function accepts a slice object which behaves as a buffer. The <code>read_request()</code> function reads the message sent into the connection object, and saves this message into this buffer object that we have provided as input.</p>
-<p>Notice that I’m using the connection object that we created to read the message from the client. I first access the <code>reader</code> object that lives inside the connection object. Then, I call the <code>read()</code> method of this <code>reader</code> object to effectively read and save the data sent by the client into the buffer object that we created earlier. I’m discarding the return value of the <code>read()</code> method, by assigning it to the underscore character (<code>_</code>), because this return value is not useful for us right now.</p>
+<p>So, the <code>read_request()</code> function essentially receives a connection object as input, which is represented by an IO stream object, then, it reads the HTTP request sent by the client by “reading data from the IO stream”, and saves this message into this buffer object that we have provided as input.</p>
+<p>In order to do that, I first create a <code>reader</code> object from the IO stream object. Then, I call the <code>peekArray()</code> method of this <code>reader</code> object, together with <code>@memcpy()</code>, to effectively read the first 400 bytes of the request, and save this data sent by the client into the buffer object that we’ve created earlier.</p>
 </section>
 </section>
 <section id="looking-at-the-current-state-of-the-program" class="level2" data-number="7.5">
 <h2 data-number="7.5" class="anchored" data-anchor-id="looking-at-the-current-state-of-the-program"><span class="header-section-number">7.5</span> Looking at the current state of the program</h2>
 <p>I think now is a good time to see how our program is currently working. Shall we? So, the first thing I will do is to update the <code>main.zig</code> module in our small Zig project, so that the <code>main()</code> function call this new <code>read_request()</code> function that we have just created. I will also add a print statement at the end of the <code>main()</code> function, just so that you can see what the HTTP Request that we have just loaded into the buffer object looks like.</p>
-<p>Also, I’m creating the buffer object in the <code>main()</code> function, which will be responsible for storing the message sent by the client, and, I’m also using a <code>for</code> loop to initialize all fields of this buffer object to the number zero. This is important to make sure that we don’t have uninitialized memory in this object. Because uninitialized memory may cause undefined behaviour in our program.</p>
-<p>Since the <code>read_request()</code> function should receive as input the buffer object as a slice object (<code>[]u8</code>), I am using the syntax <code>array[0..array.len]</code> to get access to a slice of this <code>buffer</code> object.</p>
+<p>Also, I’m creating the buffer object (<code>request_buffer</code>) in the <code>main()</code> function, which will be responsible for storing the message sent by the client, and, I’m also using <code>@memset()</code> to initialize the entire buffer object to zero. This is important to make sure that we don’t have uninitialized memory in this object. Because uninitialized memory may cause undefined behaviour in our program.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> SocketConf = <span class="bu">@import</span>(<span class="st">"config.zig"</span>);</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Request = <span class="bu">@import</span>(<span class="st">"request.zig"</span>);</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_writer = std.fs.File.stdout().writer(&amp;stdout_buffer);</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> socket = <span class="kw">try</span> SocketConf.Socket.init();</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Server Addr: {any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>socket._address<span class="op">}</span>);</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> server = <span class="kw">try</span> socket._address.listen(.<span class="op">{}</span>);</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> connection = <span class="kw">try</span> server.accept();</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">1000</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..buffer.len) |i| <span class="op">{</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        buffer[i] = <span class="dv">0</span>;</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> Request.read_request(</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        connection, buffer[<span class="dv">0</span>..buffer.len]</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer<span class="op">}</span>);</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Request = <span class="bu">@import</span>(<span class="st">"request.zig"</span>);</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Server = <span class="bu">@import</span>(<span class="st">"server.zig"</span>).Server;</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> alloc = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> gpa = alloc.allocator();</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> threaded: std.Io.Threaded = .init(gpa);</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> io = threaded.io();</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> threaded.deinit();</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> server = <span class="kw">try</span> Server.init(io);</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> listening = <span class="kw">try</span> server.listen();</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> connection = <span class="kw">try</span> listening.accept(io);</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> connection.close(io);</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> request_buffer: [<span class="dv">400</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memset</span>(request_buffer[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> Request.read_request(</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>        io,</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>        connection,</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>        request_buffer[<span class="dv">0</span>..]</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>request_buffer<span class="op">}</span>);</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Now, I’m going to execute this program, with the <code>run</code> command from the <code>zig</code> compiler. But remember, as we sad earlier, as soon as I execute this program, it will hang indefinitely, because the program is waiting for a client trying to connect to the server.</p>
 <p>More specifically, the program will pause at the line with the <code>accept()</code> call. As soon as a client try to connect to the server, then, the execution will “unpause”, and the <code>accept()</code> function will finally be executed to create the connection object that we need, and the remaining of the program will run.</p>
@@ -681,12 +690,13 @@ Figure&nbsp;7.1: A screenshot of running the program
 </figure>
 </div>
 <p>We can finally try to connect to this server, and there are several ways we can do this. For example, we could use the following Python script:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> requests</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>requests.get(<span class="st">"http://127.0.0.1:3490"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> requests</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>requests.get(<span class="st">"http://127.0.0.1:3490"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Or, we could also open any web browser of our preference, and type the URL <code>localhost:3490</code>. OBS: <code>localhost</code> is the same thing as the IP <code>127.0.0.1</code>. When you press enter, and your web browser go to this address, first, the browser will probably print a message saying that “this page isn’t working”, and, then, it will probably change to a new message saying that “the site can’t be reached”.</p>
-<p>You get these “error messages” in the web browser, because it got no response back from the server. In other words, when the web browser connected to our server, it did send the HTTP Request through the established connection. Then, the web browser was expecting to receive a HTTP Response back, but it got no response from the server (we didn’t implemented the HTTP Response logic yet).</p>
-<p>But that is okay. We have achieved the result that we wanted for now, which is to connect to the server, and see the HTTP Request that was sent by the web browser (or by the Python script) to the server.</p>
-<p>If you comeback to the console that you left open when you have executed the program, you will see that the program finished its execution, and, a new message is printed in the console, which is the actual HTTP Request message that was sent by the web browser to the server. You can see this message in <a href="#fig-print-zigrun2" class="quarto-xref">Figure&nbsp;<span>7.2</span></a>.</p>
+<p>You get these “error messages” in the web browser, because it got no response back from the server. In other words, when the web browser connected to our server, it did send the HTTP request through the established connection. Then, the web browser was expecting to receive a HTTP response back, but it got no response from the server (we didn’t implemented the HTTP Response logic yet).</p>
+<p>But that is okay. We have achieved the result that we wanted for now, which is to connect to the server, and see the HTTP request that was sent by the web browser (or by the Python script) to the server.</p>
+<p>If you comeback to the console that you left open when you have executed the program, you will see that the program finished its execution, and, a new message is printed in the console, which is the actual HTTP request message that was sent by the web browser to the server.</p>
+<p>Since we are only reading the first 400 bytes of the HTTP request in our code, this program might not print the entire HTTP request message to you. That will depend on how big the HTTP request message was. You can see the HTTP request printed in <a href="#fig-print-zigrun2" class="quarto-xref">Figure&nbsp;<span>7.2</span></a>.</p>
 <div id="fig-print-zigrun2" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-print-zigrun2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -703,15 +713,15 @@ Figure&nbsp;7.2: A screenshot of the HTTP Request sent by the web browser
 <p>Enums structures are available in Zig through the <code>enum</code> keyword. An enum (short for “enumeration”) is a special structure that represents a group of constant values. So, if you have a variable which can assume a short and known set of values, you might want to associate this variable to an enum structure, to make sure that this variable only assumes a value from this set.</p>
 <p>A classic example for enums are primary colors. If for some reason, your program needs to represent one of the primary colors, you can create an enum that represents one of these colors. In the example below, we are creating the enum <code>PrimaryColorRGB</code>, which represents a primary color from the RGB color system. By using this enum, I am guaranteed that the <code>acolor</code> object for example, will contain one of these three values: <code>RED</code>, <code>GREEN</code> or <code>BLUE</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> PrimaryColorRGB = <span class="kw">enum</span> <span class="op">{</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    RED, GREEN, BLUE</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> acolor = PrimaryColorRGB.RED;</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>_ = acolor;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> PrimaryColorRGB = <span class="kw">enum</span> <span class="op">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    RED, GREEN, BLUE</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> acolor = PrimaryColorRGB.RED;</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>_ = acolor;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>If for some reason, my code tries to save in <code>acolor</code>, a value that is not in this set, I will get an error message warning me that a value such as “MAGENTA” do not exist inside the <code>PrimaryColorRGB</code> enum. Then I can easily fix my mistake.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> acolor = PrimaryColorRGB.MAGENTA;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> acolor = PrimaryColorRGB.MAGENTA;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>e1.zig:5:36: error: enum 'PrimaryColorRGB' has
         no member named 'MAGENTA':
@@ -739,7 +749,7 @@ Figure&nbsp;7.2: A screenshot of the HTTP Request sent by the web browser
 <h3 data-number="7.7.2" class="anchored" data-anchor-id="the-list-of-http-headers"><span class="header-section-number">7.7.2</span> The list of HTTP headers</h3>
 <p>Most HTTP Requests also include a section of HTTP Headers, which is just a list of attributes or key-value pairs associated with this particular request. This section always comes right after the “top-level header” of the request.</p>
 <p>For our purpose in this chapter, which is to build a simple HTTP Server, we are going to ignore this section of the HTTP Request, for simplicity. But most HTTP servers that exist in the wild parses and use these HTTP headers to change the way that the server responds to the request sent by the client.</p>
-<p>For example, many requests we encounter in the real-world comes with a HTTP header called <code>Accept</code>. In this header, we find a list of <a href="https://en.wikipedia.org/wiki/Media_type">MIME types</a><a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. This list indicates the file formats that the client can read, or parse, or interpret. In other words, you also interpret this header as the client saying the following phrase to the server: “Hey! Look, I can read only HTML documents, so please, send me back a document that is in a HTML format.”.</p>
+<p>For example, many requests we encounter in the real-world comes with a HTTP header called <code>Accept</code>. In this header, we find a list of <a href="https://en.wikipedia.org/wiki/Media_type">MIME types</a><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>. This list indicates the file formats that the client can read, or parse, or interpret. In other words, you also interpret this header as the client saying the following phrase to the server: “Hey! Look, I can read only HTML documents, so please, send me back a document that is in a HTML format.”.</p>
 <p>If the HTTP server can read and use this <code>Accept</code> header, then, the server can identify which is the best file format for the document to be sent to the client. Maybe the HTTP server have the same document in multiple formats, for example, in JSON, in XML, in HTML and in PDF, but the client can only understand documents in the HTML format. That is the purpose of this <code>Accept</code> header.</p>
 </section>
 <section id="the-body" class="level3" data-number="7.7.3">
@@ -765,9 +775,9 @@ Figure&nbsp;7.2: A screenshot of the HTTP Request sent by the web browser
 <p>Since the HTTP method of the HTTP Request is identified by this very small and specific set of words, it would be interesting to create an enum structure to represent a HTTP method. This way, we can easily check if the HTTP Request we receive from the client is a HTTP method that we currently support in our small HTTP server project.</p>
 <p>The <code>Method</code> structure below represents this enumeration. Notice that, for now, only the GET HTTP method is included in this enumeration. Because, for the purpose of this chapter, I want to implement only the GET HTTP method. That is why I am not including the other HTTP methods in this enumeration.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">const</span> Method = <span class="kw">enum</span> <span class="op">{</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    GET</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">const</span> Method = <span class="kw">enum</span> <span class="op">{</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    GET</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Now, I think we should add two methods to this enum structure. One method is <code>is_supported()</code>, which will be a function that returns a boolean value, indicating if the input HTTP method is supported or not by our HTTP Server. The other is <code>init()</code>, which is a constructor function that takes a string as input, and tries to convert it into a <code>Method</code> value.</p>
 <p>But in order to build these functions, I will use a functionality from the Zig Standard Library, called <code>StaticStringMap()</code>. This function allows us to create a simple map from strings to enum values. In other words, we can use this map structure to map a string to the respective enum value. To some extent, this specific structure from the standard library works almost like a “hashtable” structure, and it’s optimized for small sets of words, or, small sets of keys, which is our case here. We are going to talk more about hashtables in Zig in <a href="09-data-structures.html#sec-maps-hashtables" class="quarto-xref"><span>Section 11.2</span></a>.</p>
@@ -775,10 +785,10 @@ Figure&nbsp;7.2: A screenshot of the HTTP Request sent by the web browser
 <p>With <code>Map()</code> imported, we can just apply this function over the enum structure that we are going to use in the resulting map. In our case here, it’s the <code>Method</code> enum structure that we declared at the last code example. Then, I call the <code>initComptime()</code> method with the map, i.e., the list of key-value pairs that we are going to use.</p>
 <p>You can see in the example below that I wrote this map using multiple anonymous struct literals. Inside the first (or “top-level”) struct literal, we have a list (or a sequence) of struct literals. Each struct literal in this list represents a separate key-value pair. The first element (or the key) in each key-value pair should always be a string value. While the second element should be a value from the enum structure that you have used inside the <code>Map()</code> function.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Map = std.static_string_map.StaticStringMap;</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> MethodMap = Map(Method).initComptime(.<span class="op">{</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> <span class="st">"GET"</span>, Method.GET <span class="op">}</span>,</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Map = std.static_string_map.StaticStringMap;</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> MethodMap = Map(Method).initComptime(.<span class="op">{</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> <span class="st">"GET"</span>, Method.GET <span class="op">}</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Therefore, the <code>MethodMap</code> object is basically a <code>std::map</code> object from C++, or, a <code>dict</code> object from Python. You can retrieve (or get) the enum value that corresponds to a particular key, by using the <code>get()</code> method from the map object. This method returns an optional value, so, the <code>get()</code> method might result in a null value.</p>
 <p>We can use this in our advantage to detect if a particular HTTP method is supported or not in our HTTP server. Because, if the <code>get()</code> method returns null, it means that it did not found the method that we provided inside the <code>MethodMap</code> object, and, as a consequence, this method is not supported by our HTTP server.</p>
@@ -786,19 +796,19 @@ Figure&nbsp;7.2: A screenshot of the HTTP Request sent by the web browser
 <p>Notice in the example below that, the <code>init()</code> method returns either an error (which might happen if the <code>?</code> method returns <code>unreacheable</code>, checkout <a href="05-pointers.html#sec-null-handling" class="quarto-xref"><span>Section 6.4.3</span></a> for more details) or a <code>Method</code> object as result. Since <code>GET</code> is currently the only value in our <code>Method</code> enum structure, it means that, the <code>init()</code> method will most likely return the value <code>Method.GET</code> as result.</p>
 <p>Also notice that, in the <code>is_supported()</code> method, we are using the optional value returned by the <code>get()</code> method from our <code>MethodMap</code> object. The if statement unwraps the optional value returned by this method, and returns <code>true</code> in case this optional value is a not-null value. Otherwise, it simply returns <code>false</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">const</span> Method = <span class="kw">enum</span> <span class="op">{</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    GET,</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(text: []<span class="kw">const</span> <span class="dt">u8</span>) !Method <span class="op">{</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> MethodMap.get(text).?;</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> is_supported(m: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">bool</span> <span class="op">{</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> method = MethodMap.get(m);</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (method) |_| <span class="op">{</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="cn">true</span>;</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="cn">false</span>;</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">const</span> Method = <span class="kw">enum</span> <span class="op">{</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    GET,</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(text: []<span class="kw">const</span> <span class="dt">u8</span>) !Method <span class="op">{</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> MethodMap.get(text).?;</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> is_supported(m: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">bool</span> <span class="op">{</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> method = MethodMap.get(m);</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (method) |_| <span class="op">{</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="cn">true</span>;</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="cn">false</span>;</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="writing-the-parse-request-function" class="level3" data-number="7.7.5">
@@ -806,22 +816,22 @@ Figure&nbsp;7.2: A screenshot of the HTTP Request sent by the web browser
 <p>Now that we created the enum that represents our HTTP method, we should start to write the function responsible for actually parsing the HTTP Request.</p>
 <p>The first thing we can do, is to write a struct to represent the HTTP Request. Take the <code>Request</code> struct below as an example. It contains the three essential information from the “top-level” header (i.e., the first line) in the HTTP Request.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Request = <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    method: Method,</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    version: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    uri: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(method: Method,</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>                uri: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>                version: []<span class="kw">const</span> <span class="dt">u8</span>) Request <span class="op">{</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> Request<span class="op">{</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>            .method = method,</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>            .uri = uri,</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>            .version = version,</span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Request = <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    method: Method,</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    version: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    uri: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(method: Method,</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>                uri: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>                version: []<span class="kw">const</span> <span class="dt">u8</span>) Request <span class="op">{</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> Request<span class="op">{</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>            .method = method,</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>            .uri = uri,</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>            .version = version,</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>The <code>parse_request()</code> function should receive a string as input. This input string contains the entire HTTP Request message, and the parsing function should read and understand the individual parts of this message.</p>
+<p>The <code>parse_request()</code> function should receive a string as input. This input string contains the HTTP Request message, and the parsing function should read and understand the individual parts of this message.</p>
 <p>Now, remember that for the purpose of this chapter, we care only about the first line in this message, which contains the “top-level header”, or, the three essential attributes about the HTTP Request, which are the HTTP method used, the URI and the HTTP version.</p>
 <p>Notice that I use the function <code>indexOfScalar()</code> in <code>parse_request()</code>. This function from the Zig Standard Library returns the first index where the scalar value that we provide happens in a string. In this case, I’m looking at the first occurrence of the new line character (<code>\n</code>). Because once again, we care only about the first line in the HTTP Request message. This is the line where we have the three information that we want to parse (version of HTTP, the HTTP method and the URI).</p>
 <p>Therefore, we are using this <code>indexOfScalar()</code> function to limit our parsing process to the first line in the message. It’s also worth mentioning that, the <code>indexOfScalar()</code> function returns an optional value. That is why I use the <code>orelse</code> keyword to provide an alternative value, in case the value returned by the function is a null value.</p>
@@ -829,19 +839,19 @@ Figure&nbsp;7.2: A screenshot of the HTTP Request sent by the web browser
 <p>When you use this <code>splitScalar()</code> function, you get an iterator as the result. This iterator have a <code>next()</code> method that you can use to advance the iterator to the next position, or, to the next section of the splitted string. Note that, when you use <code>next()</code>, the method not only advances the iterator, but it also returns a slice to the current section of the splitted string as result.</p>
 <p>Now, if you want to get a slice to the current section of the splitted string, but not advance the iterator to the next position, you can use the <code>peek()</code> method. Both <code>next()</code> and <code>peek()</code> methods return an optional value, that is why I use the <code>?</code> method to unwrap these optional values.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> parse_request(text: []<span class="dt">u8</span>) Request <span class="op">{</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> line_index = std.mem.indexOfScalar(</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u8</span>, text, <span class="ch">'\n'</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    ) <span class="kw">orelse</span> text.len;</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> iterator = std.mem.splitScalar(</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u8</span>, text[<span class="dv">0</span>..line_index], <span class="ch">' '</span></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> method = <span class="kw">try</span> Method.init(iterator.next().?);</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> uri = iterator.next().?;</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> version = iterator.next().?;</span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> request = Request.init(method, uri, version);</span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> request;</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> parse_request(text: []<span class="dt">u8</span>) Request <span class="op">{</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> line_index = std.mem.indexOfScalar(</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u8</span>, text, <span class="ch">'\n'</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    ) <span class="kw">orelse</span> text.len;</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> iterator = std.mem.splitScalar(</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u8</span>, text[<span class="dv">0</span>..line_index], <span class="ch">' '</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> method = <span class="kw">try</span> Method.init(iterator.next().?);</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> uri = iterator.next().?;</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> version = iterator.next().?;</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> request = Request.init(method, uri, version);</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> request;</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>As I described in <a href="01-zig-weird.html#sec-zig-strings" class="quarto-xref"><span>Section 1.8</span></a>, strings in Zig are simply arrays of bytes in the language. So, you will find lots of excellent utility functions to work directly with strings inside this <code>mem</code> module from the Zig Standard Library. We have described some of these useful utility functions already in <a href="01-zig-weird.html#sec-strings-useful-funs" class="quarto-xref"><span>Section 1.8.5</span></a>.</p>
 </section>
@@ -852,31 +862,28 @@ Figure&nbsp;7.2: A screenshot of the HTTP Request sent by the web browser
 <p>A quick observation, since I have used the <code>any</code> format specifier in the print statement, the data members <code>version</code> and <code>uri</code> of the <code>Request</code> struct were printed as raw integer values. String data being printed as integer values is common in Zig, and remember, these integer values are just the decimal representation of the bytes that form the string in question.</p>
 <p>In the result below, the sequence of decimal values 72, 84, 84, 80, 47, 49, 46, 49, and 13, are the bytes that form the text “HTTP/1.1”. And the integer 47, is the decimal value of the character <code>/</code>, which represents our URI in this request.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> SocketConf = <span class="bu">@import</span>(<span class="st">"config.zig"</span>);</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Request = <span class="bu">@import</span>(<span class="st">"request.zig"</span>);</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_writer = std.fs.File.stdout().writer(&amp;stdout_buffer);</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> socket = <span class="kw">try</span> SocketConf.Socket.init();</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> server = <span class="kw">try</span> socket._address.listen(.<span class="op">{}</span>);</span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> connection = <span class="kw">try</span> server.accept();</span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">1000</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..buffer.len) |i| <span class="op">{</span></span>
-<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>        buffer[i] = <span class="dv">0</span>;</span>
-<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> Request.read_request(</span>
-<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>        connection, buffer[<span class="dv">0</span>..buffer.len]</span>
-<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> request = Request.parse_request(</span>
-<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>        buffer[<span class="dv">0</span>..buffer.len]</span>
-<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>request<span class="op">}</span>);</span>
-<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Request = <span class="bu">@import</span>(<span class="st">"request.zig"</span>);</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Server = <span class="bu">@import</span>(<span class="st">"server.zig"</span>).Server;</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> alloc = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> gpa = alloc.allocator();</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> server = <span class="kw">try</span> Server.init(io);</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> listening = <span class="kw">try</span> server.listen();</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> connection = <span class="kw">try</span> listening.accept(io);</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> connection.close(io);</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> request_buffer: [<span class="dv">400</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> Request.read_request(</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>        io,</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>        connection,</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>        request_buffer[<span class="dv">0</span>..request_buffer.len]</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> request = Request.parse_request(request_buffer[<span class="dv">0</span>..request_buffer.len]);</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>request<span class="op">}</span>);</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>request.Request{
     .method = request.Method.GET,
@@ -890,31 +897,34 @@ Figure&nbsp;7.2: A screenshot of the HTTP Request sent by the web browser
 <p>First, I create a new Zig module in the project, named <code>response.zig</code>. In this module, I will declare just two functions. Each function corresponds to a specific status code in the HTTP Response. The <code>send_200()</code> function will send a HTTP Response with status code 200 (which means “Success”) to the client. While the <code>send_404()</code> function sends a response with status code 404 (which means “Not found”).</p>
 <p>This is definitely not the most ergonomic and adequate way of handling the HTTP Response, but it works for our case here. We are just building toy projects in this book after all, therefore, the source code that we write do not need to be perfect. It just needs to work!</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Connection = std.net.Server.Connection;</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> send_200(conn: Connection) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> message = (</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"HTTP/1.1 200 OK</span><span class="sc">\n</span><span class="st">Content-Length: 48"</span></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"</span><span class="sc">\n</span><span class="st">Content-Type: text/html</span><span class="sc">\n</span><span class="st">"</span></span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"Connection: Closed</span><span class="sc">\n\n</span><span class="st">&lt;html&gt;&lt;body&gt;"</span></span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"&lt;h1&gt;Hello, World!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;"</span></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> conn.stream.write(message);</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> send_404(conn: Connection) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> message = (</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"HTTP/1.1 404 Not Found</span><span class="sc">\n</span><span class="st">Content-Length: 50"</span></span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"</span><span class="sc">\n</span><span class="st">Content-Type: text/html</span><span class="sc">\n</span><span class="st">"</span></span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"Connection: Closed</span><span class="sc">\n\n</span><span class="st">&lt;html&gt;&lt;body&gt;"</span></span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"&lt;h1&gt;File not found!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;"</span></span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> conn.stream.write(message);</span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Stream = std.Io.net.Stream;</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> send_200(conn: Stream, io: std.Io) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> message = (</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"HTTP/1.1 200 OK</span><span class="sc">\n</span><span class="st">Content-Length: 48"</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"</span><span class="sc">\n</span><span class="st">Content-Type: text/html</span><span class="sc">\n</span><span class="st">"</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"Connection: Closed</span><span class="sc">\n\n</span><span class="st">&lt;html&gt;&lt;body&gt;"</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"&lt;h1&gt;Hello, World!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;"</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stream_writer = conn.writer(io, &amp;.<span class="op">{}</span>);</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stream_writer.interface.write(message);</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> send_404(conn: Stream, io: std.Io) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> message = (</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">"HTTP/1.1 404 Not Found</span><span class="sc">\n</span><span class="st">Content-Length: 50"</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"</span><span class="sc">\n</span><span class="st">Content-Type: text/html</span><span class="sc">\n</span><span class="st">"</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"Connection: Closed</span><span class="sc">\n\n</span><span class="st">&lt;html&gt;&lt;body&gt;"</span></span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>        ++ <span class="st">"&lt;h1&gt;File not found!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;"</span></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stream_writer = conn.writer(io, &amp;.<span class="op">{}</span>);</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stream_writer.interface.write(message);</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Notice that both functions receives the connection object as input, and use the <code>write()</code> method to write the HTTP Response message directly into this communication channel. As result, the party in the other side of the connection (i.e., the client), will receive such message.</p>
+<p>Notice that both functions receives the connection object as input, creates a writer object from this connection object, then, uses the <code>write()</code> method to write the HTTP Response message directly into this communication channel. As result, the party in the other side of the connection (i.e., the client), will receive such message.</p>
 <p>Most real-world HTTP Servers will have a single function (or a single struct) to effectively handle the response. It gets the HTTP Request already parsed as input, and then, it tries to build the HTTP Response bit by bit, before the function sends it over the connection.</p>
-<p>We would also have a specialized struct to represent a HTTP Response, and a lot of methods that would be used to build each part or component of the response object. Take the <code>Response</code> struct created by the Javascript runtime Bun as an example. You can find this struct in the <a href="https://github.com/oven-sh/bun/blob/main/src/bun.js/webcore/response.zig"><code>response.zig</code> module</a><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> in their GitHub project.</p>
+<p>We would also have a specialized struct to represent a HTTP Response, and a lot of methods that would be used to build each part or component of the response object. Take the <code>Response</code> struct created by the Javascript runtime Bun as an example. You can find this struct in the <a href="https://github.com/oven-sh/bun/blob/main/src/bun.js/webcore/response.zig"><code>response.zig</code> module</a><a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a> in their GitHub project.</p>
 </section>
 </section>
 <section id="the-end-result" class="level2" data-number="7.8">
@@ -923,38 +933,38 @@ Figure&nbsp;7.2: A screenshot of the HTTP Request sent by the web browser
 <p>Notice that I’m using if statements to decide which “response function” to call, based especially on the URI present in the HTTP Request. If the user asked for a content (or a document) that is not present in our server, we should respond with a 404 status code. But since we have just a simple HTTP server, with no real documents to send, we can just check if the URI is the root path (<code>/</code>) or not to decide which function to call.</p>
 <p>Also, notice that I’m using the function <code>std.mem.eql()</code> from the Zig Standard Library to check if the string from <code>uri</code> is equal or not the string <code>"/"</code>. We have described this function already in <a href="01-zig-weird.html#sec-strings-useful-funs" class="quarto-xref"><span>Section 1.8.5</span></a>, so, comeback to that section if you are not familiar yet with this function.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> SocketConf = <span class="bu">@import</span>(<span class="st">"config.zig"</span>);</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Request = <span class="bu">@import</span>(<span class="st">"request.zig"</span>);</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Response = <span class="bu">@import</span>(<span class="st">"response.zig"</span>);</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Method = Request.Method;</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_writer = std.fs.File.stdout().writer(&amp;stdout_buffer);</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> socket = <span class="kw">try</span> SocketConf.Socket.init();</span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Server Addr: {any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>socket._address<span class="op">}</span>);</span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> server = <span class="kw">try</span> socket._address.listen(.<span class="op">{}</span>);</span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> connection = <span class="kw">try</span> server.accept();</span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">1000</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..buffer.len) |i| <span class="op">{</span></span>
-<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>        buffer[i] = <span class="dv">0</span>;</span>
-<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> Request.read_request(connection, buffer[<span class="dv">0</span>..buffer.len]);</span>
-<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> request = Request.parse_request(</span>
-<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>        buffer[<span class="dv">0</span>..buffer.len]</span>
-<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (request.method == Method.GET) <span class="op">{</span></span>
-<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (std.mem.eql(<span class="dt">u8</span>, request.uri, <span class="st">"/"</span>)) <span class="op">{</span></span>
-<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>            <span class="kw">try</span> Response.send_200(connection);</span>
-<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>            <span class="kw">try</span> Response.send_404(connection);</span>
-<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Request = <span class="bu">@import</span>(<span class="st">"request.zig"</span>);</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Response = <span class="bu">@import</span>(<span class="st">"response.zig"</span>);</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Server = <span class="bu">@import</span>(<span class="st">"server.zig"</span>).Server;</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> alloc = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> gpa = alloc.allocator();</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> threaded: std.Io.Threaded = .init(gpa);</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> io = threaded.io();</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> threaded.deinit();</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> server = <span class="kw">try</span> Server.init(io);</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> listening = <span class="kw">try</span> server.listen();</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> connection = <span class="kw">try</span> listening.accept(io);</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> connection.close(io);</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> request_buffer: [<span class="dv">400</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> Request.read_request(</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>        io,</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>        connection,</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>        request_buffer[<span class="dv">0</span>..request_buffer.len]</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> request = Request.parse_request(request_buffer[<span class="dv">0</span>..request_buffer.len]);</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (request.method == Method.GET) <span class="op">{</span></span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (std.mem.eql(<span class="dt">u8</span>, request.uri, <span class="st">"/"</span>)) <span class="op">{</span></span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>            <span class="kw">try</span> Response.send_200(connection, io);</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>            <span class="kw">try</span> Response.send_404(connection, io);</span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Now that we adjusted our <code>main()</code> function, I can now execute our program, and see the effects of these last changes. First, I execute the program once again, with the <code>run</code> command of the <code>zig</code> compiler. The program will hang, waiting for a client to connect.</p>
 <p>Then, I open my web browser, and try to connect to the server again, using the URL <code>localhost:3490</code>. This time, instead of getting some sort of an error message from the browser, you will get the message “Hello World” printed into your web browser. Because this time, the server sended the HTTP Response successfully to the web browser, as demonstrated by <a href="#fig-print-zigrun3" class="quarto-xref">Figure&nbsp;<span>7.3</span></a>.</p>
@@ -989,9 +999,10 @@ Yu, Jeffrey. 2023. <span>“How i Built a Simple HTTP Server from Scratch Using 
 <hr>
 <ol>
 <li id="fn1"><p><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview" class="uri">https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview</a>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2"><p>It can be also an IPv6 address. But normally, we use a IPv4 address for that.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3"><p><a href="https://en.wikipedia.org/wiki/Media_type" class="uri">https://en.wikipedia.org/wiki/Media_type</a>.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4"><p><a href="https://github.com/oven-sh/bun/blob/main/src/bun.js/webcore/response.zig" class="uri">https://github.com/oven-sh/bun/blob/main/src/bun.js/webcore/response.zig</a>.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p><a href="https://ziglang.org/documentation/master/std/#std.Io.net.IpAddress.listen" class="uri">https://ziglang.org/documentation/master/std/#std.Io.net.IpAddress.listen</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>It can be also an IPv6 address. But normally, we use a IPv4 address for that.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p><a href="https://en.wikipedia.org/wiki/Media_type" class="uri">https://en.wikipedia.org/wiki/Media_type</a>.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p><a href="https://github.com/oven-sh/bun/blob/main/src/bun.js/webcore/response.zig" class="uri">https://github.com/oven-sh/bun/blob/main/src/bun.js/webcore/response.zig</a>.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 

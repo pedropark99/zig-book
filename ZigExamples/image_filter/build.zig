@@ -2,22 +2,18 @@ const std = @import("std");
 const LazyPath = std.Build.LazyPath;
 
 pub fn build(b: *std.Build) void {
-    const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{});
-
     const exe = b.addExecutable(.{
         .name = "image_filter",
-        .root_source_file = b.path("src/image_filter.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/image_filter.zig"),
+            .target = b.graph.host,
+            .link_libc = true
+        })
     });
-
-    exe.linkLibC();
-    // Link C math library:
-    exe.linkSystemLibrary("m");
-    // Link to spng library:
-    exe.linkSystemLibrary("spng");
-    exe.addLibraryPath(LazyPath{ .cwd_relative = "/usr/local/lib/" });
+    // Link to libspng library:
+    exe.root_module.linkSystemLibrary("spng", .{});
+    exe.root_module.linkSystemLibrary("m", .{});
+    exe.root_module.addLibraryPath(LazyPath{ .cwd_relative = "/usr/local/lib/" });
 
     b.installArtifact(exe);
     const run_cmd = b.addRunArtifact(exe);

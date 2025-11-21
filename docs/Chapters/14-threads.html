@@ -636,19 +636,22 @@ window.Quarto = {
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_writer = std.fs.File.stdout().writer(&amp;stdout_buffer);</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> do_some_work() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Starting the work.</span><span class="sc">\n</span><span class="st">"</span>);</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    Thread.sleep(<span class="dv">1000</span> * std.time.ns_per_ms);</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Finishing the work.</span><span class="sc">\n</span><span class="st">"</span>);</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work, .<span class="op">{}</span>);</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    thread.join();</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> io = std.testing.io;</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> clock: std.Io.Clock = .awake;</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> do_some_work() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Starting the work.</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> duration: std.Io.Duration = .<span class="op">{</span>.nanoseconds = <span class="dv">1000</span><span class="op">}</span>;</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.Io.sleep(io, duration, clock);</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Finishing the work.</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work, .<span class="op">{}</span>);</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    thread.join();</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Starting the work.Finishing the work.</code></pre>
 </div>
@@ -678,27 +681,35 @@ window.Quarto = {
 <p>To demonstrate this other possibility, consider the next example exposed below. Here, we create a <code>print_id()</code> function, that just receives an id as input, and prints it to <code>stdout</code>. In this example, we are creating two new threads, one after another. Then, we join the first thread, then, we wait for two whole seconds, then, at last, we join the second thread.</p>
 <p>The idea behind this example is that the last <code>join()</code> call is executed only after the first thread finishes its task (i.e., the first <code>join()</code> call), and the two-second delay. If you compile and run this example, you will notice that most messages are quickly printed to <code>stdout</code>, i.e., they appear almost instantly on your screen. However, the last message (“Joining thread 2”) takes around 2 seconds to appear on the screen.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> print_id(id: *<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Thread ID: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>id.*<span class="op">}</span>);</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id1: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id2: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, print_id, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, print_id, .<span class="op">{</span>&amp;id2<span class="op">}</span>);</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Joining thread 1</span><span class="sc">\n</span><span class="st">"</span>);</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    thread1.join();</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    Thread.sleep(<span class="dv">2</span> * std.time.ns_per_s);</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Joining thread 2</span><span class="sc">\n</span><span class="st">"</span>);</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    thread2.join();</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_writer = std.fs.File.stdout().writer(&amp;stdout_buffer);</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> io = std.testing.io;</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> clock: std.Io.Clock = .awake;</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> print_id(id: *<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Thread ID: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>id.*<span class="op">}</span>);</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id1: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id2: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, print_id, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, print_id, .<span class="op">{</span>&amp;id2<span class="op">}</span>);</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Joining thread 1</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    thread1.join();</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> duration: std.Io.Duration = .<span class="op">{</span>.nanoseconds = <span class="dv">1000</span><span class="op">}</span>;</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.Io.sleep(io, duration, clock);</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Joining thread 2</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    thread2.join();</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Thread ID: Joining thread 1
 1
@@ -718,18 +729,24 @@ Joining thread 2</code></pre>
 <p>In other words, when you call <code>detach()</code> on a thread it’s like when your children become adults, i.e., they become independent from you. A detached thread frees itself, and when this thread finishes its tasks, it does not report the results back to you. Thus, you normally mark a thread as <em>detached</em> when you don’t need to use the return value of the thread, or when you don’t care about when exactly the thread finishes its job, i.e., the thread solves everything by itself.</p>
 <p>Take the code example below. We create a new thread, detach it, and then, we just print a final message before we end our program. We use the same <code>print_id()</code> function that we have used over the previous examples.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> print_id(id: *<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Thread ID: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>id.*<span class="op">}</span>);</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id1: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, print_id, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    thread1.detach();</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Finish main</span><span class="sc">\n</span><span class="st">"</span>);</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_writer = std.fs.File.stdout().writer(&amp;stdout_buffer);</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> print_id(id: *<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Thread ID: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>id.*<span class="op">}</span>);</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> id1: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, print_id, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    thread1.detach();</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Finish main</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Finish main</code></pre>
 <p>Now, if you look closely at the output of this code example, you will notice that only the final message in main was printed to the console. The message that was supposed to be printed by <code>print_id()</code> did not appear in the console. Why? It’s because the main process of our program has finished first, before the thread was able to say anything.</p>
@@ -768,10 +785,11 @@ Joining thread 2</code></pre>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    _ = stdout.print(<span class="st">"Thread ID: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>id.*<span class="op">}</span>)</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>        <span class="kw">catch</span> <span class="dt">void</span>;</span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> id1: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> id2: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> pool.spawn(print_id, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> pool.spawn(print_id, .<span class="op">{</span>&amp;id2<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> id1: <span class="dt">u8</span> = <span class="dv">1</span>;</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> id2: <span class="dt">u8</span> = <span class="dv">2</span>;</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> pool.spawn(print_id, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> pool.spawn(print_id, .<span class="op">{</span>&amp;id2<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>This limitation should probably not exist, and, in fact, it’s already on the radar of the Zig team to fix this issue, and it’s being tracked in an <a href="https://github.com/ziglang/zig/issues/18810">open issue</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. So, if you do need to provide a function that might return an error as the task to be performed by the threads in the thread pool, then, you are either limited to:</p>
 <ul>
@@ -812,23 +830,28 @@ Joining thread 2</code></pre>
 <p>Since the for loop iterates 1 hundred thousand times, and, we create two separate threads in this code example, what number do you expect to see in the final message printed to <code>stdout</code>? The answer should be 2 hundred thousand. Right? Well, in theory, this program was supposed to print 2 hundred thousand at the end, but in practice, every time that I execute this program I get a different answer.</p>
 <p>In the example exposed below, you can see that this time the end result was 117254, instead of the expected 200000. The second time I executed this program, I got the number 108592 as the result. So the end result of this program is varying, but it never gets to the expected 200000 that we want.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Global counter variable</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> counter: <span class="dt">usize</span> = <span class="dv">0</span>;</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co">// Function to increment the counter</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> increment() <span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..<span class="dv">100000</span>) |_| <span class="op">{</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        counter += <span class="dv">1</span>;</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, increment, .<span class="op">{}</span>);</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, increment, .<span class="op">{}</span>);</span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    thr1.join();</span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Couter value: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>counter<span class="op">}</span>);</span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_writer = std.fs.File.stdout().writer(&amp;stdout_buffer);</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co">// Global counter variable</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> counter: <span class="dt">usize</span> = <span class="dv">0</span>;</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="co">// Function to increment the counter</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> increment() <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..<span class="dv">100000</span>) |_| <span class="op">{</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>        counter += <span class="dv">1</span>;</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, increment, .<span class="op">{}</span>);</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, increment, .<span class="op">{}</span>);</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>    thr1.join();</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Couter value: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>counter<span class="op">}</span>);</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <pre><code>Couter value: 117254</code></pre>
 <p>Why this is happening? The answer is: because this program contains a data race problem. This program would print the correct number 200000 if and only if the first thread finishes its tasks before the second thread starts to execute. But that is very unlikely to happen. Because the process of creating the thread is too fast, and therefore, both threads start to execute roughly at the same time. If you change this code to add some nanoseconds of sleep between the first and the second calls to <code>spawn()</code>, you will increase the chances of the program producing the “correct result”.</p>
@@ -1006,38 +1029,49 @@ Table&nbsp;16.2: A data race scenario when two threads are incrementing the same
 <p>As with mutexes, we also have to unlock the shared or exclusive locks that we acquire through a read/write lock object, once we are at the end of our “critical section”. If you have acquired an exclusive lock, then, you unlock this exclusive lock by calling the <code>unlock()</code> method from the read/write lock object. In contrast, if you have acquired a shared lock instead, then, call <code>unlockShared()</code> to unlock this shared lock.</p>
 <p>As a simple example, the snippet below creates three separate threads responsible for reading the current value in a <code>counter</code> object, and it also creates another thread responsible for writing new data into the <code>counter</code> object (incrementing it, more specifically).</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> counter: <span class="dt">u32</span> = <span class="dv">0</span>;</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> reader(lock: *RwLock) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (<span class="cn">true</span>) <span class="op">{</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>        lock.lockShared();</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> v: <span class="dt">u32</span> = counter;</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> stdout.print(<span class="st">"{d}"</span>, .<span class="op">{</span>v<span class="op">}</span>);</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> stdout.flush();</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>        lock.unlockShared();</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>        Thread.sleep(<span class="dv">2</span> * std.time.ns_per_s);</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> writer(lock: *RwLock) <span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (<span class="cn">true</span>) <span class="op">{</span></span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>        lock.lock();</span>
-<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>        counter += <span class="dv">1</span>;</span>
-<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>        lock.unlock();</span>
-<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>        Thread.sleep(<span class="dv">2</span> * std.time.ns_per_s);</span>
-<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> lock: RwLock = .<span class="op">{}</span>;</span>
-<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, reader, .<span class="op">{</span>&amp;lock<span class="op">}</span>);</span>
-<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, reader, .<span class="op">{</span>&amp;lock<span class="op">}</span>);</span>
-<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr3 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, reader, .<span class="op">{</span>&amp;lock<span class="op">}</span>);</span>
-<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> wthread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, writer, .<span class="op">{</span>&amp;lock<span class="op">}</span>);</span>
-<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>    thr1.join();</span>
-<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
-<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a>    thr3.join();</span>
-<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a>    wthread.join();</span>
-<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> RwLock = std.Thread.RwLock;</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_writer = std.fs.File.stdout().writer(&amp;stdout_buffer);</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> counter: <span class="dt">u32</span> = <span class="dv">0</span>;</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> io = std.testing.io;</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> clock: std.Io.Clock = .awake;</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> reader(lock: *RwLock) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (<span class="cn">true</span>) <span class="op">{</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>        lock.lockShared();</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> v: <span class="dt">u32</span> = counter;</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> stdout.print(<span class="st">"{d}"</span>, .<span class="op">{</span>v<span class="op">}</span>);</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> stdout.flush();</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>        lock.unlockShared();</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> duration: std.Io.Duration = .<span class="op">{</span>.nanoseconds = <span class="dv">2</span><span class="op">}</span>;</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> std.Io.sleep(io, duration, clock);</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> writer(lock: *RwLock) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (<span class="cn">true</span>) <span class="op">{</span></span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>        lock.lock();</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>        counter += <span class="dv">1</span>;</span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>        lock.unlock();</span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> duration: std.Io.Duration = .<span class="op">{</span>.nanoseconds = <span class="dv">2</span><span class="op">}</span>;</span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>        <span class="kw">try</span> std.Io.sleep(io, duration, clock);</span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb16-33"><a href="#cb16-33" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> lock: RwLock = .<span class="op">{}</span>;</span>
+<span id="cb16-34"><a href="#cb16-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, reader, .<span class="op">{</span>&amp;lock<span class="op">}</span>);</span>
+<span id="cb16-35"><a href="#cb16-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, reader, .<span class="op">{</span>&amp;lock<span class="op">}</span>);</span>
+<span id="cb16-36"><a href="#cb16-36" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr3 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, reader, .<span class="op">{</span>&amp;lock<span class="op">}</span>);</span>
+<span id="cb16-37"><a href="#cb16-37" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> wthread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, writer, .<span class="op">{</span>&amp;lock<span class="op">}</span>);</span>
+<span id="cb16-38"><a href="#cb16-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-39"><a href="#cb16-39" aria-hidden="true" tabindex="-1"></a>    thr1.join();</span>
+<span id="cb16-40"><a href="#cb16-40" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
+<span id="cb16-41"><a href="#cb16-41" aria-hidden="true" tabindex="-1"></a>    thr3.join();</span>
+<span id="cb16-42"><a href="#cb16-42" aria-hidden="true" tabindex="-1"></a>    wthread.join();</span>
+<span id="cb16-43"><a href="#cb16-43" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>
@@ -1103,32 +1137,35 @@ Table&nbsp;16.2: A data race scenario when two threads are incrementing the same
 <span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdout_writer = std.fs.File.stdout().writer(&amp;stdout_buffer);</span>
 <span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
 <span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> running = std.atomic.Value(<span class="dt">bool</span>).init(<span class="cn">true</span>);</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> counter: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> do_more_work() <span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    Thread.sleep(<span class="dv">2</span> * std.time.ns_per_s);</span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> work() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (running.load(.monotonic)) <span class="op">{</span></span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>        <span class="kw">for</span> (<span class="dv">0</span>..<span class="dv">10000</span>) |_| <span class="op">{</span> counter += <span class="dv">1</span>; <span class="op">}</span></span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (counter &lt; <span class="dv">15000</span>) <span class="op">{</span></span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>            _ = <span class="kw">try</span> stdout.write(</span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>                <span class="st">"Time to cancel the thread.</span><span class="sc">\n</span><span class="st">"</span></span>
-<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>            );</span>
-<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>            running.store(<span class="cn">false</span>, .monotonic);</span>
-<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>            _ = <span class="kw">try</span> stdout.write(<span class="st">"Time to do more work.</span><span class="sc">\n</span><span class="st">"</span>);</span>
-<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>            do_more_work();</span>
-<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>            running.store(<span class="cn">false</span>, .monotonic);</span>
-<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, work, .<span class="op">{}</span>);</span>
-<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>    thread.join();</span>
-<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> clock: std.Io.Clock = .awake;</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> io = std.testing.io;</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> counter: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> do_more_work() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> duration: std.Io.Duration = .<span class="op">{</span>.nanoseconds = <span class="dv">2</span><span class="op">}</span>;</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> std.Io.sleep(io, duration, clock);</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> work() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (running.load(.monotonic)) <span class="op">{</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>        <span class="kw">for</span> (<span class="dv">0</span>..<span class="dv">10000</span>) |_| <span class="op">{</span> counter += <span class="dv">1</span>; <span class="op">}</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (counter &lt; <span class="dv">15000</span>) <span class="op">{</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>            _ = <span class="kw">try</span> stdout.write(</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>                <span class="st">"Time to cancel the thread.</span><span class="sc">\n</span><span class="st">"</span></span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>            );</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>            running.store(<span class="cn">false</span>, .monotonic);</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>            _ = <span class="kw">try</span> stdout.write(<span class="st">"Time to do more work.</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>            <span class="kw">try</span> do_more_work();</span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>            running.store(<span class="cn">false</span>, .monotonic);</span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, work, .<span class="op">{}</span>);</span>
+<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>    thread.join();</span>
+<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Time to cancel the thread.</code></pre>
 </div>

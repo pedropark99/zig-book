@@ -113,8 +113,10 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const exe = b.addExecutable(.{
         .name = "hello",
-        .root_source_file = b.path("hello.zig"),
-        .target = b.host,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("hello.zig"),
+            .target = b.graph.host
+        })
     });
     b.installArtifact(exe);
 }
@@ -157,20 +159,22 @@ These functions are methods from the `Build` struct that you receive
 as input of the `build()` function. All of them, create as output
 a `Compile` object, which represents a target object to be compiled
 by the `zig` compiler. All of these functions accept a similar struct literal as input.
-This struct literal defines three essential specs about this target object that you are building:
-`name`, `target` and `root_source_file`.
+This struct literal defines two essential specs about this target object that you are building:
+`name`, `root_module`.
 
-We have already seen these three options being used on the previous example,
+We have already seen these two options being used on the previous example,
 where we used the `addExecutable()` method to create an executable target object.
 This example is reproduced below. Notice the use of the `path()` method
-from the `Build` struct, to define a path in the `root_source_file` option.
+from the `Build` struct, to define the path to our Zig module in the `root_module` option.
 
 ```{zig}
 #| eval: false
 const exe = b.addExecutable(.{
     .name = "hello",
-    .root_source_file = b.path("hello.zig"),
-    .target = b.host,
+    .root_module = b.createModule(.{
+        .root_source_file = b.path("hello.zig"),
+        .target = b.graph.host
+    })
 });
 ```
 
@@ -179,7 +183,7 @@ by this target object. So, in this example, we are building an executable file n
 It's common to set this `name` option to the name of your project.
 
 
-Furthermore, the `target` option specify the target computer architecture (or the target operating system) of this
+Furthermore, the `target` option inside `root_module` specify the target computer architecture (or the target operating system) of this
 binary file. For example, if you want this target object to run on a Windows machine
 that uses a `x86_64` architecture, you can set this `target` option to `x86_64-windows-gnu` for example.
 This will make the `zig` compiler to compile the project to run on a `x86_64` Windows machine.
@@ -188,12 +192,12 @@ the `zig targets` command in the terminal.
 
 Now, if you are building the project to run on the current machine
 that you are using to run this build script, you can set this `target`
-option to the `host` method of the `Build` object, like we did in the example above.
+option to the `host` method of the `Build.graph` object, like we did in the example above.
 This `host` method identifies the current machine where you are
 currently running the `zig` compiler.
 
 
-At last, the `root_source_file` option specifies the root Zig module of your project.
+At last, the `.root_source_file` option inside `root_module` specifies the path to the root Zig module of your project.
 That is the Zig module that contains the entrypoint to your application (i.e., the `main()` function), or, the main API of your library.
 This also means that, all the Zig modules that compose your project are automatically discovered
 from the import statements you have inside this "root source file".
@@ -240,8 +244,10 @@ target object that you want to save into the `zig-out` directory, like in the ex
 #| eval: false
 const exe = b.addExecutable(.{
     .name = "hello",
-    .root_source_file = b.path("hello.zig"),
-    .target = b.host,
+    .root_module = b.createModule(.{
+        .root_source_file = b.path("hello.zig"),
+        .target = b.graph.host
+    })
 });
 
 b.installArtifact(exe);
@@ -286,9 +292,11 @@ But this time, we are specifying the build mode of this target object to the `Re
 #| eval: false
 const exe = b.addExecutable(.{
     .name = "hello",
-    .root_source_file = b.path("hello.zig"),
-    .target = b.host,
-    .optimize = .ReleaseSafe
+    .root_module = b.createModule(.{
+        .root_source_file = b.path("hello.zig"),
+        .target = b.graph.host,
+        .optimize = .ReleaseSafe
+    })
 });
 b.installArtifact(exe);
 ```
@@ -310,8 +318,10 @@ the `version` option, like in the example below:
 #| eval: false
 const exe = b.addExecutable(.{
     .name = "hello",
-    .root_source_file = b.path("hello.zig"),
-    .target = b.host,
+    .root_module = b.createModule(.{
+        .root_source_file = b.path("hello.zig"),
+        .target = b.graph.host
+    }),
     .version = .{
         .major = 2, .minor = 9, .patch = 7
     }
@@ -365,8 +375,10 @@ this `hello` executable file.
 #| eval: false
 const exe = b.addExecutable(.{
     .name = "hello",
-    .root_source_file = b.path("src/hello.zig"),
-    .target = b.host
+    .root_module = b.createModule(.{
+        .root_source_file = b.path("src/hello.zig"),
+        .target = b.graph.host
+    })
 });
 b.installArtifact(exe);
 const run_arti = b.addRunArtifact(exe);
@@ -464,9 +476,12 @@ declare a test target object in our build script.
 #| eval: false
 const test_exe = b.addTest(.{
     .name = "unit_tests",
-    .root_source_file = b.path("src/main.zig"),
-    .target = b.host,
+    .root_module = b.createModule(.{
+        .root_source_file = b.path("src/main.zig"),
+        .target = b.graph.host
+    })
 });
+
 b.installArtifact(test_exe);
 ```
 
@@ -546,11 +561,13 @@ pub fn build(b: *std.Build) void {
     ) orelse false;
     const exe = b.addExecutable(.{
         .name = "hello",
-        .root_source_file = b.path("example.zig"),
-        .target = b.host,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("example.zig"),
+            .target = b.graph.host
+        })
     });
     if (use_zlib) {
-        exe.linkSystemLibrary("zlib");
+        exe.root_module.linkSystemLibrary("zlib", .{});
     }
     b.installArtifact(exe);
 }
@@ -579,7 +596,7 @@ The basic difference between the two, is that a system's library is already
 built and installed in your system, supposedly, and all you need to do
 is to link your source code to this library to start using it.
 We do that by using the `linkSystemLibrary()` method from a
-`Compile` object. This method accepts the name of the library
+`Compile.root_module` object. This method accepts the name of the library
 in a string as input. Remember from @sec-targets that a `Compile` object
 is a target object that you declare in your build script.
 
@@ -592,8 +609,8 @@ will link your object files with the files of this library to
 produce a single binary file for you.
 
 In the example below, we are creating an executable file named `image_filter`,
-and, we are linking this executable file to the C Standard Library with the
-method `linkLibC()`, but we also are linking this executable file to the
+and, we are linking this executable file to the C Standard Library by setting the `link_libc`
+option to `true`. But we also link this executable file to the
 C library `libpng` that is currently installed in my system.
 
 ```{zig}
@@ -602,12 +619,13 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const exe = b.addExecutable(.{
         .name = "image_filter",
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = b.graph.host
+            .link_libc = true,
+        })
     });
-    exe.linkLibC();
-    exe.linkSystemLibrary("png");
+    exe.root_module.linkSystemLibrary("png", .{});
     b.installArtifact(exe);
 }
 ```
@@ -617,10 +635,10 @@ to also link your code with the C Standard Library. Because is very likely
 that this C library uses some functionality of the C Standard Library at some point.
 The same goes to C++ libraries. So, if you are linking with
 C++ libraries, is a good idea to link your project with the C++
-Standard Library by using the `linkLibCpp()` method.
+Standard Library by setting the `link_libcpp` option to `true`.
 
 On the order side, when you want to link with a local library,
-you should use the `linkLibrary()` method of a `Compile` object.
+you should use the `linkLibrary()` method of a `Compile.root_module` object.
 This method expects to receive another `Compile` object as input.
 That is, another target object defined in your build script,
 using either the `addStaticLibrary()` or `addSharedLibrary()` methods
@@ -645,23 +663,25 @@ in the script.
 
 ```{zig}
 #| eval: false
-const optimize = b.standardOptimizeOption(.{});
-const target = b.standardTargetOptions(.{});
-
 const dynamic_lib = b.addSharedLibrary(.{
     .name = dynamic_lib_name,
-    .root_source_file = b.path("src/c_api.zig"),
-    .target = target,
-    .optimize = optimize,
+    .root_module = b.createModule(.{
+        .root_source_file = b.path("src/c_api.zig"),
+        .target = b.graph.host
+    })
 });
 b.installArtifact(dynamic_lib);
 // ... more lines in the script
 const dynamic_binding_test = b.addExecutable(.{
     .name = "dynamic-binding-test",
-    .target = target,
-    .optimize = optimize,
+    .root_module = b.createModule(.{
+        .root_source_file = b.path("src/test.zig"),
+        .target = b.graph.host
+    })
 });
-dynamic_binding_test.linkLibrary(dynamic_lib);
+dynamic_binding_test.root_module.linkLibrary(
+    dynamic_lib
+);
 ```
 
 
@@ -692,22 +712,20 @@ you can start writing the `build.zig` module. We begin by defining the target ob
 that defines the binary file that we want to compile.
 
 As an example, I will build the project as a static library file using the `addStaticLibrary()` method
-to create the target object.
-Also, since FreeType is a C library, I will also link the library
-against `libc` through the `linkLibC()` method, to guarantee that any use
+to create the target object. Also, since FreeType is a C library, I will also link the library
+against `libc` through the `link_libc` option, to guarantee that any use
 of the C Standard Library is covered in the compilation process.
 
 
 ```{zig}
 #| eval: false
-const target = b.standardTargetOptions(.{});
-const opti = b.standardOptimizeOption(.{});
 const lib = b.addStaticLibrary(.{
     .name = "freetype",
-    .optimize = opti,
-    .target = target,
+    .root_module = b.createModule(.{
+        .target = b.graph.host,
+        .link_libc = true
+    })
 });
-lib.linkLibC();
 ```
 
 ### Creating C compiler flags
@@ -777,7 +795,7 @@ Now that we declared both the files that we want to include and the C compiler f
 we can add them to the target object that describes the FreeType library, by using the
 `addCSourceFile()` and `addCSourceFiles()` methods.
 
-Both of these functions are methods from a `Compile` object (i.e., a target object).
+Both of these functions are methods from a `Compile.root_module` object.
 The `addCSourceFile()` method is capable of adding a single C file to the target object,
 while the `addCSourceFiles()` method is used to add multiple C files in a single command.
 You might prefer to use `addCSourceFile()` when you need to use different compiler flags
@@ -792,22 +810,23 @@ C files.
 ```{zig}
 #| eval: false
 const builtin = @import("builtin");
-lib.addCSourceFiles(
-    &c_source_files, &c_flags
-);
+lib.root_module.addCSourceFiles({
+    .files=&c_source_files,
+    .flags=&c_flags
+});
 
 switch (builtin.target.os.tag) {
     .windows => {
-        lib.addCSourceFiles(
-            &windows_c_source_files,
-            &c_flags
-        );
+        lib.root_module.addCSourceFiles({
+            .files=&windows_c_source_files,
+            .flags=&c_flags
+        });
     },
     .linux => {
-        lib.addCSourceFiles(
-            &linux_c_source_files,
-            &c_flags
-        );
+        lib.root_module.addCSourceFiles({
+            .files=&linux_c_source_files,
+            .flags=&c_flags
+        });
     },
     else => {},
 }
@@ -819,7 +838,7 @@ switch (builtin.target.os.tag) {
 C Macros are an essential part of the C programming language,
 and they are commonly defined through the `-D` flag from a C compiler.
 In Zig, you can define a C Macro to be used in your build process
-by using the `defineCMacro()` method from the target object that
+by using the `addCMacro()` method from the `root_module` attribute of the target object that
 defines the binary file that you are building.
 
 In the example below, we are using the `lib` object that we have defined
@@ -830,12 +849,12 @@ external libraries.
 
 ```{zig}
 #| eval: false
-lib.defineCMacro("FT_DISABLE_ZLIB", "TRUE");
-lib.defineCMacro("FT_DISABLE_PNG", "TRUE");
-lib.defineCMacro("FT_DISABLE_HARFBUZZ", "TRUE");
-lib.defineCMacro("FT_DISABLE_BZIP2", "TRUE");
-lib.defineCMacro("FT_DISABLE_BROTLI", "TRUE");
-lib.defineCMacro("FT2_BUILD_LIBRARY", "TRUE");
+lib.root_module.addCMacro("FT_DISABLE_ZLIB", "TRUE");
+lib.root_module.addCMacro("FT_DISABLE_PNG", "TRUE");
+lib.root_module.addCMacro("FT_DISABLE_HARFBUZZ", "TRUE");
+lib.root_module.addCMacro("FT_DISABLE_BZIP2", "TRUE");
+lib.root_module.addCMacro("FT_DISABLE_BROTLI", "TRUE");
+lib.root_module.addCMacro("FT2_BUILD_LIBRARY", "TRUE");
 ```
 
 
@@ -853,7 +872,8 @@ to this list. For example, you may have a library installed in a non-conventiona
 computer, and you can make the C compiler "see" this "non-conventional place" by adding this path
 to this list of pre-defined paths.
 
-In Zig, you can add more paths to this set by using the `addLibraryPath()` method from your target object.
+In Zig, you can add more paths to this set by using the `addLibraryPath()` method from the
+`root_module` attribute of your target object.
 First, you defined a `LazyPath` object, containing the path you want to add, then,
 you provide this object as input to the `addLibraryPath()` method, like in the example below:
 
@@ -862,7 +882,7 @@ you provide this object as input to the `addLibraryPath()` method, like in the e
 const lib_path: std.Build.LazyPath = .{
     .cwd_relative = "/usr/local/lib/"
 };
-lib.addLibraryPath(lib_path);
+lib.root_module.addLibraryPath(lib_path);
 ```
 
 
@@ -886,13 +906,13 @@ So, every header file that you include in your C source code, through a `#includ
 be found somewhere, and the C compiler will search for this header file across the paths listed in this "include paths" set.
 Include paths are added to the compilation process through the `-I` flag.
 
-In Zig, you can add new paths to this pre-defined set of paths, by using the `addIncludePath()` method
-from your target object. This method also accepts a `LazyPath` object as input.
+In Zig, you can add new paths to this pre-defined set of paths, by using the `addIncludePath()` method from the
+`root_module` attribute of your target object. This method also accepts a `LazyPath` object as input.
 
 ```{zig}
 #| eval: false
 const inc_path: std.Build.LazyPath = .{
     .path = "./include"
 };
-lib.addIncludePath(inc_path);
+lib.root_module.addIncludePath(inc_path);
 ```

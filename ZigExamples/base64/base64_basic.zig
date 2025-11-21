@@ -22,14 +22,16 @@ const Base64 = struct {
         if (char == '=')
             return 64;
 
-        var index: u8 = 0;
-        for (0..63) |_| {
-            if (self._char_at(index) == char)
+        var i: u8 = 0;
+        var output_index: u8 = 0;
+
+        while (i < 64) : (i += 1) {
+            if (self._char_at(i) == char)
                 break;
-            index += 1;
+            output_index += 1;
         }
 
-        return index;
+        return output_index;
     }
 
     fn encode(self: Base64, allocator: std.mem.Allocator, input: []const u8) ![]u8 {

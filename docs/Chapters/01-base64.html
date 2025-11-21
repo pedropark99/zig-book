@@ -614,8 +614,7 @@ Figure&nbsp;4.1: The logic behind a base64 encoder
 </figure>
 </div>
 <p>Taking the string “Hi” as an example, we have 2 bytes, or, 16 bits in total. So, we lack a full byte (8 bits) to complete the window of 24 bits that the base64 algorithm likes to work on. The first thing that the algorithm does, is to check how to divide the input bytes into groups of 6 bits.</p>
-<p>If the algorithm notices that there is a group of 6 bits that it’s not complete, meaning that, this group contains <span class="math inline">\(nbits\)</span>, where <span class="math inline">\(0 &lt; nbits &lt; 6\)</span>,</p>
-<p>the algorithm simply adds extra zeros in this group to fill the space that it needs. That is why in <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>4.1</span></a>, in the third group after the 6-bit transformation, 2 extra zeros were added to fill the gap.</p>
+<p>If the algorithm notices that there is a group of 6 bits that it’s not complete, meaning that, this group contains <span class="math inline">\(nbits\)</span>, where <span class="math inline">\(0 &lt; nbits &lt; 6\)</span>, the algorithm simply adds extra zeros in this group to fill the space that it needs. That is why in <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>4.1</span></a>, in the third group after the 6-bit transformation, 2 extra zeros were added to fill the gap.</p>
 <p>When we have a 6-bit group that is not completely full, like the third group, extra zeros are added to fill the gap. But what about when an entire 6-bit group is empty, or, it simply doesn’t exist? This is the case of the fourth 6-bit group exposed at <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>4.1</span></a>.</p>
 <p>This fourth group is necessary, because the algorithm works on 4 groups of 6 bits. But the input string does not have enough bytes to create a fourth 6-bit group. Every time this happens, where an entire group of 6 bits is empty, this group becomes a “padding group”. Every “padding group” is mapped to the character <code>=</code> (equal sign), which represents “null”, or, the end of meaningful characters in the sequence. Hence, everytime that the algorithm produces a “padding group”, this group is automatically mapped to <code>=</code>.</p>
 <p>As another example, if you give the string “0” as input to a base64 encoder, this string is translated into the base64 sequence “MA==”. The character “0” is, in binary, the sequence <code>00110000</code><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. So, with the 6-bit transformation exposed in <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>4.1</span></a>, this single character would produce these two 6-bit groups: <code>001100</code>, <code>000000</code>. The remaining two 6-bit groups become “padding groups”. That is why the last two characters in the output sequence (MA==) are <code>==</code>.</p>
@@ -956,15 +955,18 @@ Table&nbsp;4.1: How the 6-bit transformation translates into code in different w
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> _char_index(self: Base64, char: <span class="dt">u8</span>) <span class="dt">u8</span> <span class="op">{</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (char == <span class="ch">'='</span>)</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="dv">64</span>;</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> index: <span class="dt">u8</span> = <span class="dv">0</span>;</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..<span class="dv">63</span>) |i| <span class="op">{</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (self._char_at(i) == char)</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>            <span class="kw">break</span>;</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>        index += <span class="dv">1</span>;</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> index;</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> i: <span class="dt">u8</span> = <span class="dv">0</span>;</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> output_index: <span class="dt">u8</span> = <span class="dv">0</span>;</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">while</span> (i &lt; <span class="dv">64</span>) : (i += <span class="dv">1</span>) <span class="op">{</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (self._char_at(i) == char)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>            <span class="kw">break</span>;</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>        output_index += <span class="dv">1</span>;</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> output_index;</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="the-6-bit-transformation" class="level3" data-number="4.5.2">
