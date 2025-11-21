@@ -822,33 +822,34 @@ Important
 </section>
 <section id="the-alloc-and-free-methods" class="level3" data-number="3.3.8">
 <h3 data-number="3.3.8" class="anchored" data-anchor-id="the-alloc-and-free-methods"><span class="header-section-number">3.3.8</span> The <code>alloc()</code> and <code>free()</code> methods</h3>
-<p>In the code example below, we are accessing the <code>stdin</code>, which is the standard input channel, to receive an input from the user. We read the input given by the user with the <code>readSliceAll()</code> method.</p>
+<p>In the code example below, we are accessing the <code>stdin</code>, which is the standard input channel, to receive an input from the user. We read the next line of input given by the user with the <code>takeDelimiterExclusive()</code> method.</p>
 <p>Now, after reading the input of the user, we need to store this input somewhere in our program. That is why I use an allocator in this example. I use it to allocate some amount of memory to store this input given by the user. More specifically, the method <code>alloc()</code> of the allocator object is used to allocate an array capable of storing 50 <code>u8</code> values.</p>
 <p>Notice that this <code>alloc()</code> method receives two inputs. The first one, is a type. This defines what type of values the allocated array will store. In the example below, we are allocating an array of unsigned 8-bit integers (<code>u8</code>). But you can create an array to store any type of value you want. Next, in the second argument, we define the size of the allocated array, by specifying how many elements this array will contain. In the case below, we are allocating an array of 50 elements.</p>
 <p>In <a href="01-zig-weird.html#sec-zig-strings" class="quarto-xref"><span>Section 1.8</span></a> we described that strings in Zig are simply arrays of characters. Each character is represented by a <code>u8</code> value<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a>. So, this means that the array that was allocated in the object <code>input</code> is capable of storing a string that is 50-characters long.</p>
 <p>So, in essence, the expression <code>var input: [50]u8 = undefined</code> would create an array for 50 <code>u8</code> values in the stack of the current scope. But, you can allocate the same array in the heap by using the expression <code>var input = try allocator.alloc(u8, 50)</code>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdin_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdin_reader = std.fs.File.stdin().reader(&amp;stdin_buffer);</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdin = &amp;stdin_reader.interface;</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> input = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">50</span>);</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.free(input);</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memset</span>(input[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Read user input</span></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    stdin.readSliceAll(input[<span class="dv">0</span>..]) <span class="kw">catch</span> |err| <span class="kw">switch</span>(err) <span class="op">{</span></span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        <span class="co">// Reached end of input, do nothing else</span></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>        <span class="kw">error</span>.EndOfStream =&gt; <span class="op">{}</span>,</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>        <span class="co">// If it's other kind of error, then return it</span></span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>        <span class="kw">else</span> =&gt; <span class="kw">return</span> err,</span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>;</span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>input<span class="op">}</span>);</span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> io = std.testing.io;</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdin_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> stdin_reader = std.fs.File.stdin().reader(io, &amp;stdin_buffer);</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> stdin = &amp;stdin_reader.interface;</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> input = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">50</span>);</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.free(input);</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memset</span>(input[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Read user input until a line break is found.</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stream = <span class="kw">try</span> stdin.takeDelimiterExclusive(<span class="ch">'\n'</span>);</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Store the input into our heap memory.</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memcpy</span>(input[<span class="dv">0</span>..stream.len], stream[<span class="dv">0</span>..]);</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Print our heap memory, so that we can see what</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="co">// was stored in it.</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>input<span class="op">}</span>);</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Also, notice that in this example, we use the <code>defer</code> keyword (which I described in <a href="03-structs.html#sec-defer" class="quarto-xref"><span>Section 2.1.3</span></a>) to run a small piece of code at the end of the current scope, which is the expression <code>allocator.free(input)</code>. When you execute this expression, the allocator will free the memory that it allocated for the <code>input</code> object.</p>
 <p>We have talked about this in <a href="#sec-heap" class="quarto-xref"><span>Section 3.1.5</span></a>. You <strong>should always</strong> explicitly free any memory that you allocate using an allocator! You do that by using the <code>free()</code> method of the same allocator object you used to allocate this memory. The <code>defer</code> keyword is used in this example only to help us execute this free operation at the end of the current scope.</p>

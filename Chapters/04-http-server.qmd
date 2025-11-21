@@ -158,14 +158,25 @@ to the client, we can then close the connection, and end this communication.
 
 ## Implementing the server - Part 1
 
-### Creating the socket object {#sec-create-socket}
+### Creating the server object {#sec-create-socket}
 
-Let's begin with creating the socket object for our server.
-Just to make things shorter, I will create this socket object in
-a separate Zig module. I will name it `config.zig`.
+Let's begin by writing the code responsible for listening and accepting incoming connections
+to our server. Just to make things shorter, I will write this code inside a separate Zig module,
+named `server.zig`.
 
-In Zig, we can create a TCP socket using
-the `std.posix.socket()` function, from the Zig Standard Library.
+Now, we essentially need to create a TCP socket object in our code. On previous versions of this book, we've decided
+to create such TCP socket through the the `std.posix.socket()` function, from the Zig Standard Library.
+But, with the introduction of the new IO interface in Zig 0.16, this function fit's weird on
+the new `std.Io.net.Stream` API.
+
+Because of that, I will take a different route this time. In summary, we are going to create
+a TCP socket through the [`listen()` method from `std.Io.net.IpAddress`](https://ziglang.org/documentation/master/std/#std.Io.net.IpAddress.listen)[^listen-ipaddress].
+Then, with this TCP socket represented by the `std.Io.net.Server` type, we use the `accept()` method to establish the connection
+between our server and the client. Through this "connection object" that we get from `accept()` we get access to a
+stream, from which we can exchange messages between the server and the client.
+
+[^listen-ipaddress]: <https://ziglang.org/documentation/master/std/#std.Io.net.IpAddress.listen>
+
 As I mentioned earlier in @sec-http-how-impl, every socket object that we create
 represents a communication channel, and we need to bind this channel to a specific address.
 An "address" is defined as an IP address, or, more specifically, an IPv4 address^[It can be also an IPv6 address. But normally, we use a IPv4 address for that.].
@@ -178,24 +189,15 @@ The sequence of 4 numbers (i.e., the host) identifies the machine (i.e., the com
 this socket will live in. Every computer normally have multiple "doors" available inside of him, because
 this allows the computer to receive and work with multiple connections at the same time.
 He simply use a single door for each connection. So the port number, is
-essentially a number that identifies the specific door in the computer that will be responsible
-for receiving the connection. That is, it identifies the "door" in the computer that the socket will use
+essentially a number that identifies the "door" in the computer that the socket will use
 to receive incoming connections.
 
 To make things simpler, I will use an IP address that identifies our current machine in this example.
 This means that, our socket object will reside on the same computer that we are currently using
 (this is also known as the "localhost") to write this Zig source code.
-
 By convention, the IP address that identifies the "localhost", which is the current machine we
 are using, is the IP `127.0.0.1`. So, that is the IP
-address we are going to use in our server. I can declare it in Zig
-by using an array of 4 integers, like this:
-
-```{zig}
-#| auto_main: true
-const localhost = [4]u8{ 127, 0, 0, 1 };
-_ = localhost;
-```
+address we are going to use in our server.
 
 Now, we need to decide which port number to use. By convention, there are some
 port numbers that are reserved, meaning that, we cannot use them for our own
@@ -209,45 +211,41 @@ example of this book, I will use the port number 3490
 (just a random number).
 
 
-Now that we have these two informations at hand, I can
-finally create our socket object, using the `std.posix.socket()` function.
-First, we use the host and the port number to create an `Address` object,
-with the `std.net.Address.initIp4()` function, like in the example below.
-After that, I use this address object inside the `socket()` function
-to create our socket object.
-
-The `Socket` struct defined below summarizes all the logic behind
-this process. In this struct, we have two data members, which are:
-1)  the address object; 2) and a stream object, which is
-the object we will use to read and write the messages into any connection we establish.
-
-Notice that, inside the constructor method of this struct,
-when we create the socket object, we are using the `IPROTO.TCP` property as an input to
-tell the function to create a socket for TCP connections.
+All of this process and steps that we've described are concentrated inside our own custom struct
+called `Server`, which is exposed below. Notice that we create a new `std.Io.net.IpAddress`
+object inside this struct. We also create our `std.Io.net.Server` object through the `listen()`
+method from our IP address object.
 
 
 ```{zig}
 #| auto_main: false
 #| build_type: "lib"
 const std = @import("std");
-const builtin = @import("builtin");
-const net = @import("std").net;
+const Socket = std.Io.net.Socket;
+const Protocol = std.Io.net.Protocol;
 
-pub const Socket = struct {
-    _address: std.net.Address,
-    _stream: std.net.Stream,
+pub const Server = struct {
+    host: []const u8,
+    port: u16,
+    addr: std.Io.net.IpAddress,
+    io: std.Io,
 
-    pub fn init() !Socket {
-        const host = [4]u8{ 127, 0, 0, 1 };
-        const port = 3490;
-        const addr = net.Address.initIp4(host, port);
-        const socket = try std.posix.socket(
-            addr.any.family,
-            std.posix.SOCK.STREAM,
-            std.posix.IPPROTO.TCP
+    pub fn init(io: std.Io) !Server {
+        const host: []const u8 = "127.0.0.1";
+        const port: u16 = 3490;
+        const addr = try std.Io.net.IpAddress.parseIp4(
+            host, port
         );
-        const stream = net.Stream{ .handle = socket };
-        return Socket{ ._address = addr, ._stream = stream };
+
+        return .{.host=host, .port=port, .addr=addr, .io=io};
+    }
+
+    pub fn listen(self: Server) !std.Io.net.Server {
+        std.debug.print("Server Addr: {s}:{any}\n", .{self.host, self.port});
+        return try self.addr.listen(
+            self.io,
+            .{.mode=Socket.Mode.stream, .protocol=Protocol.tcp}
+        );
     }
 };
 ```
@@ -255,25 +253,16 @@ pub const Socket = struct {
 
 ### Listening and receiving connections
 
-Remember that we stored the `Socket` struct
-declaration that we built in @sec-create-socket inside a Zig module named `config.zig`.
-This is why I imported this module into our main module (`main.zig`) in the example below, as the `SocketConf` object,
-to access the `Socket` struct.
 
-Once we created our socket object, we can focus now on making this socket object
-listen and receive new incoming connections. We do that, by calling the `listen()`
-method from the `Address` object that is contained inside the socket object, and then,
-we call the `accept()` method over the result.
+Remember that our `Server` struct declaration that we've built in @sec-create-socket is inside a Zig module named `server.zig`.
+This is why I have imported this module into our main module (`main.zig`) in the example below, to access our `Server` struct.
 
-The `listen()` method from the `Address` object produces a server object,
-which is an object that will stay open and running indefinitely, waiting
-to receive an incoming connection. Therefore, if you try to run the code
-example below, by calling the `run` command from the `zig` compiler,
-you will notice that the programs keeps running indefinitely,
-without a clear end.
+Now, the socket stored inside our `Server` object needs to start listening and accepting new connections.
+We can do that by calling the method `listen()` from it, and then, calling the `accept()` method from the result.
+If you run the main module exposed below, you will notice that the program never ends. It just keeps stuck.
 
 This happens, because the program is waiting for something to happen.
-It's waiting for someone to try to connect to the address (`http://127.0.0.1:3490`) where
+It's waiting for someone to try to connect to the address (`127.0.0.1:3490`) where
 the server is running and listening for incoming connections. This is what
 the `listen()` method do, it makes the socket to be active waiting for someone
 to connect.
@@ -289,18 +278,19 @@ But we are going to use it in the next section.
 ```{zig}
 #| eval: false
 const std = @import("std");
-const SocketConf = @import("config.zig");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
+const Server = @import("server.zig").Server;
 
 pub fn main() !void {
-    const socket = try SocketConf.Socket.init();
-    try stdout.print("Server Addr: {any}\n", .{socket._address});
-    try stdout.flush();
-    var server = try socket._address.listen(.{});
-    const connection = try server.accept();
-    _ = connection;
+    var alloc = std.heap.GeneralPurposeAllocator(.{}){};
+    const gpa = alloc.allocator();
+    var threaded: std.Io.Threaded = .init(gpa);
+    const io = threaded.io();
+    defer threaded.deinit();
+
+    const server = try Server.init(io);
+    var listening = try server.listen();
+    const connection = try listening.accept(io);
+    defer connection.close(io);
 }
 ```
 
@@ -356,31 +346,35 @@ together. Then, I will create a new function named `read_request()` that will
 use our connection object to read the message sent by the client,
 which is the HTTP Request.
 
+You can see below that our `read_request()` function receives three inputs.
+The `io` argument should receive the IO backend that we want to use in our IO operations.
+The `conn` argument receives the connection object that we generated through the `accept()`
+method. While the `buffer` argument receives the buffer object in which we are going
+to store the request that the client have sent to our server.
 
 ```{zig}
 #| eval: false
 const std = @import("std");
-const Connection = std.net.Server.Connection;
-pub fn read_request(conn: Connection,
-                    buffer: []u8) !void {
-    const reader = conn.stream.reader();
-    _ = try reader.read(buffer);
+const Stream = std.Io.net.Stream;
+
+pub fn read_request(io: std.Io, conn: Stream, buffer: []u8) !void {
+    var recv_buffer: [1024]u8 = undefined;
+    var reader = conn.reader(io, &recv_buffer);
+    const length: usize = 400;
+    const input = try reader.interface.peekArray(length);
+    @memcpy(buffer[0..length], input[0..length]);
 }
 ```
 
 
-This function accepts a slice object which behaves as a buffer.
-The `read_request()` function reads the message sent into
-the connection object, and saves this message into this buffer object that
-we have provided as input.
+So, the `read_request()` function essentially receives a connection object as input, which is represented by
+an IO stream object, then, it reads the HTTP request sent by the client by "reading data from the IO stream",
+and saves this message into this buffer object that we have provided as input.
 
-Notice that I'm using the connection object that we created to read
-the message from the client. I first access the `reader` object that lives inside the
-connection object. Then, I call the `read()` method of this `reader` object
-to effectively read and save the data sent by the client into the buffer object
-that we created earlier. I'm discarding the return value
-of the `read()` method, by assigning it to the underscore character (`_`),
-because this return value is not useful for us right now.
+In order to do that, I first create a `reader` object from the IO stream object.
+Then, I call the `peekArray()` method of this `reader` object, together with `@memcpy()`,
+to effectively read the first 400 bytes of the request, and save this data sent
+by the client into the buffer object that we've created earlier.
 
 
 
@@ -394,38 +388,40 @@ I will also add a print statement at the end of the `main()` function,
 just so that you can see what the HTTP Request that we have just loaded into the buffer object
 looks like.
 
-Also, I'm creating the buffer object in the `main()` function, which will be
+Also, I'm creating the buffer object (`request_buffer`) in the `main()` function, which will be
 responsible for storing the message sent by the client, and, I'm also
-using a `for` loop to initialize all fields of this buffer object to the number zero.
+using `@memset()` to initialize the entire buffer object to zero.
 This is important to make sure that we don't have uninitialized memory in
 this object. Because uninitialized memory may cause undefined behaviour in our program.
 
-Since the `read_request()` function should receive as input the buffer object as a slice object (`[]u8`),
-I am using the syntax `array[0..array.len]` to get access to a slice of this `buffer` object.
 
 ```{zig}
 #| eval: false
 const std = @import("std");
-const SocketConf = @import("config.zig");
 const Request = @import("request.zig");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
+const Server = @import("server.zig").Server;
 
 pub fn main() !void {
-    const socket = try SocketConf.Socket.init();
-    try stdout.print("Server Addr: {any}\n", .{socket._address});
-    var server = try socket._address.listen(.{});
-    const connection = try server.accept();
-    var buffer: [1000]u8 = undefined;
-    for (0..buffer.len) |i| {
-        buffer[i] = 0;
-    }
-    _ = try Request.read_request(
-        connection, buffer[0..buffer.len]
+    var alloc = std.heap.GeneralPurposeAllocator(.{}){};
+    const gpa = alloc.allocator();
+    var threaded: std.Io.Threaded = .init(gpa);
+    const io = threaded.io();
+    defer threaded.deinit();
+
+    const server = try Server.init(io);
+    var listening = try server.listen();
+    const connection = try listening.accept(io);
+    defer connection.close(io);
+
+    var request_buffer: [400]u8 = undefined;
+    @memset(request_buffer[0..], 0);
+    try Request.read_request(
+        io,
+        connection,
+        request_buffer[0..]
     );
-    try stdout.print("{s}\n", .{buffer});
-    try stdout.flush();
+
+    std.debug.print("{s}\n", .{request_buffer});
 }
 ```
 
@@ -465,21 +461,25 @@ reached".
 
 You get these "error messages" in the web browser, because
 it got no response back from the server. In other words, when the web
-browser connected to our server, it did send the HTTP Request through the established connection.
-Then, the web browser was expecting to receive a HTTP Response back, but
+browser connected to our server, it did send the HTTP request through the established connection.
+Then, the web browser was expecting to receive a HTTP response back, but
 it got no response from the server (we didn't implemented the HTTP Response logic yet).
 
 But that is okay. We have achieved the result that we wanted for now,
-which is to connect to the server, and see the HTTP Request
+which is to connect to the server, and see the HTTP request
 that was sent by the web browser (or by the Python script)
 to the server.
 
 If you comeback to the console that you left open
 when you have executed the program, you will see that the
 program finished its execution, and, a new message is
-printed in the console, which is the actual HTTP Request
+printed in the console, which is the actual HTTP request
 message that was sent by the web browser to the server.
-You can see this message in @fig-print-zigrun2.
+
+Since we are only reading the first 400 bytes of the HTTP request in our code,
+this program might not print the entire HTTP request message to you. That will
+depend on how big the HTTP request message was.
+You can see the HTTP request printed in @fig-print-zigrun2.
 
 ![A screenshot of the HTTP Request sent by the web browser](./../Figures/print-zigrun2.png){#fig-print-zigrun2}
 
@@ -791,7 +791,7 @@ const Request = struct {
 
 
 The `parse_request()` function should receive a string as input. This input string
-contains the entire HTTP Request message, and the parsing function should
+contains the HTTP Request message, and the parsing function should
 read and understand the individual parts of this message.
 
 Now, remember that for the purpose of this chapter, we care only about the first
@@ -881,29 +881,26 @@ the character `/`, which represents our URI in this request.
 ```{zig}
 #| eval: false
 const std = @import("std");
-const SocketConf = @import("config.zig");
 const Request = @import("request.zig");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
+const Server = @import("server.zig").Server;
 
 pub fn main() !void {
-    const socket = try SocketConf.Socket.init();
-    var server = try socket._address.listen(.{});
-    const connection = try server.accept();
+    var alloc = std.heap.GeneralPurposeAllocator(.{}){};
+    const gpa = alloc.allocator();
 
-    var buffer: [1000]u8 = undefined;
-    for (0..buffer.len) |i| {
-        buffer[i] = 0;
-    }
+    const server = try Server.init(io);
+    var listening = try server.listen();
+    const connection = try listening.accept(io);
+    defer connection.close(io);
+
+    var request_buffer: [400]u8 = undefined;
     try Request.read_request(
-        connection, buffer[0..buffer.len]
+        io,
+        connection,
+        request_buffer[0..request_buffer.len]
     );
-    const request = Request.parse_request(
-        buffer[0..buffer.len]
-    );
-    try stdout.print("{any}\n", .{request});
-    try stdout.flush();
+    const request = Request.parse_request(request_buffer[0..request_buffer.len]);
+    std.debug.print("{any}\n", .{request});
 }
 ```
 
@@ -940,30 +937,34 @@ It just needs to work!
 ```{zig}
 #| eval: false
 const std = @import("std");
-const Connection = std.net.Server.Connection;
-pub fn send_200(conn: Connection) !void {
+const Stream = std.Io.net.Stream;
+
+pub fn send_200(conn: Stream, io: std.Io) !void {
     const message = (
         "HTTP/1.1 200 OK\nContent-Length: 48"
         ++ "\nContent-Type: text/html\n"
         ++ "Connection: Closed\n\n<html><body>"
         ++ "<h1>Hello, World!</h1></body></html>"
     );
-    _ = try conn.stream.write(message);
+    var stream_writer = conn.writer(io, &.{});
+    _ = try stream_writer.interface.write(message);
 }
 
-pub fn send_404(conn: Connection) !void {
+pub fn send_404(conn: Stream, io: std.Io) !void {
     const message = (
         "HTTP/1.1 404 Not Found\nContent-Length: 50"
         ++ "\nContent-Type: text/html\n"
         ++ "Connection: Closed\n\n<html><body>"
         ++ "<h1>File not found!</h1></body></html>"
     );
-    _ = try conn.stream.write(message);
+    var stream_writer = conn.writer(io, &.{});
+    _ = try stream_writer.interface.write(message);
 }
 ```
 
-Notice that both functions receives the connection object as input, and
-use the `write()` method to write the HTTP Response message directly
+Notice that both functions receives the connection object as input, creates
+a writer object from this connection object, then, uses
+the `write()` method to write the HTTP Response message directly
 into this communication channel. As result, the party in the other
 side of the connection (i.e., the client), will receive such message.
 
@@ -1003,34 +1004,34 @@ that section if you are not familiar yet with this function.
 ```{zig}
 #| eval: false
 const std = @import("std");
-const SocketConf = @import("config.zig");
 const Request = @import("request.zig");
 const Response = @import("response.zig");
-const Method = Request.Method;
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
+const Server = @import("server.zig").Server;
 
 pub fn main() !void {
-    const socket = try SocketConf.Socket.init();
-    try stdout.print("Server Addr: {any}\n", .{socket._address});
-    try stdout.flush();
-    var server = try socket._address.listen(.{});
-    const connection = try server.accept();
+    var alloc = std.heap.GeneralPurposeAllocator(.{}){};
+    const gpa = alloc.allocator();
+    var threaded: std.Io.Threaded = .init(gpa);
+    const io = threaded.io();
+    defer threaded.deinit();
 
-    var buffer: [1000]u8 = undefined;
-    for (0..buffer.len) |i| {
-        buffer[i] = 0;
-    }
-    try Request.read_request(connection, buffer[0..buffer.len]);
-    const request = Request.parse_request(
-        buffer[0..buffer.len]
+    const server = try Server.init(io);
+    var listening = try server.listen();
+    const connection = try listening.accept(io);
+    defer connection.close(io);
+
+    var request_buffer: [400]u8 = undefined;
+    try Request.read_request(
+        io,
+        connection,
+        request_buffer[0..request_buffer.len]
     );
+    const request = Request.parse_request(request_buffer[0..request_buffer.len]);
     if (request.method == Method.GET) {
         if (std.mem.eql(u8, request.uri, "/")) {
-            try Response.send_200(connection);
+            try Response.send_200(connection, io);
         } else {
-            try Response.send_404(connection);
+            try Response.send_404(connection, io);
         }
     }
 }
