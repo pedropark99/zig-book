@@ -2,14 +2,12 @@ const std = @import("std");
 const LazyPath = std.Build.LazyPath;
 
 pub fn build(b: *std.Build) void {
-    const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{});
-
     const exe = b.addExecutable(.{
         .name = "image_filter",
-        .root_source_file = b.path("src/image_filter.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/image_filter.zig"),
+            .target = b.graph.host
+        })
     });
 
     exe.linkLibC();

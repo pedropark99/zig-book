@@ -1,7 +1,12 @@
 const std = @import("std");
 const math = std.math;
-const stdout = std.io.getStdOut().writer();
-const stderr = std.io.getStdErr().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stderr_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
+const stdout = &stdout_writer.interface;
+const stderr = &stderr_writer.interface;
+
 const cmath = @cImport({
     @cInclude("math.h");
 });
