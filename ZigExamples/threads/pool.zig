@@ -1,5 +1,6 @@
 const std = @import("std");
 const Pool = std.Thread.Pool;
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();

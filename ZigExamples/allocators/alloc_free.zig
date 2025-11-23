@@ -1,6 +1,7 @@
 const std = @import("std");
+const io = std.testing.io;
 var stdin_buffer: [1024]u8 = undefined;
-var stdin_reader = std.fs.File.stdin().reader(&stdin_buffer);
+var stdin_reader = std.fs.File.stdin().reader(io, &stdin_buffer);
 const stdin = &stdin_reader.interface;
 
 pub fn main() !void {

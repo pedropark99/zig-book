@@ -18,39 +18,64 @@ fn get_base_name(file_name: []const u8) []const u8 {
 }
 
 
-// pub fn main() !void {
-//     const path = "test/ss12/qweq.zig";
-//     const file_name = get_file_name(path);
-//     const base_name = get_base_name(file_name);
-//     std.debug.print("{s}\n", .{base_name});
+// fn build_as_library(allocator: std.mem.Allocator, path: []const u8) !u8 {
+//     std.debug.print("Building Zig module {s}...\n", .{path});
+//     const argv: []const []const u8 = &.{
+//         "zig",
+//         "build-lib",
+//         path
+//     };
+//     var v = std.process.Child.init(argv, allocator);
+//     const p = try v.spawnAndWait();
+//     return p.Exited;
+// }
+//
+//
+// fn expect_build_to_fail(allocator: std.mem.Allocator, path: []const u8) !void {
+//     const status = try build_as_library(allocator, path);
+//     if (status == 0) {
+//         return error.ExpectedBuildToFail;
+//     }
+// }
+//
+//
+// fn expect_succesfull_build(allocator: std.mem.Allocator, path: []const u8) !void {
+//     const status = try build_as_library(allocator, path);
+//     if (status != 0) {
+//         return error.ModuleBuildFailed;
+//     }
 // }
 
 
+fn delete_compiled_artifacts() !void {
+    const dir = try std.fs.cwd().openDir(".", .{.iterate=true});
+    var it = dir.iterate();
+    while (try it.next()) |entry| {
+        if (entry.kind != .file)
+            continue;
+
+        if (std.mem.endsWith(u8, entry.name, ".a")) {
+            std.debug.print("Cleaning file {s}\n", .{entry.name});
+            try dir.deleteFile(entry.name);
+        }
+    }
+}
+
+
 pub fn build(b: *std.Build) void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    _ = allocator;
+
     const paths = [_][]const u8{
         "allocators/arena_alloc.zig",
         "allocators/fixed_buffer_alloc.zig",
-        "allocators/for_scope_local_var.zig",
         "allocators/general_purpose_alloc.zig",
         "allocators/login_example.zig",
         "allocators/test_array_len.zig",
         "allocators/user_struct.zig",
         "allocators/alloc_free.zig",
-        "base64/base64_table.zig",
         "base64/base64_basic.zig",
-        "build_system/build.zig",
-        "build_system/build_and_run.zig",
-        "build_system/build_tests.zig",
-        "calling-c/c.zig",
-        "calling-c/cstring.zig",
-        "calling-c/fopen.zig",
-        "calling-c/instantiating-c-objects.zig",
-        "calling-c/pow.zig",
-        "calling-c/set_user_id.zig",
-        "calling-c/stdio-example.zig",
-        "calling-c/stdio-math-example.zig",
-        "calling-c/translate-c.zig",
-        "comptime/comptime_arg_runtime_error.zig",
         "data-structures/generic_array.zig",
         "data-structures/generic_linked_list.zig",
         "data-structures/generic_stack.zig",
@@ -64,9 +89,6 @@ pub fn build(b: *std.Build) void {
         "data-structures/stack.zig",
         "data-structures/string_hash.zig",
         "data-structures/append-ex.zig",
-        "debugging/build.zig",
-        "enums/enum1.zig",
-        "errors/error_list.zig",
         "file-io/append_to_file.zig",
         "file-io/buff_io.zig",
         "file-io/copy_file.zig",
@@ -80,19 +102,14 @@ pub fn build(b: *std.Build) void {
         "file-io/read_stdin.zig",
         "file-io/read_file.zig",
         "file-io/user_input.zig",
-        "hello_world/build.zig",
-        "http_server/build.zig",
-        "image_filter/build.zig",
         "pointer/optional_pointer.zig",
         "pointer/p1.zig",
         "pointer/p2.zig",
         "pointer/p3.zig",
-        "pointer/p4.zig",
         "pointer/p5.zig",
         "pointer/p6.zig",
         "pointer/p7.zig",
         "pointer/p8.zig",
-        "threads/cancel_thread.zig",
         "threads/data_race.zig",
         "threads/deadlock.zig",
         "threads/detach.zig",
@@ -107,12 +124,9 @@ pub fn build(b: *std.Build) void {
         "threads/thread_sleep.zig",
         "unittest/double_free.zig",
         "unittest/leak_memory.zig",
-        "unittest/test_error.zig",
-        "vectors/build.zig",
         "zig-basics/comp-strings.zig",
         "zig-basics/concat.zig",
         "zig-basics/defer.zig",
-        "zig-basics/function_parameters_immu.zig",
         "zig-basics/function_parameters_mmu.zig",
         "zig-basics/hello_world.zig",
         "zig-basics/import-non-pub-struct.zig",
@@ -126,32 +140,17 @@ pub fn build(b: *std.Build) void {
         "zig-basics/string_static.zig",
         "zig-basics/switch1.zig",
         "zig-basics/switch2.zig",
-        "zig-basics/unused_var.zig",
         "zig-basics/user_struct.zig",
         "zig-basics/utf8-view.zig",
         "zig-basics/vec3_struct.zig",
-        "vectors/src/main.zig",
-        "vectors/src/main2.zig",
-        "image_filter/src/image_filter.zig",
-        "image_filter/src/test.zig",
-        "http_server/src/config.zig",
-        "http_server/src/request.zig",
-        "http_server/src/response.zig",
-        "http_server/src/main.zig",
-        "hello_world/src/main.zig",
-        "hello_world/src/root.zig",
-        "debugging/src/debug1.zig",
-        "build_system/src/hello.zig",
-        "build_system/src/main.zig",
-        "build_system/src/root.zig"
     };
 
 
     for (paths) |path| {
-        std.debug.print("Building file: {s}\n", .{path});
+        std.debug.print("Building Zig module {s}...\n", .{path});
         const file_name = get_file_name(path);
         const base_name = get_base_name(file_name);
-
+        // expect_succesfull_build(allocator, path) catch std.debug.print("Unable to build {s}\n", .{path});
 
         const lib = b.addLibrary(.{
             .name = base_name,
@@ -163,4 +162,7 @@ pub fn build(b: *std.Build) void {
 
         b.installArtifact(lib);
     }
+
+
+    delete_compiled_artifacts() catch std.debug.print("Unable to clean compiled artifacts from current working directory.", .{});
 }
