@@ -133,21 +133,20 @@ and the type `usize` has a known fixed size.
 
 
 
-### Global data register
+### Global Data Register
 
-The global data register is a specific section of the executable of your Zig program, that is responsible
-for storing any value that is known at compile time.
+**Note:** The term "Global Data Register" refers to the static memory segments (`.rodata`, `.data`, and `.bss`) within the executable file that store data for the program's entire duration. These segments hold the foundation of your program's persistent state data that exists outside of any function call. It specifically stores all data determined at the global scope at compile-time.
 
-Every constant object whose value is known at compile time that you declare in your source code,
-is stored in the global data register. Also, every literal value that you write in your source code,
-such as the string `"this is a string"`, or the integer `10`, or a boolean value such as `true`,
-is also stored in the global data register.
+The data in this memory is logically separated by mutability:
 
-Honestly, you don't need to care much about this memory space. Because you can't control it,
-you can't deliberately access it or use it for your own purposes.
-Also, this memory space does not affect the logic of your program.
-It simply exists in your program.
+- **Read-Only Static Data (`.rodata`)**  
+  This stores immutable global constants (values declared as `const` at the top level).  
+  **All literal values:** Every literal you write in your source code such as the string `"this is a string"`, the integer `10`, or a boolean `true` is placed here. This is true even if the literal is only referenced locally inside a function: the data itself lives globally in `.rodata`, while any pointer or slice that refers to it lives on the stack.
 
+- **Read/Write Static Data (`.data` and `.bss`)**  
+  This stores mutable global variables (values declared as `var` at the top level), categorized by whether they are initialized to non-zero values (`.data`) or zero/uninitialized (`.bss`).
+
+A developer typically does not need to manually manage this memory space. Its precise layout is determined entirely by the compiler and linker.
 
 ### Stack vs Heap
 
