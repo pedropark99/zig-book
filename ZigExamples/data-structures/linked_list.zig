@@ -1,19 +1,24 @@
 const std = @import("std");
-const testing = std.testing;
-const SinglyLinkedList = std.SinglyLinkedList;
-const Lu32 = SinglyLinkedList(u32);
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
+const NodeU32 = struct {
+    data: u32,
+    node: std.SinglyLinkedList.Node = .{},
+};
 
 pub fn main() !void {
-    var list = Lu32{};
-    var one = Lu32.Node{ .data = 1 };
-    var two = Lu32.Node{ .data = 2 };
-    var three = Lu32.Node{ .data = 3 };
-    var four = Lu32.Node{ .data = 4 };
-    var five = Lu32.Node{ .data = 5 };
+    var list: std.SinglyLinkedList = .{};
+    var one: NodeU32 = .{ .data = 1 };
+    var two: NodeU32 = .{ .data = 2 };
+    var three: NodeU32 = .{ .data = 3 };
+    var five: NodeU32 = .{ .data = 5 };
 
-    list.prepend(&two); // {2}
-    two.insertAfter(&five); // {2, 5}
-    list.prepend(&one); // {1, 2, 5}
-    two.insertAfter(&three); // {1, 2, 3, 5}
-    three.insertAfter(&four); // {1, 2, 3, 4, 5}
+    list.prepend(&two.node); // {2}
+    two.node.insertAfter(&five.node); // {2, 5}
+    two.node.insertAfter(&three.node); // {2, 3, 5}
+    list.prepend(&one.node); // {1, 2, 3, 5}
+
+    try stdout.print("Number of nodes: {}", .{list.len()});
+    try stdout.flush();
 }

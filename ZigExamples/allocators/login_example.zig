@@ -1,5 +1,8 @@
 const std = @import("std");
-const stdin = std.io.getStdIn();
+const io = std.testing.io;
+var stdin_buffer: [1024]u8 = undefined;
+var stdin_reader = std.fs.File.stdin().reader(io, &stdin_buffer);
+const stdin = &stdin_reader.interface;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -11,10 +14,9 @@ pub fn main() !void {
         input[i] = 0; // initialize all fields to zero.
     }
 
-    const input_reader = stdin.reader();
-    _ = try input_reader.readUntilDelimiterOrEof(
-        input,
+    _ = try stdin.takeDelimiterExclusive(
         '\n'
     );
+
     std.debug.print("{s}\n", .{input});
 }

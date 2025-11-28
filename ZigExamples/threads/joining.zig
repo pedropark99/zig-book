@@ -1,6 +1,11 @@
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
+const io = std.testing.io;
+const clock: std.Io.Clock = .awake;
+
 fn print_id(id: *const u8) !void {
     try stdout.print("Thread ID: {d}\n", .{id.*});
 }
@@ -13,7 +18,8 @@ pub fn main() !void {
 
     _ = try stdout.write("Joining thread 1\n");
     thread1.join();
-    std.time.sleep(2 * std.time.ns_per_s);
+    const duration: std.Io.Duration = .{.nanoseconds = 2};
+    try std.Io.sleep(io, duration, clock);
     _ = try stdout.write("Joining thread 2\n");
     thread2.join();
 }

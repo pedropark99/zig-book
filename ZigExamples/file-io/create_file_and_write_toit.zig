@@ -4,6 +4,5 @@ pub fn main() !void {
     const file = try cwd.createFile("foo.txt", .{});
     defer file.close();
     // Do things with the file ...
-    var fw = file.writer();
-    _ = try fw.writeAll("Writing this line to the file\n");
+    _ = try file.writeAll("Writing this line to the file\n");
 }

@@ -1,11 +1,17 @@
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
+const io = std.testing.io;
+const clock: std.Io.Clock = .awake;
 var mut1: std.Thread.Mutex = .{};
 var mut2: std.Thread.Mutex = .{};
+
 fn do_some_work1() !void {
     mut1.lock();
-    std.time.sleep(1 * std.time.ns_per_s);
+    const duration: std.Io.Duration = .{.nanoseconds = 1};
+    try std.Io.sleep(io, duration, clock);
     mut2.lock();
     _ = try stdout.write("Doing some work 1\n");
     mut2.unlock();
@@ -14,7 +20,8 @@ fn do_some_work1() !void {
 
 fn do_some_work2() !void {
     mut2.lock();
-    std.time.sleep(1 * std.time.ns_per_s);
+    const duration: std.Io.Duration = .{.nanoseconds = 1};
+    try std.Io.sleep(io, duration, clock);
     mut1.lock();
     _ = try stdout.write("Doing some work 1\n");
     mut1.unlock();

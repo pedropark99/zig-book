@@ -1,9 +1,13 @@
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
 const RwLock = std.Thread.RwLock;
 var counter: u32 = 0;
 var buffer = [4]u32{ 512, 2700, 9921, 112 };
+const clock: std.Io.Clock = .awake;
+const io = std.testing.io;
 
 fn reader(lock: *RwLock) !void {
     while (true) {
@@ -11,16 +15,18 @@ fn reader(lock: *RwLock) !void {
         const v: u32 = counter;
         try stdout.print("{d}", .{v});
         lock.unlockShared();
-        std.time.sleep(2 * std.time.ns_per_s);
+        const duration: std.Io.Duration = .{.nanoseconds = 2};
+        try std.Io.sleep(io, duration, clock);
     }
 }
 
-fn writer(lock: *RwLock) void {
+fn writer(lock: *RwLock) !void {
     while (true) {
         lock.lock();
         counter += 1;
         lock.unlock();
-        std.time.sleep(2 * std.time.ns_per_s);
+        const duration: std.Io.Duration = .{.nanoseconds = 2};
+        try std.Io.sleep(io, duration, clock);
     }
 }
 
