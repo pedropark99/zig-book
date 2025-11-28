@@ -8,8 +8,10 @@ pub fn main() !void {
     var iterator = utf8.iterator();
     while (iterator.nextCodepointSlice()) |codepoint| {
         try stdout.print(
-            "got codepoint {}\n",
-            .{std.fmt.fmtSliceHexUpper(codepoint)},
+            "got codepoint {x}\n",
+            .{codepoint},
         );
     }
+
+    try stdout.flush();
 }

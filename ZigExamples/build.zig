@@ -90,7 +90,6 @@ pub fn build(b: *std.Build) void {
         "data-structures/string_hash.zig",
         "data-structures/append-ex.zig",
         "file-io/append_to_file.zig",
-        "file-io/buff_io.zig",
         "file-io/copy_file.zig",
         "file-io/create_file.zig",
         "file-io/create_file_and_read.zig",

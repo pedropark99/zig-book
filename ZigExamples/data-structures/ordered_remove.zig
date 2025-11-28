@@ -5,11 +5,11 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     var buffer = try std.ArrayList(u8)
         .initCapacity(allocator, 100);
-    defer buffer.deinit();
+    defer buffer.deinit(allocator);
 
     for (0..10) |i| {
         const index: u8 = @intCast(i);
-        try buffer.append(index);
+        try buffer.append(allocator, index);
     }
 
     std.debug.print("{any}\n", .{buffer.items});
