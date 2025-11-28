@@ -18,35 +18,6 @@ fn get_base_name(file_name: []const u8) []const u8 {
 }
 
 
-// fn build_as_library(allocator: std.mem.Allocator, path: []const u8) !u8 {
-//     std.debug.print("Building Zig module {s}...\n", .{path});
-//     const argv: []const []const u8 = &.{
-//         "zig",
-//         "build-lib",
-//         path
-//     };
-//     var v = std.process.Child.init(argv, allocator);
-//     const p = try v.spawnAndWait();
-//     return p.Exited;
-// }
-//
-//
-// fn expect_build_to_fail(allocator: std.mem.Allocator, path: []const u8) !void {
-//     const status = try build_as_library(allocator, path);
-//     if (status == 0) {
-//         return error.ExpectedBuildToFail;
-//     }
-// }
-//
-//
-// fn expect_succesfull_build(allocator: std.mem.Allocator, path: []const u8) !void {
-//     const status = try build_as_library(allocator, path);
-//     if (status != 0) {
-//         return error.ModuleBuildFailed;
-//     }
-// }
-
-
 fn delete_compiled_artifacts() !void {
     const dir = try std.fs.cwd().openDir(".", .{.iterate=true});
     var it = dir.iterate();
@@ -149,8 +120,6 @@ pub fn build(b: *std.Build) void {
         std.debug.print("Building Zig module {s}...\n", .{path});
         const file_name = get_file_name(path);
         const base_name = get_base_name(file_name);
-        // expect_succesfull_build(allocator, path) catch std.debug.print("Unable to build {s}\n", .{path});
-
         const lib = b.addLibrary(.{
             .name = base_name,
             .root_module = b.createModule(.{
