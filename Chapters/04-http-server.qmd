@@ -360,9 +360,21 @@ const Stream = std.Io.net.Stream;
 pub fn read_request(io: std.Io, conn: Stream, buffer: []u8) !void {
     var recv_buffer: [1024]u8 = undefined;
     var reader = conn.reader(io, &recv_buffer);
-    const length: usize = 400;
-    const input = try reader.interface.peekArray(length);
-    @memcpy(buffer[0..length], input[0..length]);
+    const reader_interface = &reader.interface;
+    var start_index: usize = 0;
+    for (0..5) |_| {
+        const len = try read_next_line(reader_interface, buffer, start_index);
+        start_index += len;
+    }
+}
+
+fn read_next_line(reader: *std.Io.Reader, buffer: []u8, start_index: usize) !usize {
+    const next_line = try reader.takeDelimiterInclusive('\n');
+    @memcpy(
+        buffer[start_index..(start_index + next_line.len)],
+        next_line[0..],
+    );
+    return next_line.len;
 }
 ```
 
@@ -372,9 +384,10 @@ an IO stream object, then, it reads the HTTP request sent by the client by "read
 and saves this message into this buffer object that we have provided as input.
 
 In order to do that, I first create a `reader` object from the IO stream object.
-Then, I call the `peekArray()` method of this `reader` object, together with `@memcpy()`,
-to effectively read the first 400 bytes of the request, and save this data sent
-by the client into the buffer object that we've created earlier.
+Then, I call the `takeDelimiterInclusive()` method of this `reader` object, together with `@memcpy()`,
+to effectively read the next line of data from the stream. The for loop present in `read_request()` repeats
+this process 6 times, so, we are effectively reading the 6 first lines of the HTTP Request, and saving this data
+into the buffer object that we've created earlier.
 
 
 
@@ -413,7 +426,7 @@ pub fn main() !void {
     const connection = try listening.accept(io);
     defer connection.close(io);
 
-    var request_buffer: [400]u8 = undefined;
+    var request_buffer: [1000]u8 = undefined;
     @memset(request_buffer[0..], 0);
     try Request.read_request(
         io,
@@ -476,7 +489,7 @@ program finished its execution, and, a new message is
 printed in the console, which is the actual HTTP request
 message that was sent by the web browser to the server.
 
-Since we are only reading the first 400 bytes of the HTTP request in our code,
+Since we are only reading the first 6 lines of the HTTP request in our code,
 this program might not print the entire HTTP request message to you. That will
 depend on how big the HTTP request message was.
 You can see the HTTP request printed in @fig-print-zigrun2.
@@ -893,13 +906,14 @@ pub fn main() !void {
     const connection = try listening.accept(io);
     defer connection.close(io);
 
-    var request_buffer: [400]u8 = undefined;
+    var request_buffer: [1000]u8 = undefined;
+    @memset(request_buffer[0..], 0);
     try Request.read_request(
         io,
         connection,
-        request_buffer[0..request_buffer.len]
+        request_buffer[0..]
     );
-    const request = Request.parse_request(request_buffer[0..request_buffer.len]);
+    const request = Request.parse_request(request_buffer[0..]);
     std.debug.print("{any}\n", .{request});
 }
 ```
@@ -1020,13 +1034,14 @@ pub fn main() !void {
     const connection = try listening.accept(io);
     defer connection.close(io);
 
-    var request_buffer: [400]u8 = undefined;
+    var request_buffer: [1000]u8 = undefined;
+    @memset(request_buffer[0..], 0);
     try Request.read_request(
         io,
         connection,
-        request_buffer[0..request_buffer.len]
+        request_buffer[0..]
     );
-    const request = Request.parse_request(request_buffer[0..request_buffer.len]);
+    const request = Request.parse_request(request_buffer[0..]);
     if (request.method == Method.GET) {
         if (std.mem.eql(u8, request.uri, "/")) {
             try Response.send_200(connection, io);

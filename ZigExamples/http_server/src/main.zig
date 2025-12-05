@@ -25,16 +25,17 @@ pub fn main() !void {
     const connection = try listening.accept(io);
     defer connection.close(io);
 
-    var request_buffer: [400]u8 = undefined;
+    var request_buffer: [1000]u8 = undefined;
+    @memset(request_buffer[0..], 0);
     try Request.read_request(
         io,
         connection,
-        request_buffer[0..request_buffer.len]
+        request_buffer[0..]
     );
     const request = Request.parse_request(request_buffer[0..request_buffer.len]);
 
-    request_buffer[buffer.len - 1] = '\n';
-    _ = try stdout.writeAll(buffer[0..]);
+    request_buffer[request_buffer.len - 1] = '\n';
+    _ = try stdout.writeAll(request_buffer[0..]);
     try stdout.flush();
 
     if (request.method == Method.GET) {
