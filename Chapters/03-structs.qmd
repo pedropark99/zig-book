@@ -585,8 +585,7 @@ is equal to 10. Since we are incrementing the value of `i` at each iteration of 
 while loop, this `i` object will eventually be equal to 10, and when it is, the if statement
 will execute the `break` expression, and, as a result, the execution of the while loop is stopped.
 
-Notice the use of the `expect()` function from the Zig Standard Library after the while loop.
-This `expect()` function is an "assert" type of function.
+Notice the use of the `assert()` function from the Zig Standard Library after the while loop.
 This function checks if the logical test provided is equal to true. If so, the function do nothing.
 Otherwise (i.e., the logical test is equal to false), the function raises an assertion error.
 
@@ -600,15 +599,15 @@ while (true) {
     }
     i += 1;
 }
-try std.testing.expect(i == 10);
+std.debug.assert(i == 10);
 try stdout.print("Everything worked!", .{});
 try stdout.flush();
 ```
 
 Since this code example was executed successfully by the `zig` compiler,
 without raising any errors, we known that, after the execution of the while loop,
-the `i` object is equal to 10. Because if it wasn't equal to 10, an error would have
-been raised by `expect()`.
+the `i` object is equal to 10. Because if it wasn't equal to 10, an `unreachable` error would have
+been raised by `assert()`.
 
 Now, in the next example, we have a use case for
 the `continue` keyword. The if statement is constantly
@@ -1338,11 +1337,11 @@ in the first argument, and, the object that you want cast as the second argument
 #| auto_main: false
 #| build_type: "test"
 const std = @import("std");
-const expect = std.testing.expect;
+const assert = std.debug.assert;
 test {
     const x: usize = 500;
     const y = @as(u32, x);
-    try expect(@TypeOf(y) == u32);
+    assert(@TypeOf(y) == u32);
 }
 ```
 
@@ -1368,11 +1367,11 @@ as an object of type `f32`.
 #| auto_main: false
 #| build_type: "test"
 const std = @import("std");
-const expect = std.testing.expect;
+const assert = std.debug.assert;
 test {
     const x: usize = 565;
     const y: f32 = @floatFromInt(x);
-    try expect(@TypeOf(y) == f32);
+    assert(@TypeOf(y) == f32);
 }
 ```
 
@@ -1392,13 +1391,13 @@ stored.
 #| auto_main: false
 #| build_type: "test"
 const std = @import("std");
-const expect = std.testing.expect;
+const assert = std.debug.assert;
 test {
     const bytes align(@alignOf(u32)) = [_]u8{
         0x12, 0x12, 0x12, 0x12
     };
     const u32_ptr: *const u32 = @ptrCast(&bytes);
-    try expect(@TypeOf(u32_ptr) == *const u32);
+    assert(@TypeOf(u32_ptr) == *const u32);
 }
 ```
 
@@ -1452,3 +1451,4 @@ const pool = ThreadPool.init(
     .{ .max_threads = num_threads }
 );
 ```
+
