@@ -4,13 +4,7 @@ const std = @import("std");
 // declaratively construct a build graph that will be executed by an external
 // runner.
 pub fn build(b: *std.Build) void {
-    const exe = b.addExecutable(.{
-        .name = "http_server",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main.zig"),
-            .target = b.graph.host
-        })
-    });
+    const exe = b.addExecutable(.{ .name = "http_server", .root_module = b.createModule(.{ .root_source_file = b.path("src/main.zig"), .target = b.graph.host }) });
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

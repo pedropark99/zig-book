@@ -12,7 +12,6 @@ pub fn read_request(io: std.Io, conn: Stream, buffer: []u8) !void {
     }
 }
 
-
 fn read_next_line(reader: *std.Io.Reader, buffer: []u8, start_index: usize) !usize {
     const next_line = try reader.takeDelimiterInclusive('\n');
     @memcpy(
@@ -21,7 +20,6 @@ fn read_next_line(reader: *std.Io.Reader, buffer: []u8, start_index: usize) !usi
     );
     return next_line.len;
 }
-
 
 const Map = std.static_string_map.StaticStringMap;
 const MethodMap = Map(Method).initComptime(.{

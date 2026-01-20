@@ -15,7 +15,7 @@ fn reader(lock: *RwLock) !void {
         const v: u32 = counter;
         try stdout.print("{d}", .{v});
         lock.unlockShared();
-        const duration: std.Io.Duration = .{.nanoseconds = 2};
+        const duration: std.Io.Duration = .{ .nanoseconds = 2 };
         try std.Io.sleep(io, duration, clock);
     }
 }
@@ -25,7 +25,7 @@ fn writer(lock: *RwLock) !void {
         lock.lock();
         counter += 1;
         lock.unlock();
-        const duration: std.Io.Duration = .{.nanoseconds = 2};
+        const duration: std.Io.Duration = .{ .nanoseconds = 2 };
         try std.Io.sleep(io, duration, clock);
     }
 }

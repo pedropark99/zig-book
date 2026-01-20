@@ -11,18 +11,13 @@ pub const Server = struct {
     pub fn init(io: std.Io) !Server {
         const host: []const u8 = "127.0.0.1";
         const port: u16 = 3490;
-        const addr = try std.Io.net.IpAddress.parseIp4(
-            host, port
-        );
+        const addr = try std.Io.net.IpAddress.parseIp4(host, port);
 
-        return .{.host=host, .port=port, .addr=addr, .io=io};
+        return .{ .host = host, .port = port, .addr = addr, .io = io };
     }
 
     pub fn listen(self: Server) !std.Io.net.Server {
-        std.debug.print("Server Addr: {s}:{any}\n", .{self.host, self.port});
-        return try self.addr.listen(
-            self.io,
-            .{.mode=Socket.Mode.stream, .protocol=Protocol.tcp}
-        );
+        std.debug.print("Server Addr: {s}:{any}\n", .{ self.host, self.port });
+        return try self.addr.listen(self.io, .{ .mode = Socket.Mode.stream, .protocol = Protocol.tcp });
     }
 };

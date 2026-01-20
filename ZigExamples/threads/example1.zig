@@ -6,10 +6,9 @@ const Thread = std.Thread;
 const io = std.testing.io;
 const clock: std.Io.Clock = .awake;
 
-
 fn do_some_work() !void {
     _ = try stdout.write("Starting the work.\n");
-    const duration: std.Io.Duration = .{.nanoseconds = 100};
+    const duration: std.Io.Duration = .{ .nanoseconds = 100 };
     try std.Io.sleep(io, duration, clock);
     _ = try stdout.write("Finishing the work.\n");
 }

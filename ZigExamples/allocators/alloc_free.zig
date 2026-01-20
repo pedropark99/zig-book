@@ -12,7 +12,7 @@ pub fn main() !void {
     @memset(input[0..], 0);
 
     // Read user input
-    stdin.readSliceAll(input[0..]) catch |err| switch(err) {
+    stdin.readSliceAll(input[0..]) catch |err| switch (err) {
         // Reached end of input, do nothing else
         error.EndOfStream => {},
         // If it's other kind of error, then return it
@@ -20,4 +20,3 @@ pub fn main() !void {
     };
     std.debug.print("{s}\n", .{input});
 }
-

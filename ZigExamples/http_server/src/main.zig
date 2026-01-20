@@ -7,7 +7,6 @@ const Response = @import("response.zig");
 const Method = Request.Method;
 const Server = @import("server.zig").Server;
 
-
 pub fn main() !void {
     var alloc = std.heap.GeneralPurposeAllocator(.{}){};
     const gpa = alloc.allocator();
@@ -27,11 +26,7 @@ pub fn main() !void {
 
     var request_buffer: [1000]u8 = undefined;
     @memset(request_buffer[0..], 0);
-    try Request.read_request(
-        io,
-        connection,
-        request_buffer[0..]
-    );
+    try Request.read_request(io, connection, request_buffer[0..]);
     const request = Request.parse_request(request_buffer[0..request_buffer.len]);
 
     request_buffer[request_buffer.len - 1] = '\n';
@@ -46,4 +41,3 @@ pub fn main() !void {
         }
     }
 }
-

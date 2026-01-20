@@ -9,7 +9,7 @@ const io = std.testing.io;
 fn do_some_work() !void {
     _ = try stdout.write("Starting the work.\n");
     try stdout.flush();
-    const duration: std.Io.Duration = .{.nanoseconds = 1000};
+    const duration: std.Io.Duration = .{ .nanoseconds = 1000 };
     try std.Io.sleep(io, duration, clock);
     _ = try stdout.write("Finishing the work.\n");
     try stdout.flush();
@@ -19,4 +19,3 @@ pub fn main() !void {
     const thread = try Thread.spawn(.{}, do_some_work, .{});
     thread.join();
 }
-
