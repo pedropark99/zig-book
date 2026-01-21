@@ -10,7 +10,7 @@ var mut2: std.Thread.Mutex = .{};
 
 fn do_some_work1() !void {
     mut1.lock();
-    const duration: std.Io.Duration = .{.nanoseconds = 1};
+    const duration: std.Io.Duration = .{ .nanoseconds = 1 };
     try std.Io.sleep(io, duration, clock);
     mut2.lock();
     _ = try stdout.write("Doing some work 1\n");
@@ -20,7 +20,7 @@ fn do_some_work1() !void {
 
 fn do_some_work2() !void {
     mut2.lock();
-    const duration: std.Io.Duration = .{.nanoseconds = 1};
+    const duration: std.Io.Duration = .{ .nanoseconds = 1 };
     try std.Io.sleep(io, duration, clock);
     mut1.lock();
     _ = try stdout.write("Doing some work 1\n");

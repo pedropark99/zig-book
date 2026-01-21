@@ -9,11 +9,9 @@ fn print_id(id: *const u8) !void {
     try stdout.flush();
 }
 
-
 pub fn main() !void {
     const io = std.testing.io;
     const clock: std.Io.Clock = .awake;
-
 
     const id1: u8 = 1;
     const id2: u8 = 2;
@@ -22,10 +20,9 @@ pub fn main() !void {
     _ = try stdout.write("Joining thread 1\n");
     try stdout.flush();
     thread1.join();
-    const duration: std.Io.Duration = .{.nanoseconds = 1000};
+    const duration: std.Io.Duration = .{ .nanoseconds = 1000 };
     try std.Io.sleep(io, duration, clock);
     _ = try stdout.write("Joining thread 2\n");
     try stdout.flush();
     thread2.join();
 }
-

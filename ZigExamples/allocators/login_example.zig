@@ -14,9 +14,7 @@ pub fn main() !void {
         input[i] = 0; // initialize all fields to zero.
     }
 
-    _ = try stdin.takeDelimiterExclusive(
-        '\n'
-    );
+    _ = try stdin.takeDelimiterExclusive('\n');
 
     std.debug.print("{s}\n", .{input});
 }

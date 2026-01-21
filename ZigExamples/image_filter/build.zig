@@ -2,14 +2,7 @@ const std = @import("std");
 const LazyPath = std.Build.LazyPath;
 
 pub fn build(b: *std.Build) void {
-    const exe = b.addExecutable(.{
-        .name = "image_filter",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/image_filter.zig"),
-            .target = b.graph.host,
-            .link_libc = true
-        })
-    });
+    const exe = b.addExecutable(.{ .name = "image_filter", .root_module = b.createModule(.{ .root_source_file = b.path("src/image_filter.zig"), .target = b.graph.host, .link_libc = true }) });
     // Link to libspng library:
     exe.root_module.linkSystemLibrary("spng", .{});
     exe.root_module.linkSystemLibrary("m", .{});

@@ -18,7 +18,7 @@ pub fn main() !void {
 
     _ = try stdout.write("Joining thread 1\n");
     thread1.join();
-    const duration: std.Io.Duration = .{.nanoseconds = 2};
+    const duration: std.Io.Duration = .{ .nanoseconds = 2 };
     try std.Io.sleep(io, duration, clock);
     _ = try stdout.write("Joining thread 2\n");
     thread2.join();

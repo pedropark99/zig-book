@@ -11,15 +11,13 @@ fn get_file_name(path: []const u8) []const u8 {
     return segment;
 }
 
-
 fn get_base_name(file_name: []const u8) []const u8 {
     var it = std.mem.tokenizeScalar(u8, file_name, '.');
     return it.peek().?;
 }
 
-
 fn delete_compiled_artifacts() !void {
-    const dir = try std.fs.cwd().openDir(".", .{.iterate=true});
+    const dir = try std.fs.cwd().openDir(".", .{ .iterate = true });
     var it = dir.iterate();
     while (try it.next()) |entry| {
         if (entry.kind != .file)
@@ -31,7 +29,6 @@ fn delete_compiled_artifacts() !void {
         }
     }
 }
-
 
 pub fn build(b: *std.Build) void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -115,7 +112,6 @@ pub fn build(b: *std.Build) void {
         "zig-basics/vec3_struct.zig",
     };
 
-
     for (paths) |path| {
         std.debug.print("Building Zig module {s}...\n", .{path});
         const file_name = get_file_name(path);
@@ -130,7 +126,6 @@ pub fn build(b: *std.Build) void {
 
         b.installArtifact(lib);
     }
-
 
     delete_compiled_artifacts() catch std.debug.print("Unable to clean compiled artifacts from current working directory.", .{});
 }
