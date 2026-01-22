@@ -244,9 +244,15 @@ the curly braces to start writing the function's body. In the example above, thi
 a signed 32 bit integer (`i32`) value.
 
 Notice that we also have an `pub` keyword before the function declaration. This keyword
-is basically making the `add()` function a "public function from this module", which
-essentially means that this function is exposed for external modules to use it.
-We talk more about this at @sec-pub-keyword.
+is transforming the `add()` function into a "public function from this module". Every function in your Zig
+module is by default private to this Zig module and can only be called from within this module.
+Unless, you explicitly mark this function as a public function with the `pub` keyword.
+
+If you think about it, this `pub` keyword in Zig does essentially the opposite of what the `static` keyword
+do in C/C++. By making a function "public" you allow other Zig modules to access and call this function.
+A calling Zig module imports another module by using the `@import()` built-in function, which makes
+all public functions from the imported module visible to the calling Zig module.
+We talk more about this keyword at @sec-pub-keyword.
 
 
 ### The `main.zig` file {#sec-main-file}
@@ -312,15 +318,11 @@ pub fn main() !void {
 ```
 
 Another thing that you might have noticed in this code example, is that
-the `main()` function is marked with the `pub` keyword. It marks the `main()`
-function as a *public function* from this module. Every function in your Zig
-module is by default private to this Zig module and can only be called from within the module.
-Unless, you explicitly mark this function as a public function with the `pub` keyword.
+the `main()` function is marked with the `pub` keyword. This is needed for every `main()`
+function that you create in your Zig projects. So, you should always mark this function as
+a "public function". Without it, the operating system will be unable to call this function,
+and, therefore, to start your program.
 
-If you think about it, this `pub` keyword in Zig does essentially the opposite of what the `static` keyword
-do in C/C++. By making a function "public" you allow other Zig modules to access and call this function.
-A calling Zig module imports another module by using the `@import()` built-in function, which makes
-all public functions from the imported module visible to the calling Zig module.
 
 
 ### Compiling your source code {#sec-compile-code}
@@ -1228,8 +1230,7 @@ where exactly the array ends, or, in other words, to find how much elements the 
 To do that, you would need to do something like this in C. In this example, the C string stored in
 the object `array` is 25 bytes long:
 
-```{c}
-#| eval: false
+```c
 #include <stdio.h>
 int main() {
     char* array = "An example of string in C";
