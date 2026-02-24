@@ -253,13 +253,24 @@ format_output <- function(text, options) {
 #'     input Zig code.
 generate_main <- function(code_without_main) {
   code_without_main <- increase_indentation__(code_without_main)
+  suffix <- ""
+  if (!str_detect(code_without_main, "stdout[.]")) {
+    suffix <- "_ = stdout;"
+  }
+
   main_fmt <- c(
-    "const std = @import(\"std\");\n",
-    "var stdout_buffer: [1024]u8 = undefined;\n",
-    "var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);\n",
-    "const stdout = &stdout_writer.interface;\n",
-    "pub fn main() !void {\n",
+    "const std = @import(\"std\");",
+    "const Writer = std.Io.File.Writer;",
+    "pub fn main(init: std.process.Init) !void {",
+    "   var stdout_buffer: [1024]u8 = undefined;\n",
+    "   var stdout_writer = Writer.init(",
+    "       std.Io.File.stdout(),",
+    "       init.io,",
+    "       &stdout_buffer",
+    "   );\n",
+    "   const stdout = &stdout_writer.interface;",
     "%s",
+    suffix,
     "\n}\n"
   )
   main_fmt <- str_flatten(main_fmt, collapse = "\n")
