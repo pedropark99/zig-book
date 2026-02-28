@@ -7,7 +7,7 @@ const Response = @import("response.zig");
 const Method = Request.Method;
 const Server = @import("server.zig").Server;
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var alloc = std.heap.GeneralPurposeAllocator(.{}){};
     const gpa = alloc.allocator();
 

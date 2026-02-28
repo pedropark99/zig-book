@@ -8,7 +8,7 @@ const User = struct {
     }
 };
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     const user = try allocator.create(User);

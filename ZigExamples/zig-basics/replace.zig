@@ -3,7 +3,7 @@ var stdout_buffer: [1024]u8 = undefined;
 var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
 const stdout = &stdout_writer.interface;
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const str1 = "Hello";
     var output: [5]u8 = undefined;
     const nrep = std.mem.replace(u8, str1, "el", "34", output[0..]);

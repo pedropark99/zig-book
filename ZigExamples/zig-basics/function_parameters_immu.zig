@@ -6,7 +6,7 @@ fn add2(x: u32) u32 {
     return x;
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const y = add2(4);
     std.debug.print("{d}\n", .{y});
 }

@@ -14,7 +14,7 @@ fn increment(mutex: *Mutex) void {
     }
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var mutex: Mutex = .{};
     const thr1 = try Thread.spawn(.{}, increment, .{&mutex});
     const thr2 = try Thread.spawn(.{}, increment, .{&mutex});

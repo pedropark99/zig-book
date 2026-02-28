@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     var aa = std.heap.ArenaAllocator.init(gpa.allocator());
     defer aa.deinit();

@@ -4,7 +4,7 @@ const stdio = @cImport({
     @cInclude("stdio.h");
 });
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const x: f32 = 15.2;
     _ = stdio.printf("%.3f\n", x);
 }

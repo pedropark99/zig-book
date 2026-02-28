@@ -1,7 +1,7 @@
 const std = @import("std");
 const AutoHashMap = std.hash_map.AutoHashMap;
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     var hash_table = AutoHashMap(u32, u16).init(allocator);

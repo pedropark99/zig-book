@@ -15,7 +15,7 @@ fn do_some_work() !void {
     try stdout.flush();
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const thread = try Thread.spawn(.{}, do_some_work, .{});
     thread.join();
 }

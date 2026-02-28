@@ -8,7 +8,7 @@ fn print_id(id: *const u8) void {
     _ = stdout.print("Thread ID: {d}\n", .{id.*}) catch void;
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     const opt = Pool.Options{

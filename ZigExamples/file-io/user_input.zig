@@ -4,7 +4,7 @@ var stdin_buffer: [1024]u8 = undefined;
 var stdin_reader = std.fs.File.stdin().reader(io, &stdin_buffer);
 const stdin = &stdin_reader.interface;
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 

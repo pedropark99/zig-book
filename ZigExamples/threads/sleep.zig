@@ -9,7 +9,7 @@ fn print_id(id: *const u8) !void {
     try stdout.flush();
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const io = std.testing.io;
     const clock: std.Io.Clock = .awake;
 

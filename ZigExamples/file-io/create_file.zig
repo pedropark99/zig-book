@@ -1,6 +1,6 @@
 const std = @import("std");
-pub fn main() !void {
-    const cwd = std.fs.cwd();
-    const file = try cwd.createFile("foo.txt", .{});
-    file.close();
+pub fn main(init: std.process.Init) !void {
+    const cwd = std.Io.Dir.cwd();
+    const file = try cwd.createFile(init.io, "foo.txt", .{});
+    file.close(init.io);
 }

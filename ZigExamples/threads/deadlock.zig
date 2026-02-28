@@ -1,14 +1,10 @@
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
-const io = std.testing.io;
 const clock: std.Io.Clock = .awake;
 var mut1: std.Thread.Mutex = .{};
 var mut2: std.Thread.Mutex = .{};
 
-fn do_some_work1() !void {
+fn do_some_work1(io: std.Io, stdout: *std.Io.Writer) !void {
     mut1.lock();
     const duration: std.Io.Duration = .{ .nanoseconds = 1 };
     try std.Io.sleep(io, duration, clock);
@@ -18,7 +14,7 @@ fn do_some_work1() !void {
     mut1.unlock();
 }
 
-fn do_some_work2() !void {
+fn do_some_work2(io: std.Io, stdout: *std.Io.Writer) !void {
     mut2.lock();
     const duration: std.Io.Duration = .{ .nanoseconds = 1 };
     try std.Io.sleep(io, duration, clock);
@@ -28,9 +24,13 @@ fn do_some_work2() !void {
     mut2.unlock();
 }
 
-pub fn main() !void {
-    const thr1 = try Thread.spawn(.{}, do_some_work1, .{});
-    const thr2 = try Thread.spawn(.{}, do_some_work2, .{});
+pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
+
+    const thr1 = try Thread.spawn(.{}, do_some_work1, .{init.io, stdout});
+    const thr2 = try Thread.spawn(.{}, do_some_work2, .{init.io, stdout});
     thr1.join();
     thr2.join();
 }

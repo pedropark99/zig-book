@@ -1,9 +1,10 @@
 const std = @import("std");
 
-pub fn main() !void {
-    const cwd = std.fs.cwd();
-    const file = try cwd.openFile("foo.txt", .{ .mode = .write_only });
-    defer file.close();
-    try file.seekFromEnd(0);
-    _ = try file.writeAll("Some random text to write\n");
+pub fn main(init: std.process.Init) !void {
+    const cwd = std.Io.Dir.cwd();
+    const file = try cwd.openFile(init.io, "foo.txt", .{ .mode = .write_only });
+    defer file.close(init.io);
+
+    const length = try file.length(init.io);
+    _ = try file.writePositionalAll(init.io, "Some random text to write\n", length);
 }

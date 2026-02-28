@@ -19,7 +19,7 @@ const Vec3 = struct {
     }
 };
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var v1 = Vec3{
         .x = 4.2,
         .y = 2.4,

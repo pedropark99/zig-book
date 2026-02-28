@@ -42,7 +42,7 @@ const Stack = struct {
     }
 };
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     var stack = try Stack.init(allocator, 10);

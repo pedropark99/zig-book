@@ -30,7 +30,7 @@ fn writer(lock: *RwLock) !void {
     }
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const ids = [3]u8{ 1, 2, 3 };
     _ = ids;
     var lock: RwLock = .{};

@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
     std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
 

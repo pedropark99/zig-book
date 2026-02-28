@@ -13,7 +13,7 @@ fn increment() void {
     }
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const thr1 = try Thread.spawn(.{}, increment, .{});
     const thr2 = try Thread.spawn(.{}, increment, .{});
     thr1.join();

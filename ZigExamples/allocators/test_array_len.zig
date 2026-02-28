@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const name = "Pedro";
     _ = name;
     const array = [_]u8{ 1, 2, 3, 4 };

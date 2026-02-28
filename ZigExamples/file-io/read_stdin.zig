@@ -7,7 +7,7 @@ var stdin_reader = std.fs.File.stdin().reader(io, &stdin_buffer);
 const stdin = &stdin_reader.interface;
 const stdout = &stdout_writer.interface;
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     try stdout.writeAll("Type your name:\n");
     try stdout.flush();
 

@@ -1,6 +1,4 @@
 const std = @import("std");
-const stdout = std.fs.File.stdout();
-const print = std.debug.print;
 
 const Base64 = struct {
     _table: *const [64]u8,
@@ -137,7 +135,11 @@ fn _calc_decode_length(input: []const u8) !usize {
     return multiple_groups;
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
+
     var memory_buffer: [1000]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&memory_buffer);
     const allocator = fba.allocator();
@@ -148,8 +150,8 @@ pub fn main() !void {
     const encoded_text = try base64.encode(allocator, text);
     const decoded_text = try base64.decode(allocator, etext);
 
-    print("Encoded text: {s}\n", .{encoded_text});
-    print("Decoded text: {s}\n", .{decoded_text});
-    print("Encoded length: {d}\n", .{encoded_text.len});
-    print("Decoded length: {d}\n", .{decoded_text.len});
+    try stdout.print("Encoded text: {s}\n", .{encoded_text});
+    try stdout.print("Decoded text: {s}\n", .{decoded_text});
+    try stdout.print("Encoded length: {d}\n", .{encoded_text.len});
+    try stdout.print("Decoded length: {d}\n", .{decoded_text.len});
 }

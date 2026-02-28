@@ -17,7 +17,7 @@ pub const User = struct {
     }
 };
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const u = User.init(1, "pedro", "email@gmail.com");
     try u.print_name();
 }

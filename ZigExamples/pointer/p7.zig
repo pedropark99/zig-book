@@ -8,7 +8,7 @@ fn return_null(n: i32) ?i32 {
     return n;
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const x: i32 = 5;
     const y: ?i32 = return_null(x);
     try stdout.print("{d}\n", .{y.?});
