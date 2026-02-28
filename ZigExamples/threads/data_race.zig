@@ -1,7 +1,4 @@
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
 
 // Global counter variable
@@ -14,9 +11,14 @@ fn increment() void {
 }
 
 pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
+
     const thr1 = try Thread.spawn(.{}, increment, .{});
     const thr2 = try Thread.spawn(.{}, increment, .{});
     thr1.join();
     thr2.join();
-    try stdout.print("Couter value: {d}\n", .{counter});
+    try stdout.print("Counter value: {d}\n", .{counter});
+    try stdout.flush();
 }

@@ -6,7 +6,7 @@ fn Array(comptime T: type) type {
     };
 }
 
-pub fn main(init: std.process.Init) !void {
+pub fn main() !void {
     var buffer: [5]u8 = undefined;
     const ar = Array(u8){ .items = &buffer, .size = 0 };
     std.debug.print("{any}\n", .{@TypeOf(ar)});

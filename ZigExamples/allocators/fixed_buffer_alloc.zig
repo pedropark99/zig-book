@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn main(init: std.process.Init) !void {
+pub fn main() !void {
     var buffer: [10]u8 = undefined;
     for (0..buffer.len) |i| {
         buffer[i] = 0;

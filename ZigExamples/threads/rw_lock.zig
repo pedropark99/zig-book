@@ -1,13 +1,9 @@
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
 const RwLock = std.Thread.RwLock;
 var counter: u32 = 0;
 var buffer = [4]u32{ 512, 2700, 9921, 112 };
 const clock: std.Io.Clock = .awake;
-const io = std.testing.io;
 
 fn reader(lock: *RwLock) !void {
     while (true) {
@@ -31,6 +27,9 @@ fn writer(lock: *RwLock) !void {
 }
 
 pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
     const ids = [3]u8{ 1, 2, 3 };
     _ = ids;
     var lock: RwLock = .{};

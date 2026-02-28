@@ -1,14 +1,14 @@
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
 const Pool = std.Thread.Pool;
 
-fn print_id(id: *const u8) void {
+fn print_id(stdout: *std.Io.Writer, id: *const u8) void {
     _ = stdout.print("Thread ID: {d}\n", .{id.*}) catch void;
 }
 
 pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     const opt = Pool.Options{
@@ -21,6 +21,6 @@ pub fn main(init: std.process.Init) !void {
 
     const id1: u8 = 1;
     const id2: u8 = 2;
-    try pool.spawn(print_id, .{&id1});
-    try pool.spawn(print_id, .{&id2});
+    try pool.spawn(print_id, .{stdout, &id1});
+    try pool.spawn(print_id, .{stdout, &id2});
 }

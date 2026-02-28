@@ -6,7 +6,7 @@ fn foo() !void {
     return error.Test;
 }
 
-pub fn main(init: std.process.Init) !void {
+pub fn main() !void {
     var i: usize = 1;
     errdefer std.debug.print("Value of i: {d}\n", .{i});
     defer i = 2;

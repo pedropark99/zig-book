@@ -18,7 +18,7 @@ fn LinkedList(comptime T: type) type {
     };
 }
 
-pub fn main(init: std.process.Init) !void {
+pub fn main() !void {
     const Listu32 = LinkedList(u32);
     var list = Listu32{};
     var n1 = Listu32.Node{ .value = 1 };

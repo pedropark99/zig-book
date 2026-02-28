@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn main(init: std.process.Init) !void {
+pub fn main() !void {
     const a = [_]u8{ 0, 1, 2, 3, 4, 5, 6, 7, 8 };
     for (0..a.len) |i| {
         const index = i;

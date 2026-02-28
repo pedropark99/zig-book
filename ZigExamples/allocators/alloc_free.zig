@@ -1,10 +1,10 @@
 const std = @import("std");
-const io = std.testing.io;
-var stdin_buffer: [1024]u8 = undefined;
-var stdin_reader = std.fs.File.stdin().reader(io, &stdin_buffer);
-const stdin = &stdin_reader.interface;
 
 pub fn main(init: std.process.Init) !void {
+    var stdin_buffer: [1024]u8 = undefined;
+    var stdin_reader = std.Io.File.stdin().reader(init.io, &stdin_buffer);
+    const stdin = &stdin_reader.interface;
+
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     var input = try allocator.alloc(u8, 50);

@@ -9,7 +9,7 @@ const User = struct {
     }
 };
 
-pub fn main(init: std.process.Init) !void {
+pub fn main() !void {
     const u = User.init(1, "pedro", "pedrosomeemail@gmail.com");
     _ = u;
     const eu = User{ .id = 1, .name = "Pedro", .email = "someemail@gmail.com" };
