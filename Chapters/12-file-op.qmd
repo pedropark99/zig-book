@@ -721,7 +721,7 @@ get a `NotOpenForReading` error as result.
 
 But how can you overcome this barrier? How can you create a file that is open
 to read operations? All you have to do, is to set the `read` flag to true
-in the second argument of `createFile()`. When you set this flag to true,
+in the third argument of `createFile()`. When you set this flag to true,
 then the file gets create with "read permissions", and, as consequence,
 a program like this one below becomes valid:
 
@@ -761,8 +761,8 @@ What we read from the file: We are going to read this line
 ### Opening files and appending data to it
 
 Opening files is easy. Just use the `openFile()` method instead of `createFile()`.
-In the first argument of `openFile()` you provide the path to the file that
-you want to open. Then, on the second argument you provide the flags (or, the options)
+In the first argument of `openFile()` you provide the IO implementation, then, on the second argument you
+provide the path to the file that you want to open, then, on the third argument you provide the flags (or, the options)
 that dictates how the file is opened.
 
 You can see the full list of options for `openFile()` by visiting the documentation for
@@ -780,10 +780,16 @@ There are three IO modes, or, three values that you can provide to this flag, wh
 These modes are similar to the modes that you provide to the `mode` argument of the
 `open()` Python built-in function[^py-open], or, the `mode` argument of the
 `fopen()` C function[^c-open].
+
 In the code example below, we are opening the `foo.txt` text file with a `write_only` mode,
-and appending a new line of text to the end of the file. We use `seekFromEnd()` this time
-to guarantee that we are going to append the text to the end of the file. Once again, methods
-such as `seekFromEnd()` are described in more depth in @sec-indicators.
+and appending a new line of text to the end of the file. To do that, we use the `writePositionalAll()`
+method from the file descriptor object. This method allows you to write a slice of bytes/data into
+a specific position in the file.
+
+Since we want to append data to the end of the file, I use the `length()` method of the file descriptor
+object to calculate the length of the file (i.e. how many bytes the file contains), and then, I pass the result
+on the third argument of this `writePositionalAll()` method, which tells this method to write the input data
+at the end of the file.
 
 [^py-open]: <https://docs.python.org/3/tutorial/inputoutput.html#reading-and-writing-files>
 [^c-open]: <https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm>
@@ -792,31 +798,36 @@ such as `seekFromEnd()` are described in more depth in @sec-indicators.
 
 ```{zig}
 #| eval: true
-#| auto_main: true
+#| auto_main: false
 #| build_type: "lib"
-const cwd = std.fs.cwd();
-const file = try cwd.openFile(
-    "foo.txt", .{ .mode = .write_only }
-);
-defer file.close();
-try file.seekFromEnd(0);
-_ = try file.writeAll("Some random text to write\n");
+const std = @import("std");
+pub fn main(init: std.process.Init) !void {
+    const cwd = std.Io.Dir.cwd();
+    const file = try cwd.openFile(init.io, "foo.txt", .{ .mode = .write_only });
+    defer file.close(init.io);
+
+    const length = try file.length(init.io);
+    _ = try file.writePositionalAll(
+        init.io, "Some random text to write\n", length
+    );
+}
 ```
 
 
 ### Deleting files
 
 Sometimes, we just need to delete/remove the files that we have.
-To do that, we use the `deleteFile()` method. You just provide the path of the
-file that you want to delete, and this method will try to delete the file located
+To do that, we use the `deleteFile()` method. You just provide an IO implementation
+in the first argument, and the path of the
+file that you want to delete in the second argument, and this method will try to delete the file located
 at this path.
 
 ```{zig}
 #| eval: true
 #| auto_main: true
 #| build_type: "lib"
-const cwd = std.fs.cwd();
-try cwd.deleteFile("foo.txt");
+const cwd = std.Io.Dir.cwd();
+try cwd.deleteFile(init.io, "foo.txt");
 ```
 
 ### Copying files
@@ -825,7 +836,8 @@ To copy existing files, we use the `copyFile()` method. The first argument in th
 is the path to the file that you want to copy. The second argument is a `Dir` object, i.e., a directory handler,
 more specifically, a `Dir` object that points to the folder in your computer where you want to
 copy the file to. The third argument is the new path of the file, or, in other words, the new location
-of the file. The fourth argument is the options (or flags) to be used in the copy operation.
+of the file. The fourth argument is the IO implementation that you want to use. And the fifth argument are the
+options (or flags) to be used in the copy operation.
 
 The `Dir` object that you provide as input to this method will be used to copy the file to
 the new location. You may create this `Dir` object before calling the `copyFile()` method.
@@ -837,11 +849,12 @@ file to a subfolder of your CWD, then, you can just simply pass the CWD handler 
 #| eval: true
 #| auto_main: true
 #| build_type: "lib"
-const cwd = std.fs.cwd();
+const cwd = std.Io.Dir.cwd();
 try cwd.copyFile(
     "foo.txt",
     cwd,
     "ZigExamples/file-io/foo.txt",
+    init.io,
     .{}
 );
 ```
@@ -856,50 +869,6 @@ to explore the other available methods, since I already talked too much about th
 
 
 [^zig-dir]: <https://ziglang.org/documentation/master/std/#std.fs.Dir>
-
-
-
-
-## Position indicators {#sec-indicators}
-
-A position indicator is like a type of cursor, or, an index. This "index" identifies the current
-location in the file (or, in the data stream) that the file descriptor object that you have
-is currently looking at.
-When you create a file descriptor, the position indicator starts at the beginning of the file,
-or, at the beginning of the stream. When you read from or write into the file (or socket, or data stream, etc.)
-described by this file descriptor object, you end up moving the position indicator.
-
-In other words, any IO operation have a common side effect, which is to move the position indicator.
-For example, suppose that we have a file of 300 bytes total in size. If you
-read 100 bytes from the file, then, the position indicator moves 100 bytes forward. If you try
-to write 50 bytes into this same file, these 50 bytes will be written from the current
-position indicated by the position indicator. Since the indicator is at a 100 bytes forward from
-the beginning of the file, these 50 bytes would be written in the middle of the file.
-
-This is why we have used the `seekTo()` method at the last code example presented in @sec-creating-files.
-We have used this method to move the position indicator back to the beginning of the file, which
-would make sure that we would write the text that we wanted to write from the beginning of the file,
-instead of writing it from the middle of the file. Because before the write operation, we had
-performed a read operation, which means that the position indicator was moved in this read operation.
-
-The position indicators of a file descriptor object can be changed (or altered) by using the
-"seek" methods from this file descriptor, which are: `seekTo()`, `seekFromEnd()` and `seekBy()`.
-These methods have the same effect, or, the same responsibility that the
-[`fseek()`](https://en.cppreference.com/w/c/io/fseek)[^c-fseek] C function.
-
-[^c-fseek]: <https://en.cppreference.com/w/c/io/fseek>
-
-
-Considering that `offset` refers to the index that you provide as input to these "seek" methods,
-the bullet points below summarises what is the effect of each of these methods.
-As a quick note, in the case of `seekFromEnd()` and `seekBy()`, the `offset` provided can be either a
-positive or a negative index.
-
-- `seekTo()` will move the position indicator to the location that is `offset` bytes from the beginning of the file.
-- `seekFromEnd()` will move the position indicator to the location that is `offset` bytes from the end of the file.
-- `seekBy()` will move the position indicator to the location that is `offset` bytes from the current position in the file.
-
-
 
 
 
@@ -930,13 +899,14 @@ we would not be allowed to iterate through the files in this directory.
 #| eval: true
 #| auto_main: true
 #| build_type: "lib"
-const cwd = std.fs.cwd();
+const cwd = std.Io.Dir.cwd();
 const dir = try cwd.openDir(
+    init.io,
     "ZigExamples/file-io/",
     .{ .iterate = true }
 );
 var it = dir.iterate();
-while (try it.next()) |entry| {
+while (try it.next(init.io)) |entry| {
     try stdout.print(
         "File name: {s}\n",
         .{entry.name}
@@ -963,10 +933,10 @@ File name: copy_file.zig
 ### Creating new directories
 
 There are two methods that are important when it comes to
-creating directories, which are `makeDir()` and `makePath()`.
-The difference between these two methods is that `makeDir()` can
+creating directories, which are `createDir()` and `createDirPath()`.
+The difference between these two methods is that `createDir()` can
 only create one single directory in the current directory in each call,
-while `makePath()` is capable of recursively create subdirectories in the same call.
+while `createDirPath()` is capable of recursively create subdirectories in the same call.
 
 
 This is why the name of this method is "make path". It will create as many
@@ -974,16 +944,16 @@ subdirectories as necessary to create the path that you provided as input.
 So, if you provide the path `"sub1/sub2/sub3"` as input to this method,
 it will create three different subdirectories, `sub1`, `sub2` and `sub3`,
 within the same function call. In contrast, if you provided such path
-as input to `makeDir()`, you would likely get an error as result, since
+as input to `createDir()`, you would likely get an error as result, since
 this method can only create a single subdirectory.
 
 ```{zig}
 #| eval: true
 #| auto_main: true
 #| build_type: "lib"
-const cwd = std.fs.cwd();
-try cwd.makeDir("src");
-try cwd.makePath("src/decoders/jpg/");
+const cwd = std.Io.Dir.cwd();
+try cwd.createDir(init.io, "src", .default_dir);
+try cwd.createDirPath(init.io, "src/decoders/jpg/");
 ```
 
 ### Deleting directories
@@ -996,8 +966,8 @@ we are deleting the `src` directory that we have just created in the previous ex
 #| eval: true
 #| auto_main: true
 #| build_type: "lib"
-const cwd = std.fs.cwd();
-try cwd.deleteDir("src");
+const cwd = std.Io.Dir.cwd();
+try cwd.deleteDir(init.io, "src");
 ```
 
 
