@@ -456,10 +456,10 @@ With this operation, we get the first byte of the output.
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
     const input = "Hi";
     try stdout.print("{d}\n", .{input[0] >> 2});
     try stdout.flush();
@@ -517,11 +517,10 @@ are setted to zero in the output sequence, which is `00010000` (is the number 16
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
-
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
     const bits = 0b10010111;
     try stdout.print("{d}\n", .{bits & 0b00110000});
     try stdout.flush();
