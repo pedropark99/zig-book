@@ -121,14 +121,14 @@ the `area` variable would contain the value `"Data & Analytics"`, instead of `"P
 #| build_type: "run"
 #| auto_main: false
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
 const Role = enum {
     SE, DPE, DE, DA, PM, PO, KS
 };
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
     var area: []const u8 = undefined;
     const role = Role.SE;
     switch (role) {
@@ -319,7 +319,7 @@ keywords together. A single function in Zig might contain many different scopes 
 the `defer` input expression might be executed at different places of the function, depending on which scope you
 are currently in.
 
-As a first example, consider the `foo()` function exposed below. When we execute this `foo()` function, the expression
+As a first example, consider the code exposed below. When the `main()` function get's executed, the expression
 that prints the message "Exiting function ..." is getting executed only when the function exits
 its scope.
 
@@ -328,22 +328,14 @@ its scope.
 #| auto_main: false
 #| build_type: "lib"
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
-fn foo() !void {
+pub fn main() !void {
     defer std.debug.print(
         "Exiting function ...\n", .{}
     );
-    try stdout.print("Adding some numbers ...\n", .{});
+    std.debug.print("Adding some numbers ...\n", .{});
     const x = 2 + 2; _ = x;
-    try stdout.print("Multiplying ...\n", .{});
+    std.debug.print("Multiplying ...\n", .{});
     const y = 2 * 8; _ = y;
-    try stdout.flush();
-}
-
-pub fn main() !void {
-    try foo();
 }
 ```
 
@@ -423,8 +415,8 @@ error: FooError
 ```
 
 
-When I say that "defer expressions" are executed in a LIFO order, what I want to say is that
-the last `defer` or `errdefer` expressions in the code are the first ones to be executed.
+When I say that "defer expressions" are executed in a LIFO (last in, first out) order, what that means is that
+the last `defer` or `errdefer` expression in the code is first one to be executed.
 You could also interpret this as: "defer expressions" are executed from bottom to top, or,
 from last to first.
 
@@ -778,9 +770,6 @@ every new `User` object. That is why this `init()` function returns a new `User`
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
 const User = struct {
     id: u64,
     name: []const u8,
@@ -797,15 +786,18 @@ const User = struct {
         };
     }
 
-    fn print_name(self: User) !void {
+    fn print_name(self: User, stdout: *std.Io.Writer) !void {
         try stdout.print("{s}\n", .{self.name});
         try stdout.flush();
     }
 };
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
     const u = User.init(1, "pedro", "email@gmail.com");
-    try u.print_name();
+    try u.print_name(stdout);
 }
 ```
 
@@ -979,9 +971,9 @@ anonymous struct for you.
 #| build_type: "run"
 #| auto_main: false
 const std = @import("std");
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
     const stdout = &stdout_writer.interface;
     try stdout.print("Hello, {s}!\n", .{"world"});
     try stdout.flush();
