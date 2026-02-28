@@ -5,23 +5,20 @@
 // The only thing in this program that makes the execution of the thread finish before
 // the execution of main() is the `sleep()` call.
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
-const io = std.testing.io;
 const clock: std.Io.Clock = .awake;
-fn do_some_work() !void {
-    _ = try stdout.write("Starting the work.\n");
-    const duration: std.Io.Duration = .{ .nanoseconds = 100 };
-    try std.Io.sleep(io, duration, clock);
-    _ = try stdout.write("Finishing the work.\n");
+const duration_100 = std.Io.Duration.fromNanoseconds(100);
+const duration_2 = std.Io.Duration.fromSeconds(2);
+
+fn do_some_work(io: std.Io) !void {
+    std.debug.print("Starting the work.\n", .{});
+    try std.Io.sleep(io, duration_100, clock);
+    std.debug.print("Finishing the work.\n", .{});
 }
 
 pub fn main(init: std.process.Init) !void {
-    const thread = try Thread.spawn(.{}, do_some_work, .{});
+    const thread = try Thread.spawn(.{}, do_some_work, .{init.io});
     _ = thread;
 
-    const duration: std.Io.Duration = .{ .nanoseconds = 2 };
-    try std.Io.sleep(io, duration, clock);
+    try std.Io.sleep(init.io, duration_2, clock);
 }

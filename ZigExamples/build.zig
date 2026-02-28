@@ -89,8 +89,6 @@ pub fn build(b: *std.Build) void {
         "threads/example3.zig",
         "threads/joining.zig",
         "threads/mutex.zig",
-        "threads/pool.zig",
-        "threads/pool_with_task.zig",
         "threads/rw_lock.zig",
         "threads/thread_sleep.zig",
         "unittest/double_free.zig",
