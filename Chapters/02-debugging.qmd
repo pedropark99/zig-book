@@ -41,20 +41,11 @@ This is a known and old strategy that is very simple and effective, and it's bet
 the programming community as *print debugging*.
 In Zig, you can print information to the `stdout` or `stderr` streams of your system.
 
-Let's begin with `stdout`. First, you
-need to get access to the `stdout`, by calling the `getStdOut()` method, from
-the Zig Standard Library. This method returns a *file descriptor* object,
-and, through this object you can read/write to the `stdout`.
-I recommend you to check out all methods available in this object, by [checking the page in
-the Zig Standard Library Official Reference for the type `File`](https://ziglang.org/documentation/master/std/#std.Io.File)[^zig-fiile-reference].
-
-[^zig-fiile-reference]: <https://ziglang.org/documentation/master/std/#std.Io.File>.
-
-For our purpose here, which is to write something to the `stdout`, especially to debug our
-program, I recommend you to use the `writer()` method, which gives you a *writer* object.
-This *writer* object offers some helper methods to write stuff into the file descriptor object
-that represents the `stdout` stream. In special, the `print()` method.
-
+Let's begin with `stdout`. In order to print something to the `stdout`, you need to get access to a "writer object"
+that writes to the `stdout`. First, you need to get a *file descriptor* object that describes the `stdout`.
+To do that, call the `stdout()` method of the `std.Io.File` module from
+the Zig Standard Library.
+After that, you can get the "writer object" by calling the `writer()` method from the *file descriptor* object.
 
 The `print()` method from this *writer* object is a "print formatter" type of a function.
 In other words, this method works exactly like the `printf()` function from C,
@@ -87,14 +78,14 @@ with the `d` format specifier.
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
 fn add(x: u8, y: u8) u8 {
     return x + y;
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
     const result = add(34, 16);
     try stdout.print("Result: {d}", .{result});
     try stdout.flush();
@@ -129,9 +120,13 @@ then, creating a *writer* object to `stderr`, then, using the `print()` method o
 ```{zig}
 #| eval: false
 const std = @import("std");
-const stderr = std.io.getStdErr().writer();
-// some more lines ...
-try stderr.print("Result: {d}", .{result});
+pub fn main(init: std.process.Init) !void {
+    var stderr_buffer: [1024]u8 = undefined;
+    var stderr_writer = std.Io.File.stderr().writer(init.io, &stderr_buffer);
+    const stderr = &stderr_writer.interface;
+    // some more lines ...
+    try stderr.print("Result: {d}", .{result});
+}
 ```
 
 
@@ -176,17 +171,16 @@ piece of Zig code:
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
-
 fn add_and_increment(a: u8, b: u8) u8 {
     const sum = a + b;
     const incremented = sum + 1;
     return incremented;
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
     var n = add_and_increment(2, 3);
     n = add_and_increment(n, n);
     try stdout.print("Result: {d}!\n", .{n});
@@ -340,12 +334,11 @@ the data type of the object.
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
 const expect = std.testing.expect;
-
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
     const number: i32 = 5;
     try expect(@TypeOf(number) == i32);
     try stdout.print("{any}\n", .{@TypeOf(number)});
