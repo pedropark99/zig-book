@@ -245,24 +245,18 @@ an empty, anonymous struct (`.{}`) in the third argument of `spawn()`.
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
-const io = std.testing.io;
+const duration = std.Io.Duration.fromSeconds(1);
 const clock: std.Io.Clock = .awake;
 
-fn do_some_work() !void {
-    _ = try stdout.write("Starting the work.\n");
-    try stdout.flush();
-    const duration: std.Io.Duration = .{.nanoseconds = 1000};
+fn do_some_work(io: std.Io) !void {
+    std.debug.print("Starting the work.\n", .{});
     try std.Io.sleep(io, duration, clock);
-    _ = try stdout.write("Finishing the work.\n");
-    try stdout.flush();
+    std.debug.print("Finishing the work.\n", .{});
 }
 
-pub fn main() !void {
-    const thread = try Thread.spawn(.{}, do_some_work, .{});
+pub fn main(init: std.process.Init) !void {
+    const thread = try Thread.spawn(.{}, do_some_work, .{init.io});
     thread.join();
 }
 ```
@@ -356,32 +350,24 @@ on the screen.
 #| build_type: "lib"
 #| auto_main: false
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
-const io = std.testing.io;
 const Thread = std.Thread;
 const clock: std.Io.Clock = .awake;
 fn print_id(id: *const u8) !void {
-    try stdout.print("Thread ID: {d}\n", .{id.*});
-    try stdout.flush();
+    std.debug.print("Thread ID: {d}\n", .{id.*});
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const id1: u8 = 1;
     const id2: u8 = 2;
     const thread1 = try Thread.spawn(.{}, print_id, .{&id1});
     const thread2 = try Thread.spawn(.{}, print_id, .{&id2});
-
-    _ = try stdout.write("Joining thread 1\n");
-    try stdout.flush();
+    std.debug.print("Joining thread 1\n", .{});
     thread1.join();
 
-    const duration: std.Io.Duration = .{.nanoseconds = 1000};
-    try std.Io.sleep(io, duration, clock);
+    const duration = std.Io.Duration.fromNanoseconds(1000);
+    try std.Io.sleep(init.io, duration, clock);
 
-    _ = try stdout.write("Joining thread 2\n");
-    try stdout.flush();
+    std.debug.print("Joining thread 2\n", .{});
     thread2.join();
 }
 ```
@@ -437,21 +423,15 @@ function that we have used over the previous examples.
 #| auto_main: false
 const std = @import("std");
 const Thread = std.Thread;
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
-
 fn print_id(id: *const u8) !void {
-    try stdout.print("Thread ID: {d}\n", .{id.*});
-    try stdout.flush();
+    std.debug.print("Thread ID: {d}\n", .{id.*});
 }
 
 pub fn main() !void {
     const id1: u8 = 1;
     const thread1 = try Thread.spawn(.{}, print_id, .{&id1});
     thread1.detach();
-    _ = try stdout.write("Finish main\n");
-    try stdout.flush();
+    std.debug.print("Finish main\n", .{});
 }
 ```
 
@@ -470,116 +450,6 @@ able to free itself, without the need to wait for the main process.
 If you ask main to sleep (or "wait") for some extra nanoseconds, before it ends, you will likely
 see the message printed by `print_id()`, because you give enough time for the thread to
 finish before the main process ends.
-
-
-## Thread pools
-
-Thread pools is a very popular programming pattern, which is used especially on servers and daemons processes.
-A thread pool is just a set of threads, or a "pool" of threads. Many programmers like to use this pattern because it makes
-it easier to manage and use multiple threads in your program, instead of manually creating the threads when you need them.
-
-Also, using thread pools might increase performance as well in your program,
-especially if your program is constantly creating threads to perform short-lived tasks.
-In such instance, a thread pool might cause an increase in performance because you do not have be constantly
-creating and destroying threads all the time, so you don't face a lot of the overhead involved
-in this constant process of creating and destroying threads.
-
-The main idea behind a thread pool is to have a set of threads already created and ready to perform
-tasks at all times. You create a set of threads at the moment that your program starts, and keep
-these threads alive while your program runs. Each of these threads will be either performing a task, or
-waiting for a task to be assigned.
-Every time a new task emerges in your program, this task is added to a "queue of tasks",
-and the moment that a thread becomes available and ready to perform a new task,
-this thread takes the next task from the "queue of tasks", and it simply performs the task.
-
-The Zig Standard Library offers a thread pool implementation on the `std.Thread.Pool` struct.
-You create a new instance of a `Pool` object by providing a `Pool.Options` object
-as input to the `init()` method of this struct. A `Pool.Options` object, is a struct object that contains
-configurations for the pool of threads. The most important settings in this struct object are
-the members `n_jobs` and `allocator`. As the name suggests, the member `allocator` should receive an allocator object,
-while the member `n_jobs` specifies the number of threads to be created and maintained in this pool.
-
-Consider the example exposed below, that demonstrates how can we create a new thread pool object.
-Here, we create a `Pool.Options` object that contains
-a general purpose allocator object, and also, the `n_jobs` member was set to 4, which
-means that the thread pool will create and use 4 threads.
-
-Also notice that the `pool` object was initially set to `undefined`. This allow us
-to initially declare the thread pool object, but not properly instantiate the
-underlying memory of the object. You have to initially declare your thread pool object
-by using `undefined` like this, because the `init()` method of `Pool` needs
-to have an initial pointer to properly instantiate the object.
-
-So, just remember to create your thread pool object by using `undefined`, and then,
-after that, you call the `init()` method over the object.
-You should also not forget to call the `deinit()` method over the thread pool
-object, once you are done with it, to release the resources allocated for the thread pool. Otherwise, you will
-have a memory leak in your program.
-
-```{zig}
-#| auto_main: false
-#| build_type: "run"
-const std = @import("std");
-const Pool = std.Thread.Pool;
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    const opt = Pool.Options{
-        .n_jobs = 4,
-        .allocator = allocator,
-    };
-    var pool: Pool = undefined;
-    try pool.init(opt);
-    defer pool.deinit();
-}
-```
-
-Now that we know how to create `Pool` objects, we have
-to understand how to assign tasks to be executed by the threads in this pool object.
-To assign a task to be performed by a thread, we need to call the `spawn()` method
-from the thread pool object.
-
-This `spawn()` method works identical to the `spawn()` method from the
-`Thread` object. The method has almost the same arguments as the previous one,
-more precisely, we don't have to provide a `SpawnConfig` object in this case.
-But instead of creating a new thread, this `spawn()` method from
-the thread pool object just registers a new task in the internal "queue of tasks" to be performed,
-and any available thread in the pool will get this task, and it will simply perform the task.
-
-In the example below, we are using our previous `print_id()` function once again.
-But you may notice that the `print_id()` function is a little different this time,
-because now we are using `catch` instead of `try` in the `print()` call.
-Currently, the `Pool` struct only supports functions that don't return errors
-as tasks. Thus, when assigning tasks to threads in a thread pool, it is essential to use functions
-that don't return errors. That is why we are using `catch` here, so that the
-`print_id()` function don't return an error.
-
-
-```{zig}
-#| eval: false
-#| auto_main: false
-#| build_type: "run"
-fn print_id(id: *const u8) void {
-    _ = stdout.print("Thread ID: {d}\n", .{id.*})
-        catch void;
-}
-
-const id1: u8 = 1;
-const id2: u8 = 2;
-try pool.spawn(print_id, .{&id1});
-try pool.spawn(print_id, .{&id2});
-```
-
-This limitation should probably not exist, and, in fact, it's already on the radar of the
-Zig team to fix this issue, and it's being tracked in an [open issue](https://github.com/ziglang/zig/issues/18810)[^issue].
-So, if you do need to provide a function that might return an error as the task
-to be performed by the threads in the thread pool, then, you are either limited to:
-
-- implementing your own thread pool that does not have this limitation.
-- wait for the Zig team to actually fix this issue.
-
-[^issue]: <https://github.com/ziglang/zig/issues/18810>
-
 
 
 
@@ -718,11 +588,7 @@ to the expected 200000 that we want.
 #| auto_main: false
 #| build_type: "lib"
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
-// Global counter variable
 var counter: usize = 0;
 // Function to increment the counter
 fn increment() void {
@@ -736,8 +602,7 @@ pub fn main() !void {
     const thr2 = try Thread.spawn(.{}, increment, .{});
     thr1.join();
     thr2.join();
-    try stdout.print("Couter value: {d}\n", .{counter});
-    try stdout.flush();
+    std.debug.print("Couter value: {d}\n", .{counter});
 }
 ```
 
@@ -837,28 +702,29 @@ Notice that the output of this program is now the correct number of 200000.
 #| build_type: "run"
 #| auto_main: false
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
-const Mutex = std.Thread.Mutex;
+const Mutex = std.Io.Mutex;
+const State = Mutex.State;
 var counter: usize = 0;
-fn increment(mutex: *Mutex) void {
+
+fn increment(io: std.Io, mutex: *Mutex) !void {
     for (0..100000) |_| {
-        mutex.lock();
+        try mutex.lock(io);
         counter += 1;
-        mutex.unlock();
+        mutex.unlock(io);
     }
 }
 
-pub fn main() !void {
-    var mutex: Mutex = .{};
-    const thr1 = try Thread.spawn(.{}, increment, .{&mutex});
-    const thr2 = try Thread.spawn(.{}, increment, .{&mutex});
+pub fn main(init: std.process.Init) !void {
+    var mutex: Mutex = .{
+        .state=std.atomic.Value(State).init(.unlocked)
+    };
+
+    const thr1 = try Thread.spawn(.{}, increment, .{init.io, &mutex});
+    const thr2 = try Thread.spawn(.{}, increment, .{init.io, &mutex});
     thr1.join();
     thr2.join();
-    try stdout.print("Couter value: {d}\n", .{counter});
-    try stdout.flush();
+    std.debug.print("Couter value: {d}\n", .{counter});
 }
 ```
 
@@ -966,41 +832,37 @@ new data into the `counter` object (incrementing it, more specifically).
 #| auto_main: false
 const std = @import("std");
 const Thread = std.Thread;
-const RwLock = std.Thread.RwLock;
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
-var counter: u32 = 0;
-const io = std.testing.io;
+const RwLock = std.Io.RwLock;
+const duration = std.Io.Duration.fromSeconds(2);
 const clock: std.Io.Clock = .awake;
+var counter: u32 = 0;
 
-fn reader(lock: *RwLock) !void {
+fn reader(io: std.Io, id: u32, lock: *RwLock) !void {
     while (true) {
-        lock.lockShared();
-        const v: u32 = counter;
-        try stdout.print("{d}", .{v});
-        try stdout.flush();
-        lock.unlockShared();
-        const duration: std.Io.Duration = .{.nanoseconds = 2};
-        try std.Io.sleep(io, duration, clock);
-    }
-}
-fn writer(lock: *RwLock) !void {
-    while (true) {
-        lock.lock();
-        counter += 1;
-        lock.unlock();
-        const duration: std.Io.Duration = .{.nanoseconds = 2};
-        try std.Io.sleep(io, duration, clock);
+        if (lock.tryLockShared(io)) {
+            std.debug.print("Thread {d}: {d}\n", .{id, counter});
+            _ = lock.unlockShared(io);
+            try std.Io.sleep(io, duration, clock);
+        }
     }
 }
 
-pub fn main() !void {
-    var lock: RwLock = .{};
-    const thr1 = try Thread.spawn(.{}, reader, .{&lock});
-    const thr2 = try Thread.spawn(.{}, reader, .{&lock});
-    const thr3 = try Thread.spawn(.{}, reader, .{&lock});
-    const wthread = try Thread.spawn(.{}, writer, .{&lock});
+fn writer(io: std.Io, lock: *RwLock) !void {
+    while (true) {
+        if (lock.tryLock(io)) {
+            counter += 1;
+            _ = lock.unlock(io);
+            try std.Io.sleep(io, duration, clock);
+        }
+    }
+}
+
+pub fn main(init: std.process.Init) !void {
+    var lock: RwLock = .init;
+    const thr1 = try Thread.spawn(.{}, reader, .{init.io, 1, &lock});
+    const thr2 = try Thread.spawn(.{}, reader, .{init.io, 2, &lock});
+    const thr3 = try Thread.spawn(.{}, reader, .{init.io, 3, &lock});
+    const wthread = try Thread.spawn(.{}, writer, .{init.io, &lock});
 
     thr1.join();
     thr2.join();
@@ -1055,20 +917,20 @@ waiting for each other to release a resource. This usually happens when multiple
 and the order of acquiring them is not well managed.
 
 The code example below demonstrates a deadlock situation. We have two different threads that execute
-two different functions (`work1()` and `work2()`) in this example. And we also have two separate
+two different functions (`do_some_work1()` and `do_some_work2()`) in this example. And we also have two separate
 mutexes. If you compile and run this code example, you will notice that the program just runs indefinitely,
 without ending.
 
-When we look into the first thread, which executes the `work1()` function, we can
+When we look into the first thread, which executes the `do_some_work1()` function, we can
 notice that this function acquires the `mut1` lock first. Because this is the first operation
 that is executed inside this thread, which is the first thread created in the program.
 After that, the function sleeps for 1 second, to
 simulate some type of work, and then, the function tries to acquire the `mut2` lock.
 
-On the other hand, when we look into the second thread, which executes the `work2()` function,
+On the other hand, when we look into the second thread, which executes the `do_some_work2()` function,
 we can see that this function acquires the `mut2` lock first. Because when this thread gets created and it tries
 to acquire this `mut2` lock, the first thread is still sleeping on that "sleep 1 second" line.
-After acquiring `mut2`, the `work2()` function also sleeps for 1 second, to
+After acquiring `mut2`, the `do_some_work2()` function also sleeps for 1 second, to
 simulate some type of work, and then the function tries to acquire the `mut1` lock.
 
 This creates a deadlock situation, because after the "sleep for 1 second" line in both threads,
@@ -1080,26 +942,35 @@ free the lock that they want to acquire.
 
 ```{zig}
 #| eval: false
-var mut1: Mutex = .{}; var mut2: Mutex = .{};
-fn work1() !void {
-    mut1.lock();
-    Thread.sleep(1 * std.time.ns_per_s);
-    mut2.lock();
-    _ = try stdout.write("Doing some work 1\n");
-    mut2.unlock(); mut1.unlock();
+const std = @import("std");
+const Thread = std.Thread;
+const clock: std.Io.Clock = .awake;
+const duration = std.Io.Duration.fromSeconds(1);
+const State = std.Io.Mutex.State;
+var mut1: std.Io.Mutex = .{.state=std.atomic.Value(State).init(.unlocked)};
+var mut2: std.Io.Mutex = .{.state=std.atomic.Value(State).init(.unlocked)};
+
+fn do_some_work1(io: std.Io) !void {
+    try mut1.lock(io);
+    try std.Io.sleep(io, duration, clock);
+    try mut2.lock(io);
+    std.debug.print("Doing some work 1\n", .{});
+    mut2.unlock(io);
+    mut1.unlock(io);
 }
 
-fn work2() !void {
-    mut2.lock();
-    Thread.sleep(1 * std.time.ns_per_s);
-    mut1.lock();
-    _ = try stdout.write("Doing some work 1\n");
-    mut1.unlock(); mut2.unlock();
+fn do_some_work2(io: std.Io) !void {
+    try mut2.lock(io);
+    try std.Io.sleep(io, duration, clock);
+    try mut1.lock(io);
+    std.debug.print("Doing some work 2\n", .{});
+    mut1.unlock(io);
+    mut2.unlock(io);
 }
 
-pub fn main() !void {
-    const thr1 = try Thread.spawn(.{}, work1, .{});
-    const thr2 = try Thread.spawn(.{}, work2, .{});
+pub fn main(init: std.process.Init) !void {
+    const thr1 = try Thread.spawn(.{}, do_some_work1, .{init.io});
+    const thr2 = try Thread.spawn(.{}, do_some_work2, .{init.io});
     thr1.join();
     thr2.join();
 }
@@ -1147,37 +1018,32 @@ atomic objects in Zig with the `Value()` generic function that we have mentioned
 #| build_type: "run"
 const std = @import("std");
 const Thread = std.Thread;
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.Io.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
-var running = std.atomic.Value(bool).init(true);
 const clock: std.Io.Clock = .awake;
-const io = std.testing.io;
+const duration = std.Io.Duration.fromSeconds(2);
+var running = std.atomic.Value(bool).init(true);
 var counter: u64 = 0;
 
-fn do_more_work() !void {
-    const duration: std.Io.Duration = .{.nanoseconds = 2};
+fn do_more_work(io: std.Io) !void {
     try std.Io.sleep(io, duration, clock);
 }
-fn work() !void {
+
+fn work(io: std.Io) !void {
     while (running.load(.monotonic)) {
-        for (0..10000) |_| { counter += 1; }
-        if (counter < 15000) {
-            _ = try stdout.write(
-                "Time to cancel the thread.\n"
-            );
+        for (0..10000) |_| {
+            counter += 1;
+        }
+        if (counter > 15000) {
+            std.debug.print("Time to cancel the thread.\n", .{});
             running.store(false, .monotonic);
         } else {
-            _ = try stdout.write("Time to do more work.\n");
-            try do_more_work();
-            running.store(false, .monotonic);
+            std.debug.print("Time to do more work.\n", .{});
+            try do_more_work(io);
         }
     }
-    try stdout.flush();
 }
 
-pub fn main() !void {
-    const thread = try Thread.spawn(.{}, work, .{});
+pub fn main(init: std.process.Init) !void {
+    const thread = try Thread.spawn(.{}, work, .{init.io});
     thread.join();
 }
 ```
