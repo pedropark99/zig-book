@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 # Filesystem and Input/Output (IO) {#sec-filesystem}
 
 In this chapter we are going to discuss how you can can execute filesystem operations
-and also handle with input/output (IO) using the cross-platform structs and functions
+and also handle input/output (IO) using the cross-platform structs and functions
 from the Zig Standard Library. Most of these functions and structs
 comes from the `std.Io` module.
 
@@ -150,7 +150,7 @@ The key objects in this code snippet exposed below are `allocator` and `io`.
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 
-var threaded: std.Io.Threaded = .init(allocator);
+var threaded: std.Io.Threaded = .init(allocator, .{});
 const io = threaded.io();
 defer threaded.deinit();
 _ = io;
@@ -178,7 +178,7 @@ pub fn main(init: std.process.Init) !void {
     const file = try cwd.openFile(
         init.io, "foo.txt", .{ .mode = .read_only }
     );
-    defer file.close();
+    defer file.close(init.io);
 
     var read_buffer: [1024]u8 = undefined;
     var fr = file.reader(init.io, &read_buffer);
@@ -188,8 +188,7 @@ pub fn main(init: std.process.Init) !void {
     @memset(buffer[0..], 0);
     _ = reader.readSliceAll(buffer[0..]) catch 0;
 
-    try stdout.print("{s}\n", .{buffer});
-    try stdout.flush();
+    std.debug.print("{s}\n", .{buffer});
 }
 ```
 
@@ -217,7 +216,7 @@ used only inside "unit tests context". If you try to use them inside any other t
 you normally end up with a compilation error.
 
 ```{zig}
-#| eval: true
+#| eval: false
 #| build_type: "lib"
 #| auto_main: true
 const io = std.testing.io;
@@ -255,7 +254,7 @@ and pre-initialized IO implementation for your IO operations. This implementatio
 ```{zig}
 #| eval: true
 #| build_type: "run"
-#| auto_main: true
+#| auto_main: false
 const std = @import("std");
 pub fn main(init: std.process.Init) !void {
     var stdout_buffer: [1024]u8 = undefined;
@@ -265,6 +264,7 @@ pub fn main(init: std.process.Init) !void {
 }
 ```
 
+    try stdout.flush();
 
 ## Introducing file descriptors {#sec-file-descriptor}
 
@@ -347,7 +347,7 @@ pub fn main(init: std.process.Init) !void {
     try stdout.writeAll(
         "This message was written into stdout.\n"
     );
-    try stdout.flush()
+    try stdout.flush();
 }
 ```
 
@@ -686,13 +686,13 @@ const std = @import("std");
 pub fn main(init: std.process.Init) !void {
     const cwd = std.Io.Dir.cwd();
     const file = try cwd.createFile(
-        init.io, "foo.txt", .{ .mode = .write_only }
+        init.io, "foo.txt", .{}
     );
     // Don't forget to close the file at the end.
     defer file.close(init.io);
     // Do things with the file ...
-    _ = try file.writeAll(
-        "Writing this line to the file\n"
+    _ = try file.writePositionalAll(
+        init.io, "Writing this line to the file\n", 0
     );
 }
 ```
