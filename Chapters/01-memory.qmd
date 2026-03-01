@@ -70,16 +70,23 @@ known at compile-time, then, the size of this object is only known at compile-ti
 and only if, the type of this object has a known fixed size.
 
 In order for a type to have a known fixed size, this type must have data members whose size is fixed.
-If this type includes, for example, a variable sized array in it, then, this type does not have a known
-fixed size. Because this array can have any size at runtime
-(i.e., it can be an array of 2 elements, or 50 elements, or 1 thousand elements, etc.).
+If this type includes, for example, a slice that does not have a clear size in it, then, this type does not have a known
+fixed size. Because at runtime this slice can assume different sizes
+(i.e., it might contain 2, 50, or 1 thousand elements, etc.).
 
-For example, a string object, which internally is an array of constant u8 values (`[]const u8`)
-has a variable size. It can be a string object with 100 or 500 characters in it. If we do not
-know at compile-time, which exact string will be stored inside this string object, then, we cannot calculate
-the size of this string object at compile-time. So, any type, or any struct declaration that you make, that
-includes a string data member that does not have an explicit fixed size, makes this type, or this
-new struct that you are declaring, a type that does not have a known fixed size at compile-time.
+For example, as described at @sec-zig-strings, a string object in Zig is internally an array of arbitrary bytes. But, as we've discussed
+at @sec-string-slice-versus-array, this array of bytes is normally accessed as a slice of this array of bytes (`[]const u8`).
+Now, if a particular function receives a string as input (maybe is the name of the user to be created inside the database,
+or, the name of a particular product to search, etc.), there is no easy way to predict the size of the string that you
+are going to receive as input.
+
+Think about this for a minute, depending on the context, your function might receive different strings as input, which
+might have different sizes. It might be a string with 100 characters, or maybe 10 characters, etc. If there is
+no change for us to predict the exact size of the string that we are going to receive while we are developing our new
+function, then, the size of this input string is, most likely, not known at compile-time.
+
+So, any type, or any struct declaration that includes a data member that does not have an explicit fixed size,
+makes this type, or this new struct that you are declaring, a type that does not have a known fixed size at compile-time.
 
 In contrast, if the type of this struct that you are declaring, includes a data member that is an array,
 but this array has a known fixed size, like `[60]u8` (which declares an array of 60 `u8` values), then,
@@ -117,12 +124,12 @@ Function arguments are a classic example of this. Because the value of each func
 argument depends on the value that you assign to this particular argument,
 when you call the function.
 
-For example, the function `input_length()` contains an argument named `input`, which is an array of constant `u8` integers (`[]const u8`).
+For example, the function `input_length()` contains an argument named `input`, which is a slice of constant `u8` integers (`[]const u8`).
 It's impossible to know the value of this particular argument at compile time. And it also is impossible to know the size/length
-of this particular argument. Because it's an array that does not have a fixed size specified explicitly in the argument type annotation.
+of this particular argument. Because it's a slice that does not have a fixed size specified explicitly in the argument type annotation.
 
-So, we know that this `input` argument will be an array of `u8` integers. But we do not know at compile-time, its value, and neither its size.
-This information is known only at runtime, which is the period of time when you program is executed.
+So, we know that this `input` argument will be a slice of `u8` integers. But we do not know at compile-time, it's value, and neither it's size.
+This information is known only at runtime, which is the period of time when your program is being executed.
 As a consequence, the value of the expression `input.len` is also known only at runtime.
 This is an intrinsic characteristic of any function. Just remember that the value of function arguments is usually not "compile-time known".
 

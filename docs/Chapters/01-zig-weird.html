@@ -493,7 +493,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
   <li><a href="#sec-blocks" id="toc-sec-blocks" class="nav-link" data-scroll-target="#sec-blocks"><span class="header-section-number">1.7</span> Blocks and scopes</a></li>
   <li><a href="#sec-zig-strings" id="toc-sec-zig-strings" class="nav-link" data-scroll-target="#sec-zig-strings"><span class="header-section-number">1.8</span> How strings work in Zig?</a>
   <ul class="collapse">
-  <li><a href="#using-a-slice-versus-a-sentinel-terminated-array" id="toc-using-a-slice-versus-a-sentinel-terminated-array" class="nav-link" data-scroll-target="#using-a-slice-versus-a-sentinel-terminated-array"><span class="header-section-number">1.8.1</span> Using a slice versus a sentinel-terminated array</a></li>
+  <li><a href="#sec-string-slice-versus-array" id="toc-sec-string-slice-versus-array" class="nav-link" data-scroll-target="#sec-string-slice-versus-array"><span class="header-section-number">1.8.1</span> Using a slice versus a sentinel-terminated array</a></li>
   <li><a href="#iterating-through-the-string" id="toc-iterating-through-the-string" class="nav-link" data-scroll-target="#iterating-through-the-string"><span class="header-section-number">1.8.2</span> Iterating through the string</a></li>
   <li><a href="#a-better-look-at-the-object-type" id="toc-a-better-look-at-the-object-type" class="nav-link" data-scroll-target="#a-better-look-at-the-object-type"><span class="header-section-number">1.8.3</span> A better look at the object type</a></li>
   <li><a href="#byte-vs-unicode-points" id="toc-byte-vs-unicode-points" class="nav-link" data-scroll-target="#byte-vs-unicode-points"><span class="header-section-number">1.8.4</span> Byte vs unicode points</a></li>
@@ -1057,16 +1057,17 @@ t.zig:7:5: note: consider using 'const'</code></pre>
 <pre><code>Hello</code></pre>
 </div>
 </div>
-<section id="using-a-slice-versus-a-sentinel-terminated-array" class="level3" data-number="1.8.1">
-<h3 data-number="1.8.1" class="anchored" data-anchor-id="using-a-slice-versus-a-sentinel-terminated-array"><span class="header-section-number">1.8.1</span> Using a slice versus a sentinel-terminated array</h3>
-<p>In memory, all string values in Zig are always stored in the same way. They are simply stored as sequences/arrays of arbitrary bytes. But you can use and access this sequence of bytes in two different ways. You can access this sequence of bytes as:</p>
+<section id="sec-string-slice-versus-array" class="level3" data-number="1.8.1">
+<h3 data-number="1.8.1" class="anchored" data-anchor-id="sec-string-slice-versus-array"><span class="header-section-number">1.8.1</span> Using a slice versus a sentinel-terminated array</h3>
+<p>In memory, all string values in Zig are always stored in the same way. They are simply stored as sequences/arrays of arbitrary bytes in memory. However, there are two different ways that this sequence/array of bytes is normally used and accessed inside Zig code, which are:</p>
 <ul>
 <li>a sentinel-terminated array of <code>u8</code> values.</li>
 <li>or as a slice of <code>u8</code> values.</li>
 </ul>
+<p>Most of the times, you will normally access and use strings as slices of <code>u8</code> values. Specially because most of the functions from the Zig Standard Library receive strings as input as slices of <code>u8</code> values.</p>
 <section id="sentinel-terminated-arrays" class="level4" data-number="1.8.1.1">
 <h4 data-number="1.8.1.1" class="anchored" data-anchor-id="sentinel-terminated-arrays"><span class="header-section-number">1.8.1.1</span> Sentinel-terminated arrays</h4>
-<p>Sentinel-terminated arrays in Zig are described in the Language Reference of Zig<a href="#fn21" class="footnote-ref" id="fnref21" role="doc-noteref"><sup>21</sup></a>. In summary a sentinel-terminated array is just a normal array, but, the difference is that they contain a “sentinel value” at the last index/element of the array. With a sentinel-terminated array you embed both the length of the array, and also, the sentinel value in the type itself of your object.</p>
+<p>Sentinel-terminated arrays in Zig are described in the Language Reference of Zig<a href="#fn21" class="footnote-ref" id="fnref21" role="doc-noteref"><sup>21</sup></a>. In summary a sentinel-terminated array is just a normal array, but, the key difference here is that they contain a “sentinel value” at the last index/element of the array. With a sentinel-terminated array you embed both the length of the array, and also, the sentinel value in the type itself of your object.</p>
 <p>For example, if you write a string literal value in your code, and ask Zig to print the data type of this value, you usually get a data type in the format <code>*const [n:0]u8</code>. The <code>n</code> in the data type indicates the size of the string (that is the length of the array). The zero after the <code>n:</code> part of the data type is the sentinel value itself.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb51"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co">// This is a string literal value:</span></span>
@@ -1078,7 +1079,7 @@ t.zig:7:5: note: consider using 'const'</code></pre>
 </div>
 </div>
 <p>So, with this data type <code>*const [n:0]u8</code> you are essentially saying that you have an array of <code>u8</code> values of length <code>n</code>, where, the element at the index corresponding to the length <code>n</code> in the array is the number zero. If you really think about this description, you will notice that this is just a fancy way to describe a string in C, which is a null-terminated array of bytes. The <code>NULL</code> value in C is the number zero. So, an array that ends in a null/zero value in C is essentially a sentinel-terminated array in Zig, where the sentinel value of the array is the number zero.</p>
-<p>Therefore, a string literal value in Zig is just a pointer to a null-terminated array of bytes (i.e., similar to a C string). But in Zig, a string literal value also embeds the length of the string, and also, the fact that they are “NULL terminated”, into the data type of the value itself.</p>
+<p>Therefore, a sentinel-terminated array in Zig is just a type that embeds both the length and also the sentinel-value of the array inside the object type itself. So, in the case of a string literal value in Zig, it is just a pointer to a null-terminated array of bytes (i.e., similar to a C string). But in Zig, a string literal value also embeds the length of the string, and also, the fact that they are “NULL terminated”, into the data type of the value itself.</p>
 </section>
 <section id="slice" class="level4" data-number="1.8.1.2">
 <h4 data-number="1.8.1.2" class="anchored" data-anchor-id="slice"><span class="header-section-number">1.8.1.2</span> Slice</h4>
@@ -1218,7 +1219,7 @@ got codepoint e382ab</code></pre>
 <li><code>std.mem.replace()</code>: to replace the occurrences of substring in the string.</li>
 </ul>
 <p>Notice that all of these functions come from the <code>mem</code> module of the Zig Standard Library. This module contains multiple functions and methods that are useful to work with memory and sequences of bytes in general.</p>
-<p>The <code>eql()</code> function is used to check if two arrays of data are equal or not. Since strings are just arbitrary arrays of bytes, we can use this function to compare two strings together. This function returns a boolean value indicating if the two strings are equal or not. The first argument of this function is the data type of the elements of the arrays that are being compared.</p>
+<p>The <code>eql()</code> function is used to check if two slices of data are equal or not. Since strings are just arbitrary arrays of bytes, we can use this function to compare two strings together. This function returns a boolean value indicating if the two strings are equal or not. The first argument of this function is the data type of the elements of the slices that are being compared.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb63"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> name: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"Pedro"</span>;</span>
 <span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(</span>
@@ -1230,7 +1231,7 @@ got codepoint e382ab</code></pre>
 </div>
 </div>
 <p>The <code>splitScalar()</code> and <code>splitSequence()</code> functions are useful to split a string into multiple fragments, like the <code>split()</code> method from Python strings. The difference between these two methods is that the <code>splitScalar()</code> uses a single character as the separator to split the string, while <code>splitSequence()</code> uses a sequence of characters (a.k.a. a substring) as the separator. There is a practical example of these functions later in the book.</p>
-<p>The <code>startsWith()</code> and <code>endsWith()</code> functions are pretty straightforward. They return a boolean value indicating if the string (or, more precisely, if the array of data) begins (<code>startsWith</code>) or ends (<code>endsWith</code>) with the sequence provided.</p>
+<p>The <code>startsWith()</code> and <code>endsWith()</code> functions are pretty straightforward. They return a boolean value indicating if the string (or, more precisely, if the slice of data) begins (<code>startsWith</code>) or ends (<code>endsWith</code>) with the sequence provided.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb65"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> name: []<span class="kw">const</span> <span class="dt">u8</span> = <span class="st">"Pedro"</span>;</span>
 <span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(</span>
@@ -1274,7 +1275,7 @@ N of replacements: 1</code></pre>
 <p>As Richard Feldman explains on his <a href="https://www.youtube.com/watch?v=jIZpKpLCOiU&amp;ab_channel=GOTOConferences">most recent GOTO conference talk</a><a href="#fn23" class="footnote-ref" id="fnref23" role="doc-noteref"><sup>23</sup></a> , we haven’t figured it out yet a way to achieve <strong>true safety in technology</strong>. In other words, we haven’t found a way to build software that won’t be exploited with 100% certainty. We can greatly reduce the risks of our software being exploited, by ensuring memory safety for example. But this is not enough to achieve “true safety” territory.</p>
 <p>Because even if you write your program in a “safe language”, hackers can still exploit failures in the operating system where your program is running (e.g.&nbsp;maybe the system where your code is running has a “backdoor exploit” that can still affect your code in unexpected ways), or also, they can exploit the features from the architecture of your computer. A recently found exploit that involves memory invalidation through a feature of “memory tags” present in ARM chips is an example of that <span class="citation" data-cites="exploit1">(<a href="references.html#ref-exploit1" role="doc-biblioref">Kim et al. 2024</a>)</span>.</p>
 <p>The question is: what have Zig and other languages been doing to mitigate this problem? If we take Rust as an example, Rust is, for the most part<a href="#fn24" class="footnote-ref" id="fnref24" role="doc-noteref"><sup>24</sup></a>, a memory safe language by enforcing specific rules to the developer. In other words, the key feature of Rust, the <em>borrow checker</em>, forces you to follow a specific logic when you are writing your Rust code, and the Rust compiler will always complain everytime you try to go out of this pattern.</p>
-<p>In contrast, the Zig language is not a memory safe language by default. There are some memory safety features that you get for free in Zig, especially in arrays and pointer objects. But there are other tools offered by the language, that are not used by default. In other words, the <code>zig</code> compiler does not obligate you to use such tools.</p>
+<p>In contrast, the Zig language is not a memory safe language by default. There are some memory safety features that you get for free in Zig, especially in arrays, slices and pointer objects. But there are other tools offered by the language, that are not used by default. In other words, the <code>zig</code> compiler does not obligate you to use such tools.</p>
 <p>The tools listed below are related to memory safety. That is, they help you to achieve memory safety in your Zig code:</p>
 <ul>
 <li><code>defer</code> allows you to keep free operations physically close to allocations. This helps you to avoid memory leaks, “use after free”, and also “double-free” problems. Furthermore, it also keeps free operations logically tied to the end of the current scope, which greatly reduces the mental overhead about object lifetime.</li>
