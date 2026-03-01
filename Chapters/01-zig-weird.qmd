@@ -190,9 +190,9 @@ This follows the syntax of a C-family programming language[^c-family].
 
 [^c-family]: <https://en.wikipedia.org/wiki/List_of_C-family_programming_languages>
 
-Also, notice the `@import()` call at the first line. We use this built-in function
+Also, notice the `@import()` call at the first lines. We use this built-in function
 to import functionality from other Zig modules into our current module.
-This `@import()` function works similarly to the `#include` pre-processor
+Therefore, this `@import()` function works similarly to the `#include` pre-processor
 in C or C++, or, to the `import` statement in Python or Javascript code.
 In this example, we are importing the `std` module,
 which gives you access to the Zig Standard Library.
@@ -206,18 +206,34 @@ that are created is `std`. In @sec-assignments we talk more about objects in gen
 ```{zig}
 #| auto_main: false
 #| build_type: "ast"
+//! By convention, root.zig is the root source file when making a package.
 const std = @import("std");
+const Io = std.Io;
 
-pub fn print() !void {
-    std.debug.print("Run `zig build test` to run the tests.\n", .{});
+/// This is a documentation comment to explain the `printAnotherMessage` function below.
+///
+/// Accepting an `Io.Writer` instance is a handy way to write reusable code.
+pub fn printAnotherMessage(writer: *Io.Writer) Io.Writer.Error!void {
+    try writer.print("Run `zig build test` to run the tests.\n", .{});
 }
 
 pub fn add(a: i32, b: i32) i32 {
     return a + b;
 }
+
+test "basic add functionality" {
+    try std.testing.expect(add(3, 7) == 10);
+}
 ```
 
-Functions in Zig are declared using the `fn` keyword.
+You can also notice in `root.zig` how comments are done in the language. In Zig there are three types of comments that you can write in your code:
+
+- normal comments, which are lines that start with `//` and are completely ignored by the compiler.
+- doc comments, which are lines that start with `///`, and they document the variable/type/whatever immediately follows that comment. These comments are actually used by the compiler to generate documentation for your code.
+- top-level doc comments, which are lines that start with `//!` and are always present at the top (first lines) of the Zig module, and are used by the compiler to generate documentation about the entire module.
+
+
+Also, functions in Zig are declared using the `fn` keyword.
 In this `root.zig` module, we are declaring a function called `add()`, which has two arguments named `a` and `b`.
 The function returns an integer of the type `i32` as result.
 
@@ -250,6 +266,9 @@ A calling Zig module imports another module by using the `@import()` built-in fu
 all public functions from the imported module visible to the calling Zig module.
 We talk more about this keyword at @sec-pub-keyword.
 
+You can also see a `test` block inside `root.zig`. This is a block of unit tests to be executed.
+You will learn more about these blocks at @sec-unittests.
+
 
 ### The `main.zig` file {#sec-main-file}
 
@@ -274,8 +293,7 @@ return nothing (`void`), or return an error. This exclamation mark in the return
 is an interesting and powerful feature of Zig. In summary, if you write a function and something inside
 the body of this function might return an error, then, you are forced to:
 
-- either add the exclamation mark to the return type of the function and make it clear that
-this function might return an error.
+- either add the exclamation mark to the return type of the function and make it clear that this function might return an error.
 - explicitly handle this error inside the function.
 
 In most programming languages, we normally handle (or deal with) an error through
@@ -327,84 +345,19 @@ and, therefore, to start your program.
 
 
 
-### Compiling your source code {#sec-compile-code}
-
-You can compile your Zig modules into a binary executable by running the `build-exe` command
-from the `zig` compiler. You simply list all the Zig modules that you want to build after
-the `build-exe` command, separated by spaces. In the example below, we are compiling the module `main.zig`.
-
-```bash
-zig build-exe src/main.zig
-```
-
-Since we are building an executable, the `zig` compiler will look for a `main()` function
-declared in any of the files that you list after the `build-exe` command. If
-the compiler does not find a `main()` function declared somewhere, a
-compilation error will be raised, warning about this mistake.
-
-The `zig` compiler also offers a `build-lib` and `build-obj` commands, which work
-the exact same way as the `build-exe` command. The only difference is that, they compile your
-Zig modules into a portable C ABI library, or, into object files, respectively.
-
-In the case of the `build-exe` command, a binary executable file is created by the `zig`
-compiler in the root directory of your project.
-If we take a look now at the contents of our current directory, with a simple `ls` command, we can
-see the binary file called `main` that was created by the compiler.
-
-```bash
-ls
-```
-
-```
-build.zig  build.zig.zon  main  src
-```
-
-If I execute this binary executable, I get the "Hello World" message in the terminal
-, as we expected.
-
-```bash
-./main
-```
-
-```
-Hello, world!
-```
-
-
-### Compile and execute at the same time {#sec-compile-run-code}
-
-In the previous section, I presented the `zig build-exe` command, which
-compiles Zig modules into an executable file. However, this means that,
-in order to execute the executable file, we have to run two different commands.
-First, the `zig build-exe` command, and then, we call the executable file
-created by the compiler.
-
-But what if we wanted to perform these two steps,
-all at once, in a single command? We can do that by using the `zig run`
-command.
-
-```bash
-zig run src/main.zig
-```
-
-```
-Hello, world!
-```
-
-
 ### Compiling the entire project {#sec-compile-project}
+
+Now that we have seen the file projects, and understood more about them, let's discuss
+how you can actually compile your Zig code into actual executable or library files.
+Let's begin with how you can compile the entire project at once.
 
 Just as I described in @sec-project-files, as our project grows in size and
 complexity, we usually prefer to organize the compilation and build process
 of the project into a build script, using some sort of "build system".
 
-In other words, as our project grows in size and complexity,
-the `build-exe`, `build-lib` and `build-obj` commands become
-harder to use directly. Because then, we start to list
-multiple and multiple modules at the same time. We also
-start to add built-in compilation flags to customize the
-build process for our needs, etc. It becomes a lot of work
-to write the necessary commands by hand.
+In other words, as our project grows in size and complexity, we usually prefer to not
+directly write build commands such as `build-exe`, `build-lib` and `build-obj` commands into the terminal.
+Because they start to become harder and harder to write as the project grows.
 
 In C/C++ projects, programmers normally opt to use CMake, Ninja, `Makefile` or `configure` scripts
 to organize this process. However, in Zig, we have a native build system in the language itself.
@@ -443,6 +396,72 @@ named `hello_world` that was generated by the compiler after the
 Hello, world!
 ```
 
+
+
+### Compiling your code into an executable file {#sec-compile-code}
+
+You can compile your Zig code into a binary executable by running the `build-exe` command
+from the `zig` compiler. You simply list all the Zig modules that you want to build after
+the `build-exe` command, separated by spaces. In the example below, we are compiling a hypothetical
+module named `foo.zig`.
+
+```bash
+zig build-exe src/foo.zig
+```
+
+Since we are building an executable, the `zig` compiler will look for a `main()` function
+declared in any of the files that you list after the `build-exe` command. If
+the compiler does not find a `main()` function declared somewhere, a
+compilation error will be raised, warning about this mistake.
+
+The `zig` compiler also offers a `build-lib` and `build-obj` commands, which work
+the exact same way as the `build-exe` command. The only difference is that, they compile your
+Zig modules into a portable C ABI library, or, into object files, respectively.
+
+In the case of the `build-exe` command, a binary executable file is created by the `zig`
+compiler in the root directory of your project.
+If we take a look now at the contents of our current directory, with a simple `ls` command, we can
+see the binary file called `foo` that was created by the compiler.
+
+```bash
+ls
+```
+
+```
+build.zig  build.zig.zon  foo  src
+```
+
+If I execute this binary executable, I get the "Hello World" message in the terminal
+, as we expected.
+
+```bash
+./foo
+```
+
+```
+Hello, world!
+```
+
+
+### Compile and execute at the same time {#sec-compile-run-code}
+
+In the previous section, I presented the `zig build-exe` command, which
+compiles Zig modules into an executable file. However, this means that,
+in order to execute the executable file, we have to run two different commands.
+First, the `zig build-exe` command, and then, we call the executable file
+created by the compiler.
+
+But what if we wanted to perform these two steps,
+all at once, in a single command? We can do that by using the `zig run`
+command.
+
+```bash
+zig run src/foo.zig
+```
+
+```
+Hello, world!
+```
 
 
 ## How to learn Zig?
