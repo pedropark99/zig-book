@@ -1251,20 +1251,24 @@ pub fn main(init: std.process.Init) !void {
 
 
 
-### Using a slice versus a sentinel-terminated array
+### Using a slice versus a sentinel-terminated array {#sec-string-slice-versus-array}
 
 In memory, all string values in Zig are always stored in the same way.
-They are simply stored as sequences/arrays of arbitrary bytes. But you can use and access
-this sequence of bytes in two different ways. You can access this sequence of bytes as:
+They are simply stored as sequences/arrays of arbitrary bytes in memory. However, there are two different ways
+that this sequence/array of bytes is normally used and accessed inside Zig code, which are:
 
 - a sentinel-terminated array of `u8` values.
 - or as a slice of `u8` values.
+
+Most of the times, you will normally access and use strings as slices of `u8` values.
+Specially because most of the functions from the Zig Standard Library receive
+strings as input as slices of `u8` values.
 
 
 #### Sentinel-terminated arrays
 
 Sentinel-terminated arrays in Zig are described in the Language Reference of Zig[^sentinel].
-In summary a sentinel-terminated array is just a normal array, but, the difference is that they
+In summary a sentinel-terminated array is just a normal array, but, the key difference here is that they
 contain a "sentinel value" at the last index/element of the array. With a sentinel-terminated array
 you embed both the length of the array, and also, the sentinel value in the type itself of your object.
 
@@ -1293,7 +1297,8 @@ describe a string in C, which is a null-terminated array of bytes. The `NULL` va
 zero. So, an array that ends in a null/zero value in C is essentially a sentinel-terminated array in Zig,
 where the sentinel value of the array is the number zero.
 
-Therefore, a string literal value in Zig is just a pointer to a null-terminated array of bytes (i.e., similar to a C string).
+Therefore, a sentinel-terminated array in Zig is just a type that embeds both the length and also the sentinel-value
+of the array inside the object type itself. So, in the case of a string literal value in Zig, it is just a pointer to a null-terminated array of bytes (i.e., similar to a C string).
 But in Zig, a string literal value also embeds the length of the string, and also, the fact that they are "NULL terminated",
 into the data type of the value itself.
 
@@ -1518,10 +1523,10 @@ Notice that all of these functions come from the `mem` module of
 the Zig Standard Library. This module contains multiple functions and methods
 that are useful to work with memory and sequences of bytes in general.
 
-The `eql()` function is used to check if two arrays of data are equal or not.
+The `eql()` function is used to check if two slices of data are equal or not.
 Since strings are just arbitrary arrays of bytes, we can use this function to compare two strings together.
 This function returns a boolean value indicating if the two strings are equal
-or not. The first argument of this function is the data type of the elements of the arrays
+or not. The first argument of this function is the data type of the elements of the slices
 that are being compared.
 
 ```{zig}
@@ -1541,7 +1546,7 @@ split the string, while `splitSequence()` uses a sequence of characters (a.k.a. 
 as the separator. There is a practical example of these functions later in the book.
 
 The `startsWith()` and `endsWith()` functions are pretty straightforward. They
-return a boolean value indicating if the string (or, more precisely, if the array of data)
+return a boolean value indicating if the string (or, more precisely, if the slice of data)
 begins (`startsWith`) or ends (`endsWith`) with the sequence provided.
 
 ```{zig}
@@ -1651,7 +1656,7 @@ pattern.
 
 In contrast, the Zig language is not a memory safe language by default.
 There are some memory safety features that you get for free in Zig,
-especially in arrays and pointer objects. But there are other tools
+especially in arrays, slices and pointer objects. But there are other tools
 offered by the language, that are not used by default.
 In other words, the `zig` compiler does not obligate you to use such tools.
 
