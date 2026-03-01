@@ -19,22 +19,17 @@ knitr::opts_chunk$set(
 
 # Filesystem and Input/Output (IO) {#sec-filesystem}
 
-In this chapter we are going to discuss how to use the cross-platform structs and functions
-from the Zig Standard Library that can execute filesystem operations. Most of these functions and structs
-comes from the `std.fs` module.
-
-We are also going to talk about Input/Output (also known as IO) operations in Zig. Most of
-these operations are made by using the structs and functions from `std.Io` module, which defines
-file descriptors for the *standard channels* of your system (`stdout` and `stdin`), and also,
-functions to create and use I/O streams.
-
+In this chapter we are going to discuss how you can can execute filesystem operations
+and also handle input/output (IO) using the cross-platform structs and functions
+from the Zig Standard Library. Most of these functions and structs
+comes from the `std.Io` module.
 
 ## Input/Output basics {#sec-io-basics}
 
-If you have some experience in a high-level language, you have certainly used
-these input and output functionalities before in this language. In other words, you certainly have
+If you have some experience in any high-level programming language, you have certainly used
+some input or output functionality before. In other words, you certainly have
 been in a situation where you needed to sent some output to the user, or, to receive an input
-from the user.
+from the user of your program.
 
 For example, in Python we can receive some input from the user by using the `input()` built-in
 function. But we can also print (or "show") some output to the user by using the `print()`
@@ -96,7 +91,7 @@ receiving and displaying new messages from the players of the game.
 So, if you want to **read** data from something, or somewhere, it means that you need to use a `Reader` object.
 But if you need instead, to **write** data into this "something", then, you need to use a `Writer` object instead.
 Both of these objects are normally created from a file descriptor object. More specifically, through the `writer()` and `reader()`
-methods of this file descriptor object. If you are not familiar with this type of object, go to the next section.
+methods of this file descriptor object. If you are not familiar with file descriptors, go to the next section.
 
 Every `Writer` object has methods like `print()`, which allows you to write/send a formatted string
 (i.e., this formatted string is like a `f` string in Python, or, similar to the `printf()` C function)
@@ -131,19 +126,20 @@ and [`Writer.zig`](https://codeberg.org/ziglang/zig/src/branch/master/lib/std/Io
 
 ## The new `io` argument {#sec-new-io-backend}
 
-Since Zig 0.15, a new IO interface was introduced into the language, which was the introduction of the `Reader` and `Writer`
-interfaces that we described on @sec-writer-reader. Not only that happen, but also, since Zig 0.16 a new big step into this new IO interface
+Since Zig 0.15, the Zig development team initiated a movement to change completely how IO operations are made in Zig.
+With this big movement, a completely new IO interface was introduced into the language, which was the introduction of the `Reader` and `Writer`
+interfaces that we described on @sec-writer-reader. Not only that has happened, but also, since Zig 0.16 a new big step into this new IO interface
 was made, with the introduction of the new `io` argument, from which you can choose the "IO backend implementation" that
 you want to use, with `std.Io.Evented`, `std.Io.Threaded`, and others.
 
 Let's make a quick comparison here. You've probably noticed from @sec-memory-chap that, allocators are an essential type of object in Zig.
 They appear everywhere, and they are essential to any kind of task that needs to allocate some memory to
-complete. Well, with the introduction of this new IO interface, choosing an "IO backend implementation" became an essential
+complete. Well, with the introduction of this new IO interface, choosing an "IO backend implementation" also became an essential
 task in Zig code, like choosing an allocator.
 
 So now, you usually start your Zig code by choosing both an allocator, and also, an "IO backend implementation" to use.
-In the example below, I'm choosing an IO implementation that is based on thread pools. But I could also use
-`std.Io.Evented`, which is based on queue rings, if I wanted to.
+In the example below, I'm choosing an IO implementation that is based on thread pools. But I could also (if I wanted to) use
+`std.Io.Evented`, which is based on queue rings.
 
 The key objects in this code snippet exposed below are `allocator` and `io`.
 
@@ -154,29 +150,16 @@ The key objects in this code snippet exposed below are `allocator` and `io`.
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 
-var threaded: std.Io.Threaded = .init(allocator);
+var threaded: std.Io.Threaded = .init(allocator, .{});
 const io = threaded.io();
 defer threaded.deinit();
 _ = io;
 ```
 
-If you don't care much, and just want to quickly get an "IO backend implementation" for your code to use,
-you can either: 1) use `std.testing.io`, which, as the name suggests, it is more tailored for unit tests;
-or 2) use `.init_single_threaded` to quickly instantiate a `std.Io.Threaded` object using a single thread
-(example exposed below).
 
-```{zig}
-#| eval: true
-#| build_type: "lib"
-#| auto_main: true
-var threaded: std.Io.Threaded = .init_single_threaded;
-const io = threaded.io();
-_ = io;
-```
-
-Therefore, since Zig 0.16, you will find different functions across the Zig Standard Library that takes an argument named `io`
-of type `std.Io`. A big example of that is the `reader()` method that you find in `std.fs.File`. This method is responsible
-for creating the `Reader` object through which you can read data from the file represented by the `std.fs.File` object.
+Therefore, since Zig 0.16, you will find different functions that perform some IO operation across the Zig Standard Library
+that takes an argument named `io` of type `std.Io`. A big example of that is the `reader()` method that you find in `std.Io.File`. This method is responsible
+for creating the `Reader` object through which you can read data from the file represented by the `std.Io.File` object.
 And this method have now, an `io` argument, in which you should provide the "IO backend implementation" that you
 want to use while reading the file.
 
@@ -188,24 +171,25 @@ Functions related to networking are another instance where you will commonly fin
 ```{zig}
 #| eval: true
 #| build_type: "lib"
-#| auto_main: true
-const cwd = std.fs.cwd();
-const file = try cwd.openFile(
-    "foo.txt", .{ .mode = .read_only }
-);
-defer file.close();
+#| auto_main: false
+const std = @import("std");
+pub fn main(init: std.process.Init) !void {
+    const cwd = std.Io.Dir.cwd();
+    const file = try cwd.openFile(
+        init.io, "foo.txt", .{ .mode = .read_only }
+    );
+    defer file.close(init.io);
 
-var read_buffer: [1024]u8 = undefined;
-const io = std.testing.io;
-var fr = file.reader(io, &read_buffer);
-var reader = &fr.interface;
+    var read_buffer: [1024]u8 = undefined;
+    var fr = file.reader(init.io, &read_buffer);
+    var reader = &fr.interface;
 
-var buffer: [300]u8 = undefined;
-@memset(buffer[0..], 0);
-_ = reader.readSliceAll(buffer[0..]) catch 0;
+    var buffer: [300]u8 = undefined;
+    @memset(buffer[0..], 0);
+    _ = reader.readSliceAll(buffer[0..]) catch 0;
 
-try stdout.print("{s}\n", .{buffer});
-try stdout.flush();
+    std.debug.print("{s}\n", .{buffer});
+}
 ```
 
 ```
@@ -213,7 +197,76 @@ This is a line from foo.txt
 ```
 
 
-### Introducing file descriptors {#sec-file-descriptor}
+## Using a default IO implementation
+
+Sometimes, is just a hassle to write all the necessary code to properly instantiate a IO
+implementation. And sometimes, you just don't really care much about how the IO operations are being done under the hood,
+and you just wish to use an IO backend with default settings. If that is your case,
+there are currently three easy ways to quickly get an IO backend with default settings, which are:
+
+- use the the default IO implementation for the target configuration.
+- use a single threaded IO implementation with default configuration.
+- use the IO implementation from the `std.testing` module.
+
+
+### Using the IO implementation from `std.testing`
+
+As the name suggests, the IO implementation from the `std.testing` module should be
+used only inside "unit tests context". If you try to use them inside any other type of context,
+you normally end up with a compilation error.
+
+```{zig}
+#| eval: false
+#| build_type: "lib"
+#| auto_main: true
+const io = std.testing.io;
+_ = io;
+```
+
+
+### Using the single threaded IO implementation
+
+There is an easy an quick way to get a single threaded IO implementation.
+All you have to do is to instantiate a `std.Io.Threaded` object with the value
+`.init_single_threaded`, and then, call the `io()` method from the resulting
+object, as the code example below demonstrates:
+
+```{zig}
+#| eval: true
+#| build_type: "lib"
+#| auto_main: true
+var threaded: std.Io.Threaded = .init_single_threaded;
+const io = threaded.io();
+_ = io;
+```
+
+### Using the default IO implementation for your target
+
+In more recent versions of Zig, a new "default argument" for the main function was introduced,
+which is the `init` argument. In summary, you can write a main function that receives
+an object of type `std.process.Init` as input.
+
+This `std.process.Init` object is essentially an object that comes with a set of pre-initialized
+APIs for your program to take advantage of. You can use this argument to easily get a pre-defined
+and pre-initialized IO implementation for your IO operations. This implementation is accessible at the
+`io` attribute of this `init` argument.
+
+```{zig}
+#| eval: true
+#| build_type: "run"
+#| auto_main: false
+const std = @import("std");
+pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
+    _ = stdout;
+}
+```
+
+    try stdout.flush();
+
+## Introducing file descriptors {#sec-file-descriptor}
 
 A "file descriptor" object is a core component behind every IO operation that is made in any operating system (OS).
 Such object is an identifier for a particular input/output (IO) resource from your OS [@wiki_file_descriptor].
@@ -256,7 +309,7 @@ file descriptor object.
 
 You already saw across this book, how can we access and use specifically the `stdout` in Zig
 to send some output to the user.
-For that, we use the `File.stdout()` function from the `std.fs` module. This function returns
+For that, we use the `File.stdout()` function from the `std.Io` module. This function returns
 a file descriptor that describes the `stdout` channel of your current OS. Through this file
 descriptor object, we can read from or write stuff to the `stdout` of our program.
 
@@ -287,14 +340,14 @@ so, don't worry too much about that for now.
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
-
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.writeAll(
         "This message was written into stdout.\n"
     );
+    try stdout.flush();
 }
 ```
 
@@ -307,7 +360,7 @@ use them here, from the file descriptor object of `stdout`, and vice-versa.
 
 ### The *standard input*
 
-You can access the *standard input* (i.e., `stdin`) in Zig by using the `File.stdin()` function from the `std.fs` module.
+You can access the *standard input* (i.e., `stdin`) in Zig by using the `File.stdin()` function from the `std.Io` module.
 Like its brother (`File.stdout()`), this function also returns a file descriptor object that describes the `stdin` channel
 of your OS.
 
@@ -335,15 +388,13 @@ by printing the given name to `stdout`. In the example below, I typed my name (P
 #| auto_main: false
 #| build_type: "lib"
 const std = @import("std");
-const io = std.testing.io;
-var stdin_buffer: [1024]u8 = undefined;
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-var stdin_reader = std.fs.File.stdin().reader(io, &stdin_buffer);
-const stdin = &stdin_reader.interface;
-const stdout = &stdout_writer.interface;
-
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    var stdin_buffer: [1024]u8 = undefined;
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    var stdin_reader = std.Io.File.stdin().reader(init.io, &stdin_buffer);
+    const stdin = &stdin_reader.interface;
+    const stdout = &stdout_writer.interface;
     try stdout.writeAll("Type your name\n");
     try stdout.flush();
 
@@ -363,7 +414,7 @@ Your name is: Pedro
 ### The *standard error*
 
 The *standard error* (a.k.a. the `stderr`) works exactly the same as `stdout` and `stdin`.
-You just call the `File.stderr()` function from the `std.fs` module, and you get the file descriptor to `stderr`.
+You just call the `File.stderr()` function from the `std.Io` module, and you get the file descriptor to `stderr`.
 Ideally, you should write only error or warning messages to `stderr`, because this is
 the purpose of this channel.
 
@@ -494,7 +545,7 @@ computer are considered an IO resource, as we described in @sec-file-descriptor.
 
 ### The concept of current working directory (CWD)
 
-The working directory is the folder on your computer where you are currently rooted at.
+The current working directory is the folder on your computer where you are currently rooted at.
 In other words, it's the folder that your program is currently looking at.
 Therefore, whenever you are executing a program, this program is always working with
 a specific folder on your computer. It's always in this folder that the program will initially
@@ -574,9 +625,9 @@ Therefore, this path is equivalent to `"src/xml.cpp"`.
 ## The CWD handler
 
 In Zig, filesystem operations are usually made through a directory handler object.
-A directory handler in Zig is an object of type `Dir`, which is an object that describes
+A directory handler in Zig is an object of type `std.Io.Dir`, which is an object that describes
 a particular folder in the filesystem of our computer.
-You normally create a `Dir` object, by calling the `std.fs.cwd()` function.
+You normally create a `Dir` object, by calling the `std.Io.Dir.cwd()` function.
 This function returns a `Dir` object that points to (or, that describes) the
 current working directory (CWD).
 
@@ -589,7 +640,7 @@ we are going to use it a lot over the next examples.
 
 ```{zig}
 #| auto_main: true
-const cwd = std.fs.cwd();
+const cwd = std.Io.Dir.cwd();
 _ = cwd;
 ```
 
@@ -629,16 +680,21 @@ In Zig, we do this by calling the method `close()` from the file descriptor obje
 
 ```{zig}
 #| eval: true
-#| auto_main: true
+#| auto_main: false
 #| build_type: "lib"
-const cwd = std.fs.cwd();
-const file = try cwd.createFile("foo.txt", .{});
-// Don't forget to close the file at the end.
-defer file.close();
-// Do things with the file ...
-_ = try file.writeAll(
-    "Writing this line to the file\n"
-);
+const std = @import("std");
+pub fn main(init: std.process.Init) !void {
+    const cwd = std.Io.Dir.cwd();
+    const file = try cwd.createFile(
+        init.io, "foo.txt", .{}
+    );
+    // Don't forget to close the file at the end.
+    defer file.close(init.io);
+    // Do things with the file ...
+    _ = try file.writePositionalAll(
+        init.io, "Writing this line to the file\n", 0
+    );
+}
 ```
 
 
@@ -665,62 +721,52 @@ get a `NotOpenForReading` error as result.
 
 But how can you overcome this barrier? How can you create a file that is open
 to read operations? All you have to do, is to set the `read` flag to true
-in the second argument of `createFile()`. When you set this flag to true,
+in the third argument of `createFile()`. When you set this flag to true,
 then the file gets create with "read permissions", and, as consequence,
 a program like this one below becomes valid:
 
 
 ```{zig}
 #| eval: true
-#| auto_main: true
+#| auto_main: false
 #| build_type: "lib"
-const cwd = std.fs.cwd();
-const io = std.testing.io;
-const file = try cwd.createFile(
-    "foo.txt",
-    .{ .read = true }
-);
-defer file.close();
-_ = try file.writeAll(
-    "We are going to read this line\n"
-);
+const std = @import("std");
+pub fn main(init: std.process.Init) !void {
+    const cwd = std.Io.Dir.cwd();
+    const file = try cwd.createFile(init.io, "foo.txt", .{ .read = true });
+    defer file.close(init.io);
+    _ = try file.writePositionalAll(
+        init.io, "We are going to read this line", 0
+    );
 
-var buffer: [300]u8 = undefined;
-@memset(buffer[0..], 0);
+    var buffer: [300]u8 = undefined;
+    @memset(buffer[0..], 0);
 
-try file.seekTo(0);
-var read_buffer: [1024]u8 = undefined;
-var fr = file.reader(io, &read_buffer);
-var reader = &fr.interface;
+    var read_buffer: [1024]u8 = undefined;
+    var fr = file.reader(init.io, &read_buffer);
+    var reader = &fr.interface;
 
-_ = reader.readSliceAll(buffer[0..]) catch 0;
+    _ = reader.readSliceAll(buffer[0..]) catch 0;
 
-try stdout.print("{s}", .{buffer});
-try stdout.flush();
+    std.debug.print("What we read from the file: {s}\n", .{buffer});
+}
 ```
 
 
 ```
-We are going to read this line
+What we read from the file: We are going to read this line
 ```
-
-
-If you are not familiar with position indicators, you might not recognize the method
-`seekTo()`. If that is your case, do not worry,
-we are going to talk more about this method in @sec-indicators. But essentially
-this method is moving the position indicator back to the beginning of the file,
-so that we can read the contents of the file from the beginning.
 
 
 ### Opening files and appending data to it
 
 Opening files is easy. Just use the `openFile()` method instead of `createFile()`.
-In the first argument of `openFile()` you provide the path to the file that
-you want to open. Then, on the second argument you provide the flags (or, the options)
+In the first argument of `openFile()` you provide the IO implementation, then, on the second argument you
+provide the path to the file that you want to open, then, on the third argument you provide the flags (or, the options)
 that dictates how the file is opened.
 
 You can see the full list of options for `openFile()` by visiting the documentation for
-[`OpenFlags`](https://ziglang.org/documentation/master/std/#std.fs.File.OpenFlags)[^oflags].
+[`OpenFlags`](https://ziglang.org/documentation/master/std/#std.Io.File.OpenFlags)[^oflags].
 But the main flag that you will most certainly use is the `mode` flag.
 This flag specifies the IO mode that the file will be using when it gets opened.
 There are three IO modes, or, three values that you can provide to this flag, which are:
@@ -729,15 +775,21 @@ There are three IO modes, or, three values that you can provide to this flag, wh
 - `write_only`, allows only write operations on the file. All read operations are blocked.
 - `read_write`, allows both write and read operations on the file.
 
-[^oflags]: <https://ziglang.org/documentation/master/std/#std.fs.File.OpenFlags>
+[^oflags]: <https://ziglang.org/documentation/master/std/#std.Io.File.OpenFlags>
 
 These modes are similar to the modes that you provide to the `mode` argument of the
 `open()` Python built-in function[^py-open], or, the `mode` argument of the
 `fopen()` C function[^c-open].
+
 In the code example below, we are opening the `foo.txt` text file with a `write_only` mode,
-and appending a new line of text to the end of the file. We use `seekFromEnd()` this time
-to guarantee that we are going to append the text to the end of the file. Once again, methods
-such as `seekFromEnd()` are described in more depth in @sec-indicators.
+and appending a new line of text to the end of the file. To do that, we use the `writePositionalAll()`
+method from the file descriptor object. This method allows you to write a slice of bytes/data into
+a specific position in the file.
+
+Since we want to append data to the end of the file, I use the `length()` method of the file descriptor
+object to calculate the length of the file (i.e. how many bytes the file contains), and then, I pass the result
+on the third argument of this `writePositionalAll()` method, which tells this method to write the input data
+at the end of the file.
 
 [^py-open]: <https://docs.python.org/3/tutorial/inputoutput.html#reading-and-writing-files>
 [^c-open]: <https://www.tutorialspoint.com/c_standard_library/c_function_fopen.htm>
@@ -746,31 +798,36 @@ such as `seekFromEnd()` are described in more depth in @sec-indicators.
 
 ```{zig}
 #| eval: true
-#| auto_main: true
+#| auto_main: false
 #| build_type: "lib"
-const cwd = std.fs.cwd();
-const file = try cwd.openFile(
-    "foo.txt", .{ .mode = .write_only }
-);
-defer file.close();
-try file.seekFromEnd(0);
-_ = try file.writeAll("Some random text to write\n");
+const std = @import("std");
+pub fn main(init: std.process.Init) !void {
+    const cwd = std.Io.Dir.cwd();
+    const file = try cwd.openFile(init.io, "foo.txt", .{ .mode = .write_only });
+    defer file.close(init.io);
+
+    const length = try file.length(init.io);
+    _ = try file.writePositionalAll(
+        init.io, "Some random text to write\n", length
+    );
+}
 ```
 
 
 ### Deleting files
 
 Sometimes, we just need to delete/remove the files that we have.
-To do that, we use the `deleteFile()` method. You just provide the path of the
-file that you want to delete, and this method will try to delete the file located
+To do that, we use the `deleteFile()` method. You just provide an IO implementation
+in the first argument, and the path of the
+file that you want to delete in the second argument, and this method will try to delete the file located
 at this path.
 
 ```{zig}
 #| eval: true
 #| auto_main: true
 #| build_type: "lib"
-const cwd = std.fs.cwd();
-try cwd.deleteFile("foo.txt");
+const cwd = std.Io.Dir.cwd();
+try cwd.deleteFile(init.io, "foo.txt");
 ```
 
 ### Copying files
@@ -779,7 +836,8 @@ To copy existing files, we use the `copyFile()` method. The first argument in th
 is the path to the file that you want to copy. The second argument is a `Dir` object, i.e., a directory handler,
 more specifically, a `Dir` object that points to the folder in your computer where you want to
 copy the file to. The third argument is the new path of the file, or, in other words, the new location
-of the file. The fourth argument is the options (or flags) to be used in the copy operation.
+of the file. The fourth argument is the IO implementation that you want to use. And the fifth argument are the
+options (or flags) to be used in the copy operation.
 
 The `Dir` object that you provide as input to this method will be used to copy the file to
 the new location. You may create this `Dir` object before calling the `copyFile()` method.
@@ -791,11 +849,12 @@ file to a subfolder of your CWD, then, you can just simply pass the CWD handler 
 #| eval: true
 #| auto_main: true
 #| build_type: "lib"
-const cwd = std.fs.cwd();
+const cwd = std.Io.Dir.cwd();
 try cwd.copyFile(
     "foo.txt",
     cwd,
     "ZigExamples/file-io/foo.txt",
+    init.io,
     .{}
 );
 ```
@@ -810,50 +869,6 @@ to explore the other available methods, since I already talked too much about th
 
 
 [^zig-dir]: <https://ziglang.org/documentation/master/std/#std.fs.Dir>
-
-
-
-
-## Position indicators {#sec-indicators}
-
-A position indicator is like a type of cursor, or, an index. This "index" identifies the current
-location in the file (or, in the data stream) that the file descriptor object that you have
-is currently looking at.
-When you create a file descriptor, the position indicator starts at the beginning of the file,
-or, at the beginning of the stream. When you read from or write into the file (or socket, or data stream, etc.)
-described by this file descriptor object, you end up moving the position indicator.
-
-In other words, any IO operation have a common side effect, which is to move the position indicator.
-For example, suppose that we have a file of 300 bytes total in size. If you
-read 100 bytes from the file, then, the position indicator moves 100 bytes forward. If you try
-to write 50 bytes into this same file, these 50 bytes will be written from the current
-position indicated by the position indicator. Since the indicator is at a 100 bytes forward from
-the beginning of the file, these 50 bytes would be written in the middle of the file.
-
-This is why we have used the `seekTo()` method at the last code example presented in @sec-creating-files.
-We have used this method to move the position indicator back to the beginning of the file, which
-would make sure that we would write the text that we wanted to write from the beginning of the file,
-instead of writing it from the middle of the file. Because before the write operation, we had
-performed a read operation, which means that the position indicator was moved in this read operation.
-
-The position indicators of a file descriptor object can be changed (or altered) by using the
-"seek" methods from this file descriptor, which are: `seekTo()`, `seekFromEnd()` and `seekBy()`.
-These methods have the same effect, or, the same responsibility that the
-[`fseek()`](https://en.cppreference.com/w/c/io/fseek)[^c-fseek] C function.
-
-[^c-fseek]: <https://en.cppreference.com/w/c/io/fseek>
-
-
-Considering that `offset` refers to the index that you provide as input to these "seek" methods,
-the bullet points below summarises what is the effect of each of these methods.
-As a quick note, in the case of `seekFromEnd()` and `seekBy()`, the `offset` provided can be either a
-positive or a negative index.
-
-- `seekTo()` will move the position indicator to the location that is `offset` bytes from the beginning of the file.
-- `seekFromEnd()` will move the position indicator to the location that is `offset` bytes from the end of the file.
-- `seekBy()` will move the position indicator to the location that is `offset` bytes from the current position in the file.
-
-
 
 
 
@@ -884,13 +899,14 @@ we would not be allowed to iterate through the files in this directory.
 #| eval: true
 #| auto_main: true
 #| build_type: "lib"
-const cwd = std.fs.cwd();
+const cwd = std.Io.Dir.cwd();
 const dir = try cwd.openDir(
+    init.io,
     "ZigExamples/file-io/",
     .{ .iterate = true }
 );
 var it = dir.iterate();
-while (try it.next()) |entry| {
+while (try it.next(init.io)) |entry| {
     try stdout.print(
         "File name: {s}\n",
         .{entry.name}
@@ -917,10 +933,10 @@ File name: copy_file.zig
 ### Creating new directories
 
 There are two methods that are important when it comes to
-creating directories, which are `makeDir()` and `makePath()`.
-The difference between these two methods is that `makeDir()` can
+creating directories, which are `createDir()` and `createDirPath()`.
+The difference between these two methods is that `createDir()` can
 only create one single directory in the current directory in each call,
-while `makePath()` is capable of recursively create subdirectories in the same call.
+while `createDirPath()` is capable of recursively create subdirectories in the same call.
 
 
 This is why the name of this method is "make path". It will create as many
@@ -928,16 +944,16 @@ subdirectories as necessary to create the path that you provided as input.
 So, if you provide the path `"sub1/sub2/sub3"` as input to this method,
 it will create three different subdirectories, `sub1`, `sub2` and `sub3`,
 within the same function call. In contrast, if you provided such path
-as input to `makeDir()`, you would likely get an error as result, since
+as input to `createDir()`, you would likely get an error as result, since
 this method can only create a single subdirectory.
 
 ```{zig}
 #| eval: true
 #| auto_main: true
 #| build_type: "lib"
-const cwd = std.fs.cwd();
-try cwd.makeDir("src");
-try cwd.makePath("src/decoders/jpg/");
+const cwd = std.Io.Dir.cwd();
+try cwd.createDir(init.io, "src", .default_dir);
+try cwd.createDirPath(init.io, "src/decoders/jpg/");
 ```
 
 ### Deleting directories
@@ -950,8 +966,8 @@ we are deleting the `src` directory that we have just created in the previous ex
 #| eval: true
 #| auto_main: true
 #| build_type: "lib"
-const cwd = std.fs.cwd();
-try cwd.deleteDir("src");
+const cwd = std.Io.Dir.cwd();
+try cwd.deleteDir(init.io, "src");
 ```
 
 

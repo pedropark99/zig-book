@@ -17,7 +17,10 @@ pub fn main(init: std.process.Init) !void {
     _ = try stdin.takeDelimiterExclusive('\n');
 
     try stdout.print("Input: {s}", .{buffer});
-    const n: u32 = try std.fmt.parseInt(u32, buffer[0 .. buffer.len - 1], 10);
+    const n: u32 = try std.fmt.parseInt(
+        u32, buffer[0 .. buffer.len - 1], 10
+    );
     const twice_result = twice(n);
     try stdout.print("Result: {d}\n", .{twice_result});
+    try stdout.flush();
 }

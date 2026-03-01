@@ -7,7 +7,7 @@ fn add_and_increment(a: u8, b: u8) u8 {
     return incremented;
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var n = add_and_increment(2, 3);
     n = add_and_increment(n, n);
     try stdout.print("Result: {d}!\n", .{n});

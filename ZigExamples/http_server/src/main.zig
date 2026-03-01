@@ -7,17 +7,11 @@ const Response = @import("response.zig");
 const Method = Request.Method;
 const Server = @import("server.zig").Server;
 
-pub fn main() !void {
-    var alloc = std.heap.GeneralPurposeAllocator(.{}){};
-    const gpa = alloc.allocator();
-
+pub fn main(init: std.process.Init) !void {
+    const io = init.io;
     var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    var stdout_writer = std.Io.File.stdout().writer(io, &stdout_buffer);
     const stdout = &stdout_writer.interface;
-
-    var threaded: std.Io.Threaded = .init(gpa);
-    const io = threaded.io();
-    defer threaded.deinit();
 
     const server = try Server.init(io);
     var listening = try server.listen();

@@ -19,6 +19,7 @@ const Vec3 = struct {
     }
 };
 
+
 pub fn main() !void {
     var v1 = Vec3{
         .x = 4.2,

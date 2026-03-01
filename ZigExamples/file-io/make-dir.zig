@@ -1,7 +1,7 @@
 const std = @import("std");
 
-pub fn main() !void {
-    const cwd = std.fs.cwd();
-    try cwd.makeDir("src");
-    try cwd.makePath("src/decoders/jpg/");
+pub fn main(init: std.process.Init) !void {
+    const cwd = std.Io.Dir.cwd();
+    try cwd.createDir(init.io, "src", .default_dir);
+    try cwd.createDirPath(init.io, "src/decoders/jpg/");
 }

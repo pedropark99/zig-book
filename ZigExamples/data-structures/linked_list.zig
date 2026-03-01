@@ -1,13 +1,14 @@
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
 const NodeU32 = struct {
     data: u32,
     node: std.SinglyLinkedList.Node = .{},
 };
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
+
     var list: std.SinglyLinkedList = .{};
     var one: NodeU32 = .{ .data = 1 };
     var two: NodeU32 = .{ .data = 2 };

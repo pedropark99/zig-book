@@ -79,7 +79,7 @@ fn save_png(image_header: *png.spng_ihdr, buffer: []u8) !void {
     }
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const path = "pedro_pascal.png";
     const file_descriptor = c.fopen(path, "rb");
     if (file_descriptor == null) {

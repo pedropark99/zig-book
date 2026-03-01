@@ -4,7 +4,7 @@ const cmath = @cImport({
     @cInclude("math.h");
 });
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const x: f32 = 15.68;
     const y = cmath.powf(x, 2.32);
     try stdout.print("{d}\n", .{y});

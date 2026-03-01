@@ -6,7 +6,7 @@ const stdio = @cImport({
     @cInclude("stdio.h");
 });
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const x: f32 = 15.2;
     const y = cmath.powf(x, @as(f32, 2.6));
     _ = stdio.printf("%.3f\n", y);

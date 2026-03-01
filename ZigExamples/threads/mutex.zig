@@ -1,24 +1,25 @@
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
 const Thread = std.Thread;
-const Mutex = std.Thread.Mutex;
+const Mutex = std.Io.Mutex;
+const State = Mutex.State;
 var counter: usize = 0;
 
-fn increment(mutex: *Mutex) void {
+fn increment(io: std.Io, mutex: *Mutex) !void {
     for (0..100000) |_| {
-        mutex.lock();
+        try mutex.lock(io);
         counter += 1;
-        mutex.unlock();
+        mutex.unlock(io);
     }
 }
 
-pub fn main() !void {
-    var mutex: Mutex = .{};
-    const thr1 = try Thread.spawn(.{}, increment, .{&mutex});
-    const thr2 = try Thread.spawn(.{}, increment, .{&mutex});
+pub fn main(init: std.process.Init) !void {
+    var mutex: Mutex = .{
+        .state=std.atomic.Value(State).init(.unlocked)
+    };
+
+    const thr1 = try Thread.spawn(.{}, increment, .{init.io, &mutex});
+    const thr2 = try Thread.spawn(.{}, increment, .{init.io, &mutex});
     thr1.join();
     thr2.join();
-    try stdout.print("Couter value: {d}\n", .{counter});
+    std.debug.print("Couter value: {d}\n", .{counter});
 }

@@ -1,8 +1,4 @@
 const std = @import("std");
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-const stdout = &stdout_writer.interface;
-
 const User = struct {
     id: u64,
     name: []const u8,
@@ -12,13 +8,18 @@ const User = struct {
         return User{ .id = id, .name = name, .email = email };
     }
 
-    pub fn print_name(self: User) !void {
+    pub fn print_name(self: User, stdout: *std.Io.Writer) !void {
         try stdout.print("{s}\n", .{self.name});
+        try stdout.flush();
     }
 };
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
+
     const u = User.init(1, "pedro", "email@gmail.com");
     const pointer = &u;
-    try pointer.*.print_name();
+    try pointer.*.print_name(stdout);
 }

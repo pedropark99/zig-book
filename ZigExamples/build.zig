@@ -16,16 +16,16 @@ fn get_base_name(file_name: []const u8) []const u8 {
     return it.peek().?;
 }
 
-fn delete_compiled_artifacts() !void {
-    const dir = try std.fs.cwd().openDir(".", .{ .iterate = true });
+fn delete_compiled_artifacts(io: std.Io) !void {
+    const dir = try std.Io.Dir.cwd().openDir(io, ".", .{ .iterate = true });
     var it = dir.iterate();
-    while (try it.next()) |entry| {
+    while (try it.next(io)) |entry| {
         if (entry.kind != .file)
             continue;
 
         if (std.mem.endsWith(u8, entry.name, ".a")) {
             std.debug.print("Cleaning file {s}\n", .{entry.name});
-            try dir.deleteFile(entry.name);
+            try dir.deleteFile(io, entry.name);
         }
     }
 }
@@ -34,6 +34,10 @@ pub fn build(b: *std.Build) void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     _ = allocator;
+
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io = threaded.io();
+    defer threaded.deinit();
 
     const paths = [_][]const u8{
         "allocators/arena_alloc.zig",
@@ -85,8 +89,6 @@ pub fn build(b: *std.Build) void {
         "threads/example3.zig",
         "threads/joining.zig",
         "threads/mutex.zig",
-        "threads/pool.zig",
-        "threads/pool_with_task.zig",
         "threads/rw_lock.zig",
         "threads/thread_sleep.zig",
         "unittest/double_free.zig",
@@ -127,5 +129,5 @@ pub fn build(b: *std.Build) void {
         b.installArtifact(lib);
     }
 
-    delete_compiled_artifacts() catch std.debug.print("Unable to clean compiled artifacts from current working directory.", .{});
+    delete_compiled_artifacts(io) catch std.debug.print("Unable to clean compiled artifacts from current working directory.", .{});
 }

@@ -61,8 +61,10 @@ This note is reinforcing that every possible error value must be explicitly hand
 #| eval: false
 #| auto_main: true
 #| build_type: "run"
-const dir = std.fs.cwd();
-_ = dir.openFile("doesnt_exist.txt", .{});
+const cwd = std.Io.Dir.cwd();
+_ = cwd.openFile(
+    init.io, "doesnt_exist.txt", .{ .mode = .write_only }
+);
 ```
 
 ```
@@ -84,8 +86,7 @@ and, as a consequence, its return type (`!void`) includes an exclamation mark in
 
 ```{zig}
 #| eval: false
-fn print_name() !void {
-    const stdout = std.getStdOut().writer();
+fn print_name(stdout: *std.Io.Writer) !void {
     try stdout.print("My name is Pedro!", .{});
     try stdout.flush();
 }
@@ -318,14 +319,16 @@ be a valid strategy to surpass this barrier).
 
 ```{zig}
 #| eval: false
-const dir = std.fs.cwd();
-const file = dir.openFile(
-    "doesnt_exist.txt", .{}
-) catch |err| {
-    logger.record_context();
-    logger.log_error(err);
-    return err;
-};
+pub fn main(init: std.process.Init) !void {
+    const cwd = std.Io.Dir.cwd();
+    const file = cwd.openFile(
+        init.io, "doesnt_exist.txt", .{}
+    ) catch |err| {
+        logger.record_context();
+        logger.log_error(err);
+        return err;
+    };
+}
 ```
 
 

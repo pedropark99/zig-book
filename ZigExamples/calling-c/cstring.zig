@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const zig_string: []const u8 = "test";
     // Every pointer type casting is made with the @ptrCast() function.
     const c_string: [*c]const u8 = @ptrCast(zig_string);

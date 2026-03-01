@@ -4,7 +4,7 @@ const c = @cImport({
     @cInclude("user.h");
 });
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
