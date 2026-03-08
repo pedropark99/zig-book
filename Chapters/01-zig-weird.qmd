@@ -322,15 +322,10 @@ to stop the execution. You are obligated to face the error.
 #| build_type: "run"
 #| results: "hide"
 const std = @import("std");
-const Writer = std.Io.File.Writer;
 
-pub fn main(init: std.process.Init) !void {
+pub fn main() !void {
     var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = Writer.init(
-        std.Io.File.stdout(),
-        init.io,
-        &stdout_buffer
-    );
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
     const stdout = &stdout_writer.interface;
     try stdout.print("Hello, {s}!\n", .{"world"});
     try stdout.flush();
@@ -1064,19 +1059,15 @@ therefore, we don't know (at compile-time) the size of the slice that get's prin
 #| build_type: "run"
 const std = @import("std");
 
-fn read_file(path: []const u8, buffer: []u8, io: std.Io) !usize {
-    const file = try std.Io.Dir.cwd().openFile(
-        io, path, .{}
-    );
-    defer file.close(io);
+fn read_file(path: []const u8, buffer: []u8) !usize {
+    const file = try std.fs.cwd().openFile(path, .{ .mode = .read_only });
+    defer file.close();
 
-    const nbytes = try file.readPositionalAll(
-        io, buffer[0..], 0
-    );
+    const nbytes = try file.read(buffer[0..]);
     return nbytes;
 }
 
-pub fn main(init: std.process.Init) !void {
+pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
@@ -1086,9 +1077,7 @@ pub fn main(init: std.process.Init) !void {
     @memset(file_buffer[0..], 0);
 
     const path = "../ZigExamples/file-io/shop-list.txt";
-    const nbytes = try read_file(
-        path, file_buffer[0..], init.io
-    );
+    const nbytes = try read_file(path, file_buffer[0..]);
 
     std.debug.print("{s}", .{file_buffer[0..nbytes]});
 }
@@ -1210,9 +1199,9 @@ through the `len` attribute. As an example, the `string_object` object below is 
 #| build_type: "run"
 const std = @import("std");
 
-pub fn main(init: std.process.Init) !void {
+pub fn main() !void {
     var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
     const stdout = &stdout_writer.interface;
     const string_object = "This is an example of string literal in Zig";
     try stdout.print("{d}\n", .{string_object.len});
@@ -1239,11 +1228,11 @@ the text "Hello" will be printed into the terminal:
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-pub fn main(init: std.process.Init) !void {
+pub fn main() !void {
     var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
     const stdout = &stdout_writer.interface;
-    const bytes = [_]u8{0x48, 0x65, 0x6C, 0x6C, 0x6F};
+    const bytes = [_]u8{ 0x48, 0x65, 0x6C, 0x6C, 0x6F };
     try stdout.print("{s}\n", .{bytes});
     try stdout.flush();
 }
@@ -1342,9 +1331,10 @@ like you would normally do with the [`printf()` function](https://cplusplus.com/
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-pub fn main(init: std.process.Init) !void {
+
+pub fn main() !void {
     var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
     const stdout = &stdout_writer.interface;
 
     const string_object = "This is an example";
@@ -1387,6 +1377,7 @@ the `const u8` portion of the type).
 #| eval: true
 #| results: "hide"
 const std = @import("std");
+
 pub fn main() !void {
     const simple_array = [_]i32{1, 2, 3, 4};
     const string_obj: []const u8 = "A string object";
@@ -1433,14 +1424,13 @@ the unicode point 570 is actually stored inside the computer’s memory as the b
 #| auto_main: false
 #| build_type: "run"
 const std = @import("std");
-pub fn main(init: std.process.Init) !void {
+
+pub fn main() !void {
     var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
     const stdout = &stdout_writer.interface;
     const string_object = "Ⱥ";
-    _ = try stdout.write(
-        "Bytes that represents the string object: "
-    );
+    _ = try stdout.write("Bytes that represents the string object: ");
     for (string_object) |char| {
         try stdout.print("{X} ", .{char});
     }
@@ -1478,9 +1468,10 @@ character/unicode point in this string:
 #| auto_main: false
 #| build_type: "lib"
 const std = @import("std");
-pub fn main(init: std.process.Init) !void {
+
+pub fn main() !void {
     var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
     const stdout = &stdout_writer.interface;
     var utf8 = try std.unicode.Utf8View.init("アメリカ");
     var iterator = utf8.iterator();
