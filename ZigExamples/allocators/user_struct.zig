@@ -9,7 +9,7 @@ const User = struct {
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     const allocator = gpa.allocator();
     const user = try allocator.create(User);
     defer allocator.destroy(user);

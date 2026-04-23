@@ -5,7 +5,7 @@ pub fn main(init: std.process.Init) !void {
     var stdin_reader = std.Io.File.stdin().reader(init.io, &stdin_buffer);
     const stdin = &stdin_reader.interface;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     const allocator = gpa.allocator();
     var input = try allocator.alloc(u8, 50);
     defer allocator.free(input);

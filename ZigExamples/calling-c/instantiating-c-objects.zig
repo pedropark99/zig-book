@@ -5,7 +5,7 @@ const c = @cImport({
 });
 
 pub fn main(init: std.process.Init) !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     const allocator = gpa.allocator();
 
     var new_user: c.User = undefined;

@@ -88,7 +88,7 @@ pub fn main(init: std.process.Init) !void {
     const ctx = png.spng_ctx_new(0) orelse unreachable;
     _ = png.spng_set_png_file(ctx, @ptrCast(file_descriptor));
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     const allocator = gpa.allocator();
     const output_size = try calc_output_size(ctx);
     var buffer = try allocator.alloc(u8, output_size);

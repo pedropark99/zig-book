@@ -46,7 +46,7 @@ fn Stack(comptime T: type) type {
 }
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     const allocator = gpa.allocator();
     const Stacku8 = Stack(u8);
     var stack = try Stacku8.init(allocator, 10);

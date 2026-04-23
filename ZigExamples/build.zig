@@ -31,7 +31,7 @@ fn delete_compiled_artifacts(io: std.Io) !void {
 }
 
 pub fn build(b: *std.Build) void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     const allocator = gpa.allocator();
     _ = allocator;
 

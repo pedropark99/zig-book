@@ -1,7 +1,7 @@
 const std = @import("std");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     var aa = std.heap.ArenaAllocator.init(gpa.allocator());
     defer aa.deinit();
     const allocator = aa.allocator();

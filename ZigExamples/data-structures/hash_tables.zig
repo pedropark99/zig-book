@@ -2,7 +2,7 @@ const std = @import("std");
 const AutoHashMap = std.hash_map.AutoHashMap;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     const allocator = gpa.allocator();
     var hash_table = AutoHashMap(u32, u32).init(allocator);
     defer hash_table.deinit();
