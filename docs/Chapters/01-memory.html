@@ -2,13 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.33">
+<meta name="generator" content="quarto-1.9.37">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
 <title>3&nbsp; Memory and Allocators – Introduction to Zig</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -59,7 +62,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 div.csl-bib-body { }
 div.csl-entry {
   clear: both;
-  margin-bottom: 0em;
 }
 .hanging-indent div.csl-entry {
   margin-left:2em;
@@ -93,14 +95,14 @@ div.csl-indent {
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-59898bd1c6b9d2bb783127feaa000c76.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-d329e753491efaeac79c98c4b193a686.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-59898bd1c6b9d2bb783127feaa000c76.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-acf12a64177840b8d86f2d4f01b2e9fb.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-23bbe8b5e4efc1e257f6d59dce478b08.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-acf12a64177840b8d86f2d4f01b2e9fb.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-5a7d69291c2a8c67bc3a157f4354e263.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-a459d9a911ec262923466a12d18bc01e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-5a7d69291c2a8c67bc3a157f4354e263.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-81de787dd4773dbc0001c2dc1cc3016d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-150364637041e74f2e3476683347a24a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-81de787dd4773dbc0001c2dc1cc3016d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -536,7 +538,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>In contrast, if the type of this struct that you are declaring, includes a data member that is an array, but this array has a known fixed size, like <code>[60]u8</code> (which declares an array of 60 <code>u8</code> values), then, this type, or, this struct that you are declaring, becomes a type with a known fixed size at compile-time. And because of that, in this case, the <code>zig</code> compiler does not need to know at compile-time the exact value of any object of this type. Since the compiler can find the necessary size to store this object by looking at the size of its type.</p>
 <p>Let’s look at an example. In the source code below, we have two constant objects (<code>name</code> and <code>array</code>) declared. Because the values of these particular objects are written down, in the source code itself (<code>"Pedro"</code> and the number sequence from 1 to 4), the <code>zig</code> compiler can easily discover the values of these constant objects (<code>name</code> and <code>array</code>) during the compilation process. This is what “known at compile time” means. It refers to any object that you have in your Zig source code whose value can be identified at compile time.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> input_length(input: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">usize</span> <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> input_length(input: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">usize</span> <span class="op">{</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n = input.len;</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> n;</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
@@ -545,7 +547,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> name = <span class="st">"Pedro"</span>;</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> array = [_]<span class="dt">u8</span><span class="op">{</span><span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span><span class="op">}</span>;</span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    _ = name; _ = array;</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The other side of the spectrum are objects whose values are not known at compile time. Function arguments are a classic example of this. Because the value of each function argument depends on the value that you assign to this particular argument, when you call the function.</p>
 <p>For example, the function <code>input_length()</code> contains an argument named <code>input</code>, which is a slice of constant <code>u8</code> integers (<code>[]const u8</code>). It’s impossible to know the value of this particular argument at compile time. And it also is impossible to know the size/length of this particular argument. Because it’s a slice that does not have a fixed size specified explicitly in the argument type annotation.</p>
@@ -567,12 +569,12 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 </section>
 <section id="sec-stack" class="level3" data-number="3.1.4">
 <h3 data-number="3.1.4" class="anchored" data-anchor-id="sec-stack"><span class="header-section-number">3.1.4</span> Stack</h3>
-<p>The stack is a type of memory that uses the power of the <em>stack data structure</em>, hence the name. A “stack” is a type of <em>data structure</em> that uses a “last in, first out” (LIFO) mechanism to store the values you give it to. I imagine you are familiar with this data structure. But, if you are not, the <a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)">Wikipedia page</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> , or, the <a href="https://www.geeksforgeeks.org/stack-data-structure/">Geeks For Geeks page</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> are both excellent and easy resources to fully understand how this data structure works.</p>
+<p>The stack is a type of memory that uses the power of the <em>stack data structure</em>, hence the name. A “stack” is a type of <em>data structure</em> that uses a “last in, first out” (LIFO) mechanism to store the values you give to it. I imagine you are familiar with this data structure. But, if you are not, the <a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)">Wikipedia page</a><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> , or, the <a href="https://www.geeksforgeeks.org/stack-data-structure/">Geeks For Geeks page</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> are both excellent and easy resources to fully understand how this data structure works.</p>
 <p>So, the stack memory space is a type of memory that stores values using a stack data structure. It adds and removes values from the memory by following a “last in, first out” (LIFO) principle.</p>
 <p>Every time you make a function call in Zig, an amount of space in the stack is reserved for this particular function call <span class="citation" data-cites="jenny2022 zigdocs">(<a href="references.html#ref-jenny2022" role="doc-biblioref">Chen and Guo 2022</a>; <a href="references.html#ref-zigdocs" role="doc-biblioref">Zig Software Foundation 2024</a>)</span>. The value of each function argument given to the function in this function call is stored in this stack space. Also, every local object that you declare inside the function scope is usually stored in this same stack space.</p>
 <p>Looking at the example below, the object <code>result</code> is a local object declared inside the scope of the <code>add()</code> function. Because of that, this object is stored inside the stack space reserved for the <code>add()</code> function. The <code>r</code> object (which is declared outside of the <code>add()</code> function scope) is also stored in the stack. But since it’s declared in the “outer” scope, this object is stored in the stack space that belongs to this outer scope.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add(x: <span class="dt">u8</span>, y: <span class="dt">u8</span>) <span class="dt">u8</span> <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add(x: <span class="dt">u8</span>, y: <span class="dt">u8</span>) <span class="dt">u8</span> <span class="op">{</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> result = x + y;</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> result;</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
@@ -580,7 +582,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> r = add(<span class="dv">5</span>, <span class="dv">27</span>);</span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    _ = r;</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>So, any object that you declare inside the scope of a function is always stored inside the space that was reserved for that particular function in the stack memory. This also counts for any object declared inside the scope of your <code>main()</code> function for example. As you would expect, in this case, they are stored inside the stack space reserved for the <code>main()</code> function.</p>
 <p>One very important detail about the stack memory is that <strong>it frees itself automatically</strong>. This is very important, remember that. When objects are stored in the stack memory, you don’t have the work (or the responsibility) of freeing/destroying these objects. Because they will be automatically destroyed once the stack space is freed at the end of the function scope.</p>
@@ -600,7 +602,7 @@ Important
 </div>
 <p>This same logic applies to any other special structure in Zig that has its own scope by surrounding it with curly braces (<code>{}</code>). For loops, while loops, if else statements, etc. For example, if you declare any local object in the scope of a for loop, this local object is accessible only within the scope of this particular for loop. Because once the scope of this for loop ends, the space in the stack reserved for this for loop is freed. The example below demonstrates this idea.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">// This does not compile successfully!</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">// This does not compile successfully!</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> a = [_]<span class="dt">u8</span><span class="op">{</span><span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span><span class="op">}</span>;</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (<span class="dv">0</span>..a.len) |i| <span class="op">{</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> index = i;</span>
@@ -609,7 +611,7 @@ Important
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">// Trying to use an object that was</span></span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">// declared in the for loop scope,</span></span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">// and that does not exist anymore.</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>index<span class="op">}</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>std.debug.print(<span class="st">"{d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>index<span class="op">}</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>One important consequence of this mechanism is that, once the function returns, you can no longer access any memory address that was inside the space in the stack reserved for this particular function. Because this space was destroyed. This means that, if this local object is stored in the stack, you cannot make a function that <strong>returns a pointer to this object</strong>.</p>
 <p>Think about that for a second. If all local objects in the stack are destroyed at the end of the function scope, why would you even consider returning a pointer to one of these objects? This pointer is at best, invalid, or, more likely, “undefined”.</p>
@@ -617,7 +619,7 @@ Important
 <p>So, using again the <code>add()</code> function as an example, if you rewrite this function so that it returns a pointer to the local object <code>result</code>, the <code>zig</code> compiler will actually compile your program, with no warnings or errors. At first glance, it looks like this is good code that works as expected. But this is a lie!</p>
 <p>If you try to take a look at the value inside of the <code>r</code> object, or, if you try to use this <code>r</code> object in another expression or function call, then, you would have undefined behaviour, and major bugs in your program <span class="citation" data-cites="zigdocs">(<a href="references.html#ref-zigdocs" role="doc-biblioref">Zig Software Foundation 2024</a>, see “Lifetime and Ownership”<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> and “Undefined Behaviour”<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> sections)</span>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add(x: <span class="dt">u8</span>, y: <span class="dt">u8</span>) *<span class="kw">const</span> <span class="dt">u8</span> <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> add(x: <span class="dt">u8</span>, y: <span class="dt">u8</span>) *<span class="kw">const</span> <span class="dt">u8</span> <span class="op">{</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> result = x + y;</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> &amp;result;</span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
@@ -627,7 +629,7 @@ Important
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// undefined behaviour. Never do this!!!</span></span>
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// The `r` object is undefined!</span></span>
 <span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> r = add(<span class="dv">5</span>, <span class="dv">27</span>); _ = r;</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>This “invalid pointer to stack variable” problem is well known across many programming language communities. If you try to do the same thing, for example, in a C or C++ program (i.e., returning an address to a local object stored in the stack), you would also get undefined behaviour in the program.</p>
 <div class="callout callout-style-default callout-important callout-titled">
@@ -690,8 +692,8 @@ Important
 <p>This type of problem is very similar to a <em>buffer overflow</em>, i.e., you are trying to use more space than is available in the “buffer object”. However, a stack overflow always causes your program to crash, while a buffer overflow does not always cause your program to crash (although it often does).</p>
 <p>You can see an example of a stack overflow in the example below. We are trying to allocate a very big array of <code>u64</code> values on the stack. You can see below that this program does not run successfully, because it crashed with a “segmentation fault” error message.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> very_big_alloc: [<span class="dv">1000</span> * <span class="dv">1000</span> * <span class="dv">24</span>]<span class="dt">u64</span> = <span class="cn">undefined</span>;</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">@memset</span>(very_big_alloc[<span class="dv">0</span>..], <span class="dv">0</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> very_big_alloc: [<span class="dv">1000</span> * <span class="dv">1000</span> * <span class="dv">24</span>]<span class="dt">u64</span> = <span class="cn">undefined</span>;</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">@memset</span>(very_big_alloc[<span class="dv">0</span>..], <span class="dv">0</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <pre><code>Segmentation fault (core dumped)</code></pre>
 <p>This segmentation fault error is a result of the stack overflow that was caused by the big memory allocation made on the stack, to store the <code>very_big_alloc</code> object. This is why very big objects are usually stored on the heap, instead of the stack.</p>
@@ -703,9 +705,9 @@ Important
 <p>But, in Zig, if a function, an operator, or anything from the standard library needs to allocate some memory during its execution, then, this function/operator needs to receive (as input) an allocator provided by the user, to actually be able to allocate the memory it needs.</p>
 <p>This creates a clear distinction between functions that “do not” from those that “actually do” allocate memory. Just look at the arguments of this function. If a function, or operator, has an allocator object as one of its inputs/arguments, then, you know for sure that this function/operator will allocate some memory during its execution.</p>
 <p>An example is the <code>allocPrint()</code> function from the Zig Standard Library. With this function, you can write a new string using format specifiers. So, this function is, for example, very similar to the function <code>sprintf()</code> in C. In order to write such a new string, the <code>allocPrint()</code> function needs to allocate some memory to store the output string.</p>
-<p>That is why, the first argument of this function is an allocator object that you, the user/programmer, gives as input to the function. In the example below, I am using the <code>GeneralPurposeAllocator()</code> as my allocator object. But I could easily use any other type of allocator object from the Zig Standard Library.</p>
+<p>That is why, the first argument of this function is an allocator object that you, the user/programmer, gives as input to the function. In the example below, I am using the <code>DebugAllocator()</code> as my allocator object. But I could easily use any other type of allocator object from the Zig Standard Library.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> gpa = std.heap.DebugAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = gpa.allocator();</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> name = <span class="st">"Pedro"</span>;</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> output = <span class="kw">try</span> std.fmt.allocPrint(</span>
@@ -714,7 +716,7 @@ Important
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span>name<span class="op">}</span></span>
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>);</span>
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>output<span class="op">}</span>);</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Hello Pedro!!!</code></pre>
 </div>
@@ -742,7 +744,7 @@ Important
 <h3 data-number="3.3.3" class="anchored" data-anchor-id="the-different-types-of-allocators"><span class="header-section-number">3.3.3</span> The different types of allocators</h3>
 <p>At the moment of the writing of this book, in Zig, we have 6 different allocators available in the standard library:</p>
 <ul>
-<li><code>GeneralPurposeAllocator()</code>.</li>
+<li><code>DebugAllocator()</code>.</li>
 <li><code>page_allocator()</code>.</li>
 <li><code>FixedBufferAllocator()</code> and <code>ThreadSafeFixedBufferAllocator()</code>.</li>
 <li><code>ArenaAllocator()</code>.</li>
@@ -752,18 +754,18 @@ Important
 </section>
 <section id="general-purpose-allocators" class="level3" data-number="3.3.4">
 <h3 data-number="3.3.4" class="anchored" data-anchor-id="general-purpose-allocators"><span class="header-section-number">3.3.4</span> General-purpose allocators</h3>
-<p>The <code>GeneralPurposeAllocator()</code>, as the name suggests, is a “general purpose” allocator. You can use it for every type of task. In the example below, I’m allocating enough space to store a single integer in the object <code>some_number</code>.</p>
+<p>The <code>DebugAllocator()</code>, as the name suggests, is a “general purpose” allocator. You can use it for every type of task. In the example below, I’m allocating enough space to store a single integer in the object <code>some_number</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.DebugAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
 <span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> some_number = <span class="kw">try</span> allocator.create(<span class="dt">u32</span>);</span>
 <span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.destroy(some_number);</span>
 <span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    some_number.* = <span class="bu">@as</span>(<span class="dt">u32</span>, <span class="dv">45</span>);</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>While useful, you might want to use the <code>c_allocator()</code>, which is a alias to the C standard allocator <code>malloc()</code>. So, yes, you can use <code>malloc()</code> in Zig if you want to. Just use the <code>c_allocator()</code> from the Zig standard library. However, if you do use <code>c_allocator()</code>, you must link to Libc when compiling your source code with the <code>zig</code> compiler, by including the flag <code>-lc</code> in your compilation process. If you do not link your source code to Libc, Zig will not be able to find the <code>malloc()</code> implementation in your system.</p>
 </section>
@@ -779,7 +781,7 @@ Important
 <p>This also means that, these allocator objects can allocate memory both in the stack or in the heap. Everything depends on where the buffer object that you provide lives. If this buffer object lives in the stack, then, the memory allocated is “stack-based”. But if it lives on the heap, then, the memory allocated is “heap-based”.</p>
 <p>In the example below, I’m creating a <code>buffer</code> object on the stack that is 10 elements long. Notice that I give this <code>buffer</code> object to the <code>FixedBufferAllocator()</code> constructor. Now, because this <code>buffer</code> object is 10 elements long, this means that I am limited to this space. I cannot allocate more than 10 elements with this allocator object. If I try to allocate more than that, the <code>alloc()</code> method will return an <code>OutOfMemory</code> error value.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffer: [<span class="dv">10</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffer: [<span class="dv">10</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> (<span class="dv">0</span>..buffer.len) |i| <span class="op">{</span></span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    buffer[i] = <span class="dv">0</span>; <span class="co">// Initialize to zero</span></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
@@ -787,12 +789,12 @@ Important
 <span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> fba = std.heap.FixedBufferAllocator.init(&amp;buffer);</span>
 <span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = fba.allocator();</span>
 <span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> input = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">5</span>);</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> allocator.free(input);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> allocator.free(input);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Remember, the memory allocated by these allocator objects can be either from the stack, or, from the heap. It all depends on where the buffer object that you provide lives. In the above example, the <code>buffer</code> object lives in the stack, and, therefore, the memory allocated is based in the stack. But what if it was based on the heap?</p>
 <p>As we described in <a href="#sec-stack-overflow" class="quarto-xref"><span>Section 3.2</span></a>, one of the main reasons why you would use the heap, instead of the stack, is to allocate huge amounts of space to store very big objects. Thus, let’s suppose you wanted to use a very big buffer object as the basis for your allocator objects. You would have to allocate this very big buffer object on the heap. The example below demonstrates this case.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> heap = std.heap.page_allocator;</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> heap = std.heap.page_allocator;</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> memory_buffer = <span class="kw">try</span> heap.alloc(</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">u8</span>, <span class="dv">100</span> * <span class="dv">1024</span> * <span class="dv">1024</span> <span class="co">// 100 MB memory</span></span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>);</span>
@@ -803,15 +805,15 @@ Important
 <span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = fba.allocator();</span>
 <span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> input = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">1000</span>);</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> allocator.free(input);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> allocator.free(input);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="sec-arena-allocator" class="level3" data-number="3.3.7">
 <h3 data-number="3.3.7" class="anchored" data-anchor-id="sec-arena-allocator"><span class="header-section-number">3.3.7</span> Arena allocator</h3>
 <p>The <code>ArenaAllocator()</code> is an allocator object that takes a child allocator as input. The idea behind the <code>ArenaAllocator()</code> in Zig is similar to the concept of “arenas” in the programming language Go<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a>. It’s an allocator object that allows you to allocate memory as many times you want, but free all memory only once. In other words, if you have, for example, called 5 times the method <code>alloc()</code> of an <code>ArenaAllocator()</code> object, you can free all the memory you allocated over these 5 calls at once, by simply calling the <code>deinit()</code> method of the same <code>ArenaAllocator()</code> object.</p>
-<p>If you give, for example, a <code>GeneralPurposeAllocator()</code> object as input to the <code>ArenaAllocator()</code> constructor, like in the example below, then, the allocations you perform with <code>alloc()</code> will actually be made with the underlying object <code>GeneralPurposeAllocator()</code> that was passed. So, with an arena allocator, any new memory you ask for is allocated by the child allocator. The only thing that an arena allocator really does is help you to free all the memory you allocated multiple times with just a single command. In the example below, I called <code>alloc()</code> 3 times. So, if I did not use an arena allocator, then, I would need to call <code>free()</code> 3 times to free all the allocated memory.</p>
+<p>If you give, for example, a <code>DebugAllocator()</code> object as input to the <code>ArenaAllocator()</code> constructor, like in the example below, then, the allocations you perform with <code>alloc()</code> will actually be made with the underlying object <code>DebugAllocator()</code> that was passed. So, with an arena allocator, any new memory you ask for is allocated by the child allocator. The only thing that an arena allocator really does is help you to free all the memory you allocated multiple times with just a single command. In the example below, I called <code>alloc()</code> 3 times. So, if I did not use an arena allocator, then, I would need to call <code>free()</code> 3 times to free all the allocated memory.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> gpa = std.heap.DebugAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> aa = std.heap.ArenaAllocator.init(gpa.allocator());</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> aa.deinit();</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allocator = aa.allocator();</span>
@@ -819,7 +821,7 @@ Important
 <span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> in1 = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">5</span>);</span>
 <span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> in2 = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">10</span>);</span>
 <span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> in3 = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">15</span>);</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>_ = in1; _ = in2; _ = in3;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>_ = in1; _ = in2; _ = in3;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="the-alloc-and-free-methods" class="level3" data-number="3.3.8">
@@ -830,14 +832,14 @@ Important
 <p>In <a href="01-zig-weird.html#sec-zig-strings" class="quarto-xref"><span>Section 1.8</span></a> we described that strings in Zig are simply arrays of characters. Each character is represented by a <code>u8</code> value<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a>. So, this means that the array that was allocated in the object <code>input</code> is capable of storing a string that is 50-characters long.</p>
 <p>So, in essence, the expression <code>var input: [50]u8 = undefined</code> would create an array for 50 <code>u8</code> values in the stack of the current scope. But, you can allocate the same array in the heap by using the expression <code>var input = try allocator.alloc(u8, 50)</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdin_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
 <span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdin_reader = std.Io.File.stdin().reader(init.io, &amp;stdin_buffer);</span>
 <span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdin = &amp;stdin_reader.interface;</span>
 <span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.DebugAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
 <span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
 <span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> input = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, <span class="dv">50</span>);</span>
@@ -851,7 +853,7 @@ Important
 <span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Print our heap memory, so that we can see what</span></span>
 <span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="co">// was stored in it.</span></span>
 <span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"{s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>input<span class="op">}</span>);</span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Also, notice that in this example, we use the <code>defer</code> keyword (which I described in <a href="03-structs.html#sec-defer" class="quarto-xref"><span>Section 2.1.3</span></a>) to run a small piece of code at the end of the current scope, which is the expression <code>allocator.free(input)</code>. When you execute this expression, the allocator will free the memory that it allocated for the <code>input</code> object.</p>
 <p>We have talked about this in <a href="#sec-heap" class="quarto-xref"><span>Section 3.1.5</span></a>. You <strong>should always</strong> explicitly free any memory that you allocate using an allocator! You do that by using the <code>free()</code> method of the same allocator object you used to allocate this memory. The <code>defer</code> keyword is used in this example only to help us execute this free operation at the end of the current scope.</p>
@@ -863,7 +865,7 @@ Important
 <p>So, in essence, if you want to allocate memory to store an array of elements, you should use <code>alloc()</code> and <code>free()</code>. But if you need to store just a single item, then, the <code>create()</code> and <code>destroy()</code> methods are ideal for you.</p>
 <p>In the example below, I’m defining a struct to represent an user of some sort. It could be a user for a game, or software to manage resources, it doesn’t matter. Notice that I use the <code>create()</code> method this time, to store a single <code>User</code> object in the program. Also notice that I use the <code>destroy()</code> method to free the memory used by this object at the end of the scope.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> User = <span class="kw">struct</span> <span class="op">{</span></span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    id: <span class="dt">usize</span>,</span>
 <span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    name: []<span class="kw">const</span> <span class="dt">u8</span>,</span>
@@ -874,25 +876,25 @@ Important
 <span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
 <span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.GeneralPurposeAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> gpa = std.heap.DebugAllocator(.<span class="op">{}</span>)<span class="op">{}</span>;</span>
 <span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> allocator = gpa.allocator();</span>
 <span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> user = <span class="kw">try</span> allocator.create(User);</span>
 <span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> allocator.destroy(user);</span>
 <span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    user.* = User.init(<span class="dv">0</span>, <span class="st">"Pedro"</span>);</span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 
 
-<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
 <div id="ref-jenny2022" class="csl-entry" role="listitem">
-Chen, Jenny, and Ruohao Guo. 2022. <span>“Stack and Heap Memory.”</span> <em>Introduction to Data Structures and Algorithms with C++</em>. <a href="https://courses.engr.illinois.edu/cs225/fa2022/resources/stack-heap/">https://courses.engr.illinois.edu/cs225/fa2022/resources/stack-heap/</a>.
+Chen, Jenny, and Ruohao Guo. 2022. <span>“Stack and Heap Memory.”</span> <em>Introduction to Data Structures and Algorithms with C++</em> (USA). <a href="https://courses.engr.illinois.edu/cs225/fa2022/resources/stack-heap/">https://courses.engr.illinois.edu/cs225/fa2022/resources/stack-heap/</a>.
 </div>
 <div id="ref-zigguide" class="csl-entry" role="listitem">
-Sobeston. 2024. <span>“Zig Guide.”</span> <a href="https://zig.guide/">https://zig.guide/</a>.
+Sobeston. 2024. <em>Zig Guide</em>. <a href="https://zig.guide/">https://zig.guide/</a>.
 </div>
 <div id="ref-zigdocs" class="csl-entry" role="listitem">
-Zig Software Foundation. 2024. <span>“Language Reference.”</span> Zig Software Foundation. <a href="https://ziglang.org/documentation/master/">https://ziglang.org/documentation/master/</a>.
+Zig Software Foundation. 2024. <em>Language Reference</em>. Zig Software Foundation. <a href="https://ziglang.org/documentation/master/">https://ziglang.org/documentation/master/</a>.
 </div>
 </div>
 </section>
@@ -974,13 +976,14 @@ Zig Software Foundation. 2024. <span>“Language Reference.”</span> Zig Softwa
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
-        return codeEl.innerText;
+      }
+      return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy
