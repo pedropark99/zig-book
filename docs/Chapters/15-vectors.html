@@ -2,13 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.33">
+<meta name="generator" content="quarto-1.9.37">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
 <title>17&nbsp; Introducing Vectors and SIMD – Introduction to Zig</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -73,14 +76,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-59898bd1c6b9d2bb783127feaa000c76.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-d329e753491efaeac79c98c4b193a686.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-59898bd1c6b9d2bb783127feaa000c76.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-acf12a64177840b8d86f2d4f01b2e9fb.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-23bbe8b5e4efc1e257f6d59dce478b08.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-acf12a64177840b8d86f2d4f01b2e9fb.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-5a7d69291c2a8c67bc3a157f4354e263.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-a459d9a911ec262923466a12d18bc01e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-5a7d69291c2a8c67bc3a157f4354e263.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-81de787dd4773dbc0001c2dc1cc3016d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-150364637041e74f2e3476683347a24a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-81de787dd4773dbc0001c2dc1cc3016d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -119,7 +122,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 </script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -132,7 +135,7 @@ const typesetMath = (el) => {
     var macros = [];
     for (var i = 0; i < mathElements.length; i++) {
       var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
         window.katex.render(texText.data, mathElements[i], {
           displayMode: mathElements[i].classList.contains('display'),
           throwOnError: false,
@@ -527,11 +530,11 @@ window.Quarto = {
 <p>You can create a new vector object in Zig by using the <code>@Vector()</code> built-in function. Inside this function, you specify the vector length (number of elements in the vector), and the data type of the elements of the vector. Only primitive data types are supported in these vector objects. In the example below, I’m creating two vector objects (<code>v1</code> and <code>v2</code>) of 4 elements of type <code>u32</code> each.</p>
 <p>Also notice in the example below, that a third vector object (<code>v3</code>) is created from the sum of the previous two vector objects (<code>v1</code> plus <code>v2</code>). Therefore, math operations over vector objects take place element-wise by default, because the same operation (in this case, addition) is transformed into a single instruction that is replicated in parallel, across all elements of the vectors.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v1 = <span class="bu">@Vector</span>(<span class="dv">4</span>, <span class="dt">u32</span>)<span class="op">{</span><span class="dv">4</span>, <span class="dv">12</span>, <span class="dv">37</span>, <span class="dv">9</span><span class="op">}</span>;</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v1 = <span class="bu">@Vector</span>(<span class="dv">4</span>, <span class="dt">u32</span>)<span class="op">{</span><span class="dv">4</span>, <span class="dv">12</span>, <span class="dv">37</span>, <span class="dv">9</span><span class="op">}</span>;</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v2 = <span class="bu">@Vector</span>(<span class="dv">4</span>, <span class="dt">u32</span>)<span class="op">{</span><span class="dv">10</span>, <span class="dv">22</span>, <span class="dv">5</span>, <span class="dv">12</span><span class="op">}</span>;</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v3 = v1 + v2;</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>v3<span class="op">}</span>);</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>{ 14, 34, 42, 21 }</code></pre>
 </div>
@@ -544,10 +547,10 @@ window.Quarto = {
 <p>In the example below, we are implicitly converting the array <code>a1</code> into a vector object (<code>v1</code>) of length 4. We first explicitly annotate the data type of the vector object, and then, we assign the array object to this vector object.</p>
 <p>Also notice in the example below, that a second vector object (<code>v2</code>) is also created by taking a slice of the array object (<code>a1</code>), and then, storing the pointer to this slice (<code>.*</code>) into this vector object.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> a1 = [<span class="dv">4</span>]<span class="dt">u32</span><span class="op">{</span><span class="dv">4</span>, <span class="dv">12</span>, <span class="dv">37</span>, <span class="dv">9</span><span class="op">}</span>;</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> a1 = [<span class="dv">4</span>]<span class="dt">u32</span><span class="op">{</span><span class="dv">4</span>, <span class="dv">12</span>, <span class="dv">37</span>, <span class="dv">9</span><span class="op">}</span>;</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v1: <span class="bu">@Vector</span>(<span class="dv">4</span>, <span class="dt">u32</span>) = a1;</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v2: <span class="bu">@Vector</span>(<span class="dv">2</span>, <span class="dt">u32</span>) = a1[<span class="dv">1</span>..<span class="dv">3</span>].*;</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>_ = v1; _ = v2;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>_ = v1; _ = v2;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>It’s worth emphasizing that only arrays and slices whose sizes are compile-time known can be transformed into vectors. Vectors in general are structures that work only with compile-time known sizes. Therefore, if you have an array whose size is runtime known, then, you first need to copy it into an array with a compile-time known size, before transforming it into a vector.</p>
 </section>
@@ -556,9 +559,9 @@ window.Quarto = {
 <p>You can use the <code>@splat()</code> built-in function to create a vector object that is filled with the same value across all of its elements. This function was created to offer a quick and easy way to directly convert a scalar value (a.k.a. a single value, like a single character, or a single integer, etc.) into a vector object.</p>
 <p>Thus, we can use <code>@splat()</code> to convert a single value, like the integer <code>16</code> into a vector object of length 1. But we can also use this function to convert the same integer <code>16</code> into a vector object of length 10, that is filled with 10 <code>16</code> values. The example below demonstrates this idea.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v1: <span class="bu">@Vector</span>(<span class="dv">10</span>, <span class="dt">u32</span>) = <span class="bu">@splat</span>(<span class="dv">16</span>);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v1: <span class="bu">@Vector</span>(<span class="dv">10</span>, <span class="dt">u32</span>) = <span class="bu">@splat</span>(<span class="dv">16</span>);</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>v1<span class="op">}</span>);</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>{ 16, 16, 16, 16, 16, 16, 16, 16, 16, 16 }</code></pre>
 </div>
@@ -569,8 +572,8 @@ window.Quarto = {
 <p>As I described in <a href="#sec-what-vectors" class="quarto-xref"><span>Section 17.2</span></a>, each vector object is usually a small block of 128, 256 or 512 bits. This means that a vector object is usually small in size, and when you try to go in the opposite direction, by creating a vector object that is very big in size (i.e., sizes that are close to <span class="math inline">\(2^{20}\)</span>), you usually end up with crashes and loud errors from the compiler.</p>
 <p>For example, if you try to compile the program below, you will likely face segmentation faults, or LLVM errors during the build process. Just be careful to not create vector objects that are too big in size.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v1: <span class="bu">@Vector</span>(<span class="dv">1000000</span>, <span class="dt">u32</span>) = <span class="bu">@splat</span>(<span class="dv">16</span>);</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>_ = v1;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v1: <span class="bu">@Vector</span>(<span class="dv">1000000</span>, <span class="dt">u32</span>) = <span class="bu">@splat</span>(<span class="dv">16</span>);</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>_ = v1;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <pre><code>Segmentation fault (core dumped)</code></pre>
 
@@ -643,13 +646,14 @@ window.Quarto = {
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
-        return codeEl.innerText;
+      }
+      return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy

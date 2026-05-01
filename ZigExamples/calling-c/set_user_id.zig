@@ -9,7 +9,7 @@ fn set_user_id(id: u64, user: *c.User) void {
 }
 
 pub fn main(init: std.process.Init) !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     const allocator = gpa.allocator();
 
     var new_user: c.User = undefined;

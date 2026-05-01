@@ -2,13 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.33">
+<meta name="generator" content="quarto-1.9.37">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
 <title>15&nbsp; Project 4 - Developing an image filter – Introduction to Zig</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -59,7 +62,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 div.csl-bib-body { }
 div.csl-entry {
   clear: both;
-  margin-bottom: 0em;
 }
 .hanging-indent div.csl-entry {
   margin-left:2em;
@@ -93,14 +95,14 @@ div.csl-indent {
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-59898bd1c6b9d2bb783127feaa000c76.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-d329e753491efaeac79c98c4b193a686.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-59898bd1c6b9d2bb783127feaa000c76.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-acf12a64177840b8d86f2d4f01b2e9fb.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-23bbe8b5e4efc1e257f6d59dce478b08.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-acf12a64177840b8d86f2d4f01b2e9fb.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-5a7d69291c2a8c67bc3a157f4354e263.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-a459d9a911ec262923466a12d18bc01e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-5a7d69291c2a8c67bc3a157f4354e263.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-81de787dd4773dbc0001c2dc1cc3016d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-150364637041e74f2e3476683347a24a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-81de787dd4773dbc0001c2dc1cc3016d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -139,7 +141,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 </script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -152,7 +154,7 @@ const typesetMath = (el) => {
     var macros = [];
     for (var i = 0; i < mathElements.length; i++) {
       var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
         window.katex.render(texText.data, mathElements[i], {
           displayMode: mathElements[i].classList.contains('display'),
           throwOnError: false,
@@ -617,14 +619,14 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <p>The reason why unsigned 8-bit integer (<code>u8</code>) values are used to represent the amounts of each color, instead of any other integer type, is because they take the minimum amount of space as possible, or, the minimum amount of bits as possible. Which helps to reduces the binary size of the image, i.e., the 2D matrix. Also, they convey a good amount of precision and detail about the colors, even though they can represent a relatively small range (from 0 to 255) of “color amounts”.</p>
 <p>Coming back to our initial example of a 4x3 image, the <code>matrix</code> object exposed below could be an example of an 1D array that stores the data that represents this 4x3 image.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> matrix = [_]<span class="dt">u8</span><span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> matrix = [_]<span class="dt">u8</span><span class="op">{</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="dv">201</span>, <span class="dv">10</span>, <span class="dv">25</span>, <span class="dv">185</span>, <span class="dv">65</span>, <span class="dv">70</span>,</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="dv">65</span>, <span class="dv">120</span>, <span class="dv">110</span>, <span class="dv">65</span>, <span class="dv">120</span>, <span class="dv">117</span>,</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="dv">98</span>, <span class="dv">95</span>, <span class="dv">12</span>, <span class="dv">213</span>, <span class="dv">26</span>, <span class="dv">88</span>,</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="dv">143</span>, <span class="dv">112</span>, <span class="dv">65</span>, <span class="dv">97</span>, <span class="dv">99</span>, <span class="dv">205</span>,</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="dv">234</span>, <span class="dv">105</span>, <span class="dv">56</span>, <span class="dv">43</span>, <span class="dv">44</span>, <span class="dv">216</span>,</span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="dv">45</span>, <span class="dv">59</span>, <span class="dv">243</span>, <span class="dv">211</span>, <span class="dv">209</span>, <span class="dv">54</span>,</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The first three integer values in this array are the color amounts of the first pixel in the image. The next three integers are the colors amounts for the second pixel. And the sequence goes on in this pattern. Having that in mind, the size of the array that stores a raster image is usually a multiple of 3. In this case, the array have a size of 36.</p>
 <p>I mean, the size of the array is <strong>usually</strong> a multiple of 3, because in specific circumstances, it can also be a multiple of 4. This happens when a transparency amount is also included into the raster image. In other words, there are some types of raster images that uses a different color model, which is the RGBA (red, green, blue and alpha) color model. The “alpha” corresponds to an amount of transparency in the pixel. So every pixel in a RGBA image is represented by a red, green, blue and alpha values.</p>
@@ -652,7 +654,7 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 </ol>
 <p>Every operation in <code>libspng</code> is made through a “context object”. In our snippet below, this object is <code>ctx</code>. Also, to perform an operation over a PNG file, we need to specify which exact PNG file we are referring to. This is the job of <code>spng_set_png_file()</code>. We are using this function to specify the file descriptor object that reads the PNG file that we want to use.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c = <span class="bu">@cImport</span>(<span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> c = <span class="bu">@cImport</span>(<span class="op">{</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cDefine</span>(<span class="st">"_NO_CRT_STDIO_INLINE"</span>, <span class="st">"1"</span>);</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"stdio.h"</span>);</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@cInclude</span>(<span class="st">"spng.h"</span>);</span>
@@ -666,13 +668,13 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ctx = c.spng_ctx_new(<span class="dv">0</span>) <span class="kw">orelse</span> <span class="kw">unreachable</span>;</span>
 <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>_ = c.spng_set_png_file(</span>
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    ctx, <span class="bu">@ptrCast</span>(file_descriptor)</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Before we continue, is important to emphasize the following: since we have opened the file with <code>fopen()</code>, we have to remember to close the file at the end of the program, with <code>fclose()</code>. In other words, after we have done everything that we wanted to do with the PNG file <code>pedro_pascal.png</code>, we need to close this file, by applying <code>fclose()</code> over the file descriptor object. We could use also the <code>defer</code> keyword to help us in this task, if we want to. This code snippet below demonstrates this step:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> (c.fclose(file_descriptor) != <span class="dv">0</span>) <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> (c.fclose(file_descriptor) != <span class="dv">0</span>) <span class="op">{</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">error</span>.CouldNotCloseFileDescriptor;</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="reading-the-image-header-section" class="level3" data-number="15.4.1">
 <h3 data-number="15.4.1" class="anchored" data-anchor-id="reading-the-image-header-section"><span class="header-section-number">15.4.1</span> Reading the image header section</h3>
@@ -680,7 +682,7 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <p>To make things easier, I will encapsulate this “read image header” operation into a nice and small function called <code>get_image_header()</code>. All that this function needs to do is to call the <code>spng_get_ihdr()</code> function. This function from <code>libspng</code> is responsible for reading the image header data, and storing it into a C struct named <code>spng_ihdr</code>. Thus, an object of type <code>spng_ihdr</code> is a C struct that contains the data from the image header section of the PNG file.</p>
 <p>Since this Zig function is receiving a C object (the <code>libspng</code> context object) as input, I marked the function argument <code>ctx</code> as “a pointer to the context object” (<code>*c.spng_ctx</code>), following the recommendations that we have discussed in <a href="14-zig-c-interop.html#sec-pass-c-structs" class="quarto-xref"><span>Section 14.5</span></a>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> get_image_header(ctx: *c.spng_ctx) !c.spng_ihdr <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> get_image_header(ctx: *c.spng_ctx) !c.spng_ihdr <span class="op">{</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> image_header: c.spng_ihdr = <span class="cn">undefined</span>;</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (c.spng_get_ihdr(ctx, &amp;image_header) != <span class="dv">0</span>) <span class="op">{</span></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">error</span>.CouldNotGetImageHeader;</span>
@@ -689,7 +691,7 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> image_header;</span>
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> image_header = <span class="kw">try</span> get_image_header(ctx);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> image_header = <span class="kw">try</span> get_image_header(ctx);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Also notice in this function, that I’m checking if the <code>spng_get_ihdr()</code> function call have returned or not an integer value that is different than zero. Most functions from the <code>libspng</code> library return a code status as result, and the code status “zero” means “success”. So any code status that is different than zero means that an error occurred while running <code>spng_get_ihdr()</code>. This is why I’m returning an error value from the function in case the code status returned by the function is different than zero.</p>
 </section>
@@ -698,7 +700,7 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <p>Before we read the pixel data from the PNG file, we need to allocate enough space to hold this data. But in order to allocate such space, we first need to know how much space we need to allocate. The dimensions of the image are obviously needed to calculate the size of this space. But there are other elements that also affect this number, such as the color model used in the image, the bit depth, and others.</p>
 <p>Anyway, all of this means that calculating the size of the space that we need, is not a simple task. That is why the <code>libspng</code> library offers an utility function named <code>spng_decoded_image_size()</code> to calculate this size for us. Once again, I’m going to encapsulate the logic around this C function into a nice and small Zig function named <code>calc_output_size()</code>. You can see below that this function returns a nice integer value as result, informing the size of the space that we need to allocate.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> calc_output_size(ctx: *c.spng_ctx) !<span class="dt">u64</span> <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> calc_output_size(ctx: *c.spng_ctx) !<span class="dt">u64</span> <span class="op">{</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> output_size: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> status = c.spng_decoded_image_size(</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        ctx, c.SPNG_FMT_RGBA8, &amp;output_size</span>
@@ -707,14 +709,14 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">error</span>.CouldNotCalcOutputSize;</span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> output_size;</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>You might quest yourself what the value <code>SPNG_FMT_RGBA8</code> means. This value is actually an enum value defined in the <code>spng.h</code> C header file. This enum is used to identify a “PNG format”. More precisely, it identifies a PNG file that uses the RGBA color model and 8 bit depth. So, by providing this enum value as input to the <code>spng_decoded_image_size()</code> function, we are saying to this function to calculate the size of the decoded pixel data, by considering a PNG file that follows this “RGBA color model with 8 bit depth” format.</p>
 <p>Having this function, we can use it in conjunction with an allocator object, to allocate an array of bytes (<code>u8</code> values) that is big enough to store the decoded pixel data of the image. Notice that I’m using <code>@memset()</code> to initialize the entire array to zero.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> output_size = <span class="kw">try</span> calc_output_size(ctx);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> output_size = <span class="kw">try</span> calc_output_size(ctx);</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> buffer = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, output_size);</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="bu">@memset</span>(buffer[<span class="dv">0</span>..], <span class="dv">0</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="bu">@memset</span>(buffer[<span class="dv">0</span>..], <span class="dv">0</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="decoding-the-image-data" class="level3" data-number="15.4.3">
@@ -722,7 +724,7 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <p>Now that we have the necessary space to store the decoded pixel data of the image, we can start to actually decode and extract this pixel data from the image, by using the <code>spng_decode_image()</code> C function.</p>
 <p>The <code>read_data_to_buffer()</code> Zig function exposed below summarises the necessary steps to read this decoded pixel data, and store it into an input buffer. Notice that this function is encapsulating the logic around the <code>spng_decode_image()</code> function. Also, we are using the <code>SPNG_FMT_RGBA8</code> enum value once again to inform the corresponding function, that the PNG image being decoded, uses the RGBA color model and 8 bit depth.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> read_data_to_buffer(ctx: *c.spng_ctx, buffer: []<span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> read_data_to_buffer(ctx: *c.spng_ctx, buffer: []<span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> status = c.spng_decode_image(</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>        ctx,</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>        buffer.ptr,</span>
@@ -734,11 +736,11 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (status != <span class="dv">0</span>) <span class="op">{</span></span>
 <span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="kw">error</span>.CouldNotDecodeImage;</span>
 <span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Having this function at hand, we can apply it over our context object, and also, over the buffer object that we have allocated in the previous section to hold the decoded pixel data of the image:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> read_data_to_buffer(ctx, buffer[<span class="dv">0</span>..]);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> read_data_to_buffer(ctx, buffer[<span class="dv">0</span>..]);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="looking-at-the-pixel-data" class="level3" data-number="15.4.4">
@@ -748,8 +750,8 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <p>If you recall from <a href="#sec-pixel-repr" class="quarto-xref"><span>Section 15.2.2</span></a>, I have described in that section that our <code>pedro_pascal.png</code> PNG file uses the RGBA color model, which adds an alpha (or transparency) byte to each pixel in the image. As consequence, each pixel in the image is represented by 4 bytes. Since we are looking here are the first 12 bytes in the image, it means that we are looking at the data from the first <span class="math inline">\(12 / 4 = 3\)</span> pixels in the image.</p>
 <p>So, based on how these first 12 bytes (or these 3 pixels) look, with these 255 values at every 4 bytes, we can say that is likely that every pixel in the image have alpha (or transparency) setted to 100%. This might not be true, but, is the most likely possibility. Also, if we look at the image itself, which if your recall is exposed in <a href="#fig-pascal" class="quarto-xref">Figure&nbsp;<span>15.1</span></a>, we can see that the transparency does not change across the image, which enforces this theory.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer[<span class="dv">0</span>..<span class="dv">12</span>]<span class="op">}</span>);</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.print(<span class="st">"{any}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer[<span class="dv">0</span>..<span class="dv">12</span>]<span class="op">}</span>);</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <pre><code>{
     200, 194, 216, 255, 203, 197,
@@ -768,7 +770,7 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <p>This <a href="#eq-grayscale" class="quarto-xref">Equation&nbsp;<span>15.1</span></a> is the formula to calculate the linear luminance of a pixel. It’s worth noting that this formula works only for images whose pixels are using the sRGB color space, which is the standard color space for the web. Thus, ideally, all images on the web should use this color space. Luckily, this is our case here, i.e., the <code>pedro_pascal.png</code> image is using this sRGB color space, and, as consequence, we can use the <a href="#eq-grayscale" class="quarto-xref">Equation&nbsp;<span>15.1</span></a>. You can read more about this formula at the Wikipedia page for grayscale <span class="citation" data-cites="wiki_grayscale">(<a href="references.html#ref-wiki_grayscale" role="doc-biblioref">Wikipedia 2024</a>)</span>.</p>
 <p>The <code>apply_image_filter()</code> function exposed below summarises the necessary steps to apply <a href="#eq-grayscale" class="quarto-xref">Equation&nbsp;<span>15.1</span></a> over the pixels in the image. We just apply this function over our buffer object that contains our pixel data, and, as result, the pixel data stored in this buffer object should now represent the grayscale version of our image.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> apply_image_filter(buffer:[]<span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> apply_image_filter(buffer:[]<span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> len = buffer.len;</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> red_factor: <span class="dt">f16</span> = <span class="fl">0.2126</span>;</span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> green_factor: <span class="dt">f16</span> = <span class="fl">0.7152</span>;</span>
@@ -788,7 +790,7 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
 <span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> apply_image_filter(buffer[<span class="dv">0</span>..]);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> apply_image_filter(buffer[<span class="dv">0</span>..]);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="saving-the-grayscale-version-of-the-image" class="level2" data-number="15.6">
@@ -800,7 +802,7 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <p>If we wanted to save a very different image in this new PNG file, e.g.&nbsp;an image with different dimensions, or, an image that uses a different color model, a different bit depth, etc. we would have to create a new image header (<code>spng_ihdr</code>) object that describes the properties of this new image.</p>
 <p>But we are essentially saving the same image that we have begin with here (the dimensions of the image, the color model, etc. are all still the same). The only difference between the two images are the colors of the pixels, which are now “shades of gray”. As consequence, we can safely use the exact same image header data in this new PNG file.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> save_png(image_header: *c.spng_ihdr, buffer: []<span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> save_png(image_header: *c.spng_ihdr, buffer: []<span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> path = <span class="st">"pedro_pascal_filter.png"</span>;</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file_descriptor = c.fopen(path.ptr, <span class="st">"wb"</span>);</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (file_descriptor == <span class="cn">null</span>) <span class="op">{</span></span>
@@ -829,7 +831,7 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
 <span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> save_png(&amp;image_header, buffer[<span class="dv">0</span>..]);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> save_png(&amp;image_header, buffer[<span class="dv">0</span>..]);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>After we execute this <code>save_png()</code> function, we should have a new PNG file inside our CWD, named <code>pedro_pascal_filter.png</code>. If we open this PNG file, we will see the same image exposed in <a href="#fig-pascal-gray" class="quarto-xref">Figure&nbsp;<span>15.2</span></a>.</p>
 </section>
@@ -839,7 +841,7 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <p>We first create the build target for our executable file, that executes our Zig code. Let’s suppose that all of our Zig code was written into a Zig module named <code>image_filter.zig</code>. The <code>exe</code> object exposed in the build script below describes the build target for our executable file.</p>
 <p>Since we have used some C code from the <code>libspng</code> library in our Zig code, we need to link our Zig code (which is in the <code>exe</code> build target) to both the C Standard Library, and, to the <code>libspng</code> library. We do that, by calling the <code>linkLibC()</code> and <code>linkSystemLibrary()</code> methods from our <code>exe</code> build target.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> build(b: *std.Build) <span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> exe = b.addExecutable(.<span class="op">{</span></span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>        .name = <span class="st">"image_filter"</span>,</span>
@@ -854,16 +856,16 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Link to math library:</span></span>
 <span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    exe.root_module.linkSystemLibrary(<span class="st">"m"</span>, .<span class="op">{}</span>);</span>
 <span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    b.installArtifact(exe);</span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Since we are using the <code>linkSystemLibrary()</code> method, it means that the library files for <code>libspng</code> are searched in your system to be linked with the <code>exe</code> build target. If you have not yet built and installed the <code>libspng</code> library into your system, this linkage step will likely not work. Because it will not find the library files in your system.</p>
 <p>So, just remember to install <code>libspng</code> in your system, if you want to build this project. Having this build script above written, we can finally build our project by running the <code>zig build</code> command in the terminal.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> build</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zig</span> build</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
-<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
 <div id="ref-wiki_grayscale" class="csl-entry" role="listitem">
-Wikipedia. 2024. <span>“Grayscale.”</span> Wikipedia. <a href="https://en.wikipedia.org/wiki/Grayscale">https://en.wikipedia.org/wiki/Grayscale</a>.
+Wikipedia. 2024. <em>Grayscale</em>. Wikipedia. <a href="https://en.wikipedia.org/wiki/Grayscale">https://en.wikipedia.org/wiki/Grayscale</a>.
 </div>
 </div>
 </section>
@@ -943,13 +945,14 @@ Wikipedia. 2024. <span>“Grayscale.”</span> Wikipedia. <a href="https://en.wi
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
-        return codeEl.innerText;
+      }
+      return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy

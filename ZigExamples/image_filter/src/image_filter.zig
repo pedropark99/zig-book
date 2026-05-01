@@ -154,7 +154,7 @@ fn save_png(image_data: *ImageData) !void {
 }
 
 pub fn main(init: std.process.Init) !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     const allocator = gpa.allocator();
     var image_data = try read_png(allocator, "pedro_pascal.png");
     try apply_image_filter(&image_data);

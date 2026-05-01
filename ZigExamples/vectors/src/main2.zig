@@ -2,7 +2,7 @@ const std = @import("std");
 const stdout = std.io.getStdOut().writer();
 
 pub fn main(init: std.process.Init) !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     const allocator = gpa.allocator();
     const Random = std.crypto.random;
     const n: usize = 1000;

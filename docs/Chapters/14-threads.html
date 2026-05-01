@@ -2,13 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.33">
+<meta name="generator" content="quarto-1.9.37">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
 <title>16&nbsp; Introducing threads and parallelism in Zig – Introduction to Zig</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -59,7 +62,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 div.csl-bib-body { }
 div.csl-entry {
   clear: both;
-  margin-bottom: 0em;
 }
 .hanging-indent div.csl-entry {
   margin-left:2em;
@@ -93,14 +95,14 @@ div.csl-indent {
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-59898bd1c6b9d2bb783127feaa000c76.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-d329e753491efaeac79c98c4b193a686.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-59898bd1c6b9d2bb783127feaa000c76.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-acf12a64177840b8d86f2d4f01b2e9fb.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-23bbe8b5e4efc1e257f6d59dce478b08.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-acf12a64177840b8d86f2d4f01b2e9fb.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-5a7d69291c2a8c67bc3a157f4354e263.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-a459d9a911ec262923466a12d18bc01e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-5a7d69291c2a8c67bc3a157f4354e263.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-81de787dd4773dbc0001c2dc1cc3016d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-150364637041e74f2e3476683347a24a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-81de787dd4773dbc0001c2dc1cc3016d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -139,7 +141,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 </script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -152,7 +154,7 @@ const typesetMath = (el) => {
     var macros = [];
     for (var i = 0; i < mathElements.length; i++) {
       var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
         window.katex.render(texText.data, mathElements[i], {
           displayMode: mathElements[i].classList.contains('display'),
           throwOnError: false,
@@ -566,7 +568,7 @@ window.Quarto = {
 <p>If we write a program to represent this restaurant, more specifically, a single-threaded program, then this program would be very inefficient. Because the program would stay in idle, waiting for a considerable amount of time on the “check if food is ready” step. Consider the code snippet exposed below that could potentially represent such program.</p>
 <p>The problem with this program is the while loop. This program will spend a lot of time waiting on the while loop, doing nothing more than just checking if the food is ready. This is a waste of time. Instead of waiting for something to happen, the waiter could just send the order to the kitchen, and just move on, and continue with receiving more orders from other clients, and sending more orders to the kitchen, instead of doing nothing and waiting for the food to be ready.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> order = Order.init(<span class="st">"Pizza Margherita"</span>, n = <span class="dv">1</span>);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> order = Order.init(<span class="st">"Pizza Margherita"</span>, n = <span class="dv">1</span>);</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> waiter = Waiter.init();</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>waiter.receive_order(order);</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>waiter.ask_kitchen_to_cook();</span>
@@ -575,13 +577,13 @@ window.Quarto = {
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    food_not_ready = waiter.is_food_ready();</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> food = waiter.get_food_from_kitchen();</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>waiter.send_food_to_client(food);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>waiter.send_food_to_client(food);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>This is why threads would be a great fit for this program. We could use threads to free the waiters from their “waiting duties”, so they can go on with their other tasks, and receive more orders. Take a look at the next example, where I have re-written the above program into a different program that uses threads to cook and deliver the orders.</p>
 <p>You can see in this program that when a waiter receives a new order from a client, this waiter executes the <code>send_order()</code> function. The only thing that this function does is to create a new thread and detaches it. Since creating a thread is a very fast operation, this <code>send_order()</code> function returns almost immediately, so the waiter spends almost no time worrying about the order, and just move on and tries to get the next order from the clients.</p>
 <p>Inside the new thread created, the order gets cooked by a chef, and when the food is ready, it’s delivered to the client’s table.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> cook_and_deliver_order(order: *Order) <span class="dt">void</span> <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> cook_and_deliver_order(order: *Order) <span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> chef = Chef.init();</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> food = chef.cook(order.*);</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    chef.deliver_food(food);</span>
@@ -599,7 +601,7 @@ window.Quarto = {
 <span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (order) <span class="op">{</span></span>
 <span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        send_order(order);</span>
 <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="threads-versus-processes" class="level2" data-number="16.2">
@@ -630,7 +632,7 @@ window.Quarto = {
 <p>As our first, and very simple example, consider the code exposed below. Inside the same program, you can create multiple threads of execution if you want to. But, in this first example, we are creating just a single thread of execution, because we call <code>spawn()</code> only once.</p>
 <p>Also, notice in this example that we are executing the function <code>do_some_work()</code> inside the new thread. Since this function receives no inputs, because it has no arguments, we have passed an empty list in this instance, or more precisely, an empty, anonymous struct (<code>.{}</code>) in the third argument of <code>spawn()</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> duration = std.Io.Duration.fromSeconds(<span class="dv">1</span>);</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> clock: std.Io.Clock = .awake;</span>
@@ -644,7 +646,7 @@ window.Quarto = {
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work, .<span class="op">{</span>init.io<span class="op">}</span>);</span>
 <span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    thread.join();</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Starting the work.Finishing the work.</code></pre>
 </div>
@@ -664,17 +666,17 @@ window.Quarto = {
 <p>When you join a thread, you are essentially saying: “Hey! Could you please wait for the thread to finish, before you continue with your execution?”. For example, if we come back to our first and simplest example of a thread in Zig, we created a single thread inside the <code>main()</code> function of our program and just called <code>join()</code> on this thread at the end. This section of the code example is reproduced below.</p>
 <p>Because we are joining this new thread inside the <code>main()</code>’s scope, it means that the execution of the <code>main()</code> function is temporarily stopped, to wait for the execution of the thread to finish. That is, the execution of <code>main()</code> stops temporarily at the line where <code>join()</code> gets called, and it will continue only after the thread has finished its tasks.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work, .<span class="op">{}</span>);</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    thread.join();</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Because we have joined this new thread inside the <code>main()</code> scope, we have a guarantee that this new thread will finish before the end of the execution of <code>main()</code>. Because it’s guaranteed that <code>main()</code> will wait for the thread to finish its tasks.</p>
 <p>In the example above, there are no more expressions after the <code>join()</code> call. We just have the end of the <code>main()</code>’s scope, and, therefore, the execution of our program just ends after the thread finishes its tasks, since there is nothing more to do. But what if we had more stuff to do after the join call?</p>
 <p>To demonstrate this other possibility, consider the next example exposed below. Here, we create a <code>print_id()</code> function, that just receives an id as input, and prints it to <code>stdout</code>. In this example, we are creating two new threads, one after another. Then, we join the first thread, then, we wait for two whole seconds, then, at last, we join the second thread.</p>
 <p>The idea behind this example is that the last <code>join()</code> call is executed only after the first thread finishes its task (i.e., the first <code>join()</code> call), and the two-second delay. If you compile and run this example, you will notice that most messages are quickly printed to <code>stdout</code>, i.e., they appear almost instantly on your screen. However, the last message (“Joining thread 2”) takes around 2 seconds to appear on the screen.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> clock: std.Io.Clock = .awake;</span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> print_id(id: *<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
@@ -694,7 +696,7 @@ window.Quarto = {
 <span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Joining thread 2</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{}</span>);</span>
 <span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    thread2.join();</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <pre><code>Thread ID: Joining thread 1
 1
@@ -714,7 +716,7 @@ Joining thread 2</code></pre>
 <p>In other words, when you call <code>detach()</code> on a thread it’s like when your children become adults, i.e., they become independent from you. A detached thread frees itself, and when this thread finishes its tasks, it does not report the results back to you. Thus, you normally mark a thread as <em>detached</em> when you don’t need to use the return value of the thread, or when you don’t care about when exactly the thread finishes its job, i.e., the thread solves everything by itself.</p>
 <p>Take the code example below. We create a new thread, detach it, and then, we just print a final message before we end our program. We use the same <code>print_id()</code> function that we have used over the previous examples.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> print_id(id: *<span class="kw">const</span> <span class="dt">u8</span>) !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Thread ID: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>id.*<span class="op">}</span>);</span>
@@ -725,7 +727,7 @@ Joining thread 2</code></pre>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread1 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, print_id, .<span class="op">{</span>&amp;id1<span class="op">}</span>);</span>
 <span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    thread1.detach();</span>
 <span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Finish main</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{}</span>);</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <pre><code>Finish main</code></pre>
 <p>Now, if you look closely at the output of this code example, you will notice that only the final message in main was printed to the console. The message that was supposed to be printed by <code>print_id()</code> did not appear in the console. Why? It’s because the main process of our program has finished first, before the thread was able to say anything.</p>
@@ -765,7 +767,7 @@ Joining thread 2</code></pre>
 <p>Since the for loop iterates 1 hundred thousand times, and, we create two separate threads in this code example, what number do you expect to see in the final message printed to <code>stdout</code>? The answer should be 2 hundred thousand. Right? Well, in theory, this program was supposed to print 2 hundred thousand at the end, but in practice, every time that I execute this program I get a different answer.</p>
 <p>In the example exposed below, you can see that this time the end result was 117254, instead of the expected 200000. The second time I executed this program, I got the number 108592 as the result. So the end result of this program is varying, but it never gets to the expected 200000 that we want.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> counter: <span class="dt">usize</span> = <span class="dv">0</span>;</span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">// Function to increment the counter</span></span>
@@ -781,7 +783,7 @@ Joining thread 2</code></pre>
 <span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    thr1.join();</span>
 <span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
 <span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Couter value: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>counter<span class="op">}</span>);</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <pre><code>Couter value: 117254</code></pre>
 <p>Why this is happening? The answer is: because this program contains a data race problem. This program would print the correct number 200000 if and only if the first thread finishes its tasks before the second thread starts to execute. But that is very unlikely to happen. Because the process of creating the thread is too fast, and therefore, both threads start to execute roughly at the same time. If you change this code to add some nanoseconds of sleep between the first and the second calls to <code>spawn()</code>, you will increase the chances of the program producing the “correct result”.</p>
@@ -901,7 +903,7 @@ Table&nbsp;16.2: A data race scenario when two threads are incrementing the same
 <p>Now that we know the problem that mutexes seek to solve, we can learn how to use them in Zig. Mutexes in Zig are available through the <code>std.Thread.Mutex</code> struct from the Zig Standard Library. If we take the same code from the previous example, and improve it with mutexes, to solve our data race problem, we get the code example below.</p>
 <p>Notice that this time, we had to alter the <code>increment()</code> function to receive a pointer to the <code>Mutex</code> object as input. All that we need to do, to make this program safe against data race problems, is to call the <code>lock()</code> method at the beginning of the critical section, and then, call <code>unlock()</code> at the end of the critical section. Notice that the output of this program is now the correct number of 200000.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Mutex = std.Io.Mutex;</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> State = Mutex.State;</span>
@@ -925,7 +927,7 @@ Table&nbsp;16.2: A data race scenario when two threads are incrementing the same
 <span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>    thr1.join();</span>
 <span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
 <span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"Couter value: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>counter<span class="op">}</span>);</span>
-<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Couter value: 200000</code></pre>
 </div>
@@ -960,7 +962,7 @@ Table&nbsp;16.2: A data race scenario when two threads are incrementing the same
 <p>As with mutexes, we also have to unlock the shared or exclusive locks that we acquire through a read/write lock object, once we are at the end of our “critical section”. If you have acquired an exclusive lock, then, you unlock this exclusive lock by calling the <code>unlock()</code> method from the read/write lock object. In contrast, if you have acquired a shared lock instead, then, call <code>unlockShared()</code> to unlock this shared lock.</p>
 <p>As a simple example, the snippet below creates three separate threads responsible for reading the current value in a <code>counter</code> object, and it also creates another thread responsible for writing new data into the <code>counter</code> object (incrementing it, more specifically).</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> RwLock = std.Io.RwLock;</span>
 <span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> duration = std.Io.Duration.fromSeconds(<span class="dv">2</span>);</span>
@@ -998,7 +1000,7 @@ Table&nbsp;16.2: A data race scenario when two threads are incrementing the same
 <span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
 <span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a>    thr3.join();</span>
 <span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a>    wthread.join();</span>
-<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 </section>
@@ -1009,7 +1011,7 @@ Table&nbsp;16.2: A data race scenario when two threads are incrementing the same
 <p>It’s important to say that, yielding a thread is a “not so common” thread operation these days. In other words, not many programmers use yielding in production, simply because it’s hard to use this operation and make it work properly, and also, there are better alternatives. Most programmers prefer to use <code>join()</code> instead. In fact, most of the time, when you see someone using this “yield” operation in some code example, they are usually doing so to help debug race conditions in their applications. That is, this “yield” operation is mostly used as a debug tool nowadays.</p>
 <p>Anyway, if you want to yield a thread, just call the <code>yield()</code> method from it, like this:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>thread.yield();</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>thread.yield();</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="common-problems-in-threads" class="level2" data-number="16.8">
@@ -1022,7 +1024,7 @@ Table&nbsp;16.2: A data race scenario when two threads are incrementing the same
 <p>On the other hand, when we look into the second thread, which executes the <code>do_some_work2()</code> function, we can see that this function acquires the <code>mut2</code> lock first. Because when this thread gets created and it tries to acquire this <code>mut2</code> lock, the first thread is still sleeping on that “sleep 1 second” line. After acquiring <code>mut2</code>, the <code>do_some_work2()</code> function also sleeps for 1 second, to simulate some type of work, and then the function tries to acquire the <code>mut1</code> lock.</p>
 <p>This creates a deadlock situation, because after the “sleep for 1 second” line in both threads, thread 1 is trying to acquire the <code>mut2</code> lock, but this lock is currently being used by thread 2. However, at this moment, thread 2 is also trying to acquire the <code>mut1</code> lock, which is currently being used by thread 1. Therefore, both threads end up waiting for ever. Waiting for their peer to free the lock that they want to acquire.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> clock: std.Io.Clock = .awake;</span>
 <span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> duration = std.Io.Duration.fromSeconds(<span class="dv">1</span>);</span>
@@ -1053,7 +1055,7 @@ Table&nbsp;16.2: A data race scenario when two threads are incrementing the same
 <span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thr2 = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, do_some_work2, .<span class="op">{</span>init.io<span class="op">}</span>);</span>
 <span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a>    thr1.join();</span>
 <span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a>    thr2.join();</span>
-<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="sec-not-call-join-detach" class="level3" data-number="16.8.2">
@@ -1067,7 +1069,7 @@ Table&nbsp;16.2: A data race scenario when two threads are incrementing the same
 <p>Therefore, if you want to cancel a thread in the middle of its execution in Zig, then one good strategy that you can take is to use control flow in conjunction with <code>join()</code>. More specifically, you can design your thread around a while loop that is constantly checking if the thread should continue running. If it’s time to cancel the thread, we could make the while loop break, and join the thread with the main thread by calling <code>join()</code>.</p>
 <p>The code example below demonstrates to some extent this strategy. Here, we are using control flow to break the while loop, and exit the thread earlier than what we have initially planned to. This example also demonstrates how can we use atomic objects in Zig with the <code>Value()</code> generic function that we have mentioned in <a href="#sec-atomic-operation" class="quarto-xref"><span>Section 16.5.2</span></a>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Thread = std.Thread;</span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> clock: std.Io.Clock = .awake;</span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> duration = std.Io.Duration.fromSeconds(<span class="dv">2</span>);</span>
@@ -1096,19 +1098,19 @@ Table&nbsp;16.2: A data race scenario when two threads are incrementing the same
 <span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
 <span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> thread = <span class="kw">try</span> Thread.spawn(.<span class="op">{}</span>, work, .<span class="op">{</span>init.io<span class="op">}</span>);</span>
 <span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>    thread.join();</span>
-<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Time to do more work.Time to cancel the thread.</code></pre>
 </div>
 </div>
 
 
-<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
 <div id="ref-geeks_critical_section" class="csl-entry" role="listitem">
-Geeks for Geeks. 2024. <span>“Critical Section.”</span> <span>Geeks for Geeks</span>. <a href="https://www.geeksforgeeks.org/g-fact-70/">https://www.geeksforgeeks.org/g-fact-70/</a>.
+Geeks for Geeks. 2024. <em>Critical Section</em>. <span>Geeks for Geeks</span>. <a href="https://www.geeksforgeeks.org/g-fact-70/">https://www.geeksforgeeks.org/g-fact-70/</a>.
 </div>
 <div id="ref-linux_pthread_create" class="csl-entry" role="listitem">
-Linux man-pages. 2024. <span>“Pthread_create(3) — Linux Manual Page.”</span> <a href="https://man7.org/linux/man-pages/man3/pthread_create.3.html">https://man7.org/linux/man-pages/man3/pthread_create.3.html</a>.
+Linux man-pages. 2024. <em>Pthread_create(3) — Linux Manual Page</em>. <a href="https://man7.org/linux/man-pages/man3/pthread_create.3.html">https://man7.org/linux/man-pages/man3/pthread_create.3.html</a>.
 </div>
 </div>
 </section>
@@ -1185,13 +1187,14 @@ Linux man-pages. 2024. <span>“Pthread_create(3) — Linux Manual Page.”</spa
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
-        return codeEl.innerText;
+      }
+      return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy
