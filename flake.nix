@@ -53,7 +53,7 @@
           buildInputs = [
             R_env       # Provides R and Rscript
             pkgs.quarto # The Quarto CLI
-            zig.packages.${system}.master-2025-11-22
+            zig.packages.${system}."0.16.0"
             # REMOVED: localeDefinitions
           ] ++ nativeDeps;
 
