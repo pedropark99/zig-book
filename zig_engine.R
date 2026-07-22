@@ -607,9 +607,10 @@ generate_error_report <- function(file_path, output) {
 #' job we are performing here. Therefore, these files are automatically erased/deleted
 #' by the Zig knitr engine after the Zig code got compiled by the Zig compiler.
 clean_lib_files <- function() {
-  obj_files <- fs::dir_ls(glob = "*.a")
-  lib_files <- fs::dir_ls(glob = "*.o")
-  files <- c(obj_files, lib_files)
+  win_lib_files <- fs::dir_ls(glob = "*.lib")
+  linux_a_files <- fs::dir_ls(glob = "*.a")
+  linux_o_files <- fs::dir_ls(glob = "*.o")
+  files <- c(win_lib_files, linux_a_files, linux_o_files)
   fs::file_delete(files)
 }
 
