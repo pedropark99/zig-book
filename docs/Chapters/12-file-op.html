@@ -538,7 +538,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>In this chapter we are going to discuss how you can can execute filesystem operations and also handle input/output (IO) using the cross-platform structs and functions from the Zig Standard Library. Most of these functions and structs comes from the <code>std.Io</code> module.</p>
 <section id="sec-io-basics" class="level2" data-number="13.1">
 <h2 data-number="13.1" class="anchored" data-anchor-id="sec-io-basics"><span class="header-section-number">13.1</span> Input/Output basics</h2>
-<p>If you have some experience in any high-level programming language, you have certainly used some input or output functionality before. In other words, you certainly have been in a situation where you needed to sent some output to the user, or, to receive an input from the user of your program.</p>
+<p>If you have some experience in any high-level programming language, you have certainly used some input or output functionality before. In other words, you certainly have been in a situation where you needed to send some output to the user, or, to receive an input from the user of your program.</p>
 <p>For example, in Python we can receive some input from the user by using the <code>input()</code> built-in function. But we can also print (or “show”) some output to the user by using the <code>print()</code> built-in function. So yes, if you have programmed before in Python, you certainly have used these functions once before.</p>
 <p>But do you know how these functions relate back to your operating system (OS)? How exactly they are interacting with the resources of your OS to receive or sent some input/output. In essence, these input/output functions from high-level languages are just abstractions over the <em>standard output</em> and <em>standard input</em> channels of your operating system.</p>
 <p>This means that we receive an input, or send some output, through the operating system. It’s the OS that makes the bridge between the user and your program. Your program does not have a direct access to the user. It’s the OS that intermediates every message exchanged between your program and the user.</p>
@@ -572,7 +572,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">defer</span> threaded.deinit();</span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>_ = io;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Therefore, since Zig 0.16, you will find different functions that perform some IO operation across the Zig Standard Library that takes an argument named <code>io</code> of type <code>std.Io</code>. A big example of that is the <code>reader()</code> method that you find in <code>std.Io.File</code>. This method is responsible for creating the <code>Reader</code> object through which you can read data from the file represented by the <code>std.Io.File</code> object. And this method have now, an <code>io</code> argument, in which you should provide the “IO backend implementation” that you want to use while reading the file.</p>
+<p>Therefore, since Zig 0.16, you will find different functions that perform some IO operation across the Zig Standard Library that takes an argument named <code>io</code> of type <code>std.Io</code>. A big example of that is the <code>reader()</code> method that you find in <code>std.Io.File</code>. This method is responsible for creating the <code>Reader</code> object through which you can read data from the file represented by the <code>std.Io.File</code> object. And this method now has an <code>io</code> argument, in which you should provide the “IO backend implementation” that you want to use while reading the file.</p>
 <p>In the example below, I’m demonstrating the use of this <code>io</code> argument by opening a file in my computer and reading it. Notice that I provide an “IO backend implementation” (i.e.&nbsp;the <code>io</code> object) to the <code>reader()</code> method. This is just one example. You will find this pattern of “providing an IO backend implementation” in many other kinds of tasks. Functions related to networking are another instance where you will commonly find this <code>io</code> argument.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
@@ -634,7 +634,6 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    _ = stdout;</span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<pre><code>try stdout.flush();</code></pre>
 </section>
 </section>
 <section id="sec-file-descriptor" class="level2" data-number="13.5">
@@ -658,16 +657,16 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>That is why, when we access <code>File.stdout()</code>, most of the times, we also use the <code>writer()</code> method from the <code>stdout</code> file descriptor, to get access to a writer object that we can use to write stuff into this <code>stdout</code> channel. As we described in <a href="#sec-writer-reader" class="quarto-xref"><span>Section 13.2</span></a>, this <code>writer()</code> method returns a <code>Writer</code> object, and one of the main methods of this <code>Writer</code> object is the <code>print()</code> method that we have used extensively across this book to write (or “print”) a formatted string into the <code>stdout</code> channel.</p>
 <p>You should also notice in the example below, that in order to instantiate this <code>Writer</code> object, we must provide a reference to a buffer object as input to the <code>writer()</code> method. In the example below, this buffer object is <code>stdout_buffer</code>. By providing such buffer, we transform the IO operations performed by the <code>Writer</code> object into “buffered IO operations”. We are going to talk more about “buffered IO” in <a href="#sec-buffered-io" class="quarto-xref"><span>Section 13.6</span></a>, so, don’t worry too much about that for now.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdout_writer = std.Io.File.stdout().writer(init.io, &amp;stdout_buffer);</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.writeAll(</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"This message was written into stdout.</span><span class="sc">\n</span><span class="st">"</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdout_writer = std.Io.File.stdout().writer(init.io, &amp;stdout_buffer);</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.writeAll(</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"This message was written into stdout.</span><span class="sc">\n</span><span class="st">"</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>This message was written into stdout.</code></pre>
 </div>
@@ -680,24 +679,24 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <p>Because we want to receive some input from the user, the key verb here becomes <strong>receive</strong>, and, as consequence, we usually want to <strong>read</strong> data from the <code>stdin</code> channel, instead of writing data into it. So, we normally use the <code>reader()</code> method of the file descriptor object returned by <code>File.stdin()</code>, to get access to a <code>Reader</code> object that we can use to read data from <code>stdin</code>.</p>
 <p>In the example below, we try to read the data from the <code>stdin</code> with the <code>takeDelimiterExclusive()</code> method (which will read all the data from the <code>stdin</code> until it hits a new line character - <code>'\n'</code>, in the stream), and save this data into the <code>name</code> object.</p>
 <p>You should also notice that, like we did with the <code>writer()</code> method, we also need to provide a reference to a buffer object as input to the <code>reader()</code> method, when instantiating our <code>Reader</code> object. The reasons are exactly the same. This input buffer transforms the IO operations performed by the <code>Reader</code> object into “buffered IO operations”.</p>
-<p>If you execute this program, you will notice that it stops the execution, ands start to wait indefinitely for some input from the user. In other words, you need to type your name into the terminal, and then, you press Enter to send your name to <code>stdin</code>. After you send your name to <code>stdin</code>, the program reads this input, and continues with the execution, by printing the given name to <code>stdout</code>. In the example below, I typed my name (Pedro) into the terminal, and then, pressed Enter.</p>
+<p>If you execute this program, you will notice that it stops the execution, and starts to wait indefinitely for some input from the user. In other words, you need to type your name into the terminal, and then, you press Enter to send your name to <code>stdin</code>. After you send your name to <code>stdin</code>, the program reads this input, and continues with the execution, by printing the given name to <code>stdout</code>. In the example below, I typed my name (Pedro) into the terminal, and then, pressed Enter.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdin_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdout_writer = std.Io.File.stdout().writer(init.io, &amp;stdout_buffer);</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdin_reader = std.Io.File.stdin().reader(init.io, &amp;stdin_buffer);</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdin = &amp;stdin_reader.interface;</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.writeAll(<span class="st">"Type your name</span><span class="sc">\n</span><span class="st">"</span>);</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> name = <span class="kw">try</span> stdin.takeDelimiterExclusive(<span class="ch">'\n'</span>);</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Your name is: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>name<span class="op">}</span>);</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdin_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdout_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdout_writer = std.Io.File.stdout().writer(init.io, &amp;stdout_buffer);</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdin_reader = std.Io.File.stdin().reader(init.io, &amp;stdin_buffer);</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdin = &amp;stdin_reader.interface;</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.writeAll(<span class="st">"Type your name</span><span class="sc">\n</span><span class="st">"</span>);</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> name = <span class="kw">try</span> stdin.takeDelimiterExclusive(<span class="ch">'\n'</span>);</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Your name is: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>name<span class="op">}</span>);</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <pre><code>Type your name
 Your name is: Pedro</code></pre>
@@ -764,9 +763,9 @@ Tip
 <section id="dont-forget-to-flush" class="level3" data-number="13.6.3">
 <h3 data-number="13.6.3" class="anchored" data-anchor-id="dont-forget-to-flush"><span class="header-section-number">13.6.3</span> Don’t forget to flush!</h3>
 <p>When you use buffered IO operations in your code, is important to not forget to flush your buffers, specially on write operations. Basically, when we are in a buffered IO scenario, and we try to write data into “something”, this data is first written into the IO buffer that we’ve provided to the <code>Writer</code> object as input, and this data in the IO buffer will only be effectively written into the “something” when we “commit” it. We “commit” the bytes written into the IO buffer to our target output by “flushing our IO buffer”.</p>
-<p>So, when we flush our IO buffer, we are effectively commiting the chunk of data that is present in the IO buffer to be written into the IO resource that is described by our file descriptor object. If we don’t flush our IO buffer, then, this data never leaves the IO buffer (i.e.&nbsp;it never reaches the IO resource). Therefore, when you forget to flush your IO resource, what happens, most of the times, is that you don’t get any kind of output in your IO resource.</p>
+<p>So, when we flush our IO buffer, we are effectively committing the chunk of data that is present in the IO buffer to be written into the IO resource that is described by our file descriptor object. If we don’t flush our IO buffer, then, this data never leaves the IO buffer (i.e.&nbsp;it never reaches the IO resource). Therefore, when you forget to flush your IO resource, what happens, most of the times, is that you don’t get any kind of output in your IO resource.</p>
 <p>For example, if you are writing data into the <code>stdout</code>, and you forget to flush it, what usually happens is that you don’t get any kind of output written into the terminal. The program seems to run successfully, but you don’t get any type of visual output in the terminal to confirm it, and you get really frustrated and confused.</p>
-<p>Thus, if you are writing data in Zig, don’t forget to flush your IO buffers by calling the <code>flush()</code> method of your <code>Writer</code> object. This will make sure that the bytes/data that you are writing are effectivelly written into the IO resource described by your file descriptor object.</p>
+<p>Thus, if you are writing data in Zig, don’t forget to flush your IO buffers by calling the <code>flush()</code> method of your <code>Writer</code> object. This will make sure that the bytes/data that you are writing are effectively written into the IO resource described by your file descriptor object.</p>
 <div class="callout callout-style-default callout-important callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -822,8 +821,8 @@ Figure&nbsp;13.3: Executing a program from the terminal
 <p>In Zig, filesystem operations are usually made through a directory handler object. A directory handler in Zig is an object of type <code>std.Io.Dir</code>, which is an object that describes a particular folder in the filesystem of our computer. You normally create a <code>Dir</code> object, by calling the <code>std.Io.Dir.cwd()</code> function. This function returns a <code>Dir</code> object that points to (or, that describes) the current working directory (CWD).</p>
 <p>Through this <code>Dir</code> object, you can create new files, or modify, or read existing ones that are inside your CWD. In other words, a <code>Dir</code> object is the main entrypoint in Zig to perform multiple types of filesystem operations. In the example below, we are creating this <code>Dir</code> object, and storing it inside the <code>cwd</code> object. Although we are not using this object at this code example, we are going to use it a lot over the next examples.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>_ = cwd;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>_ = cwd;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="file-operations" class="level2" data-number="13.9">
@@ -833,47 +832,47 @@ Figure&nbsp;13.3: Executing a program from the terminal
 <p>We create new files by using the <code>createFile()</code> method from the <code>Dir</code> object. Just provide the name of the file that you want to create, and this function will do the necessary steps to create such file. You can also provide a relative path to this function, and it will create the file by following this path, which is relative to the CWD.</p>
 <p>This function might return an error, so, you should use <code>try</code>, <code>catch</code>, or any of the other methods presented in <a href="09-error-handling.html" class="quarto-xref"><span>Chapter 10</span></a> to handle the possible error. But if everything goes well, this <code>createFile()</code> method returns a file descriptor object (i.e., a <code>File</code> object) as result, through which you can add content to the file with the IO operations that I presented before.</p>
 <p>Take this code example below. In this example, we are creating a new text file named <code>foo.txt</code>. If the function <code>createFile()</code> succeeds, the object named <code>file</code> will contain a file descriptor object, which we can use to write (or add) new content to the file, like we do in this example, by using a buffered writer object to write a new line of text to the file.</p>
-<p>Now, a quick note, when we create a file descriptor object in C, by using a C function like <code>fopen()</code>, we must always close the file at the end of our program, or, as soon as we complete all operations that we wanted to perform on the file. In Zig, this is no different. So everytime we create a new file, this file remains “open”, waiting for some operation to be performed. As soon as we are done with it, we always have to close this file, to free the resources associated with it. In Zig, we do this by calling the method <code>close()</code> from the file descriptor object.</p>
+<p>Now, a quick note, when we create a file descriptor object in C, by using a C function like <code>fopen()</code>, we must always close the file at the end of our program, or, as soon as we complete all operations that we wanted to perform on the file. In Zig, this is no different. So every time we create a new file, this file remains “open”, waiting for some operation to be performed. As soon as we are done with it, we always have to close this file, to free the resources associated with it. In Zig, we do this by calling the method <code>close()</code> from the file descriptor object.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = <span class="kw">try</span> cwd.createFile(</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>        init.io, <span class="st">"foo.txt"</span>, .<span class="op">{}</span></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Don't forget to close the file at the end.</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> file.close(init.io);</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Do things with the file ...</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> file.writePositionalAll(</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        init.io, <span class="st">"Writing this line to the file</span><span class="sc">\n</span><span class="st">"</span>, <span class="dv">0</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = <span class="kw">try</span> cwd.createFile(</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>        init.io, <span class="st">"foo.txt"</span>, .<span class="op">{}</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Don't forget to close the file at the end.</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> file.close(init.io);</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Do things with the file ...</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> file.writePositionalAll(</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>        init.io, <span class="st">"Writing this line to the file</span><span class="sc">\n</span><span class="st">"</span>, <span class="dv">0</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>So, in this example we not only have created a file into the filesystem, but we also wrote some data into this file, using the file descriptor object returned by <code>createFile()</code>. If the file that you are trying to create already exists in your filesystem, this <code>createFile()</code> call will overwrite the contents of the file, or, in other words, it will in erase all the contents of the existing file.</p>
 <p>If you don’t want this to happen, meaning, that you don’t want to overwrite the contents of the existing file, but you want to write data to this file anyway (i.e., you want to append data to the file), you should use the <code>openFile()</code> method from the <code>Dir</code> object.</p>
 <p>Another important aspect about <code>createFile()</code> is that this method creates a file that is not open to read operations by default. It means that you cannot read this file. You are not allowed to. So for example, you might want to write some stuff into this file at the beginning of the execution of your program. Then, at a future point in your program you might need to read what you wrote in this file. If you try to read data from this file, you will likely get a <code>NotOpenForReading</code> error as result.</p>
 <p>But how can you overcome this barrier? How can you create a file that is open to read operations? All you have to do, is to set the <code>read</code> flag to true in the third argument of <code>createFile()</code>. When you set this flag to true, then the file gets create with “read permissions”, and, as consequence, a program like this one below becomes valid:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = <span class="kw">try</span> cwd.createFile(init.io, <span class="st">"foo.txt"</span>, .<span class="op">{</span> .read = <span class="cn">true</span> <span class="op">}</span>);</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> file.close(init.io);</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> file.writePositionalAll(</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>        init.io, <span class="st">"We are going to read this line"</span>, <span class="dv">0</span></span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">300</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memset</span>(buffer[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> read_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> fr = file.reader(init.io, &amp;read_buffer);</span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> reader = &amp;fr.interface;</span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    _ = reader.readSliceAll(buffer[<span class="dv">0</span>..]) <span class="kw">catch</span> <span class="dv">0</span>;</span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"What we read from the file: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer<span class="op">}</span>);</span>
-<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = <span class="kw">try</span> cwd.createFile(init.io, <span class="st">"foo.txt"</span>, .<span class="op">{</span> .read = <span class="cn">true</span> <span class="op">}</span>);</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> file.close(init.io);</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> file.writePositionalAll(</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>        init.io, <span class="st">"We are going to read this line"</span>, <span class="dv">0</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">300</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memset</span>(buffer[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> read_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> fr = file.reader(init.io, &amp;read_buffer);</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> reader = &amp;fr.interface;</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    _ = reader.readSliceAll(buffer[<span class="dv">0</span>..]) <span class="kw">catch</span> <span class="dv">0</span>;</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>    std.debug.print(<span class="st">"What we read from the file: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer<span class="op">}</span>);</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <pre><code>What we read from the file: We are going to read this line</code></pre>
 </section>
@@ -890,25 +889,25 @@ Figure&nbsp;13.3: Executing a program from the terminal
 <p>In the code example below, we are opening the <code>foo.txt</code> text file with a <code>write_only</code> mode, and appending a new line of text to the end of the file. To do that, we use the <code>writePositionalAll()</code> method from the file descriptor object. This method allows you to write a slice of bytes/data into a specific position in the file.</p>
 <p>Since we want to append data to the end of the file, I use the <code>length()</code> method of the file descriptor object to calculate the length of the file (i.e.&nbsp;how many bytes the file contains), and then, I pass the result on the third argument of this <code>writePositionalAll()</code> method, which tells this method to write the input data at the end of the file.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = <span class="kw">try</span> cwd.openFile(init.io, <span class="st">"foo.txt"</span>, .<span class="op">{</span> .mode = .write_only <span class="op">}</span>);</span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> file.close(init.io);</span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> length = <span class="kw">try</span> file.length(init.io);</span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> file.writePositionalAll(</span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>        init.io, <span class="st">"Some random text to write</span><span class="sc">\n</span><span class="st">"</span>, length</span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> file = <span class="kw">try</span> cwd.openFile(init.io, <span class="st">"foo.txt"</span>, .<span class="op">{</span> .mode = .write_only <span class="op">}</span>);</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> file.close(init.io);</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> length = <span class="kw">try</span> file.length(init.io);</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> file.writePositionalAll(</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>        init.io, <span class="st">"Some random text to write</span><span class="sc">\n</span><span class="st">"</span>, length</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="deleting-files" class="level3" data-number="13.9.3">
 <h3 data-number="13.9.3" class="anchored" data-anchor-id="deleting-files"><span class="header-section-number">13.9.3</span> Deleting files</h3>
 <p>Sometimes, we just need to delete/remove the files that we have. To do that, we use the <code>deleteFile()</code> method. You just provide an IO implementation in the first argument, and the path of the file that you want to delete in the second argument, and this method will try to delete the file located at this path.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.deleteFile(init.io, <span class="st">"foo.txt"</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.deleteFile(init.io, <span class="st">"foo.txt"</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="copying-files" class="level3" data-number="13.9.4">
@@ -916,14 +915,14 @@ Figure&nbsp;13.3: Executing a program from the terminal
 <p>To copy existing files, we use the <code>copyFile()</code> method. The first argument in this method is the path to the file that you want to copy. The second argument is a <code>Dir</code> object, i.e., a directory handler, more specifically, a <code>Dir</code> object that points to the folder in your computer where you want to copy the file to. The third argument is the new path of the file, or, in other words, the new location of the file. The fourth argument is the IO implementation that you want to use. And the fifth argument are the options (or flags) to be used in the copy operation.</p>
 <p>The <code>Dir</code> object that you provide as input to this method will be used to copy the file to the new location. You may create this <code>Dir</code> object before calling the <code>copyFile()</code> method. Maybe you are planning to copy the file to a completely different location in your computer, so it might be worth to create a directory handler to that location. But if you are copying the file to a subfolder of your CWD, then, you can just simply pass the CWD handler to this argument.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.copyFile(</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"foo.txt"</span>,</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    cwd,</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ZigExamples/file-io/foo.txt"</span>,</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    init.io,</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{}</span></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.copyFile(</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"foo.txt"</span>,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    cwd,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ZigExamples/file-io/foo.txt"</span>,</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    init.io,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{}</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="read-the-docs" class="level3" data-number="13.9.5">
@@ -939,20 +938,20 @@ Figure&nbsp;13.3: Executing a program from the terminal
 <p>You can produce such iterator object by using either the <code>iterate()</code> or <code>walk()</code> methods of a <code>Dir</code> object. Both methods return an iterator object as output, which you can advance by using the <code>next()</code> method. The difference between these methods, is that <code>iterate()</code> returns a non-recursive iterator, while <code>walk()</code> does. It means that the iterator returned by <code>walk()</code> will not only iterate through the files available in the current directory, but also, through the files from any subdirectory found inside the current directory.</p>
 <p>In the example below, we are displaying the names of the files stored inside the directory <code>ZigExamples/file-io</code>. Notice that we had to open this directory through the <code>openDir()</code> function. Also notice that we provided the flag <code>iterate</code> in the second argument of <code>openDir()</code>. This flag is important, because without this flag, we would not be allowed to iterate through the files in this directory.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dir = <span class="kw">try</span> cwd.openDir(</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    init.io,</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ZigExamples/file-io/"</span>,</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> .iterate = <span class="cn">true</span> <span class="op">}</span></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>);</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> it = dir.iterate();</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="kw">while</span> (<span class="kw">try</span> it.next(init.io)) |entry| <span class="op">{</span></span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">"File name: {s}</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>        .<span class="op">{</span>entry.name<span class="op">}</span></span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> dir = <span class="kw">try</span> cwd.openDir(</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    init.io,</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ZigExamples/file-io/"</span>,</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> .iterate = <span class="cn">true</span> <span class="op">}</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> it = dir.iterate();</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="kw">while</span> (<span class="kw">try</span> it.next(init.io)) |entry| <span class="op">{</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">"File name: {s}</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>        .<span class="op">{</span>entry.name<span class="op">}</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> stdout.flush();</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <pre><code>File name: create_file_and_write_toit.zig
 File name: create_file.zig
@@ -971,17 +970,17 @@ File name: copy_file.zig</code></pre>
 <p>There are two methods that are important when it comes to creating directories, which are <code>createDir()</code> and <code>createDirPath()</code>. The difference between these two methods is that <code>createDir()</code> can only create one single directory in the current directory in each call, while <code>createDirPath()</code> is capable of recursively create subdirectories in the same call.</p>
 <p>This is why the name of this method is “make path”. It will create as many subdirectories as necessary to create the path that you provided as input. So, if you provide the path <code>"sub1/sub2/sub3"</code> as input to this method, it will create three different subdirectories, <code>sub1</code>, <code>sub2</code> and <code>sub3</code>, within the same function call. In contrast, if you provided such path as input to <code>createDir()</code>, you would likely get an error as result, since this method can only create a single subdirectory.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.createDir(init.io, <span class="st">"src"</span>, .default_dir);</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.createDirPath(init.io, <span class="st">"src/decoders/jpg/"</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.createDir(init.io, <span class="st">"src"</span>, .default_dir);</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.createDirPath(init.io, <span class="st">"src/decoders/jpg/"</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="deleting-directories" class="level3" data-number="13.10.3">
 <h3 data-number="13.10.3" class="anchored" data-anchor-id="deleting-directories"><span class="header-section-number">13.10.3</span> Deleting directories</h3>
 <p>To delete a directory, just provide the path to the directory that you want to delete as input to the <code>deleteDir()</code> method from a <code>Dir</code> object. In the example below, we are deleting the <code>src</code> directory that we have just created in the previous example.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.deleteDir(init.io, <span class="st">"src"</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cwd = std.Io.Dir.cwd();</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> cwd.deleteDir(init.io, <span class="st">"src"</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 </section>
