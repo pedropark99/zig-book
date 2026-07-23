@@ -778,12 +778,20 @@ There are three IO modes, or, three values that you can provide to this flag, wh
 
 These modes are similar to the modes that you provide to the `mode` argument of the
 `open()` Python built-in function[^py-open], or, the `mode` argument of the
-`fopen()` C function[^c-open].
+`fopen()` C function[^c-open]. If you open a file with a mode that does not allow the specific operation
+that you want to perform on this file, you normally get a `AccessDenied` error from the OS as a result.
 
-In the code example below, we are opening the `foo.txt` text file with a `write_only` mode,
+Now, for Windows users is worth noting that, most of the times, when you try to write/append data to a file,
+you will most likely to use a `read_write` mode instead of a `write_only` mode. This happens because the Windows OS
+also need a read permission over a file to be able to write data to it. Be careful with this. On Linux-like systems this usually does not happen,
+and therefore, a `write_only` mode is usually sufficient if you just want to write data to a file, and nothing else.
+
+In the code example below, we are opening the `foo.txt` text file with a `read_write` mode[^windows-write],
 and appending a new line of text to the end of the file. To do that, we use the `writePositionalAll()`
 method from the file descriptor object. This method allows you to write a slice of bytes/data into
 a specific position in the file.
+
+[^windows-write]: This makes this code example compatible not only with Linux, but also, with Windows, because of the reasons that I just explained in the previous paragraph. If you are a Linux-only user, you could use a `write_only` mode instead of a `read_write` mode, and the code would still work.
 
 Since we want to append data to the end of the file, I use the `length()` method of the file descriptor
 object to calculate the length of the file (i.e. how many bytes the file contains), and then, I pass the result
@@ -802,7 +810,7 @@ at the end of the file.
 const std = @import("std");
 pub fn main(init: std.process.Init) !void {
     const cwd = std.Io.Dir.cwd();
-    const file = try cwd.openFile(init.io, "foo.txt", .{ .mode = .write_only });
+    const file = try cwd.openFile(init.io, "foo.txt", .{ .mode = .read_write });
     defer file.close(init.io);
 
     const length = try file.length(init.io);
