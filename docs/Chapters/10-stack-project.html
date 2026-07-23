@@ -539,8 +539,8 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    _ = twice(<span class="dv">5678</span>);</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>1/1 file3f4c36831b91.test.test comptime...OKAll 1 
-   tests passed.</code></pre>
+<pre><code>1/1 file1dccf4c6a56.test.test comptime...OKAll 1 t
+  tests passed.</code></pre>
 </div>
 </div>
 <p>But what if we provide a number that is not compile-time known to this function? For example, your program might receive some input from the user through the <code>stdin</code> channel of your system. This input from the user might be many different things, and cannot be predicted at compile-time. These circumstances make this “input from the user” a value that is runtime-known only.</p>
@@ -557,22 +557,24 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdout_writer = std.Io.File.stdout().writer(init.io, &amp;stdout_buffer);</span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdout = &amp;stdout_writer.interface;</span>
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdin_buffer: [<span class="dv">1024</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdin_reader = std.Io.File.stdin().reader(init.io, &amp;stdin_buffer);</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdin = &amp;stdin_reader.interface;</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buffer: [<span class="dv">5</span>]<span class="dt">u8</span> = .<span class="op">{</span> <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span> <span class="op">}</span>;</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdin_buffer: [<span class="dv">10</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memset</span>(stdin_buffer[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> stdin_reader = std.Io.File.stdin().reader(init.io, &amp;stdin_buffer);</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> stdin = &amp;stdin_reader.interface;</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdout.write(<span class="st">"Please write a 4-digit integer number</span><span class="sc">\n</span><span class="st">"</span>);</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    _ = <span class="kw">try</span> stdin.takeDelimiterExclusive(<span class="ch">'\n'</span>);</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Input: {s}"</span>, .<span class="op">{</span>buffer<span class="op">}</span>);</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n: <span class="dt">u32</span> = <span class="kw">try</span> std.fmt.parseInt(</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u32</span>, buffer[<span class="dv">0</span> .. buffer.len - <span class="dv">1</span>], <span class="dv">10</span></span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> twice_result = twice(n);</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Result: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>twice_result<span class="op">}</span>);</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> buffer = <span class="kw">try</span> stdin.takeDelimiterExclusive(<span class="ch">'\n'</span>);</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Input: {s}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>buffer[<span class="dv">0</span>..<span class="dv">4</span>]<span class="op">}</span>);</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n: <span class="dt">u32</span> = <span class="kw">try</span> std.fmt.parseInt(</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>        <span class="dt">u32</span>, buffer[<span class="dv">0</span>..<span class="dv">4</span>], <span class="dv">10</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> twice_result = twice(n);</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.print(<span class="st">"Result: {d}</span><span class="sc">\n</span><span class="st">"</span>, .<span class="op">{</span>twice_result<span class="op">}</span>);</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> stdout.flush();</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <pre><code>t.zig:12:16: error: unable to resolve comptime value
     const twice_result = twice(n);
@@ -611,7 +613,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> <span class="kw">comptime</span> expect(fibonacci(<span class="dv">7</span>) == <span class="dv">13</span>);</span>
 <span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>1/1 file3f4c71664197.test.fibonacci...OKAll 1 test
+<pre><code>1/1 file1dcc2b4b4ca1.test.fibonacci...OKAll 1 test
   ts passed.</code></pre>
 </div>
 </div>
@@ -640,7 +642,7 @@ gtag('config', 'G-6CHJXK4CEV', { 'anonymize_ip': true});
 <span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    _ = x;</span>
 <span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>1/1 file3f4c79e93c76.test.fibonacci in a block...O
+<pre><code>1/1 file1dcc6cb12e37.test.fibonacci in a block...O
   OKAll 1 tests passed.</code></pre>
 </div>
 </div>
