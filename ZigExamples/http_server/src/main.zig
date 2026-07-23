@@ -1,18 +1,11 @@
 const std = @import("std");
-const Socket = std.Io.net.Socket;
-const Protocol = std.Io.net.Protocol;
-
+const Method = @import("request.zig").Method;
 const Request = @import("request.zig");
 const Response = @import("response.zig");
-const Method = Request.Method;
 const Server = @import("server.zig").Server;
 
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writer(io, &stdout_buffer);
-    const stdout = &stdout_writer.interface;
-
     const server = try Server.init(io);
     var listening = try server.listen();
     const connection = try listening.accept(io);
@@ -21,12 +14,7 @@ pub fn main(init: std.process.Init) !void {
     var request_buffer: [1000]u8 = undefined;
     @memset(request_buffer[0..], 0);
     try Request.read_request(io, connection, request_buffer[0..]);
-    const request = Request.parse_request(request_buffer[0..request_buffer.len]);
-
-    request_buffer[request_buffer.len - 1] = '\n';
-    _ = try stdout.writeAll(request_buffer[0..]);
-    try stdout.flush();
-
+    const request = Request.parse_request(request_buffer[0..]);
     if (request.method == Method.GET) {
         if (std.mem.eql(u8, request.uri, "/")) {
             try Response.send_200(connection, io);
