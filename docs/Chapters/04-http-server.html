@@ -779,9 +779,7 @@ Figure&nbsp;7.2: A screenshot of the HTTP Request sent by the web browser
 <p>Since the HTTP method of the HTTP Request is identified by this very small and specific set of words, it would be interesting to create an enum structure to represent a HTTP method. This way, we can easily check if the HTTP Request we receive from the client is a HTTP method that we currently support in our small HTTP server project.</p>
 <p>The <code>Method</code> structure below represents this enumeration. Notice that, for now, only the GET HTTP method is included in this enumeration. Because, for the purpose of this chapter, I want to implement only the GET HTTP method. That is why I am not including the other HTTP methods in this enumeration.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">const</span> Method = <span class="kw">enum</span> <span class="op">{</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    GET</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">const</span> Method = <span class="kw">enum</span> <span class="op">{</span> GET <span class="op">}</span>;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Now, I think we should add two methods to this enum structure. One method is <code>is_supported()</code>, which will be a function that returns a boolean value, indicating if the input HTTP method is supported or not by our HTTP Server. The other is <code>init()</code>, which is a constructor function that takes a string as input, and tries to convert it into a <code>Method</code> value.</p>
 <p>But in order to build these functions, I will use a functionality from the Zig Standard Library, called <code>StaticStringMap()</code>. This function allows us to create a simple map from strings to enum values. In other words, we can use this map structure to map a string to the respective enum value. To some extent, this specific structure from the standard library works almost like a “hashtable” structure, and it’s optimized for small sets of words, or, small sets of keys, which is our case here. We are going to talk more about hashtables in Zig in <a href="09-data-structures.html#sec-maps-hashtables" class="quarto-xref"><span>Section 11.2</span></a>.</p>
@@ -789,10 +787,12 @@ Figure&nbsp;7.2: A screenshot of the HTTP Request sent by the web browser
 <p>With <code>Map()</code> imported, we can just apply this function over the enum structure that we are going to use in the resulting map. In our case here, it’s the <code>Method</code> enum structure that we declared at the last code example. Then, I call the <code>initComptime()</code> method with the map, i.e., the list of key-value pairs that we are going to use.</p>
 <p>You can see in the example below that I wrote this map using multiple anonymous struct literals. Inside the first (or “top-level”) struct literal, we have a list (or a sequence) of struct literals. Each struct literal in this list represents a separate key-value pair. The first element (or the key) in each key-value pair should always be a string value. While the second element should be a value from the enum structure that you have used inside the <code>Map()</code> function.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Map = std.static_string_map.StaticStringMap;</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> MethodMap = Map(Method).initComptime(.<span class="op">{</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> <span class="st">"GET"</span>, Method.GET <span class="op">}</span>,</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">const</span> Method = <span class="kw">enum</span> <span class="op">{</span> GET <span class="op">}</span>;</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Map = std.static_string_map.StaticStringMap;</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> MethodMap = Map(Method).initComptime(.<span class="op">{</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> <span class="st">"GET"</span>, Method.GET <span class="op">}</span>,</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Therefore, the <code>MethodMap</code> object is basically a <code>std::map</code> object from C++, or, a <code>dict</code> object from Python. You can retrieve (or get) the enum value that corresponds to a particular key, by using the <code>get()</code> method from the map object. This method returns an optional value, so, the <code>get()</code> method might result in a null value.</p>
 <p>We can use this in our advantage to detect if a particular HTTP method is supported or not in our HTTP server. Because, if the <code>get()</code> method returns null, it means that it did not found the method that we provided inside the <code>MethodMap</code> object, and, as a consequence, this method is not supported by our HTTP server.</p>
@@ -800,19 +800,24 @@ Figure&nbsp;7.2: A screenshot of the HTTP Request sent by the web browser
 <p>Notice in the example below that, the <code>init()</code> method returns either an error (which might happen if the <code>?</code> method returns <code>unreacheable</code>, checkout <a href="05-pointers.html#sec-null-handling" class="quarto-xref"><span>Section 6.4.3</span></a> for more details) or a <code>Method</code> object as result. Since <code>GET</code> is currently the only value in our <code>Method</code> enum structure, it means that, the <code>init()</code> method will most likely return the value <code>Method.GET</code> as result.</p>
 <p>Also notice that, in the <code>is_supported()</code> method, we are using the optional value returned by the <code>get()</code> method from our <code>MethodMap</code> object. The if statement unwraps the optional value returned by this method, and returns <code>true</code> in case this optional value is a not-null value. Otherwise, it simply returns <code>false</code>.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">const</span> Method = <span class="kw">enum</span> <span class="op">{</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    GET,</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(text: []<span class="kw">const</span> <span class="dt">u8</span>) !Method <span class="op">{</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> MethodMap.get(text).?;</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> is_supported(m: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">bool</span> <span class="op">{</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> method = MethodMap.get(m);</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (method) |_| <span class="op">{</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="cn">true</span>;</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="cn">false</span>;</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">const</span> Method = <span class="kw">enum</span> <span class="op">{</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    GET,</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> init(text: []<span class="kw">const</span> <span class="dt">u8</span>) !Method <span class="op">{</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> MethodMap.get(text).?;</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> is_supported(m: []<span class="kw">const</span> <span class="dt">u8</span>) <span class="dt">bool</span> <span class="op">{</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> method = MethodMap.get(m);</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (method) |_| <span class="op">{</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>            <span class="kw">return</span> <span class="cn">true</span>;</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="cn">false</span>;</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Map = std.static_string_map.StaticStringMap;</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> MethodMap = Map(Method).initComptime(.<span class="op">{</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>    .<span class="op">{</span> <span class="st">"GET"</span>, Method.GET <span class="op">}</span>,</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="writing-the-parse-request-function" class="level3" data-number="7.7.5">
@@ -937,33 +942,34 @@ Figure&nbsp;7.2: A screenshot of the HTTP Request sent by the web browser
 <p>Also, notice that I’m using the function <code>std.mem.eql()</code> from the Zig Standard Library to check if the string from <code>uri</code> is equal or not the string <code>"/"</code>. We have described this function already in <a href="01-zig-weird.html#sec-strings-useful-funs" class="quarto-xref"><span>Section 1.8.5</span></a>, so, comeback to that section if you are not familiar yet with this function.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Request = <span class="bu">@import</span>(<span class="st">"request.zig"</span>);</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Response = <span class="bu">@import</span>(<span class="st">"response.zig"</span>);</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Server = <span class="bu">@import</span>(<span class="st">"server.zig"</span>).Server;</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> io = init.io;</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> server = <span class="kw">try</span> Server.init(io);</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> listening = <span class="kw">try</span> server.listen();</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> connection = <span class="kw">try</span> listening.accept(io);</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> connection.close(io);</span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> request_buffer: [<span class="dv">1000</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memset</span>(request_buffer[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> Request.read_request(</span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>        io,</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>        connection,</span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>        request_buffer[<span class="dv">0</span>..]</span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> request = Request.parse_request(request_buffer[<span class="dv">0</span>..]);</span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (request.method == Method.GET) <span class="op">{</span></span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (std.mem.eql(<span class="dt">u8</span>, request.uri, <span class="st">"/"</span>)) <span class="op">{</span></span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>            <span class="kw">try</span> Response.send_200(connection, io);</span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>            <span class="kw">try</span> Response.send_404(connection, io);</span>
-<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Method = <span class="bu">@import</span>(<span class="st">"request.zig"</span>).Method;</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Request = <span class="bu">@import</span>(<span class="st">"request.zig"</span>);</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Response = <span class="bu">@import</span>(<span class="st">"response.zig"</span>);</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Server = <span class="bu">@import</span>(<span class="st">"server.zig"</span>).Server;</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> io = init.io;</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> server = <span class="kw">try</span> Server.init(io);</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> listening = <span class="kw">try</span> server.listen();</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> connection = <span class="kw">try</span> listening.accept(io);</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">defer</span> connection.close(io);</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> request_buffer: [<span class="dv">1000</span>]<span class="dt">u8</span> = <span class="cn">undefined</span>;</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memset</span>(request_buffer[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> Request.read_request(</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>        io,</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>        connection,</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>        request_buffer[<span class="dv">0</span>..]</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> request = Request.parse_request(request_buffer[<span class="dv">0</span>..]);</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (request.method == Method.GET) <span class="op">{</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (std.mem.eql(<span class="dt">u8</span>, request.uri, <span class="st">"/"</span>)) <span class="op">{</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>            <span class="kw">try</span> Response.send_200(connection, io);</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>            <span class="kw">try</span> Response.send_404(connection, io);</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Now that we adjusted our <code>main()</code> function, I can now execute our program, and see the effects of these last changes. First, I execute the program once again, with the <code>run</code> command of the <code>zig</code> compiler. The program will hang, waiting for a client to connect.</p>
 <p>Then, I open my web browser, and try to connect to the server again, using the URL <code>localhost:3490</code>. This time, instead of getting some sort of an error message from the browser, you will get the message “Hello World” printed into your web browser. Because this time, the server sended the HTTP Response successfully to the web browser, as demonstrated by <a href="#fig-print-zigrun3" class="quarto-xref">Figure&nbsp;<span>7.3</span></a>.</p>
