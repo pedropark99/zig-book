@@ -294,7 +294,7 @@ is an interesting and powerful feature of Zig. In summary, if you write a functi
 the body of this function might return an error, then, you are forced to:
 
 - either add the exclamation mark to the return type of the function and make it clear that this function might return an error.
-- explicitly handle this error inside the function.
+- explicitly handle this error inside the function body.
 
 In most programming languages, we normally handle (or deal with) an error through
 a *try catch* pattern. Zig does have both `try` and `catch` keywords. But they work
@@ -489,7 +489,6 @@ the official GitHub repository of Zig. Access this folder, and start exploring t
 Also, a great alternative is to read code from other large Zig
 codebases, such as:
 
-1. the [Javascript runtime Bun](https://github.com/oven-sh/bun)[^bunjs].
 1. the [game engine Mach](https://github.com/hexops/mach)[^mach].
 1. a [LLama 2 LLM model implementation in Zig](https://github.com/cgbur/llama2.zig/tree/main)[^ll2].
 1. the [financial transactions database `tigerbeetle`](https://github.com/tigerbeetle/tigerbeetle)[^tiger].
@@ -505,7 +504,6 @@ codebases, such as:
 [^tiger]: <https://github.com/tigerbeetle/tigerbeetle>
 [^ll2]: <https://github.com/cgbur/llama2.zig/tree/main>
 [^mach]: <https://github.com/hexops/mach>
-[^bunjs]: <https://github.com/oven-sh/bun>.
 
 All these assets are available on GitHub,
 and this is great, because we can use the GitHub search bar to our advantage,
@@ -835,14 +833,20 @@ memory management.
 
 ### Selecting elements of the array {#sec-select-array-elem}
 
-One very common activity is to select specific portions of an array
-you have in your source code.
-In Zig, you can select a specific element from your
-array, by simply providing the index of this particular
-element inside brackets after the object name.
-In the example below, I am selecting the third element from the
+One very common activity is to select specific portions of an array you have in your source code.
+In Zig, you can select a specific element from your array, by simply providing the index of this particular
+element inside brackets after the object name. In the example below, I am selecting the third element from the
 `ns` array. Notice that Zig is a "zero-index" based language,
 like C, C++, Rust, Python, and many other languages.
+
+Also notice in the example below that I am using the `stdout.print()` function to print the value of this element to the terminal.
+We have seen this function before in the `main.zig` file at @sec-main-file. You will see this `stdout` object being mentioned constantly
+across this book. This object gives us access to the OS stdout channel, through which you can print/show output to the user of
+your program. We will talk more about it at @sec-std-io.
+
+For brevity reasons, I will constantly omit the definition of this `stdout` object in the code examples, just to not repeat myself
+and occupy unnecessary space in this book. For now, just remember that you can always go back to the @sec-main-file section
+to see the complete definition of this `stdout` object.
 
 ```{zig}
 #| auto_main: true
@@ -1205,18 +1209,11 @@ through the `len` attribute. As an example, the `string_object` object below is 
 
 
 ```{zig}
-#| auto_main: false
+#| auto_main: true
 #| build_type: "run"
-const std = @import("std");
-
-pub fn main(init: std.process.Init) !void {
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
-    const stdout = &stdout_writer.interface;
-    const string_object = "This is an example of string literal in Zig";
-    try stdout.print("{d}\n", .{string_object.len});
-    try stdout.flush();
-}
+const string_object = "This is an example of string literal in Zig";
+try stdout.print("{d}\n", .{string_object.len});
+try stdout.flush();
 ```
 
 
@@ -1237,15 +1234,9 @@ the text "Hello" will be printed into the terminal:
 ```{zig}
 #| auto_main: false
 #| build_type: "run"
-const std = @import("std");
-pub fn main(init: std.process.Init) !void {
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
-    const stdout = &stdout_writer.interface;
-    const bytes = [_]u8{0x48, 0x65, 0x6C, 0x6C, 0x6F};
-    try stdout.print("{s}\n", .{bytes});
-    try stdout.flush();
-}
+const bytes = [_]u8{0x48, 0x65, 0x6C, 0x6C, 0x6F};
+try stdout.print("{s}\n", .{bytes});
+try stdout.flush();
 ```
 
 
@@ -1282,8 +1273,7 @@ value itself.
 #| eval: true
 #| auto_main: true
 #| build_type: "run"
-// This is a string literal value:
-_ = "A literal value";
+// Printing the type of a string literal value:
 try stdout.print("{any}\n", .{@TypeOf("A literal value")});
 try stdout.flush();
 ```
@@ -1338,22 +1328,15 @@ like you would normally do with the [`printf()` function](https://cplusplus.com/
 [^printfs]: <https://cplusplus.com/reference/cstdio/printf/>
 
 ```{zig}
-#| auto_main: false
+#| auto_main: true
 #| build_type: "run"
-const std = @import("std");
-pub fn main(init: std.process.Init) !void {
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
-    const stdout = &stdout_writer.interface;
-
-    const string_object = "This is an example";
-    try stdout.print("Bytes that represents the string object: ", .{});
-    for (string_object) |byte| {
-        try stdout.print("{X} ", .{byte});
-    }
-    try stdout.print("\n", .{});
-    try stdout.flush();
+const string_object = "This is an example";
+try stdout.print("Bytes that represents the string object: ", .{});
+for (string_object) |byte| {
+    try stdout.print("{X} ", .{byte});
 }
+try stdout.print("\n", .{});
+try stdout.flush();
 ```
 
 
@@ -1429,22 +1412,16 @@ is 255. In other words, the maximum decimal number that can be represented with 
 the unicode point 570 is actually stored inside the computer’s memory as the bytes `C8 BA`.
 
 ```{zig}
-#| auto_main: false
+#| auto_main: true
 #| build_type: "run"
-const std = @import("std");
-pub fn main(init: std.process.Init) !void {
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
-    const stdout = &stdout_writer.interface;
-    const string_object = "Ⱥ";
-    _ = try stdout.write(
-        "Bytes that represents the string object: "
-    );
-    for (string_object) |char| {
-        try stdout.print("{X} ", .{char});
-    }
-    try stdout.flush();
+const string_object = "Ⱥ";
+_ = try stdout.write(
+    "Bytes that represents the string object: "
+);
+for (string_object) |char| {
+    try stdout.print("{X} ", .{char});
 }
+try stdout.flush();
 ```
 
 
@@ -1474,25 +1451,18 @@ this string is represented by three bytes. But the for loop iterates four times,
 character/unicode point in this string:
 
 ```{zig}
-#| auto_main: false
+#| auto_main: true
 #| build_type: "lib"
-const std = @import("std");
-pub fn main(init: std.process.Init) !void {
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
-    const stdout = &stdout_writer.interface;
-    var utf8 = try std.unicode.Utf8View.init("アメリカ");
-    var iterator = utf8.iterator();
-    while (iterator.nextCodepointSlice()) |codepoint| {
-        try stdout.print(
-            "got codepoint {x}\n",
-            .{codepoint},
-        );
-    }
-
-    try stdout.flush();
+var utf8 = try std.unicode.Utf8View.init("アメリカ");
+var iterator = utf8.iterator();
+while (iterator.nextCodepointSlice()) |codepoint| {
+    try stdout.print(
+        "got codepoint {x}\n",
+        .{codepoint},
+    );
 }
 
+try stdout.flush();
 ```
 
 ```
