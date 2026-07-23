@@ -552,12 +552,9 @@ private and public methods inside them.
 
 ## Implementing the server - Part 2
 
-Now, on this section, I want to focus on parsing
-the HTTP Request that we received from the client.
-However, to effectively parse a HTTP Request message, we first need to understand its
-structure.
-In summary, a HTTP Request is a text message that is divided into 3 different
-sections (or parts):
+Now, on this section, I want to focus on parsing the HTTP Request that we received from the client.
+However, to effectively parse a HTTP Request message, we first need to understand its structure.
+In summary, a HTTP Request is a text message that is divided into 3 different sections (or parts):
 
 - The top-level header indicating the method of the HTTP Request, the URI, and the HTTP version used in the message.
 - A list of HTTP Headers.
@@ -672,9 +669,7 @@ including the other HTTP methods in this enumeration.
 
 ```{zig}
 #| build_type: "lib"
-pub const Method = enum {
-    GET
-};
+pub const Method = enum { GET };
 ```
 
 
@@ -708,7 +703,10 @@ be a value from the enum structure that you have used inside the `Map()` functio
 
 
 ```{zig}
-#| eval: false
+#| eval: true
+#| build_type: "lib"
+const std = @import("std");
+pub const Method = enum { GET };
 const Map = std.static_string_map.StaticStringMap;
 const MethodMap = Map(Method).initComptime(.{
     .{ "GET", Method.GET },
@@ -741,7 +739,9 @@ returned by this method, and returns `true` in case this optional value is a not
 Otherwise, it simply returns `false`.
 
 ```{zig}
-#| eval: false
+#| eval: true
+#| build_type: "lib"
+const std = @import("std");
 pub const Method = enum {
     GET,
     pub fn init(text: []const u8) !Method {
@@ -755,6 +755,10 @@ pub const Method = enum {
         return false;
     }
 };
+const Map = std.static_string_map.StaticStringMap;
+const MethodMap = Map(Method).initComptime(.{
+    .{ "GET", Method.GET },
+});
 ```
 
 
@@ -1001,6 +1005,7 @@ that section if you are not familiar yet with this function.
 ```{zig}
 #| eval: false
 const std = @import("std");
+const Method = @import("request.zig").Method;
 const Request = @import("request.zig");
 const Response = @import("response.zig");
 const Server = @import("server.zig").Server;

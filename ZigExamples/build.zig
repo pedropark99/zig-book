@@ -67,6 +67,7 @@ pub fn build(b: *std.Build) void {
         "file-io/create_file_and_read.zig",
         "file-io/create_file_and_write_toit.zig",
         "file-io/delete-dir.zig",
+        "file-io/write_positional_all.zig",
         "file-io/delete_file.zig",
         "file-io/iterate.zig",
         "file-io/make-dir.zig",

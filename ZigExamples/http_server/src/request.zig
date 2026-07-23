@@ -25,13 +25,12 @@ const Map = std.static_string_map.StaticStringMap;
 const MethodMap = Map(Method).initComptime(.{
     .{ "GET", Method.GET },
 });
+
 pub const Method = enum {
     GET,
-
     pub fn init(text: []const u8) !Method {
         return MethodMap.get(text).?;
     }
-
     pub fn is_supported(m: []const u8) bool {
         const method = MethodMap.get(m);
         if (method) |_| {
@@ -45,7 +44,6 @@ const Request = struct {
     method: Method,
     version: []const u8,
     uri: []const u8,
-
     pub fn init(method: Method, uri: []const u8, version: []const u8) Request {
         return Request{
             .method = method,
