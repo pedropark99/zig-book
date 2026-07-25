@@ -199,30 +199,36 @@ two characters in the output sequence (MA==) are `==`.
 
 ### A base64 decoder {#sec-base64-decoder-algo}
 
-The algorithm behind a base64 decoder is essentially the inverse process of a base64 encoder.
+The algorithm behind a base64 decoder is essentially the inverse process of a base64 encoder, but it's a little
+harder to explain, or to demonstrate visually how it works.
 A base64 decoder needs to translate base64 messages back into their original meaning,
 i.e., into the original sequence of binary data.
 
-A base64 decoder usually works on a window of 4 bytes. Because it wants to convert these 4 bytes
-back into the original sequence of 3 bytes, that was converted into 4 groups of 6 bits by the
-base64 encoder. Remember, in a base64 decoder we are essentially reverting the process made
+The base64 encoder worked on a window of 3 bytes, which creates 4 groups of 6 bits each. But,
+a base64 decoder works on a window of 4 bytes. Because the decoder wants to convert these 4 bytes
+back into the original sequence of 3 bytes from which they came from. So, once again, we are essentially reverting the process made
 by the base64 encoder.
 
-Each byte in the input string (the base64 encoded string) normally contributes to re-create
-two different bytes in the output (the original binary data).
-In other words, each byte that comes out of a base64 decoder is created by transforming merging two different
+Each byte in the output string of the decoder (the original binary data) is normally created from
+two different bytes in the input (the base64 encoded data).
+In other words, each byte that comes out of a base64 decoder is created by transforming (or merging) two different
 bytes in the input together. You can visualize this relationship in @fig-base64-algo2:
 
 ![The logic behind a base64 decoder](./../Figures/base64-decoder-flow.png){#fig-base64-algo2}
 
-The exact transformations, or, the exact steps applied to each byte from the input to transform them
+First, we take each base64 encoded character from the input, and we convert it back to its corresponding index in the base64 scale.
+This is done by using the lookup table that represents our base64 scale. Then, we apply a series of bit transformations over these indexes
+to produce the original bytes of the message.
+
+The exact transformations, or, the exact steps applied over the base64 indexes to transform them
 into the bytes of the output, are a bit tricky to visualize in a figure like this. Because of that, I have
-summarized these transformations as "Some bit shifting and additions ..." in the figure. These transformations
+summarized most of these transformations as "Some bit shifting and additions ..." in the figure. These transformations
 will be described in depth later.
 
-Besides that, if you look again in @fig-base64-algo2, you will notice that the character `=` was completely
-ignored by the algorithm. Remember, this is just a special character that marks the end of meaningful characters
-in the base64 sequence. So, every `=` character in a base64 encoded sequence should be ignored by a base64 decoder.
+Besides that, if you look again in @fig-base64-algo2, you will notice that the character `=` was mapped to a NULL value
+at the beginning of the algorithm. Remember, the character `=` does not belong to the base64 scale. It is just a special character
+that marks the end of meaningful characters in the base64 sequence. Thus, if we try to map the character `=` to an index
+in the base64 scale, we would get a NULL value (which corresponds to zero in binary), since it does not belong to the scale.
 
 
 ## Difference between encode and decode {#sec-encode-vs-decode}
@@ -447,7 +453,7 @@ with the *bit shift to the right* (`>>`) operator.
 If we take the string "Hi" that we used in @fig-base64-algo1 as an example, the first byte in
 this string is "H", which is the sequence `01001000` in binary.
 If we move the bits of this byte, two places to the right, we get the sequence `00010010` as result.
-This binary sequence is the value `18` in decimal, and also, the value `0x12` in hexadecimal.
+This binary sequence is the number 18 in decimal, and also, the value `0x12` in hexadecimal.
 Notice that the first 6 bits of "H" were moved to the end of the byte.
 With this operation, we get the first byte of the output.
 
@@ -790,13 +796,13 @@ We first calculate the size of the output, with
 the allocator object.
 
 Three temporary variables are created: 1) `count`, to hold the window count
-in each iteration of the for loop; 2) `iout`, to hold the current index in the output;
-3) `buf`, which is the temporary buffer that holds the base64 indexes to be
+in each iteration of the for loop; 2) `output_index`, to hold the current index in the output;
+3) `tmp_buffer`, which is the temporary buffer that holds the base64 indexes to be
 converted through the 6-bit transformation.
 
 Then, in each iteration of the for loop we fill the temporary buffer with the current
 window of bytes. When `count` hits the number 4, then, we have a full window of
-indexes in `buf` to be converted, and then, we apply the 6-bit transformation
+indexes in `tmp_buffer` to be converted, and then, we apply the 6-bit transformation
 over the temporary buffer.
 
 Notice that we check if the indexes 2 and 3 in the temporary buffer are the number 64, which, if you recall
@@ -812,27 +818,28 @@ fn decode(self: Base64,
           allocator: std.mem.Allocator,
           input: []const u8) ![]u8 {
 
-    if (input.len == 0) {
+    if (input.len == 0)
         return "";
-    }
+
     const n_output = try _calc_decode_length(input);
-    var output = try allocator.alloc(u8, n_output);
+    var tmp_buffer = [4]u8{ 0, 0, 0, 0 };
     var count: u8 = 0;
-    var iout: u64 = 0;
-    var buf = [4]u8{ 0, 0, 0, 0 };
+    var output_index: u64 = 0;
+    var output = try allocator.alloc(u8, n_output);
+    @memset(output[0..], 0);
 
     for (0..input.len) |i| {
-        buf[count] = self._char_index(input[i]);
+        tmp_buffer[count] = self._char_index(input[i]);
         count += 1;
         if (count == 4) {
-            output[iout] = (buf[0] << 2) + (buf[1] >> 4);
-            if (buf[2] != 64) {
-                output[iout + 1] = (buf[1] << 4) + (buf[2] >> 2);
+            output[output_index] = (tmp_buffer[0] << 2) + (tmp_buffer[1] >> 4);
+            if (tmp_buffer[2] != 64) {
+                output[output_index + 1] = (tmp_buffer[1] << 4) + (tmp_buffer[2] >> 2);
             }
-            if (buf[3] != 64) {
-                output[iout + 2] = (buf[2] << 6) + buf[3];
+            if (tmp_buffer[3] != 64) {
+                output[output_index + 2] = (tmp_buffer[2] << 6) + tmp_buffer[3];
             }
-            iout += 3;
+            output_index += 3;
             count = 0;
         }
     }
