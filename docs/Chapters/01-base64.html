@@ -822,7 +822,7 @@ Table&nbsp;4.1: How the 6-bit transformation translates into code in different w
 <p>Bit-shifting in Zig works similarly to bit-shifting in C. All bitwise operators that exist in C are available in Zig. Here, in the base64 encoder algorithm, they are essential to produce the result we want.</p>
 <p>For those who are not familiar with these operators, they are operators that operates at the bit-level of your values. This means that these operators takes the bits that form the value you have, and change them in some way. This ultimately also changes the value itself, because the binary representation of this value changes.</p>
 <p>We have already seen in <a href="#fig-encoder-bitshift" class="quarto-xref">Figure&nbsp;<span>4.3</span></a> the effect produced by a bit-shift. But let’s use the first byte in the output of the base64 encoder as another example of what bit-shifting means. This is the easiest byte of the 4 bytes in the output to build. Because we only need to move the bits from the first byte in the input two positions to the right, with the <em>bit shift to the right</em> (<code>&gt;&gt;</code>) operator.</p>
-<p>If we take the string “Hi” that we used in <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>4.1</span></a> as an example, the first byte in this string is “H”, which is the sequence <code>01001000</code> in binary. If we move the bits of this byte, two places to the right, we get the sequence <code>00010010</code> as result. This binary sequence is the value <code>18</code> in decimal, and also, the value <code>0x12</code> in hexadecimal. Notice that the first 6 bits of “H” were moved to the end of the byte. With this operation, we get the first byte of the output.</p>
+<p>If we take the string “Hi” that we used in <a href="#fig-base64-algo1" class="quarto-xref">Figure&nbsp;<span>4.1</span></a> as an example, the first byte in this string is “H”, which is the sequence <code>01001000</code> in binary. If we move the bits of this byte, two places to the right, we get the sequence <code>00010010</code> as result. This binary sequence is the number 18 in decimal, and also, the value <code>0x12</code> in hexadecimal. Notice that the first 6 bits of “H” were moved to the end of the byte. With this operation, we get the first byte of the output.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> std = <span class="bu">@import</span>(<span class="st">"std"</span>);</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init: std.process.Init) !<span class="dt">void</span> <span class="op">{</span></span>
@@ -1036,41 +1036,42 @@ Table&nbsp;4.2: The necessary steps for the 6-transformation in the decode proce
 <section id="writing-the-decode-function" class="level3" data-number="4.5.3">
 <h3 data-number="4.5.3" class="anchored" data-anchor-id="writing-the-decode-function"><span class="header-section-number">4.5.3</span> Writing the <code>decode()</code> function</h3>
 <p>The <code>decode()</code> function below contains the entire decoding process. We first calculate the size of the output, with <code>_calc_decode_length()</code>, then, we allocate enough memory for this output with the allocator object.</p>
-<p>Three temporary variables are created: 1) <code>count</code>, to hold the window count in each iteration of the for loop; 2) <code>iout</code>, to hold the current index in the output; 3) <code>buf</code>, which is the temporary buffer that holds the base64 indexes to be converted through the 6-bit transformation.</p>
-<p>Then, in each iteration of the for loop we fill the temporary buffer with the current window of bytes. When <code>count</code> hits the number 4, then, we have a full window of indexes in <code>buf</code> to be converted, and then, we apply the 6-bit transformation over the temporary buffer.</p>
+<p>Three temporary variables are created: 1) <code>count</code>, to hold the window count in each iteration of the for loop; 2) <code>output_index</code>, to hold the current index in the output; 3) <code>tmp_buffer</code>, which is the temporary buffer that holds the base64 indexes to be converted through the 6-bit transformation.</p>
+<p>Then, in each iteration of the for loop we fill the temporary buffer with the current window of bytes. When <code>count</code> hits the number 4, then, we have a full window of indexes in <code>tmp_buffer</code> to be converted, and then, we apply the 6-bit transformation over the temporary buffer.</p>
 <p>Notice that we check if the indexes 2 and 3 in the temporary buffer are the number 64, which, if you recall from <a href="#sec-map-base64-index" class="quarto-xref"><span>Section 4.5.1</span></a>, is when the <code>_calc_index()</code> function receives a <code>'='</code> character as input. So, if these indexes are equal to the number 64, the <code>decode()</code> function knows that it can simply ignore these indexes. They are not converted because, as I described before, the character <code>'='</code> has no meaning, despite being the end of meaningful characters in the sequence. So we can safely ignore them when they appear in the sequence.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> decode(self: Base64,</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>          allocator: std.mem.Allocator,</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>          input: []<span class="kw">const</span> <span class="dt">u8</span>) ![]<span class="dt">u8</span> <span class="op">{</span></span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len == <span class="dv">0</span>) <span class="op">{</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> (input.len == <span class="dv">0</span>)</span>
 <span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">return</span> <span class="st">""</span>;</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> n_output = <span class="kw">try</span> _calc_decode_length(input);</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> output = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, n_output);</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> tmp_buffer = [<span class="dv">4</span>]<span class="dt">u8</span><span class="op">{</span> <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span> <span class="op">}</span>;</span>
 <span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> count: <span class="dt">u8</span> = <span class="dv">0</span>;</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> iout: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> buf = [<span class="dv">4</span>]<span class="dt">u8</span><span class="op">{</span> <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span> <span class="op">}</span>;</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..input.len) |i| <span class="op">{</span></span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        buf[count] = self._char_index(input[i]);</span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>        count += <span class="dv">1</span>;</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (count == <span class="dv">4</span>) <span class="op">{</span></span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>            output[iout] = (buf[<span class="dv">0</span>] &lt;&lt; <span class="dv">2</span>) + (buf[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>);</span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>            <span class="kw">if</span> (buf[<span class="dv">2</span>] != <span class="dv">64</span>) <span class="op">{</span></span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>                output[iout + <span class="dv">1</span>] = (buf[<span class="dv">1</span>] &lt;&lt; <span class="dv">4</span>) + (buf[<span class="dv">2</span>] &gt;&gt; <span class="dv">2</span>);</span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>            <span class="kw">if</span> (buf[<span class="dv">3</span>] != <span class="dv">64</span>) <span class="op">{</span></span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>                output[iout + <span class="dv">2</span>] = (buf[<span class="dv">2</span>] &lt;&lt; <span class="dv">6</span>) + buf[<span class="dv">3</span>];</span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>            iout += <span class="dv">3</span>;</span>
-<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>            count = <span class="dv">0</span>;</span>
-<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> output;</span>
-<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> output_index: <span class="dt">u64</span> = <span class="dv">0</span>;</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> output = <span class="kw">try</span> allocator.alloc(<span class="dt">u8</span>, n_output);</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    <span class="bu">@memset</span>(output[<span class="dv">0</span>..], <span class="dv">0</span>);</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (<span class="dv">0</span>..input.len) |i| <span class="op">{</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>        tmp_buffer[count] = self._char_index(input[i]);</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>        count += <span class="dv">1</span>;</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>        <span class="kw">if</span> (count == <span class="dv">4</span>) <span class="op">{</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>            output[output_index] = (tmp_buffer[<span class="dv">0</span>] &lt;&lt; <span class="dv">2</span>) + (tmp_buffer[<span class="dv">1</span>] &gt;&gt; <span class="dv">4</span>);</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>            <span class="kw">if</span> (tmp_buffer[<span class="dv">2</span>] != <span class="dv">64</span>) <span class="op">{</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>                output[output_index + <span class="dv">1</span>] = (tmp_buffer[<span class="dv">1</span>] &lt;&lt; <span class="dv">4</span>) + (tmp_buffer[<span class="dv">2</span>] &gt;&gt; <span class="dv">2</span>);</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>            <span class="kw">if</span> (tmp_buffer[<span class="dv">3</span>] != <span class="dv">64</span>) <span class="op">{</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>                output[output_index + <span class="dv">2</span>] = (tmp_buffer[<span class="dv">2</span>] &lt;&lt; <span class="dv">6</span>) + tmp_buffer[<span class="dv">3</span>];</span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>            output_index += <span class="dv">3</span>;</span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>            count = <span class="dv">0</span>;</span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> output;</span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 </section>
