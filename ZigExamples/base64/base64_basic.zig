@@ -79,12 +79,10 @@ const Base64 = struct {
 
         const n_output = try _calc_decode_length(input);
         var tmp_buffer = [4]u8{ 0, 0, 0, 0 };
-        var output = try allocator.alloc(u8, n_output);
         var count: u8 = 0;
         var output_index: u64 = 0;
-        for (0..output.len) |i| {
-            output[i] = 0;
-        }
+        var output = try allocator.alloc(u8, n_output);
+        @memset(output[0..], 0);
 
         for (0..input.len) |i| {
             tmp_buffer[count] = self._char_index(input[i]);
@@ -154,5 +152,6 @@ pub fn main(init: std.process.Init) !void {
     try stdout.print("Decoded text: {s}\n", .{decoded_text});
     try stdout.print("Encoded length: {d}\n", .{encoded_text.len});
     try stdout.print("Decoded length: {d}\n", .{decoded_text.len});
+    try stdout.print("Index: {b}\n", .{36});
     try stdout.flush();
 }
