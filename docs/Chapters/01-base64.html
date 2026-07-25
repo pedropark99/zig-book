@@ -623,9 +623,9 @@ Figure&nbsp;4.1: The logic behind a base64 encoder
 </section>
 <section id="sec-base64-decoder-algo" class="level3" data-number="4.1.4">
 <h3 data-number="4.1.4" class="anchored" data-anchor-id="sec-base64-decoder-algo"><span class="header-section-number">4.1.4</span> A base64 decoder</h3>
-<p>The algorithm behind a base64 decoder is essentially the inverse process of a base64 encoder. A base64 decoder needs to translate base64 messages back into their original meaning, i.e., into the original sequence of binary data.</p>
-<p>A base64 decoder usually works on a window of 4 bytes. Because it wants to convert these 4 bytes back into the original sequence of 3 bytes, that was converted into 4 groups of 6 bits by the base64 encoder. Remember, in a base64 decoder we are essentially reverting the process made by the base64 encoder.</p>
-<p>Each byte in the input string (the base64 encoded string) normally contributes to re-create two different bytes in the output (the original binary data). In other words, each byte that comes out of a base64 decoder is created by transforming merging two different bytes in the input together. You can visualize this relationship in <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>4.2</span></a>:</p>
+<p>The algorithm behind a base64 decoder is essentially the inverse process of a base64 encoder, but it’s a little harder to explain, or to demonstrate visually how it works. A base64 decoder needs to translate base64 messages back into their original meaning, i.e., into the original sequence of binary data.</p>
+<p>The base64 encoder worked on a window of 3 bytes, which creates 4 groups of 6 bits each. But, a base64 decoder works on a window of 4 bytes. Because the decoder wants to convert these 4 bytes back into the original sequence of 3 bytes from which they came from. So, once again, we are essentially reverting the process made by the base64 encoder.</p>
+<p>Each byte in the output string of the decoder (the original binary data) is normally created from two different bytes in the input (the base64 encoded data). In other words, each byte that comes out of a base64 decoder is created by transforming (or merging) two different bytes in the input together. You can visualize this relationship in <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>4.2</span></a>:</p>
 <div id="fig-base64-algo2" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-base64-algo2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -636,8 +636,9 @@ Figure&nbsp;4.2: The logic behind a base64 decoder
 </figcaption>
 </figure>
 </div>
-<p>The exact transformations, or, the exact steps applied to each byte from the input to transform them into the bytes of the output, are a bit tricky to visualize in a figure like this. Because of that, I have summarized these transformations as “Some bit shifting and additions …” in the figure. These transformations will be described in depth later.</p>
-<p>Besides that, if you look again in <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>4.2</span></a>, you will notice that the character <code>=</code> was completely ignored by the algorithm. Remember, this is just a special character that marks the end of meaningful characters in the base64 sequence. So, every <code>=</code> character in a base64 encoded sequence should be ignored by a base64 decoder.</p>
+<p>First, we take each base64 encoded character from the input, and we convert it back to its corresponding index in the base64 scale. This is done by using the lookup table that represents our base64 scale. Then, we apply a series of bit transformations over these indexes to produce the original bytes of the message.</p>
+<p>The exact transformations, or, the exact steps applied over the base64 indexes to transform them into the bytes of the output, are a bit tricky to visualize in a figure like this. Because of that, I have summarized most of these transformations as “Some bit shifting and additions …” in the figure. These transformations will be described in depth later.</p>
+<p>Besides that, if you look again in <a href="#fig-base64-algo2" class="quarto-xref">Figure&nbsp;<span>4.2</span></a>, you will notice that the character <code>=</code> was mapped to a NULL value at the beginning of the algorithm. Remember, the character <code>=</code> does not belong to the base64 scale. It is just a special character that marks the end of meaningful characters in the base64 sequence. Thus, if we try to map the character <code>=</code> to an index in the base64 scale, we would get a NULL value (which corresponds to zero in binary), since it does not belong to the scale.</p>
 </section>
 </section>
 <section id="sec-encode-vs-decode" class="level2" data-number="4.2">

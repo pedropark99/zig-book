@@ -152,6 +152,5 @@ pub fn main(init: std.process.Init) !void {
     try stdout.print("Decoded text: {s}\n", .{decoded_text});
     try stdout.print("Encoded length: {d}\n", .{encoded_text.len});
     try stdout.print("Decoded length: {d}\n", .{decoded_text.len});
-    try stdout.print("Index: {b}\n", .{36});
     try stdout.flush();
 }
