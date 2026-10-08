@@ -89,7 +89,7 @@
           packages = [
             quarto
             r
-            zig.packages.${system}.master-2026-06-28
+            zig.packages.${system}."0.17.0"
           ];
 
           LANG = "C.UTF-8";
