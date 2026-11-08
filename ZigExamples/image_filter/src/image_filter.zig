@@ -7,16 +7,17 @@ var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
 const stdout = &stdout_writer.interface;
 const stderr = &stderr_writer.interface;
 
-const cmath = @cImport({
-    @cInclude("math.h");
-});
-const c = @cImport({
-    @cDefine("_NO_CRT_STDIO_INLINE", "1");
-    @cInclude("stdio.h");
-});
-const png = @cImport({
-    @cInclude("spng.h");
-});
+const c = @import("c");
+const cmath = @import("cmath");
+const png = @import("png");
+
+// const c = @cImport({
+//     @cDefine("_NO_CRT_STDIO_INLINE", "1");
+//     @cInclude("stdio.h");
+// });
+// const png = @cImport({
+//     @cInclude("spng.h");
+// });
 
 const ImageHeader = struct {
     width: u32,
