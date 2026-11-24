@@ -1,23 +1,9 @@
 const std = @import("std");
 const math = std.math;
-var stdout_buffer: [1024]u8 = undefined;
-var stderr_buffer: [1024]u8 = undefined;
-var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
-const stdout = &stdout_writer.interface;
-const stderr = &stderr_writer.interface;
 
 const c = @import("c");
 const cmath = @import("cmath");
 const png = @import("png");
-
-// const c = @cImport({
-//     @cDefine("_NO_CRT_STDIO_INLINE", "1");
-//     @cInclude("stdio.h");
-// });
-// const png = @cImport({
-//     @cInclude("spng.h");
-// });
 
 const ImageHeader = struct {
     width: u32,
@@ -55,8 +41,9 @@ fn get_image_header(ctx: *png.spng_ctx) !ImageHeader {
     };
 }
 
-fn see_image_properties(image_header: ImageHeader) !void {
+fn show_image_properties(stdout: *std.Io.Writer, image_header: ImageHeader) !void {
     try stdout.print("width: {d}, height: {d}, bit depth: {d}\n", .{ image_header.width, image_header.height, image_header.bit_depth });
+    try stdout.flush();
 }
 
 fn calc_output_size(ctx: *png.spng_ctx) !u64 {
@@ -75,7 +62,11 @@ fn _read_data_to_buffer(ctx: *png.spng_ctx, buffer: []u8) !void {
     }
 }
 
-pub fn read_png(allocator: std.mem.Allocator, path: []const u8) !ImageData {
+pub fn read_png(
+    allocator: std.mem.Allocator,
+    stdout: *std.Io.Writer,
+    path: []const u8
+) !ImageData {
     const file_descriptor = c.fopen(path.ptr, "rb");
     if (file_descriptor == null) {
         return error.CouldNotOpenFile;
@@ -85,7 +76,7 @@ pub fn read_png(allocator: std.mem.Allocator, path: []const u8) !ImageData {
     defer png.spng_ctx_free(ctx);
     _ = png.spng_set_png_file(ctx, @ptrCast(file_descriptor));
     const image_header = try get_image_header(ctx);
-    try see_image_properties(image_header);
+    try show_image_properties(stdout, image_header);
 
     const output_size = try calc_output_size(ctx);
     var buffer = try allocator.alloc(u8, output_size);
@@ -120,7 +111,11 @@ fn apply_image_filter(image_data: *ImageData) !void {
     }
 }
 
-fn save_png(image_data: *ImageData) !void {
+fn save_png(
+    image_data: *ImageData,
+    stdout: *std.Io.Writer,
+    stderr: *std.Io.Writer
+) !void {
     const path = "pedro_pascal_filter.png";
     const file_descriptor = c.fopen(path.ptr, "wb");
     const ctx = png.spng_ctx_new(png.SPNG_CTX_ENCODER) orelse unreachable;
@@ -139,6 +134,7 @@ fn save_png(image_data: *ImageData) !void {
 
     try stdout.print("Decoded size: {any}\n", .{image_data.decoded_size});
     try stdout.print("Buffer size: {any}\n", .{image_data.data.len});
+    try stdout.flush();
 
     _ = png.spng_set_ihdr(ctx, &image_header);
     const encode_status = png.spng_encode_image(ctx, @as([*c]u8, @ptrCast(image_data.data)), image_data.data.len, png.SPNG_FMT_PNG, png.SPNG_ENCODE_FINALIZE);
@@ -146,6 +142,7 @@ fn save_png(image_data: *ImageData) !void {
         const status: u32 = @intCast(encode_status);
         try stderr.print("Test: {any}\n", .{encode_status == png.SPNG_EFMT});
         try stderr.print("Error code: {d}\n", .{status});
+        try stderr.flush();
         return error.CouldNotEncodeImage;
     }
     const close_status = c.fclose(file_descriptor);
@@ -155,12 +152,24 @@ fn save_png(image_data: *ImageData) !void {
 }
 
 pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
+
+    var stderr_buffer: [1024]u8 = undefined;
+    var stderr_writer = std.Io.File.stderr().writer(init.io, &stderr_buffer);
+    const stderr = &stderr_writer.interface;
+
     var gpa = std.heap.DebugAllocator(.{}){};
     const allocator = gpa.allocator();
-    var image_data = try read_png(allocator, "pedro_pascal.png");
+    var image_data = try read_png(
+        allocator,
+        stdout,
+        "pedro_pascal.png"
+    );
     try apply_image_filter(&image_data);
 
-    try save_png(&image_data);
+    try save_png(&image_data, stdout, stderr);
 
     image_data.deinit(allocator);
 }
