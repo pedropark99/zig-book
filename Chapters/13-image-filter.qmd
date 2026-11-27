@@ -810,7 +810,7 @@ related to "encoding and writing the data into a new PNG file", I will create a 
 below. Notice that this struct is very similar to the `PngReader` struct. But it uses an "encoder context" when calling
 the `spng_ctx_new()` function.
 
-We are also creating a blank image header object (`image_header`) inside this struct. We will fill this image header
+We are also creating a blank image header object (`ih`) inside this struct. We will fill this image header
 object later with the metadata that we have collected from our image. Every PNG file needs to have an image header
 section. So building one is a pre-requisite to save our grayscale image into a new PNG file.
 
@@ -820,7 +820,7 @@ const PngWriter = struct {
     stdout: *std.Io.Writer,
     stderr: *std.Io.Writer,
     ctx: *png.spng_ctx,
-    image_header: *png.spng_ihdr,
+    ih: *png.spng_ihdr,
 
     fn init(
         allocator: std.mem.Allocator,
@@ -832,7 +832,7 @@ const PngWriter = struct {
             .stdout = stdout_writer,
             .stderr = stderr_writer,
             .ctx = png.spng_ctx_new(png.SPNG_CTX_ENCODER),
-            .image_header = undefined,
+            .ih = undefined,
         };
     }
 
@@ -868,7 +868,7 @@ fn save_png(self: *PngWriter, image_data: *ImageData, path: []const u8) !void {
     );
     _ = png.spng_set_png_file(self.ctx, @ptrCast(file_descriptor));
     self._build_image_header(image_data);
-    _ = png.spng_set_ihdr(self.ctx, self.image_header);
+    _ = png.spng_set_ihdr(self.ctx, self.ih);
 
     try self._print_image_properties(image_data);
     try self._encode_and_write_image(image_data);
@@ -902,14 +902,14 @@ Notice that we are copying the metadata from the `ImageData` object that we have
 read the original PNG file.
 
 ```zig
-fn _build_image_header(self: *PngWriter, image_data: *ImageData) void {
-    self.image_header.height = image_data.header.height;
-    self.image_header.width = image_data.header.width;
-    self.image_header.bit_depth = image_data.header.bit_depth;
-    self.image_header.color_type = image_data.header.color_type;
-    self.image_header.compression_method = image_data.header.compression_method;
-    self.image_header.filter_method = image_data.header.filter_method;
-    self.image_header.interlace_method = image_data.header.interlace_method;
+fn _build_image_header(self: *PngWriter, id: *ImageData) void {
+    self.ih.height = id.header.height;
+    self.ih.width = id.header.width;
+    self.ih.bit_depth = id.header.bit_depth;
+    self.ih.color_type = id.header.color_type;
+    self.ih.compression_method = id.header.compression_method;
+    self.ih.filter_method = id.header.filter_method;
+    self.ih.interlace_method = id.header.interlace_method;
 }
 ```
 

@@ -992,13 +992,13 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <p>Since we have now the grayscale version of our image stored in our buffer object, we need to encode this buffer object back into the “PNG format”, and save the encoded data into a new PNG file in our filesystem, so that we can access and see the grayscale version of our image that was produced by our small program.</p>
 <p>To do that, the <code>libspng</code> library help us once again by offering an “encode data to PNG” type of function, which is the <code>spng_encode_image()</code> function. But in order to “encode data to PNG” with <code>libspng</code>, we need to create a new context object. This new context object must use an “encoder context”, which is identified by the enum value <code>SPNG_CTX_ENCODER</code>.</p>
 <p>To store all the logic related to “reading the PNG file”, I have created the <code>PngReader</code> struct. Well, to store all the logic related to “encoding and writing the data into a new PNG file”, I will create a new struct named <code>PngWriter</code>, which is exposed below. Notice that this struct is very similar to the <code>PngReader</code> struct. But it uses an “encoder context” when calling the <code>spng_ctx_new()</code> function.</p>
-<p>We are also creating a blank image header object (<code>image_header</code>) inside this struct. We will fill this image header object later with the metadata that we have collected from our image. Every PNG file needs to have an image header section. So building one is a pre-requisite to save our grayscale image into a new PNG file.</p>
+<p>We are also creating a blank image header object (<code>ih</code>) inside this struct. We will fill this image header object later with the metadata that we have collected from our image. Every PNG file needs to have an image header section. So building one is a pre-requisite to save our grayscale image into a new PNG file.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> PngWriter = <span class="kw">struct</span> <span class="op">{</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    allocator: std.mem.Allocator,</span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    stdout: *std.Io.Writer,</span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    stderr: *std.Io.Writer,</span>
 <span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    ctx: *png.spng_ctx,</span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    image_header: *png.spng_ihdr,</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    ih: *png.spng_ihdr,</span>
 <span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">fn</span> init(</span>
 <span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>        allocator: std.mem.Allocator,</span>
@@ -1010,7 +1010,7 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>            .stdout = stdout_writer,</span>
 <span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>            .stderr = stderr_writer,</span>
 <span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>            .ctx = png.spng_ctx_new(png.SPNG_CTX_ENCODER),</span>
-<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>            .image_header = <span class="cn">undefined</span>,</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>            .ih = <span class="cn">undefined</span>,</span>
 <span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span>;</span>
 <span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
 <span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a></span>
@@ -1040,7 +1040,7 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    );</span>
 <span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    _ = png.spng_set_png_file(self.ctx, <span class="bu">@ptrCast</span>(file_descriptor));</span>
 <span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    self._build_image_header(image_data);</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    _ = png.spng_set_ihdr(self.ctx, self.image_header);</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    _ = png.spng_set_ihdr(self.ctx, self.ih);</span>
 <span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> self._print_image_properties(image_data);</span>
 <span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">try</span> self._encode_and_write_image(image_data);</span>
@@ -1058,14 +1058,14 @@ Figure&nbsp;15.4: How the pixels of raster images are displayed.
 <h3 data-number="15.8.2" class="anchored" data-anchor-id="building-the-image-header-section"><span class="header-section-number">15.8.2</span> Building the image header section</h3>
 <p>The image header is the object that describes the dimensions and characteristics of the image that we are writing. Without this object, <code>libspng</code> can’t properly encode our data into a PNG format. So, building an image header object is an essential step for us to save/write our grayscale version of our image.</p>
 <p>The method <code>_build_image_header()</code> exposed below encapsulates the logic of building this object. Notice that we are copying the metadata from the <code>ImageData</code> object that we have created when we read the original PNG file.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> _build_image_header(self: *PngWriter, image_data: *ImageData) <span class="dt">void</span> <span class="op">{</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    self.image_header.height = image_data.header.height;</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    self.image_header.width = image_data.header.width;</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    self.image_header.bit_depth = image_data.header.bit_depth;</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    self.image_header.color_type = image_data.header.color_type;</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    self.image_header.compression_method = image_data.header.compression_method;</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    self.image_header.filter_method = image_data.header.filter_method;</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    self.image_header.interlace_method = image_data.header.interlace_method;</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode zig code-with-copy"><code class="sourceCode zig"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> _build_image_header(self: *PngWriter, id: *ImageData) <span class="dt">void</span> <span class="op">{</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    self.ih.height = id.header.height;</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    self.ih.width = id.header.width;</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    self.ih.bit_depth = id.header.bit_depth;</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    self.ih.color_type = id.header.color_type;</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    self.ih.compression_method = id.header.compression_method;</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    self.ih.filter_method = id.header.filter_method;</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    self.ih.interlace_method = id.header.interlace_method;</span>
 <span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="encoding-the-image-data-and-writing-it-into-the-new-png-file" class="level3" data-number="15.8.3">
