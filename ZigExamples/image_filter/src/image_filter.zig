@@ -76,7 +76,7 @@ const PngReader = struct {
     }
 
     fn _print_image_properties(self: *PngReader, image_header: ImageHeader) !void {
-        _ = try self.stdout.write("Image statistics:\n");
+        _ = try self.stdout.write("Image metadata:\n");
         try self.stdout.print(
             "  * Width: {d}\n  * Height: {d}\n  * Bit depth: {d}\n",
             .{ image_header.width, image_header.height, image_header.bit_depth }
@@ -91,7 +91,7 @@ const PngReader = struct {
         if (png.spng_get_ihdr(self.ctx, &image_header) != 0) {
             return error.CouldNotGetImageHeader;
         }
-        _ = try self.stdout.write("Header of PNG file retrieve succesfully\n");
+        _ = try self.stdout.write("Header of PNG file retrieved succesfully\n");
         try self.stdout.flush();
         return ImageHeader{
             .width = image_header.width,
