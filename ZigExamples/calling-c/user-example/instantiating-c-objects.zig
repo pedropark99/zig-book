@@ -1,10 +1,11 @@
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-const c = @cImport({
-    @cInclude("user.h");
-});
+const c = @import("c");
 
 pub fn main(init: std.process.Init) !void {
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
+
     var gpa = std.heap.DebugAllocator(.{}){};
     const allocator = gpa.allocator();
 
@@ -16,5 +17,6 @@ pub fn main(init: std.process.Init) !void {
     user_name[user_name.len - 1] = 0;
     new_user.name = user_name.ptr;
 
-    try stdout.print("{any}\n", .{(new_user.name + 11).*});
+    try stdout.print("User name: {s}\n", .{new_user.name});
+    try stdout.flush();
 }
