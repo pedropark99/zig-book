@@ -32,9 +32,9 @@ this next project.
 ## Zig integrates with C in a deeper level
 
 Interoperability with C is not something new. Specially because C is the most versatile and portable of
-all languages. You can compile and run C code in virtually any piece of hardware (both old and modern).
-So, most programming languages that want to be relevant today, they simply **need** to have the ability to
-interact with C code at some level.
+all languages. Everything tracks down to C at some point. You can compile and run C code in virtually any
+piece of hardware (both old and modern). So, most programming languages that want to be relevant today, they
+simply **need** to have the ability to interact with C code at some level.
 
 For example, most high-level programming languages interact with C code via FFI (foreign function interfaces).
 So, Python have Cython, R have `.Call()`, Javascript have `ccall()`, etc.
@@ -49,14 +49,14 @@ C code cross-compilation.
 
 [^andrew-lecture]: <https://www.youtube.com/watch?v=Gv2I7qTux7g>
 
-Thus, not only Zig greatly integrates with C code, but it's also trying to be the new "versatile and portable language of all".
+Thus, not only Zig has great integration with C code, but it's also trying to become the new "versatile and portable language of all".
 Many of the features that the language has been building over the years are moving in this direction.
 Here are some examples:
 
 - Zig has complete C ABI compatibility.
 - the Zig compiler is capable of cross-compiling both Zig and C code to multiple targets.
-- Zig is as versatile as C, while, still providing a lot of tools that solve most common mistakes and bugs that we find in C codebases.
-- Zig takes a "minimum dependencies" philosophy to the extreme. So much that:
+- Zig is as versatile as C, while, still providing a lot of tools that solve most common memory leaks and bugs that we find in C codebases.
+- Zig takes a "minimum dependencies" philosophy to the extreme (which makes it a good choice for embedded systems, and so many other cases). So much that:
     - Zig does not explicitly depend on libc, and the Zig Standard Library itself is entirely optional.
     - it also does not force any type of memory allocators on the user. Which allows the user to decide exactly how memory allocations and IO (input/output) operations happen in the system. This can be THE key factor to make Zig run (or not) on a particular target that does not have a default allocator (like the one provided by libc).
     - in the future, the Zig compiler will not depend at any level on LLVM.
@@ -85,8 +85,8 @@ to translate a C header file into a Zig module. We do that by using the "Transla
 Zig compiler. Yes! The Zig compiler can actually translate C code into Zig code. This feature works
 like a transpiler. It takes C code as input, and outputs the equivalent Zig code.
 
-The Zig compiler has always performed this "C translation process" through the `translate-c` subcommand
-of compiler. I think it would be ok to interpret `translate-c` as a tool to generate Zig bindings
+Historically, the Zig compiler has always performed this "C translation process" through the `translate-c` subcommand
+of the compiler. I think it would be ok to interpret `translate-c` as a tool to generate Zig bindings
 to C code, similarly to the `rust-bindgen`[^bindgen] tool, which generates Rust FFI bindings to C code.
 But that would not be a precise interpretation of `translate-c`. The idea behind this tool is
 to really translate C code into Zig code.
@@ -103,7 +103,7 @@ I'm just telling you about this fact.
 [^translate-c]: <https://codeberg.org/ziglang/translate-c>
 [^bindgen]: <https://github.com/rust-lang/rust-bindgen>
 
-#### The drop of `@cImport()`
+#### The removal of `@cImport()`
 
 For many years, the `@cImport()` builtin function was kinda like a symbol of Zig's excellent integration with C.
 Many developers looked at `@cImport()` as "OMG, this is magic!". Now, for those who are unfamiliar with this function,
@@ -124,26 +124,26 @@ pub fn main() !void {
 }
 ```
 
-You would still have to explicitly link your Zig code with any C library that your C header used. But,
-with `@cImport()`, the Zig compiler would automatically do the job of translating this C header file
-into Zig code for you, using the `translate-c` subcommand of the Zig compiler.
-
 However, since version 0.17.0 of the Zig compiler, this `@cImport()` builtin function was removed
-from Zig. The process is still the same, which is: we still have to translate the C header file into Zig code.
-But, on the latest versions of the language, this process was moved to a different place, more precisely, into the Zig build system.
+from Zig. Under the hood, the process is still the exact same as before, which is: we still have to translate our C header file into Zig code.
+But, instead of using `@cImport()` for that, on the latest versions of the language, this process was moved to a different place,
+more precisely, into the Zig build system.
 
-Therefore, we now need to explicitly translate a C header files first, before we even import it into our Zig code.
-We do that by calling the Translate-C functionality of the Zig compiler inside our Zig build script.
+Many developers interpreted the removal of `@cImport()` as a step back for Zig's integration with C.
+But, what many of them didn't realize is that `@cImport()` was nothing more than a shortcut for the `translate-c` subcommand of the Zig compiler.
+So, the features are still present on the latest versions of Zig. But, they were moved into the build system of the language,
+instead of being part of the language itself.
+
 This movement was planned by the Zig project team a long time ago, and it's documented through
 a language proposal[^cimport-issue].
 
 [^cimport-issue]: <https://github.com/ziglang/zig/issues/20630>
 
 
-#### Translating C header files in your build script
+#### Add Translate-C as a dependency in your project
 
-So, translating C header files into Zig code is now a step that you perform inside
-the Zig build script of your project (i.e. `build.zig`). But, this step now depends on an
+Ok, so translating C header files into Zig code is now a step that you perform inside
+the Zig build script of your project (i.e. `build.zig`). Perfect! But, this step now depends on an
 external Zig package called Translate-C. Therefore, in order to use this external package, we
 first have to use the Zig compiler package manager to download/install this package in our
 project, by running this command:
@@ -162,13 +162,47 @@ version 0.17.0 of the Zig compiler. But, if you use a different version of the Z
 you can adjust the above command to your needs by just replacing the `0.17.x` part with your
 specific version.
 
-After that, you can start writing the code inside your `build.zig` to translate your C header files:
+#### Using Translate-C in your build script
+
+Now you can start writing the code inside your `build.zig` script to translate your C header files.
+These are the steps that we need to perform:
 
 1. add the Translate-C package as a build dependency (with `std.Build.dependency()`).
 2. use the `Translator` type from this package to translate your C header files.
-3. add the translated Zig module as an import of your Zig executable.
+3. add the translated Zig module as an import to your Zig executable.
 
-```zig
+To declare a build dependency in our build script, we use the `std.Build.dependency()` function. This function takes as input the name of
+the dependency (i.e. the name that it's registered inside our `build.zig.zon` file, in this case, the Translate-C package is usually
+registered as `translate_c` inside this file) with some configuration values (which for now, we can keep empty).
+
+After declaring the build dependency, we can start using the types and functions from the Translate-C package.
+Mainly the `Translator` type, which we can instantiate with the `Translator.init()` method. You provide
+the path to the C header file that you want to translate, and some configuration values (like the target architecture,
+optimization level, if you want to link this file to libc when compiling it or not, etc.).
+
+After creating your `Translator` object in your code, you can use the `mod` property of this object to access the Zig module that
+contains the translated Zig code from your C header file. After that, you can go into the `std.Build.addExecutable()` call, which
+creates your executable file, and then, add this translated Zig module as a new import to your Zig executable, through the
+`.root_module.imports` property.
+
+Important to note that, the name that you give to this new import is the same name that you will use to import this module
+inside your main piece of code. So, if you add your translated Zig module as `"translated_c"` in this step, then, you will import the
+translated Zig code into your main Zig module as `@import("translated_c")`.
+
+For example, let's consider that I have a C header file named `c.h` like this in my project:
+
+```c
+// Contents of `src/c.h`
+#define _NO_CRT_STDIO_INLINE 1
+#include <stdio.h>
+```
+
+I can then, write the following build script to translate and use this C header file in my Zig code:
+
+```{zig}
+#| auto_main: false
+#| build_type: "lib"
+// Contents of `build.zig`
 const std = @import("std");
 const Translator = @import("translate_c").Translator;
 
@@ -186,7 +220,7 @@ pub fn build(b: *std.Build) !void {
     const exe = b.addExecutable(.{
         .name = "image_filter",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/image_filter.zig"),
+            .root_source_file = b.path("src/main.zig"),
             .target = target,
             .link_libc = true,
             .imports = &.{
@@ -198,118 +232,69 @@ pub fn build(b: *std.Build) !void {
 }
 ```
 
+Thus, in the code example above, we first translate the C header file (`src/c.h`) with the `Translator` type, and then,
+adds the translated module to the imports of our main Zig module (`src/main.zig`). With this build script, we can
+go into this main Zig module, and explicitly import the translated Zig module, like this:
+
+```zig
+// Contents of `src/main.zig`
+const c = @import("c");
+pub fn main() !void {
+    _ = c.printf("Hey! My name is %s\n", "Pedro");
+}
+```
+
 
 ### Linking Zig code with a C library {#sec-linking-c}
 
-Regardless of which of the two strategies from the previous section you choose,
-if you want to call C code from Zig, you must link your Zig code
-with the C library that contains the C code that you want to call.
+Ok, now that we know how to translate C header files, let's discuss the linkage with C libraries.
+If you want to call any piece of code from a C library inside your Zig code, you have to explicitly link your Zig code
+against this C library that you are trying to use.
 
-In other words, everytime you use some C code in your Zig code, **you introduce a dependency in your build process**.
+In other words, everytime that you use some C code in your Zig project, **you are introducing a dependency in your build process**.
 This should come as no surprise to anyone that have any experience with C and C++.
 Because this is no different in C. Everytime you use a C library in your C code, you also
 have to build and link your C code with this C library that you are using.
 
-When we use a C library in our Zig code, the `zig` compiler needs to access the definition of the C functions that
-are being called in your Zig code. The C header file of this library provides the
-declarations of these C functions, but not their definitions. So, in order to access these definitions,
-the `zig` compiler needs to build your Zig code and link it with the C library during the build process.
+Since most C libraries today use (to some degree) functions from libc, you will, most likely, have
+to link your Zig code with not only the C library in question, but also, with libc, in order to use it in your Zig code.
+Therefore, you are also adding libc as a dependency to your Zig project.
 
 As we discussed across the @sec-build-system, there are different strategies to link something with a library.
 This might involve building the C library first, and then, linking it with the Zig code. Or,
 it could also involve just the linking step, if this C library is already built and
-installed in your system. Anyway, if you have doubts about this, comeback to @sec-build-system.
+installed in your system.
 
+In the example from the previous section, since we are just using the `printf()` function from libc, we just need
+to link our Zig code with libc, and nothing more. And we can easily do that by just setting the `link_libc` attribute
+from our module object to `true`.
 
+For example, if our C header file from this previous example (`src/c.h`) declared symbols, or, included header files
+from other C libraries apart from libc, we could add these libraries to the `link_system_libs` array inside our `Translator`
+object, and we should be fine. Look at the code example below, where we are linking our C header file with the `zlib` and
+`math` (which in most systems is usually refered by just `m`, or, `libm`) libraries.
 
-## Importing C header files {#sec-import-c-header}
-
-In @sec-strategy-c, we have described that, currently, there are two different paths that
-you can take to import a C header file into your Zig modules, `translate-c` or `@cImport()`.
-This section describes each strategy separately in more details.
-
-### Strategy 1: using `translate-c`
-
-When we choose this strategy, we first need to use the `translate-c` tool to translate
-the C header files that we want to use into Zig code. For example, suppose we wanted to
-use the `fopen()` C function from the `stdio.h` C header file. We can translate the
-`stdio.h` C header file through the bash command below:
-
-```bash
-zig translate-c /usr/include/stdio.h \
-    -lc -I/usr/include \
-    -D_NO_CRT_STDIO_INLINE=1 > c.zig \
-```
-
-Notice that, in this bash command, we are passing the necessary compiler flags (`-D` to define macros,
-`-l` to link libraries, `-I` to add an "include path") to compile and use the `stdio.h` header file.
-Also notice that we are saving the results of the translation process inside a Zig module called `c.zig`.
-
-Therefore, after running this command, all we have to do is to import this `c.zig` module, and start
-calling the C functions that you want to call from it. The example below demonstrates that.
-It's important to remember what we've discussed in @sec-linking-c. In order to compile this
-example you have to link this code with `libc`, by passing the flag `-lc` to the `zig` compiler.
-
-```{zig}
-#| eval: false
-const c = @import("c.zig");
-pub fn main() !void {
-    const x: f32 = 1772.94122;
-    _ = c.printf("%.3f\n", x);
-}
-```
-
-```
-1772.941
-```
-
-
-### Strategy 2: using `@cImport()`
-
-To import a C header file into our Zig code, we can use the built-in functions `@cInclude()` and `@cImport()`.
-Inside the `@cImport()` function, we open a block (with a pair of curly braces). Inside this block
-we can (if we need to) include multiple `@cDefine()` calls to define C macros when including this specific C header file.
-But for the most part, you will probably need to use just a single call inside this block,
-which is a call to `@cInclude()`.
-
-This `@cInclude()` function is equivalent to the `#include` statement in C.
-You provide the name of the C header that you want to include as input to this `@cInclude()` function,
-then, in conjunction with `@cImport()`, it will perform the necessary steps
-to include this C header file into your Zig code.
-
-You should bind the result of `@cImport()` to a constant object, pretty much like you would do with
-`@import()`. You just assign the result to a constant object in your
-Zig code, and, as consequence, all C functions, C structs, C macros, etc. that are defined inside the
-C header files will be available through this constant object.
-
-Look at the code example below, where we are importing the Standard I/O C Library (`stdio.h`),
-and calling the `printf()`[^printf] C function. Notice that we have also used in this example the C function `powf()`[^powf],
-which comes from the C Math Library (`math.h`).
-In order to compile this example, you have to link this Zig code with both
-the C Standard Library and the C Math Library, by passing the flags `-lc` and `-lm`
-to the `zig` compiler.
-
-[^printf]: <https://cplusplus.com/reference/cstdio/printf/>
-[^powf]: <https://en.cppreference.com/w/c/numeric/math/pow>
-
-
-```{zig}
-#| eval: false
-const c = @cImport({
-    @cDefine("_NO_CRT_STDIO_INLINE", "1");
-    @cInclude("stdio.h");
-    @cInclude("math.h");
+```zig
+const ch: Translator = .init(translate_c, .{
+    .c_source_file = b.path("src/c.h"),
+    .target = target,
+    .optimize = optimize,
+    .link_libc = true,
+    .link_system_libs = &.{
+        .{ .name = "zlib" },
+        .{ .name = "m" },
+    },
 });
-
-pub fn main() !void {
-    const x: f32 = 15.2;
-    const y = c.powf(x, @as(f32, 2.6));
-    _ = c.printf("%.3f\n", y);
-}
 ```
 
-```
-1182.478
+As we've demonstrated in @sec-build-system, if you need to configure the search paths for the linker, you can also add "library paths" to the root
+module of your Zig project, like exposed below. This should be enough to fix any problems that the linker might have on "finding" the
+libraries that you are trying to link with your Zig code.
+
+```zig
+exe.root_module.addLibraryPath(std.Build.LazyPath{
+    .cwd_relative = "<path>"
+});
 ```
 
 
