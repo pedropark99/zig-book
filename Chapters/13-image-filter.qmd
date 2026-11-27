@@ -349,10 +349,43 @@ pub fn build(b: *std.Build) !void {
 }
 ```
 
-## Reading the PNG file
+
+## Storing the image data
 
 Ok, now that we have the build script ready, let's start writing the code of the project.
-Let's begin with reading the data from the PNG file.
+Let's begin discussing how we are going to store the image data inside our code once we
+read/load the image data into our process.
+
+There are different strategies that we can take, but here are some considerations:
+
+- images can be quite big in size, and their data is usually compressed inside the file.
+- as we discussed in @sec-pixel-repr, we are going to store the image data in a 1D array of `u8` values.
+- because the data will be stored in a 1D array, we also need to store some metadata (specially about the dimensions of the image), so that we can interpret this 1D array correctly, connecting each value to it's 2D representation.
+
+With these considerations in mind, is probably a good idea to create a struct to store these pieces of
+information together. Is also a good idea to store at least the raw image data (i.e. the 1D array), which is the bulk of the data,
+in the heap instead of the stack.
+
+If you remember our discussion from @sec-stack-overflow you will understand why. Because the stack is a
+memory space that is limited/small. So, the heap is usually a better place to store objects that might store big amounts
+of data. If we try to store them in the stack, we might get a stack overflow problem in our program.
+
+Having all of these points in consideration, here is a struct named `ImageData` that could store the data that we need:
+
+```zig
+const ImageData = struct {
+    data: []u8,
+    decoded_size: u64,
+    header: ImageHeader,
+
+    pub fn deinit(self: ImageData, allocator: std.mem.Allocator) void {
+        allocator.free(self.data);
+    }
+};
+```
+
+
+## Reading the PNG file
 
 In order to extract the pixel data from the PNG file, we need to read and decode the file.
 A PNG file is just a binary file written in the "PNG format". Luckily, the `libspng` library offers
@@ -363,14 +396,8 @@ a `FILE` C pointer. Because of that, is probably a better idea to use the `fopen
 to open our PNG file, instead of using the `openFile()` method that I introduced in @sec-filesystem.
 That is why I'm importing the `stdio.h` C header in this project, and using the `fopen()` C function to open the file.
 
-If you look at the snippet below, you can see that we are:
-
-1. opening the PNG file with `fopen()`.
-1. creating the `libspng` context with `spng_ctx_new()`.
-1. using `spng_set_png_file()` to specify the `FILE` object that reads the PNG file that we are going to use.
-
 Every operation in `libspng` is made through a "context object", which is a object of type `*spng_ctx` (created
-by `spng_ctx_new()`). Also, I will always reference this object throughout this project with the name `ctx`.
+by the function `spng_ctx_new()`). I will always reference this object throughout this project with the name `ctx`.
 So everytime that you see the name `ctx` in the code, you know that it is a pointer to a `spng_ctx` object.
 
 Also, to perform an operation over a PNG file, we need to specify which exact PNG file we are referring to.
@@ -390,6 +417,7 @@ Also notice the `deinit()` method, which uses the `spng_ctx_free()` function to 
 for the `libspng` context object.
 
 ```zig
+const png = @import("png");
 const PngReader = struct {
     allocator: std.mem.Allocator,
     stdout: *std.Io.Writer,
@@ -468,6 +496,34 @@ Now that we understand the basic pipeline, or, the basic sequence of steps to re
 let's open each one of these methods and functions, and discuss them in more details over the next sections.
 
 
+### The wrappers around `fopen()` and `fclose()`
+
+We want to write wrappers around the C functions `fopen()` and `fclose()`. Specially to check if these functions were able
+to open and close the file successfully. Because if they didn't, then, it's a good idea to return an error value to our process,
+and also report this status to the user. This is what the `fopen_file()` function exposed below does.
+The wrapper around `fclose()` (i.e. `fclose_file()`) is very similar to this one. You can find it in
+the source code of the project.
+
+```zig
+const c = @import("c");
+fn fopen_file(
+    path: []const u8,
+    mode: []const u8,
+    stdout: *std.Io.Writer,
+    stderr: *std.Io.Writer
+) !*c.FILE {
+    const file_descriptor = c.fopen(path.ptr, mode.ptr);
+    if (file_descriptor == null) {
+        try stderr.print("Could not open file: {s}\n", .{path});
+        try stderr.flush();
+        return error.CouldNotOpenFile;
+    }
+    try stdout.print("File at path {s} opened successfully\n", .{path});
+    try stdout.flush();
+    return file_descriptor;
+}
+```
+
 ### Reading the image header section
 
 Now, the context object `ctx` is aware of our PNG file `pedro_pascal.png`, because it has access to
@@ -478,13 +534,13 @@ of the image, the color model used in the file, the dimensions of the image (hei
 etc.
 
 To make things easier, I will encapsulate this "read image header" operation into a
-nice and small function called `get_image_header()`. All that this function needs to do
+nice and small method called `_get_image_header()`. All that this method needs to do
 is to call the `spng_get_ihdr()` function. This function from `libspng` is responsible
 for reading the image header data, and storing it into a C struct named `spng_ihdr`.
 Thus, an object of type `spng_ihdr` is a C struct that contains the data from the
 image header section of the PNG file.
 
-Now, although I could return and use this `spng_ihdr` C object from this `_get_image_header()` function,
+Now, although I could return and use this `spng_ihdr` C object from this `_get_image_header()` method,
 this would involve allocating some space in the heap to store this `spng_ihdr` object. Since I understand
 that there is no need for that, specially for a small object like this one, I will create a Zig struct (named `ImageHeader`)
 just to store the essential parts/data that I want to use from this `spng_ihdr` C object. Because then,
@@ -535,7 +591,12 @@ fn _get_image_header(self: *PngReader) !ImageHeader {
 
 ### Printing the metadata of the image
 
+After we got the image header data, it might be useful to print this metadata to the user.
+This is what the `_print_image_properties()` method does. It uses the writer object for `stdout` that we have
+stored inside our `PngReader` struct, to print the metadata of the image.
 
+This is a nice way to have an idea of the size of the image (and it's bit depth) that we
+are currently reading and decoding.
 
 ```zig
 fn _print_image_properties(self: *PngReader, image_header: ImageHeader) !void {
@@ -559,8 +620,8 @@ other elements that also affect this number, such as the color model used in the
 Anyway, all of this means that calculating the size of the space that we need, is not a simple task.
 That is why the `libspng` library offers an utility function named
 `spng_decoded_image_size()` to calculate this size for us. Once again, I'm going
-to encapsulate the logic around this C function into a nice and small Zig function
-named `calc_output_size()`. You can see below that this function returns a nice
+to encapsulate the logic around this C function into a nice and small method
+named `_calc_output_size()`. You can see below that this function returns a nice
 integer value as result, informing the size of the space that we need to allocate.
 
 
@@ -568,7 +629,9 @@ integer value as result, informing the size of the space that we need to allocat
 #| eval: false
 fn _calc_output_size(self: *PngReader) !u64 {
     var output_size: u64 = 0;
-    const status = png.spng_decoded_image_size(self.ctx, png.SPNG_FMT_RGBA8, &output_size);
+    const status = png.spng_decoded_image_size(
+        self.ctx, png.SPNG_FMT_RGBA8, &output_size
+    );
     if (status != 0) {
         return error.CouldNotCalcOutputSize;
     }
@@ -587,9 +650,11 @@ So, by providing this enum value as input to the `spng_decoded_image_size()` fun
 we are saying to this function to calculate the size of the decoded pixel data, by considering
 a PNG file that follows this "RGBA color model with 8 bit depth" format.
 
-Having this function, we can use it in conjunction with an allocator object, to allocate an
-array of bytes (`u8` values) that is big enough to store the decoded pixel data of the image.
-Notice that I'm using `@memset()` to initialize the entire array to zero.
+With this function, we can calculate the size of the decoded image data, and then, in conjunction with the
+allocator object that we've stored inside our `PngReader` struct, we can allocate a buffer (i.e. an
+array of bytes - `u8` values) that is big enough to store the decoded pixel data of the image.
+Notice that I'm using `@memset()` to initialize the entire memory of this buffer to zero. This help
+us to avoid undefined behaviour in our program.
 
 ```{zig}
 #| eval: false
@@ -605,11 +670,11 @@ Now that we have the necessary space to store the decoded pixel data of the imag
 we can start to actually decode and extract this pixel data from the image,
 by using the `spng_decode_image()` C function.
 
-The `read_data_to_buffer()` Zig function exposed below summarises the necessary
+The `_read_data_to_buffer()` method exposed below summarises the necessary
 steps to read this decoded pixel data, and store it into an input buffer.
 Notice that this function is encapsulating the logic around the `spng_decode_image()` function.
-Also, we are using the `SPNG_FMT_RGBA8` enum value once again to inform the corresponding function,
-that the PNG image being decoded, uses the RGBA color model and 8 bit depth.
+Also, we are using the `SPNG_FMT_RGBA8` enum value once again to inform the corresponding function
+that the PNG image being decoded uses the RGBA color model and 8 bit depth.
 
 ```{zig}
 #| eval: false
@@ -629,15 +694,6 @@ fn _read_data_to_buffer(self: *PngReader, buffer: []u8) !void {
     _ = try self.stdout.write("PNG file read and decoded successfully\n");
     try self.stdout.flush();
 }
-```
-
-Having this function at hand, we can apply it over our context object, and also, over
-the buffer object that we have allocated in the previous section to hold the decoded pixel data
-of the image:
-
-```{zig}
-#| eval: false
-try read_data_to_buffer(ctx, buffer[0..]);
 ```
 
 
@@ -667,8 +723,7 @@ exposed in @fig-pascal, we can see that the transparency does not change across 
 which enforces this theory.
 
 
-```{zig}
-#| eval: false
+```zig
 try stdout.print("{any}\n", .{buffer[0..12]});
 try stdout.flush();
 ```
@@ -715,29 +770,25 @@ apply @eq-grayscale over the pixels in the image. We just apply this function
 over our buffer object that contains our pixel data, and, as result, the pixel
 data stored in this buffer object should now represent the grayscale version of our image.
 
-```{zig}
-#| eval: false
-fn apply_image_filter(buffer:[]u8) !void {
-    const len = buffer.len;
+```zig
+fn apply_image_filter(image_data: *ImageData) !void {
+    const len = image_data.data.len;
     const red_factor: f16 = 0.2126;
     const green_factor: f16 = 0.7152;
     const blue_factor: f16 = 0.0722;
     var index: u64 = 0;
     while (index < len) : (index += 4) {
-        const rf: f16 = @floatFromInt(buffer[index]);
-        const gf: f16 = @floatFromInt(buffer[index + 1]);
-        const bf: f16 = @floatFromInt(buffer[index + 2]);
+        const rf: f16 = @floatFromInt(image_data.data[index]);
+        const gf: f16 = @floatFromInt(image_data.data[index + 1]);
+        const bf: f16 = @floatFromInt(image_data.data[index + 2]);
         const y_linear: f16 = (
-            (rf * red_factor) + (gf * green_factor)
-            + (bf * blue_factor)
+            (rf * red_factor) + (gf * green_factor) + (bf * blue_factor)
         );
-        buffer[index] = @intFromFloat(y_linear);
-        buffer[index + 1] = @intFromFloat(y_linear);
-        buffer[index + 2] = @intFromFloat(y_linear);
+        image_data.data[index] = @intFromFloat(y_linear);
+        image_data.data[index + 1] = @intFromFloat(y_linear);
+        image_data.data[index + 2] = @intFromFloat(y_linear);
     }
 }
-
-try apply_image_filter(buffer[0..]);
 ```
 
 
