@@ -162,7 +162,42 @@ version 0.17.0 of the Zig compiler. But, if you use a different version of the Z
 you can adjust the above command to your needs by just replacing the `0.17.x` part with your
 specific version.
 
-After that, you can start writing the code inside your `build.zig` to translate your C header files.
+After that, you can start writing the code inside your `build.zig` to translate your C header files:
+
+1. add the Translate-C package as a build dependency (with `std.Build.dependency()`).
+2. use the `Translator` type from this package to translate your C header files.
+3. add the translated Zig module as an import of your Zig executable.
+
+```zig
+const std = @import("std");
+const Translator = @import("translate_c").Translator;
+
+pub fn build(b: *std.Build) !void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+    const translate_c = b.dependency("translate_c", .{});
+    const ch: Translator = .init(translate_c, .{
+        .c_source_file = b.path("src/c.h"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+
+    const exe = b.addExecutable(.{
+        .name = "image_filter",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/image_filter.zig"),
+            .target = target,
+            .link_libc = true,
+            .imports = &.{
+                .{ .name = "c", .module = ch.mod },
+             },
+        }),
+    });
+    b.installArtifact(exe);
+}
+```
+
 
 ### Linking Zig code with a C library {#sec-linking-c}
 
