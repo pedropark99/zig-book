@@ -805,63 +805,155 @@ which is the `spng_encode_image()` function. But in order to "encode data to PNG
 to create a new context object. This new context object must use an "encoder context", which
 is identified by the enum value `SPNG_CTX_ENCODER`.
 
-The `save_png()` function exposed below, summarises all the necessary steps to save the
+To store all the logic related to "reading the PNG file", I have created the `PngReader` struct. Well, to store all the logic
+related to "encoding and writing the data into a new PNG file", I will create a new struct named `PngWriter`, which is exposed
+below. Notice that this struct is very similar to the `PngReader` struct. But it uses an "encoder context" when calling
+the `spng_ctx_new()` function.
+
+We are also creating a blank image header object (`image_header`) inside this struct. We will fill this image header
+object later with the metadata that we have collected from our image. Every PNG file needs to have an image header
+section. So building one is a pre-requisite to save our grayscale image into a new PNG file.
+
+```zig
+const PngWriter = struct {
+    allocator: std.mem.Allocator,
+    stdout: *std.Io.Writer,
+    stderr: *std.Io.Writer,
+    ctx: *png.spng_ctx,
+    image_header: *png.spng_ihdr,
+
+    fn init(
+        allocator: std.mem.Allocator,
+        stdout_writer: *std.Io.Writer,
+        stderr_writer: *std.Io.Writer
+    ) PngWriter {
+        return PngWriter{
+            .allocator = allocator,
+            .stdout = stdout_writer,
+            .stderr = stderr_writer,
+            .ctx = png.spng_ctx_new(png.SPNG_CTX_ENCODER),
+            .image_header = undefined,
+        };
+    }
+
+    fn deinit(self: *PngWriter) void {
+        png.spng_ctx_free(self.ctx);
+    }
+};
+```
+
+### The main method of the struct
+
+To save our image, we essentially need to perform the following steps:
+
+1. open a new file in the filesystem, with the `fopen_file()` function.
+1. set this new file to be used by the `libspng` context object with `spng_set_png_file()`.
+1. build the image header section of the new PNG file with `PngWriter._build_image_header()`.
+1. set this image header section to be used by the `libspng` context object with `spng_set_ihdr()`.
+1. print the metadata of the image with `PngWriter._print_image_properties()`.
+1. encode the image data and write it into the new file with `PngWriter._encode_and_write_image()`.
+1. finally, we close the file that we've opened with `fclose_file()`.
+
+The `save_png()` function exposed below, summarises all these steps to save the
 grayscale version of our image into a new PNG file in the filesystem. By default, this
 function will save the grayscale image into a file named `pedro_pascal_filter.png` in the CWD.
 
-Notice in this code example that we are using the same image header object (`image_header`) that we have
-collected previously with the `get_image_header()` function. Remember, this image header object
-is a C struct (`spng_ihdr`) that contains basic information about our PNG file, such as
-the dimensions of the image, the color model used, etc.
-
-If we wanted to save a very different image in this new PNG file, e.g. an image
-with different dimensions, or, an image that uses a different color model, a different bit depth, etc.
-we would have to create a new image header (`spng_ihdr`) object that describes the properties
-of this new image.
-
-But we are essentially saving the same image that we have begin with here (the dimensions of
-the image, the color model, etc. are all still the same). The only difference
-between the two images are the colors of the pixels, which are now "shades of gray".
-As consequence, we can safely use the exact same image header data in this new PNG file.
-
-
-
-```{zig}
-#| eval: false
-fn save_png(image_header: *c.spng_ihdr, buffer: []u8) !void {
-    const path = "pedro_pascal_filter.png";
-    const file_descriptor = c.fopen(path.ptr, "wb");
-    if (file_descriptor == null) {
-        return error.CouldNotOpenFile;
-    }
-    const ctx = (
-        c.spng_ctx_new(c.SPNG_CTX_ENCODER)
-        orelse unreachable
+```zig
+fn save_png(self: *PngWriter, image_data: *ImageData, path: []const u8) !void {
+    const file_descriptor = try fopen_file(
+        path,
+        "wb",
+        self.stdout,
+        self.stderr
     );
-    defer c.spng_ctx_free(ctx);
-    _ = c.spng_set_png_file(ctx, @ptrCast(file_descriptor));
-    _ = c.spng_set_ihdr(ctx, image_header);
+    _ = png.spng_set_png_file(self.ctx, @ptrCast(file_descriptor));
+    self._build_image_header(image_data);
+    _ = png.spng_set_ihdr(self.ctx, self.image_header);
 
-    const encode_status = c.spng_encode_image(
-        ctx,
-        buffer.ptr,
-        buffer.len,
-        c.SPNG_FMT_PNG,
-        c.SPNG_ENCODE_FINALIZE
+    try self._print_image_properties(image_data);
+    try self._encode_and_write_image(image_data);
+    try fclose_file(
+        file_descriptor,
+        self.stdout,
+        self.stderr
     );
-    if (encode_status != 0) {
-        return error.CouldNotEncodeImage;
-    }
-    if (c.fclose(file_descriptor) != 0) {
-        return error.CouldNotCloseFileDescriptor;
-    }
 }
-
-try save_png(&image_header, buffer[0..]);
 ```
 
 After we execute this `save_png()` function, we should have a new PNG file
 inside our CWD, named `pedro_pascal_filter.png`. If we open this PNG file,
 we will see the same image exposed in @fig-pascal-gray.
 
+The "open file", "close file" and "print image properties" are very similar to the ones that we have
+already discussed when we were reading the PNG file. So, I will not discuss them again here, for brevity reasons.
+Remember that you can always look at the complete source code of the project on GitHub[^img-filter-folder].
 
+But, we have `PngWriter._build_image_header()` and `PngWriter._encode_and_write_image()` methods that we
+haven't seem before. Let's discuss them in the next sections.
+
+### Building the image header section
+
+The image header is the object that describes the dimensions and characteristics of the image that we
+are writing. Without this object, `libspng` can't properly encode our data into a PNG format. So,
+building an image header object is an essential step for us to save/write our grayscale version of our image.
+
+The method `_build_image_header()` exposed below encapsulates the logic of building this object.
+Notice that we are copying the metadata from the `ImageData` object that we have created when we
+read the original PNG file.
+
+```zig
+fn _build_image_header(self: *PngWriter, image_data: *ImageData) void {
+    self.image_header.height = image_data.header.height;
+    self.image_header.width = image_data.header.width;
+    self.image_header.bit_depth = image_data.header.bit_depth;
+    self.image_header.color_type = image_data.header.color_type;
+    self.image_header.compression_method = image_data.header.compression_method;
+    self.image_header.filter_method = image_data.header.filter_method;
+    self.image_header.interlace_method = image_data.header.interlace_method;
+}
+```
+
+### Encoding the image data and writing it into the new PNG file
+
+Having the image header section built, we can now encode the pixel data stored in our buffer into the PNG format.
+To do that, `libspng` offers the `spng_encode_image()` function. I've encapsulated the logic around this function
+into a method named `PngWriter._encode_and_write_image()`, which is exposed below.
+
+We need to provide as input our buffer with the image data to `spng_encode_image()`. However, since `spng_encode_image()`
+is a C function, we provide such buffer as C pointer. Because of that, I'm using the `@ptrCast()` Zig
+built-in function to cast our Zig buffer object into a C pointer that points to an array of `u8` values (`[*c]u8`).
+
+As we expect from a C function that works with an array, we also need to pass as input the length of this array
+to the function. This is why we are also passing the `image_data.data.len` value as input to the `spng_encode_image()` function.
+This is a very standard practice in C programming, since arrays in C don't have their length's embedded
+in their types, like they do in Zig.
+
+After encoding the image data, we check the status code returned by the `spng_encode_image()` function.
+Just to make sure that the encoding process went smoothly. If the process was successful, we then print
+a success message to the user at the end.
+
+```zig
+fn _encode_and_write_image(self: *PngWriter, image_data: *ImageData) !void {
+    const encode_status = png.spng_encode_image(
+        self.ctx,
+        @as([*c]u8, @ptrCast(image_data.data)),
+        image_data.data.len,
+        png.SPNG_FMT_PNG,
+        png.SPNG_ENCODE_FINALIZE
+    );
+    if (encode_status != 0) {
+        const status: u32 = @intCast(encode_status);
+        try self.stderr.print("Test: {any}\n", .{encode_status == png.SPNG_EFMT});
+        try self.stderr.print("Error code: {d}\n", .{status});
+        try self.stderr.flush();
+        return error.CouldNotEncodeImage;
+    }
+    _ = try self.stdout.write("Image encoded and written successfully\n");
+    try self.stdout.flush();
+}
+```
+
+Remember, since we have setted the target PNG file with the `spng_set_png_file()` function,
+the `spng_encode_image()` function will not only encode our image data into the PNG format, but it also writes
+the encoded data into the file that we have setted, through the file descriptor object that we have provided
+to `spng_set_png_file()`.
