@@ -66,7 +66,7 @@ In other words, you can have a project that mixes Zig code with C code, and succ
 the Zig compiler and it's build system to build your entire project, and get your binaries as output.
 That is how deep Zig integrates with C.
 
-## How to call C code from Zig
+## How to call C code from Zig {#sec-call-c}
 
 Ok, but what are the necessary steps to call C code from my Zig code? What I need to do to successfully
 integrate my Zig code with external C libraries? Let's talk about that now.
@@ -351,6 +351,10 @@ the `fopen()` C function to simply open and close a file. If you do not know how
 function works in C, it takes two C strings as input. But in this code example below, we are passing some
 string literals written in our Zig code directly as inputs to this `fopen()` C function.
 
+Remember from our discussion at @sec-call-c that we need to translate the `stdio.h` C header file
+(from which the `fopen()` C function comes from) into a Zig module, and then, import this translated Zig module into our Zig code.
+So the expression `@import("c")` represents the translated version of `stdio.h` being imported into our Zig code.
+
 In other words, we are not doing any conversion from a Zig string to a C string.
 We are just passing the Zig string literals directly as inputs to the C function. And it works just fine!
 Because the compiler interprets the string `"foo.txt"` as a C string given the current context.
@@ -358,11 +362,7 @@ Because the compiler interprets the string `"foo.txt"` as a C string given the c
 
 ```{zig}
 #| eval: false
-const c = @cImport({
-    @cDefine("_NO_CRT_STDIO_INLINE", "1");
-    @cInclude("stdio.h");
-});
-
+const c = @import("c");
 pub fn main() !void {
     const file = c.fopen("foo.txt", "rb");
     if (file == null) {
@@ -426,10 +426,7 @@ to the C function `powf()`. Notice that this code example compiles and runs succ
 ```{zig}
 #| eval: false
 const std = @import("std");
-const cmath = @cImport({
-    @cInclude("math.h");
-});
-
+const cmath = @import("cmath");
 pub fn main(init: std.process.Init) !void {
     var stdout_buffer: [1024]u8 = undefined;
     var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
@@ -541,12 +538,11 @@ with no errors.
 ## Creating C objects in Zig {#sec-c-inputs}
 
 Creating C objects, or, in other words, creating instances of C structs in your Zig code
-is actually something quite easy to do. You first need to import the C header file (like I described in @sec-import-c-header) that defines
-the C struct that you are trying to instantiate in your Zig code. After that, you can just
-create a new object in your Zig code, and annotate it with the data type of the C struct.
+is actually something quite easy to do. After you've done all the process that we've described in @sec-call-c
+of translating and importing the C header file that defines the C struct that you are trying to instantiate into your Zig code,
+you can just create a new object in your Zig code, and annotate it with the data type of the C struct.
 
-For example, suppose we have a C header file called `user.h`, and that this header file is declaring a new struct named `User`.
-This C header file is exposed below:
+For example, suppose we have a C header file called `user.h`, and that this header file is declaring a new struct named `User`:
 
 ```c
 #include <stdint.h>
@@ -560,8 +556,9 @@ typedef struct {
 This `User` C struct have two distinct fields, or two struct members, named `id` and `name`.
 The field `id` is an unsigned 64-bit integer value, while the field `name` is just a standard C string.
 Now, suppose that I want to create an instance of this `User` struct in my Zig code.
-I can do that by importing this `user.h` header file into my Zig code, and creating
-a new object with type `User`. These steps are reproduced in the code example below.
+Suppose that I have translated this `user.h` header file into a Zig module named `c`.
+Now, I can just import this `c` module, and create a new object with type `c.User`
+in my Zig code. These steps are reproduced in the code example below.
 
 Notice that I have used the keyword `undefined` in this example. This allows me to
 create the `new_user` object without the need to provide an initial value to the object.
@@ -580,10 +577,7 @@ for this string. This null character marks the end of the array in C.
 #| auto_main: false
 #| eval: false
 const std = @import("std");
-const c = @cImport({
-    @cInclude("user.h");
-});
-
+const c = @import("c");
 pub fn main() !void {
     var gpa = std.heap.DebugAllocator(.{}){};
     const allocator = gpa.allocator();
@@ -615,9 +609,7 @@ So the Zig code necessary to create such object would probably look something li
 
 ```{zig}
 #| eval: false
-const c = @cImport({
-    @cInclude("hb.h");
-});
+const c = @import("c");
 var buf: c.hb_buffer_t = c.hb_buffer_create();
 // Do stuff with the "buffer object"
 ```
@@ -665,9 +657,7 @@ the value in the `id` field of the `User` struct pointed by the input pointer.
 #| auto_main: false
 #| eval: false
 const std = @import("std");
-const c = @cImport({
-    @cInclude("user.h");
-});
+const c = @import("c");
 fn set_user_id(id: u64, user: *c.User) void {
     user.*.id = id;
 }
